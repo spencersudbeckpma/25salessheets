@@ -491,12 +491,23 @@ async def remove_user(user_id: str, current_user: dict = Depends(get_current_use
     return {"message": "User removed"}
 
 # Leaderboard
-@api_router.get("/leaderboard/weekly")
-async def get_weekly_leaderboard(current_user: dict = Depends(get_current_user)):
+@api_router.get("/leaderboard/{period}")
+async def get_leaderboard(period: str, current_user: dict = Depends(get_current_user)):
     from datetime import timedelta
     
     today = datetime.now(timezone.utc).date()
-    start_of_week = today - timedelta(days=today.weekday())
+    
+    if period == "weekly":
+        start_date = today - timedelta(days=today.weekday())
+    elif period == "monthly":
+        start_date = today.replace(day=1)
+    elif period == "quarterly":
+        quarter = (today.month - 1) // 3
+        start_date = today.replace(month=quarter * 3 + 1, day=1)
+    elif period == "yearly":
+        start_date = today.replace(month=1, day=1)
+    else:
+        raise HTTPException(status_code=400, detail="Invalid period")
     
     # Get all subordinates including self
     subordinate_ids = await get_all_subordinates(current_user['id'])
@@ -505,10 +516,10 @@ async def get_weekly_leaderboard(current_user: dict = Depends(get_current_user))
     users = await db.users.find({"id": {"$in": subordinate_ids}}, {"_id": 0, "password_hash": 0}).to_list(1000)
     user_dict = {u['id']: u for u in users}
     
-    # Get all activities for the week
+    # Get all activities for the period
     activities = await db.activities.find({
         "user_id": {"$in": subordinate_ids},
-        "date": {"$gte": start_of_week.isoformat()}
+        "date": {"$gte": start_date.isoformat()}
     }, {"_id": 0}).to_list(10000)
     
     # Aggregate by user
@@ -529,12 +540,12 @@ async def get_weekly_leaderboard(current_user: dict = Depends(get_current_user))
         user_stats[uid]['new_face_sold'] += activity['new_face_sold']
         user_stats[uid]['premium'] += activity['premium']
     
-    # Create leaderboards for each category
+    # Create leaderboards for each category - Top 3
     leaderboard = {
-        "presentations": sorted(user_stats.values(), key=lambda x: x['presentations'], reverse=True)[:5],
-        "testimonials": sorted(user_stats.values(), key=lambda x: x['testimonials'], reverse=True)[:5],
-        "new_face_sold": sorted(user_stats.values(), key=lambda x: x['new_face_sold'], reverse=True)[:5],
-        "premium": sorted(user_stats.values(), key=lambda x: x['premium'], reverse=True)[:5]
+        "presentations": sorted(user_stats.values(), key=lambda x: x['presentations'], reverse=True)[:3],
+        "testimonials": sorted(user_stats.values(), key=lambda x: x['testimonials'], reverse=True)[:3],
+        "new_face_sold": sorted(user_stats.values(), key=lambda x: x['new_face_sold'], reverse=True)[:3],
+        "premium": sorted(user_stats.values(), key=lambda x: x['premium'], reverse=True)[:3]
     }
     
     return leaderboard
