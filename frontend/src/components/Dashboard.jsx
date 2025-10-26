@@ -40,12 +40,22 @@ const Dashboard = ({ user, setUser }) => {
 
         {/* Main Content */}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-          <TabsList className="grid w-full grid-cols-5 bg-white rounded-lg shadow-md p-1.5 h-auto" data-testid="dashboard-tabs">
-            <TabsTrigger value="activity" data-testid="activity-tab" className="py-2.5">Daily Activity</TabsTrigger>
-            <TabsTrigger value="stats" data-testid="stats-tab" className="py-2.5">My Stats</TabsTrigger>
-            <TabsTrigger value="team" data-testid="team-tab" className="py-2.5">Team View</TabsTrigger>
-            <TabsTrigger value="manage" data-testid="manage-tab" className="py-2.5">Team Management</TabsTrigger>
-            <TabsTrigger value="leaderboard" data-testid="leaderboard-tab" className="py-2.5">Leaderboard</TabsTrigger>
+          <TabsList className="grid w-full grid-cols-2 md:grid-cols-5 gap-2 bg-white rounded-lg shadow-md p-2 h-auto" data-testid="dashboard-tabs">
+            <TabsTrigger value="activity" data-testid="activity-tab" className="py-3 px-2 text-xs md:text-sm whitespace-nowrap">
+              Daily Activity
+            </TabsTrigger>
+            <TabsTrigger value="stats" data-testid="stats-tab" className="py-3 px-2 text-xs md:text-sm whitespace-nowrap">
+              My Stats
+            </TabsTrigger>
+            <TabsTrigger value="team" data-testid="team-tab" className="py-3 px-2 text-xs md:text-sm whitespace-nowrap">
+              Team View
+            </TabsTrigger>
+            <TabsTrigger value="manage" data-testid="manage-tab" className="py-3 px-2 text-xs md:text-sm whitespace-nowrap">
+              Team Mgmt
+            </TabsTrigger>
+            <TabsTrigger value="leaderboard" data-testid="leaderboard-tab" className="py-3 px-2 text-xs md:text-sm whitespace-nowrap">
+              Leaderboard
+            </TabsTrigger>
           </TabsList>
 
           <TabsContent value="activity" data-testid="activity-content" className="mt-6">
