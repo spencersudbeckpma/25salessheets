@@ -93,16 +93,16 @@ const ActivityInput = ({ user }) => {
   ];
 
   return (
-    <Card className="shadow-lg" data-testid="activity-input-card">
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2" data-testid="activity-title">
-          <Calendar className="text-blue-600" />
+    <Card className="shadow-lg bg-white" data-testid="activity-input-card">
+      <CardHeader className="pb-4">
+        <CardTitle className="flex items-center gap-2 text-xl" data-testid="activity-title">
+          <Calendar className="text-blue-600" size={24} />
           Daily Activity Input
         </CardTitle>
       </CardHeader>
-      <CardContent className="space-y-6">
+      <CardContent className="space-y-6 pt-2">
         <div className="space-y-2">
-          <Label htmlFor="date">Select Date</Label>
+          <Label htmlFor="date" className="text-base font-semibold">Select Date</Label>
           <Input
             id="date"
             data-testid="date-input"
@@ -110,14 +110,14 @@ const ActivityInput = ({ user }) => {
             value={selectedDate}
             max={new Date().toISOString().split('T')[0]}
             onChange={(e) => setSelectedDate(e.target.value)}
-            className="w-full"
+            className="w-full max-w-xs"
           />
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
           {categories.map(cat => (
             <div key={cat.key} className="space-y-2">
-              <Label htmlFor={cat.key} data-testid={`${cat.key}-label`}>
+              <Label htmlFor={cat.key} data-testid={`${cat.key}-label`} className="text-sm font-medium">
                 {cat.icon} {cat.label}
               </Label>
               <Input
@@ -128,6 +128,7 @@ const ActivityInput = ({ user }) => {
                 step={cat.key === 'premium' ? '0.01' : '1'}
                 value={activity[cat.key]}
                 onChange={(e) => setActivity({ ...activity, [cat.key]: parseFloat(e.target.value) || 0 })}
+                className="w-full"
               />
             </div>
           ))}
@@ -137,9 +138,9 @@ const ActivityInput = ({ user }) => {
           onClick={handleSave}
           disabled={loading}
           data-testid="save-activity-btn"
-          className="w-full flex items-center justify-center gap-2"
+          className="w-full flex items-center justify-center gap-2 mt-6 py-6 text-base"
         >
-          <Save size={16} />
+          <Save size={18} />
           {loading ? 'Saving...' : 'Save Activity'}
         </Button>
       </CardContent>
