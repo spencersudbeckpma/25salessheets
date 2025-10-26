@@ -1,0 +1,150 @@
+import React, { useState, useEffect } from 'react';
+import axios from 'axios';
+import { toast } from 'sonner';
+import { Card, CardHeader, CardTitle, CardContent } from './ui/card';
+import { Button } from './ui/button';
+import { Input } from './ui/input';
+import { Label } from './ui/label';
+import { Calendar, Save } from 'lucide-react';
+
+const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
+const API = `${BACKEND_URL}/api`;
+
+const ActivityInput = ({ user }) => {
+  const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
+  const [activity, setActivity] = useState({
+    contacts: 0,
+    appointments: 0,
+    presentations: 0,
+    referrals: 0,
+    testimonials: 0,
+    sales: 0,
+    new_face_sold: 0,
+    premium: 0
+  });
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    fetchActivity();
+  }, [selectedDate]);
+
+  const fetchActivity = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await axios.get(`${API}/activities/my`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      const dayActivity = response.data.find(a => a.date === selectedDate);
+      if (dayActivity) {
+        setActivity({
+          contacts: dayActivity.contacts,
+          appointments: dayActivity.appointments,
+          presentations: dayActivity.presentations,
+          referrals: dayActivity.referrals,
+          testimonials: dayActivity.testimonials,
+          sales: dayActivity.sales,
+          new_face_sold: dayActivity.new_face_sold,
+          premium: dayActivity.premium
+        });
+      } else {
+        setActivity({
+          contacts: 0,
+          appointments: 0,
+          presentations: 0,
+          referrals: 0,
+          testimonials: 0,
+          sales: 0,
+          new_face_sold: 0,
+          premium: 0
+        });
+      }
+    } catch (error) {
+      console.error('Error fetching activity:', error);
+    }
+  };
+
+  const handleSave = async () => {
+    setLoading(true);
+    try {
+      const token = localStorage.getItem('token');
+      await axios.put(`${API}/activities/${selectedDate}`, {
+        date: selectedDate,
+        ...activity
+      }, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      toast.success('Activity saved successfully!');
+    } catch (error) {
+      toast.error('Failed to save activity');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const categories = [
+    { key: 'contacts', label: 'Contacts', icon: '📞' },
+    { key: 'appointments', label: 'Appointments', icon: '📅' },
+    { key: 'presentations', label: 'Presentations', icon: '📊' },
+    { key: 'referrals', label: 'Referrals', icon: '🤝' },
+    { key: 'testimonials', label: 'Testimonials', icon: '⭐' },
+    { key: 'sales', label: 'Sales', icon: '💰' },
+    { key: 'new_face_sold', label: 'New Face Sold', icon: '🎯' },
+    { key: 'premium', label: 'Total Premium ($)', icon: '💵' }
+  ];
+
+  return (
+    <Card className="shadow-lg" data-testid="activity-input-card">
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2" data-testid="activity-title">
+          <Calendar className="text-blue-600" />
+          Daily Activity Input
+        </CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-6">
+        <div className="space-y-2">
+          <Label htmlFor="date">Select Date</Label>
+          <Input
+            id="date"
+            data-testid="date-input"
+            type="date"
+            value={selectedDate}
+            max={new Date().toISOString().split('T')[0]}
+            onChange={(e) => setSelectedDate(e.target.value)}
+            className="w-full"
+          />
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {categories.map(cat => (
+            <div key={cat.key} className="space-y-2">
+              <Label htmlFor={cat.key} data-testid={`${cat.key}-label`}>
+                {cat.icon} {cat.label}
+              </Label>
+              <Input
+                id={cat.key}
+                data-testid={`${cat.key}-input`}
+                type="number"
+                min="0"
+                step={cat.key === 'premium' ? '0.01' : '1'}
+                value={activity[cat.key]}
+                onChange={(e) => setActivity({ ...activity, [cat.key]: parseFloat(e.target.value) || 0 })}
+              />
+            </div>
+          ))}
+        </div>
+
+        <Button
+          onClick={handleSave}
+          disabled={loading}
+          data-testid="save-activity-btn"
+          className="w-full flex items-center justify-center gap-2"
+        >
+          <Save size={16} />
+          {loading ? 'Saving...' : 'Save Activity'}
+        </Button>
+      </CardContent>
+    </Card>
+  );
+};
+
+export default ActivityInput;
