@@ -317,10 +317,19 @@ async def update_team_activity(user_id: str, date: str, activity_data: ActivityC
     if existing:
         await db.activities.update_one({"user_id": user_id, "date": date}, {"$set": update_data})
     else:
+        # Create new activity
+        data_dict = activity_data.model_dump()
         activity = Activity(
             user_id=user_id,
             date=date,
-            **activity_data.model_dump(),
+            contacts=data_dict['contacts'],
+            appointments=data_dict['appointments'],
+            presentations=data_dict['presentations'],
+            referrals=data_dict['referrals'],
+            testimonials=data_dict['testimonials'],
+            sales=data_dict['sales'],
+            new_face_sold=data_dict['new_face_sold'],
+            premium=data_dict['premium'],
             edited_by=current_user['id'],
             edited_at=datetime.now(timezone.utc)
         )
