@@ -78,14 +78,14 @@ const StatsView = ({ user }) => {
 
   return (
     <div className="space-y-6">
-      <Card className="shadow-lg" data-testid="stats-view-card">
-        <CardHeader>
-          <div className="flex justify-between items-center">
-            <CardTitle className="flex items-center gap-2" data-testid="stats-title">
-              <TrendingUp className="text-blue-600" />
+      <Card className="shadow-lg bg-white" data-testid="stats-view-card">
+        <CardHeader className="pb-4">
+          <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-4">
+            <CardTitle className="flex items-center gap-2 text-xl" data-testid="stats-title">
+              <TrendingUp className="text-blue-600" size={24} />
               My Statistics
             </CardTitle>
-            <div className="flex gap-2">
+            <div className="flex flex-wrap gap-2">
               {['daily', 'weekly', 'monthly', 'quarterly', 'yearly'].map(p => (
                 <Button
                   key={p}
@@ -93,6 +93,7 @@ const StatsView = ({ user }) => {
                   variant={period === p ? 'default' : 'outline'}
                   onClick={() => setPeriod(p)}
                   size="sm"
+                  className="text-xs"
                 >
                   {p.charAt(0).toUpperCase() + p.slice(1)}
                 </Button>
@@ -100,16 +101,16 @@ const StatsView = ({ user }) => {
             </div>
           </div>
         </CardHeader>
-        <CardContent>
+        <CardContent className="pt-2">
           {stats && (
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
               {statCards.map(card => (
-                <div key={card.key} className="p-4 rounded-lg bg-white shadow-md border-l-4 border-blue-500">
-                  <div className="text-2xl mb-1">{card.icon}</div>
-                  <div className="text-2xl font-bold" data-testid={`stat-${card.key}-value`}>
+                <div key={card.key} className="p-4 rounded-lg bg-gradient-to-br from-white to-gray-50 shadow border-l-4 border-blue-500">
+                  <div className="text-2xl mb-2">{card.icon}</div>
+                  <div className="text-2xl font-bold text-gray-800" data-testid={`stat-${card.key}-value`}>
                     {card.key === 'premium' ? `$${stats[card.key].toFixed(2)}` : stats[card.key]}
                   </div>
-                  <div className="text-sm text-gray-600" data-testid={`stat-${card.key}-label`}>{card.label}</div>
+                  <div className="text-sm text-gray-600 mt-1" data-testid={`stat-${card.key}-label`}>{card.label}</div>
                 </div>
               ))}
             </div>
@@ -117,21 +118,26 @@ const StatsView = ({ user }) => {
         </CardContent>
       </Card>
 
-      <Card className="shadow-lg" data-testid="activity-history-card">
-        <CardHeader>
-          <CardTitle data-testid="activity-history-title">Activity History</CardTitle>
+      <Card className="shadow-lg bg-white" data-testid="activity-history-card">
+        <CardHeader className="pb-4">
+          <CardTitle className="text-xl" data-testid="activity-history-title">Activity History</CardTitle>
         </CardHeader>
-        <CardContent>
-          <div className="space-y-2 max-h-96 overflow-y-auto">
+        <CardContent className="pt-2">
+          <div className="space-y-3 max-h-[500px] overflow-y-auto pr-2">
+            {activities.length === 0 && (
+              <div className="text-center py-8 text-gray-500">No activities yet</div>
+            )}
             {activities.map(activity => (
-              <div key={activity.id} className="p-4 bg-white rounded-lg shadow-sm border">
+              <div key={activity.id} className="p-4 bg-gradient-to-br from-white to-gray-50 rounded-lg shadow-sm border">
                 {editingActivity && editingActivity.id === activity.id ? (
-                  <div className="space-y-3">
-                    <div className="font-semibold text-lg mb-2">Edit Activity - {activity.date}</div>
+                  <div className="space-y-4">
+                    <div className="font-semibold text-lg mb-3">Edit Activity - {activity.date}</div>
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                       {Object.keys(activity).filter(k => !['id', 'user_id', 'date', 'created_at', 'edited_by', 'edited_at'].includes(k)).map(key => (
                         <div key={key}>
-                          <label className="text-sm text-gray-600">{key.replace('_', ' ').toUpperCase()}</label>
+                          <label className="text-xs text-gray-600 font-medium block mb-1">
+                            {key.replace('_', ' ').toUpperCase()}
+                          </label>
                           <Input
                             type="number"
                             data-testid={`edit-${key}-input`}
@@ -140,9 +146,8 @@ const StatsView = ({ user }) => {
                             className="mt-1"
                           />
                         </div>
-                      ))}
-                    </div>
-                    <div className="flex gap-2">
+                      ))}</div>
+                    <div className="flex gap-2 mt-4">
                       <Button onClick={handleSaveEdit} data-testid="save-edit-btn" size="sm">
                         <Save size={14} className="mr-1" /> Save
                       </Button>
@@ -152,21 +157,21 @@ const StatsView = ({ user }) => {
                     </div>
                   </div>
                 ) : (
-                  <div className="flex justify-between items-start">
-                    <div>
-                      <div className="font-semibold text-lg mb-2" data-testid={`activity-date-${activity.date}`}>{activity.date}</div>
-                      <div className="grid grid-cols-2 md:grid-cols-4 gap-x-4 gap-y-1 text-sm">
-                        <div data-testid={`activity-contacts-${activity.date}`}>📞 Contacts: {activity.contacts}</div>
-                        <div data-testid={`activity-appointments-${activity.date}`}>📅 Appointments: {activity.appointments}</div>
-                        <div data-testid={`activity-presentations-${activity.date}`}>📊 Presentations: {activity.presentations}</div>
-                        <div data-testid={`activity-referrals-${activity.date}`}>🤝 Referrals: {activity.referrals}</div>
-                        <div data-testid={`activity-testimonials-${activity.date}`}>⭐ Testimonials: {activity.testimonials}</div>
-                        <div data-testid={`activity-sales-${activity.date}`}>💰 Sales: {activity.sales}</div>
-                        <div data-testid={`activity-new-face-${activity.date}`}>🎯 New Face: {activity.new_face_sold}</div>
-                        <div data-testid={`activity-premium-${activity.date}`}>💵 Premium: ${activity.premium}</div>
+                  <div className="flex justify-between items-start gap-4">
+                    <div className="flex-1">
+                      <div className="font-semibold text-lg mb-3" data-testid={`activity-date-${activity.date}`}>{activity.date}</div>
+                      <div className="grid grid-cols-2 md:grid-cols-4 gap-x-4 gap-y-2 text-sm">
+                        <div data-testid={`activity-contacts-${activity.date}`} className="truncate">📞 Contacts: {activity.contacts}</div>
+                        <div data-testid={`activity-appointments-${activity.date}`} className="truncate">📅 Appointments: {activity.appointments}</div>
+                        <div data-testid={`activity-presentations-${activity.date}`} className="truncate">📊 Presentations: {activity.presentations}</div>
+                        <div data-testid={`activity-referrals-${activity.date}`} className="truncate">🤝 Referrals: {activity.referrals}</div>
+                        <div data-testid={`activity-testimonials-${activity.date}`} className="truncate">⭐ Testimonials: {activity.testimonials}</div>
+                        <div data-testid={`activity-sales-${activity.date}`} className="truncate">💰 Sales: {activity.sales}</div>
+                        <div data-testid={`activity-new-face-${activity.date}`} className="truncate">🎯 New Face: {activity.new_face_sold}</div>
+                        <div data-testid={`activity-premium-${activity.date}`} className="truncate">💵 Premium: ${activity.premium}</div>
                       </div>
                     </div>
-                    <Button onClick={() => handleEdit(activity)} data-testid={`edit-activity-btn-${activity.date}`} variant="outline" size="sm">
+                    <Button onClick={() => handleEdit(activity)} data-testid={`edit-activity-btn-${activity.date}`} variant="outline" size="sm" className="shrink-0">
                       <Edit2 size={14} />
                     </Button>
                   </div>
