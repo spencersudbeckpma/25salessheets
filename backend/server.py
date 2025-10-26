@@ -397,15 +397,34 @@ async def get_team_members(current_user: dict = Depends(get_current_user)):
     members = await db.users.find({"manager_id": current_user['id']}, {"_id": 0, "password_hash": 0}).to_list(1000)
     return members
 
-@api_router.get("/team/hierarchy")
-async def get_team_hierarchy(current_user: dict = Depends(get_current_user)):
+@api_router.get("/team/hierarchy/{period}")
+async def get_team_hierarchy(period: str, current_user: dict = Depends(get_current_user)):
+    from datetime import timedelta
+    
+    today = datetime.now(timezone.utc).date()
+    
+    if period == "daily":
+        start_date = today
+    elif period == "weekly":
+        start_date = today - timedelta(days=today.weekday())
+    elif period == "monthly":
+        start_date = today.replace(day=1)
+    elif period == "yearly":
+        start_date = today.replace(month=1, day=1)
+    else:
+        raise HTTPException(status_code=400, detail="Invalid period")
+    
     async def build_hierarchy(user_id: str) -> dict:
         user = await db.users.find_one({"id": user_id}, {"_id": 0, "password_hash": 0})
         if not user:
             return None
         
-        # Get user's stats
-        activities = await db.activities.find({"user_id": user_id}, {"_id": 0}).to_list(1000)
+        # Get user's stats for the specified period
+        activities = await db.activities.find({
+            "user_id": user_id,
+            "date": {"$gte": start_date.isoformat()}
+        }, {"_id": 0}).to_list(1000)
+        
         stats = {
             "contacts": sum(a['contacts'] for a in activities),
             "appointments": sum(a['appointments'] for a in activities),
