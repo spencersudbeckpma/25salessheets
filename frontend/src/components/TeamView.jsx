@@ -98,22 +98,24 @@ const TeamView = ({ user }) => {
 
   if (loading) {
     return (
-      <Card className="shadow-lg" data-testid="team-view-loading">
-        <CardContent className="p-8 text-center">Loading team hierarchy...</CardContent>
+      <Card className="shadow-lg bg-white" data-testid="team-view-loading">
+        <CardContent className="p-12 text-center text-gray-500">Loading team hierarchy...</CardContent>
       </Card>
     );
   }
 
   return (
-    <Card className="shadow-lg" data-testid="team-view-card">
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2" data-testid="team-view-title">
-          <Users className="text-blue-600" />
+    <Card className="shadow-lg bg-white" data-testid="team-view-card">
+      <CardHeader className="pb-4">
+        <CardTitle className="flex items-center gap-2 text-xl" data-testid="team-view-title">
+          <Users className="text-blue-600" size={24} />
           Team Hierarchy
         </CardTitle>
       </CardHeader>
-      <CardContent>
-        {hierarchy ? renderNode(hierarchy) : <div>No team data available</div>}
+      <CardContent className="pt-2">
+        <div className="max-h-[600px] overflow-y-auto pr-2">
+          {hierarchy ? renderNode(hierarchy) : <div className="text-center py-8 text-gray-500">No team data available</div>}
+        </div>
       </CardContent>
     </Card>
   );
