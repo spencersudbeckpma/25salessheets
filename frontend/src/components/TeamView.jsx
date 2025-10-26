@@ -11,15 +11,17 @@ const TeamView = ({ user }) => {
   const [hierarchy, setHierarchy] = useState(null);
   const [loading, setLoading] = useState(true);
   const [expandedNodes, setExpandedNodes] = useState({});
+  const [period, setPeriod] = useState('weekly');
 
   useEffect(() => {
     fetchHierarchy();
-  }, []);
+  }, [period]);
 
   const fetchHierarchy = async () => {
+    setLoading(true);
     try {
       const token = localStorage.getItem('token');
-      const response = await axios.get(`${API}/team/hierarchy`, {
+      const response = await axios.get(`${API}/team/hierarchy/${period}`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       setHierarchy(response.data);
