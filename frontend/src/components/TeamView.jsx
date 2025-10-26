@@ -40,47 +40,47 @@ const TeamView = ({ user }) => {
     const isExpanded = expandedNodes[node.id];
 
     return (
-      <div key={node.id} className="mb-2">
+      <div key={node.id} className="mb-3">
         <div
-          className="p-4 bg-white rounded-lg shadow-sm border hover:shadow-md transition-shadow cursor-pointer"
-          style={{ marginLeft: `${level * 20}px` }}
+          className="p-5 bg-gradient-to-br from-white to-gray-50 rounded-lg shadow-sm border hover:shadow-md transition-all cursor-pointer"
+          style={{ marginLeft: `${level * 24}px` }}
           data-testid={`team-member-${node.id}`}
         >
-          <div className="flex items-start justify-between">
-            <div className="flex-1">
-              <div className="flex items-center gap-2">
+          <div className="flex items-start justify-between gap-4">
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-2 mb-2">
                 {hasChildren && (
                   <button
                     onClick={() => toggleNode(node.id)}
                     data-testid={`toggle-node-${node.id}`}
-                    className="text-gray-500 hover:text-gray-700"
+                    className="text-gray-500 hover:text-gray-700 shrink-0"
                   >
-                    {isExpanded ? <ChevronDown size={18} /> : <ChevronRight size={18} />}
+                    {isExpanded ? <ChevronDown size={20} /> : <ChevronRight size={20} />}
                   </button>
                 )}
-                <div>
-                  <div className="font-semibold text-lg" data-testid={`member-name-${node.id}`}>{node.name}</div>
+                <div className="min-w-0 flex-1">
+                  <div className="font-semibold text-lg truncate" data-testid={`member-name-${node.id}`}>{node.name}</div>
                   <div className="text-sm text-gray-600" data-testid={`member-role-${node.id}`}>
                     {node.role.replace('_', ' ').toUpperCase()}
                   </div>
-                  <div className="text-xs text-gray-500">{node.email}</div>
+                  <div className="text-xs text-gray-500 truncate">{node.email}</div>
                 </div>
               </div>
-              <div className="mt-3 grid grid-cols-2 md:grid-cols-4 gap-2 text-sm">
+              <div className="mt-4 grid grid-cols-2 md:grid-cols-4 gap-2 text-sm">
                 <div className="bg-blue-50 p-2 rounded" data-testid={`member-contacts-${node.id}`}>
-                  <div className="font-semibold">{node.stats.contacts}</div>
+                  <div className="font-semibold text-base">{node.stats.contacts}</div>
                   <div className="text-xs text-gray-600">Contacts</div>
                 </div>
                 <div className="bg-green-50 p-2 rounded" data-testid={`member-appointments-${node.id}`}>
-                  <div className="font-semibold">{node.stats.appointments}</div>
+                  <div className="font-semibold text-base">{node.stats.appointments}</div>
                   <div className="text-xs text-gray-600">Appointments</div>
                 </div>
                 <div className="bg-purple-50 p-2 rounded" data-testid={`member-presentations-${node.id}`}>
-                  <div className="font-semibold">{node.stats.presentations}</div>
+                  <div className="font-semibold text-base">{node.stats.presentations}</div>
                   <div className="text-xs text-gray-600">Presentations</div>
                 </div>
                 <div className="bg-pink-50 p-2 rounded" data-testid={`member-sales-${node.id}`}>
-                  <div className="font-semibold">{node.stats.sales}</div>
+                  <div className="font-semibold text-base">{node.stats.sales}</div>
                   <div className="text-xs text-gray-600">Sales</div>
                 </div>
               </div>
@@ -88,7 +88,7 @@ const TeamView = ({ user }) => {
           </div>
         </div>
         {hasChildren && isExpanded && (
-          <div className="mt-2">
+          <div className="mt-3">
             {node.children.map(child => renderNode(child, level + 1))}
           </div>
         )}
