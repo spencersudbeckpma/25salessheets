@@ -109,10 +109,29 @@ const TeamView = ({ user }) => {
   return (
     <Card className="shadow-lg bg-white" data-testid="team-view-card">
       <CardHeader className="pb-4">
-        <CardTitle className="flex items-center gap-2 text-xl" data-testid="team-view-title">
-          <Users className="text-blue-600" size={24} />
-          Team Hierarchy
-        </CardTitle>
+        <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-4">
+          <CardTitle className="flex items-center gap-2 text-xl" data-testid="team-view-title">
+            <Users className="text-blue-600" size={24} />
+            Team Hierarchy
+          </CardTitle>
+          <div className="flex flex-wrap gap-2">
+            {['daily', 'weekly', 'monthly', 'yearly'].map(p => (
+              <Button
+                key={p}
+                data-testid={`team-period-${p}-btn`}
+                variant={period === p ? 'default' : 'outline'}
+                onClick={() => setPeriod(p)}
+                size="sm"
+                className="text-xs"
+              >
+                {p.charAt(0).toUpperCase() + p.slice(1)}
+              </Button>
+            ))}
+          </div>
+        </div>
+        <p className="text-sm text-gray-600 mt-2" data-testid="team-view-subtitle">
+          Showing {period} performance for your team
+        </p>
       </CardHeader>
       <CardContent className="pt-2">
         <div className="max-h-[600px] overflow-y-auto pr-2">
