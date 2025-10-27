@@ -419,13 +419,13 @@ async def get_team_hierarchy(period: str, current_user: dict = Depends(get_curre
         if not user:
             return None
         
-        # Get user's stats for the specified period
+        # Get user's own stats for the specified period
         activities = await db.activities.find({
             "user_id": user_id,
             "date": {"$gte": start_date.isoformat()}
         }, {"_id": 0}).to_list(1000)
         
-        stats = {
+        own_stats = {
             "contacts": sum(a['contacts'] for a in activities),
             "appointments": sum(a['appointments'] for a in activities),
             "presentations": sum(a['presentations'] for a in activities),
@@ -436,17 +436,40 @@ async def get_team_hierarchy(period: str, current_user: dict = Depends(get_curre
             "premium": sum(a['premium'] for a in activities)
         }
         
-        # Get subordinates
+        # Get subordinates and build their hierarchies
         subordinates = await db.users.find({"manager_id": user_id}, {"_id": 0}).to_list(1000)
         children = []
+        
+        # Initialize rolled up stats with own stats
+        rolled_up_stats = {
+            "contacts": own_stats["contacts"],
+            "appointments": own_stats["appointments"],
+            "presentations": own_stats["presentations"],
+            "referrals": own_stats["referrals"],
+            "testimonials": own_stats["testimonials"],
+            "sales": own_stats["sales"],
+            "new_face_sold": own_stats["new_face_sold"],
+            "premium": own_stats["premium"]
+        }
+        
+        # Recursively build children and roll up their stats
         for sub in subordinates:
             child_hierarchy = await build_hierarchy(sub['id'])
             if child_hierarchy:
                 children.append(child_hierarchy)
+                # Add child's rolled up stats to parent's rolled up stats
+                rolled_up_stats["contacts"] += child_hierarchy["stats"]["contacts"]
+                rolled_up_stats["appointments"] += child_hierarchy["stats"]["appointments"]
+                rolled_up_stats["presentations"] += child_hierarchy["stats"]["presentations"]
+                rolled_up_stats["referrals"] += child_hierarchy["stats"]["referrals"]
+                rolled_up_stats["testimonials"] += child_hierarchy["stats"]["testimonials"]
+                rolled_up_stats["sales"] += child_hierarchy["stats"]["sales"]
+                rolled_up_stats["new_face_sold"] += child_hierarchy["stats"]["new_face_sold"]
+                rolled_up_stats["premium"] += child_hierarchy["stats"]["premium"]
         
         return {
             **user,
-            "stats": stats,
+            "stats": rolled_up_stats,  # This now includes own + all subordinates
             "children": children
         }
     
