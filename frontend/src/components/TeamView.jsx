@@ -82,9 +82,9 @@ const TeamView = ({ user }) => {
                   <div className="font-semibold text-base">{node.stats.presentations}</div>
                   <div className="text-xs text-gray-600">Presentations</div>
                 </div>
-                <div className="bg-pink-50 p-2 rounded" data-testid={`member-sales-${node.id}`}>
-                  <div className="font-semibold text-base">{node.stats.sales}</div>
-                  <div className="text-xs text-gray-600">Sales</div>
+                <div className="bg-emerald-50 p-2 rounded" data-testid={`member-premium-${node.id}`}>
+                  <div className="font-semibold text-base">${node.stats.premium.toFixed(2)}</div>
+                  <div className="text-xs text-gray-600">Total Premium</div>
                 </div>
               </div>
             </div>
