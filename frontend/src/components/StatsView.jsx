@@ -141,6 +141,8 @@ const StatsView = ({ user }) => {
                           <Input
                             type="number"
                             data-testid={`edit-${key}-input`}
+                            min="0"
+                            step={key === 'premium' ? '0.01' : key === 'presentations' ? '0.5' : '1'}
                             value={editingActivity[key]}
                             onChange={(e) => setEditingActivity({ ...editingActivity, [key]: parseFloat(e.target.value) || 0 })}
                             className="mt-1"
