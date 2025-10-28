@@ -5,6 +5,7 @@ import StatsView from './StatsView';
 import TeamView from './TeamView';
 import TeamManagement from './TeamManagement';
 import Leaderboard from './Leaderboard';
+import AdminCleanup from './AdminCleanup';
 import { Button } from './ui/button';
 import { LogOut } from 'lucide-react';
 
