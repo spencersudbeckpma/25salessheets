@@ -562,6 +562,45 @@ async def remove_user(user_id: str, current_user: dict = Depends(get_current_use
     
     return {"message": "User removed"}
 
+# Debug endpoint to check for duplicates
+@api_router.get("/debug/user-activities/{user_id}")
+async def debug_user_activities(user_id: str, current_user: dict = Depends(get_current_user)):
+    """Debug endpoint to check a user's activities for duplicates"""
+    subordinates = await get_all_subordinates(current_user['id'])
+    
+    if user_id not in subordinates and user_id != current_user['id']:
+        raise HTTPException(status_code=403, detail="Not authorized")
+    
+    # Get user info
+    user = await db.users.find_one({"id": user_id}, {"_id": 0, "password_hash": 0})
+    
+    # Get all activities
+    activities = await db.activities.find({"user_id": user_id}, {"_id": 0}).sort("date", -1).to_list(1000)
+    
+    # Check for duplicates by date
+    date_counts = {}
+    for activity in activities:
+        date = activity['date']
+        if date not in date_counts:
+            date_counts[date] = []
+        date_counts[date].append({
+            "id": activity['id'],
+            "presentations": activity.get('presentations', 0),
+            "premium": activity.get('premium', 0),
+            "edited_by": activity.get('edited_by'),
+            "created_at": activity.get('created_at')
+        })
+    
+    duplicates = {date: acts for date, acts in date_counts.items() if len(acts) > 1}
+    
+    return {
+        "user": user,
+        "total_activities": len(activities),
+        "activities_by_date": date_counts,
+        "duplicates": duplicates,
+        "has_duplicates": len(duplicates) > 0
+    }
+
 # Leaderboard
 @api_router.get("/leaderboard/{period}")
 async def get_leaderboard(period: str, current_user: dict = Depends(get_current_user), user_date: str = None):
