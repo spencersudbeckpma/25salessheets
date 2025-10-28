@@ -738,7 +738,9 @@ async def get_leaderboard(period: str, current_user: dict = Depends(get_current_
     else:
         today = datetime.now(central_tz).date()
     
-    if period == "weekly":
+    if period == "daily":
+        start_date = today
+    elif period == "weekly":
         start_date = today - timedelta(days=today.weekday())
     elif period == "monthly":
         start_date = today.replace(day=1)
@@ -750,16 +752,26 @@ async def get_leaderboard(period: str, current_user: dict = Depends(get_current_
     else:
         raise HTTPException(status_code=400, detail="Invalid period")
     
-    # Get all subordinates including self
-    subordinate_ids = await get_all_subordinates(current_user['id'])
+    # Get ALL users in the organization (find the root state manager)
+    # First, traverse up to find the top-level manager
+    current_manager = current_user
+    while current_manager.get('manager_id'):
+        parent = await db.users.find_one({"id": current_manager['manager_id']}, {"_id": 0})
+        if parent:
+            current_manager = parent
+        else:
+            break
     
-    # Get all users
-    users = await db.users.find({"id": {"$in": subordinate_ids}}, {"_id": 0, "password_hash": 0}).to_list(1000)
+    # Now get all users under the top manager (entire organization)
+    all_user_ids = await get_all_subordinates(current_manager['id'])
+    
+    # Get all users info
+    users = await db.users.find({"id": {"$in": all_user_ids}}, {"_id": 0, "password_hash": 0}).to_list(1000)
     user_dict = {u['id']: u for u in users}
     
-    # Get all activities for the period
+    # Get all activities for the period for the ENTIRE organization
     activities = await db.activities.find({
-        "user_id": {"$in": subordinate_ids},
+        "user_id": {"$in": all_user_ids},
         "date": {"$gte": start_date.isoformat()}
     }, {"_id": 0}).to_list(10000)
     
@@ -781,7 +793,7 @@ async def get_leaderboard(period: str, current_user: dict = Depends(get_current_
         user_stats[uid]['new_face_sold'] += activity['new_face_sold']
         user_stats[uid]['premium'] += activity['premium']
     
-    # Create leaderboards for each category - Top 3
+    # Create leaderboards for each category - Top 3 from ENTIRE organization
     leaderboard = {
         "presentations": sorted(user_stats.values(), key=lambda x: x['presentations'], reverse=True)[:3],
         "testimonials": sorted(user_stats.values(), key=lambda x: x['testimonials'], reverse=True)[:3],
