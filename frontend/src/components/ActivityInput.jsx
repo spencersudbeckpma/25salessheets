@@ -125,7 +125,7 @@ const ActivityInput = ({ user }) => {
                 data-testid={`${cat.key}-input`}
                 type="number"
                 min="0"
-                step={cat.key === 'premium' ? '0.01' : '1'}
+                step={cat.key === 'premium' ? '0.01' : cat.key === 'presentations' ? '0.5' : '1'}
                 value={activity[cat.key]}
                 onChange={(e) => setActivity({ ...activity, [cat.key]: parseFloat(e.target.value) || 0 })}
                 className="w-full"
