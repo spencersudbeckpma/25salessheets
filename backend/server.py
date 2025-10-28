@@ -650,6 +650,55 @@ async def cleanup_user_duplicates(user_id: str, current_user: dict = Depends(get
         "message": f"Removed {deleted_count} duplicate activities"
     }
 
+# Cleanup ALL duplicates in the system (manager only)
+@api_router.post("/debug/cleanup-all-duplicates")
+async def cleanup_all_duplicates(current_user: dict = Depends(get_current_user)):
+    """Remove all duplicate activities in the system (keeps most recent)"""
+    # Get all subordinates
+    subordinate_ids = await get_all_subordinates(current_user['id'])
+    
+    # Get all activities for subordinates
+    activities = await db.activities.find({"user_id": {"$in": subordinate_ids}}, {"_id": 0}).to_list(10000)
+    
+    # Group by user_id and date
+    groups = {}
+    for activity in activities:
+        key = (activity['user_id'], activity['date'])
+        if key not in groups:
+            groups[key] = []
+        groups[key].append(activity)
+    
+    # Find and remove duplicates
+    total_deleted = 0
+    users_cleaned = {}
+    
+    for (user_id, date), acts in groups.items():
+        if len(acts) > 1:
+            # Sort by edited_at (most recent first), then created_at
+            sorted_acts = sorted(acts, key=lambda x: (x.get('edited_at') or x.get('created_at'), x.get('created_at')), reverse=True)
+            
+            # Keep the first (most recent), delete the rest
+            keep = sorted_acts[0]
+            delete_ids = [a['id'] for a in sorted_acts[1:]]
+            
+            result = await db.activities.delete_many({"id": {"$in": delete_ids}})
+            total_deleted += result.deleted_count
+            
+            if user_id not in users_cleaned:
+                user = await db.users.find_one({"id": user_id}, {"_id": 0, "name": 1})
+                users_cleaned[user_id] = {
+                    "name": user['name'] if user else "Unknown",
+                    "dates_cleaned": []
+                }
+            users_cleaned[user_id]["dates_cleaned"].append(date)
+    
+    return {
+        "total_deleted": total_deleted,
+        "users_affected": len(users_cleaned),
+        "details": users_cleaned,
+        "message": f"Removed {total_deleted} duplicate activities across {len(users_cleaned)} users"
+    }
+
 # Leaderboard
 @api_router.get("/leaderboard/{period}")
 async def get_leaderboard(period: str, current_user: dict = Depends(get_current_user), user_date: str = None):
