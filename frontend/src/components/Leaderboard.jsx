@@ -87,7 +87,7 @@ const Leaderboard = ({ user }) => {
                   {category.label}
                 </h3>
                 <div className="space-y-3">
-                  {leaderboard[category.key] && leaderboard[category.key].slice(0, 3).map((entry, index) => (
+                  {leaderboard[category.key] && leaderboard[category.key].slice(0, 5).map((entry, index) => (
                     <div
                       key={entry.user_id}
                       data-testid={`leaderboard-${category.key}-rank-${index + 1}`}
