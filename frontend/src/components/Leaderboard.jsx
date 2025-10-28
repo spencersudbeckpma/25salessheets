@@ -36,7 +36,7 @@ const Leaderboard = ({ user }) => {
     if (rank === 0) return <span className="text-2xl">🥇</span>;
     if (rank === 1) return <span className="text-2xl">🥈</span>;
     if (rank === 2) return <span className="text-2xl">🥉</span>;
-    return <span className="text-gray-400 font-bold">#{rank + 1}</span>;
+    return <span className="text-gray-600 font-bold text-lg">#{rank + 1}</span>;
   };
 
   const categories = [
