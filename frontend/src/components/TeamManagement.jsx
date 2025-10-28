@@ -275,7 +275,7 @@ const TeamManagement = ({ user }) => {
                             data-testid={`team-edit-${key}-input`}
                             type="number"
                             min="0"
-                            step={key === 'premium' ? '0.01' : '1'}
+                            step={key === 'premium' ? '0.01' : key === 'presentations' ? '0.5' : '1'}
                             value={editActivity[key]}
                             onChange={(e) => setEditActivity({ ...editActivity, [key]: parseFloat(e.target.value) || 0 })}
                             className="mt-1"
