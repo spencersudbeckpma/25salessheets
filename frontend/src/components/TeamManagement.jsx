@@ -82,14 +82,27 @@ const TeamManagement = ({ user }) => {
 
   const handleSelectMember = async (memberId) => {
     setEditMember(memberId);
+    await fetchMemberActivity(memberId, selectedDate);
+  };
+
+  const fetchMemberActivity = async (memberId, date) => {
     try {
       const token = localStorage.getItem('token');
       const response = await axios.get(`${API}/users/${memberId}/activities`, {
         headers: { Authorization: `Bearer ${token}` }
       });
-      const activity = response.data.find(a => a.date === selectedDate);
+      const activity = response.data.find(a => a.date === date);
       if (activity) {
-        setEditActivity(activity);
+        setEditActivity({
+          contacts: activity.contacts,
+          appointments: activity.appointments,
+          presentations: activity.presentations,
+          referrals: activity.referrals,
+          testimonials: activity.testimonials,
+          sales: activity.sales,
+          new_face_sold: activity.new_face_sold,
+          premium: activity.premium
+        });
       } else {
         setEditActivity({
           contacts: 0,
