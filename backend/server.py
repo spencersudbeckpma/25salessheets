@@ -404,10 +404,16 @@ async def get_team_members(current_user: dict = Depends(get_current_user)):
     return members
 
 @api_router.get("/team/hierarchy/{period}")
-async def get_team_hierarchy(period: str, current_user: dict = Depends(get_current_user)):
+async def get_team_hierarchy(period: str, current_user: dict = Depends(get_current_user), user_date: str = None):
     from datetime import timedelta
+    from pytz import timezone as pytz_timezone
     
-    today = datetime.now(timezone.utc).date()
+    # Use Central Time if no date provided
+    central_tz = pytz_timezone('America/Chicago')
+    if user_date:
+        today = datetime.strptime(user_date, '%Y-%m-%d').date()
+    else:
+        today = datetime.now(central_tz).date()
     
     if period == "daily":
         start_date = today
