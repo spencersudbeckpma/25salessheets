@@ -66,7 +66,7 @@ class Activity(BaseModel):
     date: str  # YYYY-MM-DD format
     contacts: int = 0
     appointments: int = 0
-    presentations: int = 0
+    presentations: float = 0.0
     referrals: int = 0
     testimonials: int = 0
     sales: int = 0
@@ -80,7 +80,7 @@ class ActivityCreate(BaseModel):
     date: str
     contacts: int = 0
     appointments: int = 0
-    presentations: int = 0
+    presentations: float = 0.0
     referrals: int = 0
     testimonials: int = 0
     sales: int = 0
