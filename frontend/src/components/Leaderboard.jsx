@@ -56,7 +56,7 @@ const Leaderboard = ({ user }) => {
               Leaderboard
             </CardTitle>
             <p className="text-sm text-gray-600 mt-2" data-testid="leaderboard-subtitle">
-              Top 3 performers for {period} period
+              Top 5 performers for {period} period
             </p>
           </div>
           <div className="flex flex-wrap gap-2">
