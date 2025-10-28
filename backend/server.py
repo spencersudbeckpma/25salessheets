@@ -353,10 +353,16 @@ async def get_team_member_activities(user_id: str, current_user: dict = Depends(
 
 # Statistics Routes
 @api_router.get("/stats/my/{period}")
-async def get_my_stats(period: str, current_user: dict = Depends(get_current_user)):
+async def get_my_stats(period: str, current_user: dict = Depends(get_current_user), user_date: str = None):
     from datetime import timedelta
+    from pytz import timezone as pytz_timezone
     
-    today = datetime.now(timezone.utc).date()
+    # Use Central Time if no date provided
+    central_tz = pytz_timezone('America/Chicago')
+    if user_date:
+        today = datetime.strptime(user_date, '%Y-%m-%d').date()
+    else:
+        today = datetime.now(central_tz).date()
     
     if period == "daily":
         start_date = today
