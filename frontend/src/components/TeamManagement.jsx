@@ -270,7 +270,7 @@ const TeamManagement = ({ user }) => {
                     max={new Date().toISOString().split('T')[0]}
                     onChange={(e) => {
                       setSelectedDate(e.target.value);
-                      handleSelectMember(editMember);
+                      fetchMemberActivity(editMember, e.target.value);
                     }}
                     className="mt-2"
                   />
