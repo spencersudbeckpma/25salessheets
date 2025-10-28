@@ -699,6 +699,32 @@ async def cleanup_all_duplicates(current_user: dict = Depends(get_current_user))
         "message": f"Removed {total_deleted} duplicate activities across {len(users_cleaned)} users"
     }
 
+# Delete ALL activities for a specific user (nuclear option)
+@api_router.delete("/debug/delete-all-user-activities/{user_id}")
+async def delete_all_user_activities(user_id: str, current_user: dict = Depends(get_current_user)):
+    """Delete ALL activities for a specific user (use with caution!)"""
+    subordinates = await get_all_subordinates(current_user['id'])
+    
+    if user_id not in subordinates and user_id != current_user['id']:
+        raise HTTPException(status_code=403, detail="Not authorized")
+    
+    # Get user info first
+    user = await db.users.find_one({"id": user_id}, {"_id": 0, "name": 1, "email": 1})
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    # Count activities before deletion
+    count = await db.activities.count_documents({"user_id": user_id})
+    
+    # Delete ALL activities
+    result = await db.activities.delete_many({"user_id": user_id})
+    
+    return {
+        "user": user,
+        "activities_deleted": result.deleted_count,
+        "message": f"Deleted all {result.deleted_count} activities for {user['name']}"
+    }
+
 # Leaderboard
 @api_router.get("/leaderboard/{period}")
 async def get_leaderboard(period: str, current_user: dict = Depends(get_current_user), user_date: str = None):
