@@ -793,12 +793,12 @@ async def get_leaderboard(period: str, current_user: dict = Depends(get_current_
         user_stats[uid]['new_face_sold'] += activity['new_face_sold']
         user_stats[uid]['premium'] += activity['premium']
     
-    # Create leaderboards for each category - Top 3 from ENTIRE organization
+    # Create leaderboards for each category - Top 5 from ENTIRE organization
     leaderboard = {
-        "presentations": sorted(user_stats.values(), key=lambda x: x['presentations'], reverse=True)[:3],
-        "testimonials": sorted(user_stats.values(), key=lambda x: x['testimonials'], reverse=True)[:3],
-        "new_face_sold": sorted(user_stats.values(), key=lambda x: x['new_face_sold'], reverse=True)[:3],
-        "premium": sorted(user_stats.values(), key=lambda x: x['premium'], reverse=True)[:3]
+        "presentations": sorted(user_stats.values(), key=lambda x: x['presentations'], reverse=True)[:5],
+        "testimonials": sorted(user_stats.values(), key=lambda x: x['testimonials'], reverse=True)[:5],
+        "new_face_sold": sorted(user_stats.values(), key=lambda x: x['new_face_sold'], reverse=True)[:5],
+        "premium": sorted(user_stats.values(), key=lambda x: x['premium'], reverse=True)[:5]
     }
     
     return leaderboard
