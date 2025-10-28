@@ -130,6 +130,8 @@ const TeamManagement = ({ user }) => {
         headers: { Authorization: `Bearer ${token}` }
       });
       toast.success('Team member activity updated!');
+      // Refresh the activity data to show the updated values
+      await fetchMemberActivity(editMember, selectedDate);
     } catch (error) {
       toast.error('Failed to update activity');
     }
