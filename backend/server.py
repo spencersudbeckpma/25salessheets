@@ -601,6 +601,55 @@ async def debug_user_activities(user_id: str, current_user: dict = Depends(get_c
         "has_duplicates": len(duplicates) > 0
     }
 
+# Cleanup endpoint to remove duplicates for a user
+@api_router.post("/debug/cleanup-user-duplicates/{user_id}")
+async def cleanup_user_duplicates(user_id: str, current_user: dict = Depends(get_current_user)):
+    """Remove duplicate activities for a user, keeping the most recent one"""
+    subordinates = await get_all_subordinates(current_user['id'])
+    
+    if user_id not in subordinates and user_id != current_user['id']:
+        raise HTTPException(status_code=403, detail="Not authorized")
+    
+    # Get all activities for this user
+    activities = await db.activities.find({"user_id": user_id}, {"_id": 0}).to_list(1000)
+    
+    # Group by date
+    date_groups = {}
+    for activity in activities:
+        date = activity['date']
+        if date not in date_groups:
+            date_groups[date] = []
+        date_groups[date].append(activity)
+    
+    # Find and remove duplicates
+    deleted_count = 0
+    cleaned_dates = []
+    
+    for date, acts in date_groups.items():
+        if len(acts) > 1:
+            # Sort by edited_at (most recent first), then created_at
+            sorted_acts = sorted(acts, key=lambda x: (x.get('edited_at') or x.get('created_at'), x.get('created_at')), reverse=True)
+            
+            # Keep the first (most recent), delete the rest
+            keep = sorted_acts[0]
+            delete_ids = [a['id'] for a in sorted_acts[1:]]
+            
+            result = await db.activities.delete_many({"id": {"$in": delete_ids}})
+            deleted_count += result.deleted_count
+            cleaned_dates.append({
+                "date": date,
+                "kept": keep['id'],
+                "deleted": delete_ids,
+                "deleted_count": result.deleted_count
+            })
+    
+    return {
+        "user_id": user_id,
+        "total_deleted": deleted_count,
+        "dates_cleaned": cleaned_dates,
+        "message": f"Removed {deleted_count} duplicate activities"
+    }
+
 # Leaderboard
 @api_router.get("/leaderboard/{period}")
 async def get_leaderboard(period: str, current_user: dict = Depends(get_current_user), user_date: str = None):
