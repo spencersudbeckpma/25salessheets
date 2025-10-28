@@ -110,6 +110,10 @@ const Dashboard = ({ user, setUser }) => {
           <TabsContent value="leaderboard" data-testid="leaderboard-content" className="mt-4 md:mt-6">
             <Leaderboard user={user} />
           </TabsContent>
+
+          <TabsContent value="admin" data-testid="admin-content" className="mt-4 md:mt-6">
+            <AdminCleanup user={user} />
+          </TabsContent>
         </Tabs>
       </div>
     </div>
