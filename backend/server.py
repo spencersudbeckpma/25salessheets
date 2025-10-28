@@ -564,10 +564,16 @@ async def remove_user(user_id: str, current_user: dict = Depends(get_current_use
 
 # Leaderboard
 @api_router.get("/leaderboard/{period}")
-async def get_leaderboard(period: str, current_user: dict = Depends(get_current_user)):
+async def get_leaderboard(period: str, current_user: dict = Depends(get_current_user), user_date: str = None):
     from datetime import timedelta
+    from pytz import timezone as pytz_timezone
     
-    today = datetime.now(timezone.utc).date()
+    # Use Central Time if no date provided
+    central_tz = pytz_timezone('America/Chicago')
+    if user_date:
+        today = datetime.strptime(user_date, '%Y-%m-%d').date()
+    else:
+        today = datetime.now(central_tz).date()
     
     if period == "weekly":
         start_date = today - timedelta(days=today.weekday())
