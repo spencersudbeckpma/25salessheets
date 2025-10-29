@@ -12,12 +12,21 @@ const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
 
 const TeamManagement = ({ user }) => {
+  // Get today's date in local timezone
+  const getLocalDate = () => {
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = String(now.getMonth() + 1).padStart(2, '0');
+    const day = String(now.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  };
+
   const [invites, setInvites] = useState([]);
   const [teamMembers, setTeamMembers] = useState([]);
   const [newInvite, setNewInvite] = useState({ name: '', email: '', role: '' });
   const [editMember, setEditMember] = useState(null);
   const [editActivity, setEditActivity] = useState(null);
-  const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
+  const [selectedDate, setSelectedDate] = useState(getLocalDate());
 
   useEffect(() => {
     fetchInvites();
