@@ -179,7 +179,13 @@ const TeamView = ({ user }) => {
                 onClick={() => viewMemberDetails(node)}
                 className="mt-3 text-sm text-blue-600 hover:text-blue-800 font-medium"
               >
-                {isSelected ? '▼ Hide Details' : '▶ View Daily Breakdown'}
+                {isSelected 
+                  ? '▼ Hide Details' 
+                  : period === 'daily' 
+                    ? '▶ View Today\'s Activity' 
+                    : period === 'weekly'
+                      ? '▶ View Week Breakdown'
+                      : '▶ View Activity History'}
               </button>
             </div>
           </div>
