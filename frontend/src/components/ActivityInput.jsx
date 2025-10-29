@@ -152,13 +152,25 @@ const ActivityInput = ({ user }) => {
                 type="number"
                 min="0"
                 step={cat.key === 'premium' ? '0.01' : cat.key === 'presentations' ? '0.5' : '1'}
-                value={activity[cat.key]}
+                value={activity[cat.key] === 0 ? '' : activity[cat.key]}
                 onChange={(e) => {
                   const value = e.target.value;
-                  // Parse the value properly, handling empty strings and leading zeros
-                  const parsed = value === '' ? 0 : parseFloat(value);
-                  setActivity({ ...activity, [cat.key]: isNaN(parsed) ? 0 : parsed });
+                  // Allow empty string, otherwise parse the number
+                  if (value === '') {
+                    setActivity({ ...activity, [cat.key]: 0 });
+                  } else {
+                    const parsed = parseFloat(value);
+                    setActivity({ ...activity, [cat.key]: isNaN(parsed) ? 0 : parsed });
+                  }
                 }}
+                onBlur={(e) => {
+                  // On blur, ensure we have a valid number
+                  const value = e.target.value;
+                  if (value === '' || isNaN(parseFloat(value))) {
+                    setActivity({ ...activity, [cat.key]: 0 });
+                  }
+                }}
+                placeholder="0"
                 className="w-full"
               />
             </div>
