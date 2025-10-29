@@ -188,14 +188,23 @@ const TeamView = ({ user }) => {
         {/* Expanded Details */}
         {isSelected && memberStats && (
           <div className="ml-6 mt-3 p-4 bg-blue-50 rounded-lg border border-blue-200" style={{ marginLeft: `${level * 24 + 24}px` }}>
-            <h4 className="font-semibold text-lg mb-3">Daily Activity Breakdown</h4>
+            <h4 className="font-semibold text-lg mb-3">
+              {period === 'daily' ? 'Daily Activity' : period === 'weekly' ? 'Weekly Breakdown' : 'Activity History'}
+            </h4>
             <div className="space-y-2 max-h-96 overflow-y-auto">
               {memberStats.length === 0 ? (
                 <div className="text-gray-500 text-center py-4">No activities recorded</div>
               ) : (
-                memberStats.slice(0, 10).map(activity => (
-                  <div key={activity.date} className="bg-white p-3 rounded shadow-sm">
-                    <div className="font-semibold text-sm mb-2">{activity.date}</div>
+                memberStats.map((activity, idx) => (
+                  <div 
+                    key={`${activity.date}-${idx}`} 
+                    className={`p-3 rounded shadow-sm ${
+                      activity.dayName === 'Total' ? 'bg-emerald-100 border-2 border-emerald-400' : 'bg-white'
+                    }`}
+                  >
+                    <div className="font-semibold text-sm mb-2">
+                      {activity.dayName ? `${activity.dayName} - ${activity.date}` : activity.date}
+                    </div>
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-2 text-xs">
                       <div>Contacts: <span className="font-semibold">{activity.contacts}</span></div>
                       <div>Appointments: <span className="font-semibold">{activity.appointments}</span></div>
@@ -204,7 +213,7 @@ const TeamView = ({ user }) => {
                       <div>Testimonials: <span className="font-semibold">{activity.testimonials}</span></div>
                       <div>Sales: <span className="font-semibold">{activity.sales}</span></div>
                       <div>New Face: <span className="font-semibold">{activity.new_face_sold}</span></div>
-                      <div>Premium: <span className="font-semibold">${activity.premium}</span></div>
+                      <div>Premium: <span className="font-semibold">${typeof activity.premium === 'number' ? activity.premium.toFixed(2) : activity.premium}</span></div>
                     </div>
                   </div>
                 ))
