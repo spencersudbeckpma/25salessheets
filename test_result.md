@@ -101,3 +101,74 @@
 #====================================================================================================
 # Testing Data - Main Agent and testing sub agent both should log testing data below this section
 #====================================================================================================
+
+user_problem_statement: "CRM Sales Tracker with hierarchical team management. User requested: (A) Daily period should show individual's stats for that specific day, (B) Weekly period should show breakdown of each day within the week for each person plus weekly total, (C) Fix the aggregate rollup calculation at the top showing 0 values despite team members having data."
+
+backend:
+  - task: "Team hierarchy API with period-based aggregation"
+    implemented: true
+    working: true
+    file: "/app/backend/server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+      - working: true
+        agent: "main"
+        comment: "Backend hierarchy endpoint correctly calculates rolled-up stats including own stats + all subordinates. No changes needed to backend."
+
+frontend:
+  - task: "Team View - Add aggregate summary at top"
+    implemented: true
+    working: "NA"
+    file: "/app/frontend/src/components/TeamView.jsx"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+      - working: "NA"
+        agent: "main"
+        comment: "Added aggregate summary card at top of Team View showing team totals for contacts, appointments, presentations, and total premium. This fixes the issue where user saw 0 values at the top."
+
+  - task: "Team View - Daily period shows individual's daily stats"
+    implemented: true
+    working: "NA"
+    file: "/app/frontend/src/components/TeamView.jsx"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+      - working: "NA"
+        agent: "main"
+        comment: "Modified fetchMemberStats to filter activities for today's date only when Daily period is selected. Shows single day's activity when user clicks 'View Today's Activity'."
+
+  - task: "Team View - Weekly period shows day-by-day breakdown with total"
+    implemented: true
+    working: "NA"
+    file: "/app/frontend/src/components/TeamView.jsx"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+      - working: "NA"
+        agent: "main"
+        comment: "Modified fetchMemberStats to generate 7-day breakdown (Mon-Sun) when Weekly period is selected. Includes individual day stats plus a highlighted weekly total row. Button text changes to 'View Week Breakdown' for clarity."
+
+metadata:
+  created_by: "main_agent"
+  version: "1.0"
+  test_sequence: 1
+  run_ui: true
+
+test_plan:
+  current_focus:
+    - "Team View - Add aggregate summary at top"
+    - "Team View - Daily period shows individual's daily stats"
+    - "Team View - Weekly period shows day-by-day breakdown with total"
+  stuck_tasks: []
+  test_all: false
+  test_priority: "high_first"
+
+agent_communication:
+  - agent: "main"
+    message: "Implemented three key features in TeamView.jsx: 1) Added aggregate summary card at top showing rolled-up team totals to fix the 0 values issue, 2) Daily period now filters to show only today's activity for selected member, 3) Weekly period now shows Mon-Sun breakdown with highlighted weekly total. All changes applied to frontend. Backend was already working correctly. Please test the Team View component with focus on: logging in, navigating to Team View tab, testing Daily/Weekly period toggles, expanding individual team members to see breakdowns, and verifying aggregate totals at the top match the sum of team members."
