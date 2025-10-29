@@ -132,9 +132,22 @@ const TeamManagement = ({ user }) => {
   const handleSaveTeamActivity = async () => {
     try {
       const token = localStorage.getItem('token');
+      
+      // Clean and parse all values before sending
+      const cleanedActivity = {
+        contacts: parseInt(editActivity.contacts) || 0,
+        appointments: parseInt(editActivity.appointments) || 0,
+        presentations: parseFloat(editActivity.presentations) || 0,
+        referrals: parseInt(editActivity.referrals) || 0,
+        testimonials: parseInt(editActivity.testimonials) || 0,
+        sales: parseInt(editActivity.sales) || 0,
+        new_face_sold: parseInt(editActivity.new_face_sold) || 0,
+        premium: parseFloat(editActivity.premium) || 0
+      };
+      
       await axios.put(`${API}/users/${editMember}/activities/${selectedDate}`, {
         date: selectedDate,
-        ...editActivity
+        ...cleanedActivity
       }, {
         headers: { Authorization: `Bearer ${token}` }
       });
