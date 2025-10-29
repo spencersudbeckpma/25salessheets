@@ -157,22 +157,22 @@ const TeamView = ({ user }) => {
                   <div className="text-xs text-gray-500 truncate">{node.email}</div>
                 </div>
               </div>
-              <div className="mt-4 grid grid-cols-2 md:grid-cols-4 gap-2 text-sm">
-                <div className="bg-blue-50 p-2 rounded" data-testid={`member-contacts-${node.id}`}>
-                  <div className="font-semibold text-base">{node.stats.contacts}</div>
-                  <div className="text-xs text-gray-600">Contacts</div>
+              <div className="mt-4 grid grid-cols-2 md:grid-cols-4 gap-3 text-sm">
+                <div className="bg-gradient-to-br from-blue-50 to-blue-100 p-3 rounded-lg border border-blue-200" data-testid={`member-contacts-${node.id}`}>
+                  <div className="text-xs text-blue-600 mb-1">Contacts</div>
+                  <div className="font-bold text-2xl text-blue-700">{node.stats.contacts}</div>
                 </div>
-                <div className="bg-green-50 p-2 rounded" data-testid={`member-appointments-${node.id}`}>
-                  <div className="font-semibold text-base">{node.stats.appointments}</div>
-                  <div className="text-xs text-gray-600">Appointments</div>
+                <div className="bg-gradient-to-br from-green-50 to-green-100 p-3 rounded-lg border border-green-200" data-testid={`member-appointments-${node.id}`}>
+                  <div className="text-xs text-green-600 mb-1">Appointments</div>
+                  <div className="font-bold text-2xl text-green-700">{node.stats.appointments}</div>
                 </div>
-                <div className="bg-purple-50 p-2 rounded" data-testid={`member-presentations-${node.id}`}>
-                  <div className="font-semibold text-base">{node.stats.presentations}</div>
-                  <div className="text-xs text-gray-600">Presentations</div>
+                <div className="bg-gradient-to-br from-purple-50 to-purple-100 p-3 rounded-lg border border-purple-200" data-testid={`member-presentations-${node.id}`}>
+                  <div className="text-xs text-purple-600 mb-1">Presentations</div>
+                  <div className="font-bold text-2xl text-purple-700">{node.stats.presentations}</div>
                 </div>
-                <div className="bg-emerald-50 p-2 rounded" data-testid={`member-premium-${node.id}`}>
-                  <div className="font-semibold text-base">${node.stats.premium.toFixed(2)}</div>
-                  <div className="text-xs text-gray-600">Total Premium</div>
+                <div className="bg-gradient-to-br from-emerald-50 to-emerald-100 p-3 rounded-lg border border-emerald-200" data-testid={`member-premium-${node.id}`}>
+                  <div className="text-xs text-emerald-600 mb-1">Total Premium</div>
+                  <div className="font-bold text-2xl text-emerald-700">${node.stats.premium.toFixed(2)}</div>
                 </div>
               </div>
               
