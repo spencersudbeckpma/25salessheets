@@ -143,8 +143,23 @@ const StatsView = ({ user }) => {
                             data-testid={`edit-${key}-input`}
                             min="0"
                             step={key === 'premium' ? '0.01' : key === 'presentations' ? '0.5' : '1'}
-                            value={editingActivity[key]}
-                            onChange={(e) => setEditingActivity({ ...editingActivity, [key]: parseFloat(e.target.value) || 0 })}
+                            value={editingActivity[key] === 0 ? '' : editingActivity[key]}
+                            onChange={(e) => {
+                              const value = e.target.value;
+                              if (value === '') {
+                                setEditingActivity({ ...editingActivity, [key]: 0 });
+                              } else {
+                                const parsed = parseFloat(value);
+                                setEditingActivity({ ...editingActivity, [key]: isNaN(parsed) ? 0 : parsed });
+                              }
+                            }}
+                            onBlur={(e) => {
+                              const value = e.target.value;
+                              if (value === '' || isNaN(parseFloat(value))) {
+                                setEditingActivity({ ...editingActivity, [key]: 0 });
+                              }
+                            }}
+                            placeholder="0"
                             className="mt-1"
                           />
                         </div>
