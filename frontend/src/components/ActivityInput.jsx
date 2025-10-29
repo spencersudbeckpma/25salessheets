@@ -76,9 +76,22 @@ const ActivityInput = ({ user }) => {
     setLoading(true);
     try {
       const token = localStorage.getItem('token');
+      
+      // Clean and parse all values before sending
+      const cleanedActivity = {
+        contacts: parseInt(activity.contacts) || 0,
+        appointments: parseInt(activity.appointments) || 0,
+        presentations: parseFloat(activity.presentations) || 0,
+        referrals: parseInt(activity.referrals) || 0,
+        testimonials: parseInt(activity.testimonials) || 0,
+        sales: parseInt(activity.sales) || 0,
+        new_face_sold: parseInt(activity.new_face_sold) || 0,
+        premium: parseFloat(activity.premium) || 0
+      };
+      
       await axios.put(`${API}/activities/${selectedDate}`, {
         date: selectedDate,
-        ...activity
+        ...cleanedActivity
       }, {
         headers: { Authorization: `Bearer ${token}` }
       });
