@@ -42,7 +42,66 @@ const TeamView = ({ user }) => {
       const response = await axios.get(`${API}/users/${memberId}/activities`, {
         headers: { Authorization: `Bearer ${token}` }
       });
-      setMemberStats(response.data);
+      
+      // Process activities based on period
+      const activities = response.data;
+      let processedStats = null;
+      
+      if (period === 'daily') {
+        // Show today's activity only
+        const today = new Date().toISOString().split('T')[0];
+        const todayActivity = activities.find(a => a.date === today);
+        processedStats = todayActivity ? [todayActivity] : [];
+      } else if (period === 'weekly') {
+        // Show breakdown by day for the current week
+        const today = new Date();
+        const monday = new Date(today);
+        monday.setDate(today.getDate() - today.getDay() + 1); // Get Monday
+        
+        const weekActivities = [];
+        const daysOfWeek = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+        
+        for (let i = 0; i < 7; i++) {
+          const currentDay = new Date(monday);
+          currentDay.setDate(monday.getDate() + i);
+          const dateStr = currentDay.toISOString().split('T')[0];
+          
+          const dayActivity = activities.find(a => a.date === dateStr);
+          weekActivities.push({
+            date: dateStr,
+            dayName: daysOfWeek[i],
+            contacts: dayActivity?.contacts || 0,
+            appointments: dayActivity?.appointments || 0,
+            presentations: dayActivity?.presentations || 0,
+            referrals: dayActivity?.referrals || 0,
+            testimonials: dayActivity?.testimonials || 0,
+            sales: dayActivity?.sales || 0,
+            new_face_sold: dayActivity?.new_face_sold || 0,
+            premium: dayActivity?.premium || 0
+          });
+        }
+        
+        // Calculate weekly total
+        const weekTotal = {
+          date: 'Week Total',
+          dayName: 'Total',
+          contacts: weekActivities.reduce((sum, a) => sum + a.contacts, 0),
+          appointments: weekActivities.reduce((sum, a) => sum + a.appointments, 0),
+          presentations: weekActivities.reduce((sum, a) => sum + a.presentations, 0),
+          referrals: weekActivities.reduce((sum, a) => sum + a.referrals, 0),
+          testimonials: weekActivities.reduce((sum, a) => sum + a.testimonials, 0),
+          sales: weekActivities.reduce((sum, a) => sum + a.sales, 0),
+          new_face_sold: weekActivities.reduce((sum, a) => sum + a.new_face_sold, 0),
+          premium: weekActivities.reduce((sum, a) => sum + a.premium, 0)
+        };
+        
+        processedStats = [...weekActivities, weekTotal];
+      } else {
+        // For monthly/yearly, show all activities
+        processedStats = activities.slice(0, 20);
+      }
+      
+      setMemberStats(processedStats);
     } catch (error) {
       toast.error('Failed to fetch member details');
     }
