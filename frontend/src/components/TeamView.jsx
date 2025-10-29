@@ -17,6 +17,8 @@ const TeamView = ({ user }) => {
   const [memberStats, setMemberStats] = useState(null);
 
   useEffect(() => {
+    setSelectedMember(null);
+    setMemberStats(null);
     fetchHierarchy();
   }, [period]);
 
