@@ -83,8 +83,12 @@ const ActivityInput = ({ user }) => {
         headers: { Authorization: `Bearer ${token}` }
       });
       toast.success('Activity saved successfully!');
+      // Refresh the activity to show updated data
+      fetchActivity();
     } catch (error) {
-      toast.error('Failed to save activity');
+      console.error('Save error:', error);
+      const errorMessage = error.response?.data?.detail || error.message || 'Failed to save activity';
+      toast.error(errorMessage);
     } finally {
       setLoading(false);
     }
