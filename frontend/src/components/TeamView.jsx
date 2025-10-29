@@ -13,6 +13,8 @@ const TeamView = ({ user }) => {
   const [loading, setLoading] = useState(true);
   const [expandedNodes, setExpandedNodes] = useState({});
   const [period, setPeriod] = useState('weekly');
+  const [selectedMember, setSelectedMember] = useState(null);
+  const [memberStats, setMemberStats] = useState(null);
 
   useEffect(() => {
     fetchHierarchy();
@@ -34,8 +36,30 @@ const TeamView = ({ user }) => {
     }
   };
 
+  const fetchMemberStats = async (memberId) => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await axios.get(`${API}/users/${memberId}/activities`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      setMemberStats(response.data);
+    } catch (error) {
+      toast.error('Failed to fetch member details');
+    }
+  };
+
   const toggleNode = (nodeId) => {
     setExpandedNodes(prev => ({ ...prev, [nodeId]: !prev[nodeId] }));
+  };
+
+  const viewMemberDetails = (member) => {
+    if (selectedMember?.id === member.id) {
+      setSelectedMember(null);
+      setMemberStats(null);
+    } else {
+      setSelectedMember(member);
+      fetchMemberStats(member.id);
+    }
   };
 
   const renderNode = (node, level = 0) => {
