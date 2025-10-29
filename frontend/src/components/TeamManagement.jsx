@@ -278,7 +278,7 @@ const TeamManagement = ({ user }) => {
                     data-testid="edit-date-input"
                     type="date"
                     value={selectedDate}
-                    max={new Date().toISOString().split('T')[0]}
+                    max={getLocalDate()}
                     onChange={(e) => {
                       setSelectedDate(e.target.value);
                       fetchMemberActivity(editMember, e.target.value);
