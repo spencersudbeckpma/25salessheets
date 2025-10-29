@@ -287,24 +287,27 @@ const TeamView = ({ user }) => {
       <CardContent className="pt-2">
         {/* Aggregate Summary at Top */}
         {hierarchy && (
-          <div className="mb-6 p-4 bg-gradient-to-r from-blue-100 to-emerald-100 rounded-lg border-2 border-blue-300">
-            <h3 className="font-semibold text-lg mb-3">Team Total ({period.charAt(0).toUpperCase() + period.slice(1)})</h3>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-              <div className="bg-white p-3 rounded shadow">
-                <div className="font-bold text-xl">{hierarchy.stats.contacts}</div>
-                <div className="text-xs text-gray-600">Contacts</div>
+          <div className="mb-6 p-6 bg-gradient-to-br from-slate-800 to-slate-900 rounded-xl border border-slate-700 shadow-xl">
+            <h3 className="font-bold text-xl mb-4 text-white flex items-center gap-2">
+              <span className="text-2xl">📊</span>
+              Team Total ({period.charAt(0).toUpperCase() + period.slice(1)})
+            </h3>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <div className="bg-gradient-to-br from-blue-500 to-blue-600 p-4 rounded-lg shadow-lg hover:shadow-xl transition-shadow">
+                <div className="text-xs text-blue-100 mb-1">Contacts</div>
+                <div className="font-bold text-3xl text-white">{hierarchy.stats.contacts}</div>
               </div>
-              <div className="bg-white p-3 rounded shadow">
-                <div className="font-bold text-xl">{hierarchy.stats.appointments}</div>
-                <div className="text-xs text-gray-600">Appointments</div>
+              <div className="bg-gradient-to-br from-green-500 to-green-600 p-4 rounded-lg shadow-lg hover:shadow-xl transition-shadow">
+                <div className="text-xs text-green-100 mb-1">Appointments</div>
+                <div className="font-bold text-3xl text-white">{hierarchy.stats.appointments}</div>
               </div>
-              <div className="bg-white p-3 rounded shadow">
-                <div className="font-bold text-xl">{hierarchy.stats.presentations}</div>
-                <div className="text-xs text-gray-600">Presentations</div>
+              <div className="bg-gradient-to-br from-purple-500 to-purple-600 p-4 rounded-lg shadow-lg hover:shadow-xl transition-shadow">
+                <div className="text-xs text-purple-100 mb-1">Presentations</div>
+                <div className="font-bold text-3xl text-white">{hierarchy.stats.presentations}</div>
               </div>
-              <div className="bg-white p-3 rounded shadow">
-                <div className="font-bold text-xl">${hierarchy.stats.premium.toFixed(2)}</div>
-                <div className="text-xs text-gray-600">Total Premium</div>
+              <div className="bg-gradient-to-br from-emerald-500 to-emerald-600 p-4 rounded-lg shadow-lg hover:shadow-xl transition-shadow">
+                <div className="text-xs text-emerald-100 mb-1">Total Premium</div>
+                <div className="font-bold text-3xl text-white">${hierarchy.stats.premium.toFixed(2)}</div>
               </div>
             </div>
           </div>
