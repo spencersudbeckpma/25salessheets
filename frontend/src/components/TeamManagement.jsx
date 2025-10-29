@@ -315,8 +315,23 @@ const TeamManagement = ({ user }) => {
                             type="number"
                             min="0"
                             step={key === 'premium' ? '0.01' : key === 'presentations' ? '0.5' : '1'}
-                            value={editActivity[key]}
-                            onChange={(e) => setEditActivity({ ...editActivity, [key]: parseFloat(e.target.value) || 0 })}
+                            value={editActivity[key] === 0 ? '' : editActivity[key]}
+                            onChange={(e) => {
+                              const value = e.target.value;
+                              if (value === '') {
+                                setEditActivity({ ...editActivity, [key]: 0 });
+                              } else {
+                                const parsed = parseFloat(value);
+                                setEditActivity({ ...editActivity, [key]: isNaN(parsed) ? 0 : parsed });
+                              }
+                            }}
+                            onBlur={(e) => {
+                              const value = e.target.value;
+                              if (value === '' || isNaN(parseFloat(value))) {
+                                setEditActivity({ ...editActivity, [key]: 0 });
+                              }
+                            }}
+                            placeholder="0"
                             className="mt-1"
                           />
                         </div>
