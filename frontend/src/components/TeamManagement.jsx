@@ -142,7 +142,9 @@ const TeamManagement = ({ user }) => {
       // Refresh the activity data to show the updated values
       await fetchMemberActivity(editMember, selectedDate);
     } catch (error) {
-      toast.error('Failed to update activity');
+      console.error('Update error:', error);
+      const errorMessage = error.response?.data?.detail || error.message || 'Failed to update activity';
+      toast.error(errorMessage);
     }
   };
 
