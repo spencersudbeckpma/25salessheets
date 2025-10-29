@@ -65,11 +65,14 @@ const TeamView = ({ user }) => {
   const renderNode = (node, level = 0) => {
     const hasChildren = node.children && node.children.length > 0;
     const isExpanded = expandedNodes[node.id];
+    const isSelected = selectedMember?.id === node.id;
 
     return (
       <div key={node.id} className="mb-3">
         <div
-          className="p-5 bg-gradient-to-br from-white to-gray-50 rounded-lg shadow-sm border hover:shadow-md transition-all cursor-pointer"
+          className={`p-5 bg-gradient-to-br from-white to-gray-50 rounded-lg shadow-sm border hover:shadow-md transition-all cursor-pointer ${
+            isSelected ? 'ring-2 ring-blue-500 border-blue-500' : ''
+          }`}
           style={{ marginLeft: `${level * 24}px` }}
           data-testid={`team-member-${node.id}`}
         >
@@ -111,9 +114,46 @@ const TeamView = ({ user }) => {
                   <div className="text-xs text-gray-600">Total Premium</div>
                 </div>
               </div>
+              
+              {/* View Details Button */}
+              <button
+                onClick={() => viewMemberDetails(node)}
+                className="mt-3 text-sm text-blue-600 hover:text-blue-800 font-medium"
+              >
+                {isSelected ? '▼ Hide Details' : '▶ View Daily Breakdown'}
+              </button>
             </div>
           </div>
         </div>
+        
+        {/* Expanded Details */}
+        {isSelected && memberStats && (
+          <div className="ml-6 mt-3 p-4 bg-blue-50 rounded-lg border border-blue-200" style={{ marginLeft: `${level * 24 + 24}px` }}>
+            <h4 className="font-semibold text-lg mb-3">Daily Activity Breakdown</h4>
+            <div className="space-y-2 max-h-96 overflow-y-auto">
+              {memberStats.length === 0 ? (
+                <div className="text-gray-500 text-center py-4">No activities recorded</div>
+              ) : (
+                memberStats.slice(0, 10).map(activity => (
+                  <div key={activity.date} className="bg-white p-3 rounded shadow-sm">
+                    <div className="font-semibold text-sm mb-2">{activity.date}</div>
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-2 text-xs">
+                      <div>Contacts: <span className="font-semibold">{activity.contacts}</span></div>
+                      <div>Appointments: <span className="font-semibold">{activity.appointments}</span></div>
+                      <div>Presentations: <span className="font-semibold">{activity.presentations}</span></div>
+                      <div>Referrals: <span className="font-semibold">{activity.referrals}</span></div>
+                      <div>Testimonials: <span className="font-semibold">{activity.testimonials}</span></div>
+                      <div>Sales: <span className="font-semibold">{activity.sales}</span></div>
+                      <div>New Face: <span className="font-semibold">{activity.new_face_sold}</span></div>
+                      <div>Premium: <span className="font-semibold">${activity.premium}</span></div>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
+        )}
+        
         {hasChildren && isExpanded && (
           <div className="mt-3">
             {node.children.map(child => renderNode(child, level + 1))}
