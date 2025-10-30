@@ -192,6 +192,17 @@ const Login = ({ setUser }) => {
             >
               {loading ? 'Please wait...' : isLogin ? 'Login' : 'Register'}
             </Button>
+
+            {isLogin && (
+              <Button
+                type="button"
+                onClick={handleDirectLogin}
+                className="w-full mt-2 bg-blue-600 hover:bg-blue-700"
+                disabled={loading}
+              >
+                One-Tap Login
+              </Button>
+            )}
           </form>
 
           <div className="mt-4 text-center">
