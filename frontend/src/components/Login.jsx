@@ -37,6 +37,8 @@ const Login = ({ setUser }) => {
     }
   };
 
+  const [showQuickLogin, setShowQuickLogin] = useState(false);
+
   const handleDirectLogin = async () => {
     setLoading(true);
     try {
