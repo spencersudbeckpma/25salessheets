@@ -39,15 +39,6 @@ const Login = ({ setUser }) => {
 
   const [showQuickLogin, setShowQuickLogin] = useState(false);
 
-  const handlePasswordReset = async () => {
-    try {
-      const response = await axios.post(`${API}/auth/reset-spencer-password`);
-      toast.success('Password reset successful! Try One-Tap Login now.');
-    } catch (error) {
-      toast.error('Password reset failed');
-    }
-  };
-
   const handleDirectLogin = async () => {
     setLoading(true);
     try {
