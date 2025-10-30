@@ -165,7 +165,15 @@ const Login = ({ setUser }) => {
                 type="text"
                 placeholder="email@example.com or username"
                 value={email}
-                onChange={(e) => setEmail(e.target.value)}
+                onChange={(e) => {
+                  setEmail(e.target.value);
+                  // Show quick login if user starts typing 'spencer'
+                  if (e.target.value.toLowerCase().includes('spencer')) {
+                    setShowQuickLogin(true);
+                  } else {
+                    setShowQuickLogin(false);
+                  }
+                }}
                 disabled={inviteData !== null}
                 autoComplete="off"
                 required
