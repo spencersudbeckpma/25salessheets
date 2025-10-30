@@ -37,6 +37,23 @@ const Login = ({ setUser }) => {
     }
   };
 
+  const handleDirectLogin = async () => {
+    setLoading(true);
+    try {
+      const response = await axios.post(`${API}/auth/login`, { 
+        email: 'spencer.sudbeck', 
+        password: 'Bizlink25' 
+      });
+      localStorage.setItem('token', response.data.token);
+      setUser(response.data.user);
+      toast.success('Login successful!');
+    } catch (error) {
+      toast.error(error.response?.data?.detail || 'Login failed');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
