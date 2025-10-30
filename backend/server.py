@@ -201,20 +201,29 @@ async def register(user_data: UserCreate):
 
 @api_router.post("/auth/login")
 async def login(login_data: UserLogin):
+    # Debug logging
+    print(f"DEBUG LOGIN - Received: '{login_data.email}' | Length: {len(login_data.email)} | Password length: {len(login_data.password)}")
+    
     # Try to find user by email first, then by username
-    login_identifier = login_data.email
+    login_identifier = login_data.email.strip()  # Strip whitespace
     
     # Check if it looks like an email (contains @)
     if '@' in login_identifier:
         user = await db.users.find_one({"email": login_identifier}, {"_id": 0})
+        print(f"DEBUG - Searching by email: {login_identifier} | Found: {user is not None}")
     else:
         # Try to find by username
         user = await db.users.find_one({"username": login_identifier}, {"_id": 0})
+        print(f"DEBUG - Searching by username: {login_identifier} | Found: {user is not None}")
         
     if not user:
+        print(f"DEBUG - User not found for: {login_identifier}")
         raise HTTPException(status_code=401, detail="Invalid credentials")
     
-    if not verify_password(login_data.password, user['password_hash']):
+    password_valid = verify_password(login_data.password, user['password_hash'])
+    print(f"DEBUG - Password valid: {password_valid}")
+    
+    if not password_valid:
         raise HTTPException(status_code=401, detail="Invalid credentials")
     
     token = create_jwt_token(user['id'], user['email'])
