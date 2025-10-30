@@ -43,6 +43,8 @@ const Login = ({ setUser }) => {
 
     try {
       if (isLogin) {
+        // Debug logging
+        console.log('Login attempt with:', { email, passwordLength: password.length });
         const response = await axios.post(`${API}/auth/login`, { email, password });
         localStorage.setItem('token', response.data.token);
         setUser(response.data.user);
