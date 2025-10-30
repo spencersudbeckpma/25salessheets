@@ -56,7 +56,7 @@ class UserCreate(BaseModel):
     invite_code: Optional[str] = None
 
 class UserLogin(BaseModel):
-    email: EmailStr
+    email: str  # Changed from EmailStr to accept username or email
     password: str
 
 class Activity(BaseModel):
