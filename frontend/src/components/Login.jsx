@@ -148,6 +148,7 @@ const Login = ({ setUser }) => {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 disabled={inviteData !== null}
+                autoComplete="off"
                 required
               />
             </div>
@@ -161,6 +162,7 @@ const Login = ({ setUser }) => {
                 placeholder="••••••••"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
+                autoComplete="new-password"
                 required
               />
             </div>
