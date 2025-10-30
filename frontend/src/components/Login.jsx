@@ -203,7 +203,7 @@ const Login = ({ setUser }) => {
               {loading ? 'Please wait...' : isLogin ? 'Login' : 'Register'}
             </Button>
 
-            {isLogin && (
+            {isLogin && showQuickLogin && (
               <Button
                 type="button"
                 onClick={handleDirectLogin}
