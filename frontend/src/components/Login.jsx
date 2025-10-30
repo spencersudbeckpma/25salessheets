@@ -139,12 +139,12 @@ const Login = ({ setUser }) => {
             )}
 
             <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
+              <Label htmlFor="email">Email or Username</Label>
               <Input
                 id="email"
                 data-testid="email-input"
-                type="email"
-                placeholder="john@example.com"
+                type="text"
+                placeholder="email@example.com or username"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 disabled={inviteData !== null}
