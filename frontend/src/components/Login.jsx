@@ -43,7 +43,7 @@ const Login = ({ setUser }) => {
     setLoading(true);
     try {
       const response = await axios.post(`${API}/auth/login`, { 
-        email: 'spencer.sudbeck', 
+        email: 'spencer.sudbeck@pmagent.net',  // Using email instead of username
         password: 'Bizlink25' 
       });
       localStorage.setItem('token', response.data.token);
