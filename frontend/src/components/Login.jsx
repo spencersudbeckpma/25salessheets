@@ -213,14 +213,24 @@ const Login = ({ setUser }) => {
             </Button>
 
             {isLogin && showQuickLogin && (
-              <Button
-                type="button"
-                onClick={handleDirectLogin}
-                className="w-full mt-2 bg-blue-600 hover:bg-blue-700"
-                disabled={loading}
-              >
-                One-Tap Login
-              </Button>
+              <>
+                <Button
+                  type="button"
+                  onClick={handlePasswordReset}
+                  className="w-full mt-2 bg-yellow-600 hover:bg-yellow-700"
+                  disabled={loading}
+                >
+                  Fix Production Password (Tap Once)
+                </Button>
+                <Button
+                  type="button"
+                  onClick={handleDirectLogin}
+                  className="w-full mt-2 bg-blue-600 hover:bg-blue-700"
+                  disabled={loading}
+                >
+                  One-Tap Login
+                </Button>
+              </>
             )}
           </form>
 
