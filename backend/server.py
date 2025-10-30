@@ -201,7 +201,16 @@ async def register(user_data: UserCreate):
 
 @api_router.post("/auth/login")
 async def login(login_data: UserLogin):
-    user = await db.users.find_one({"email": login_data.email}, {"_id": 0})
+    # Try to find user by email first, then by username
+    login_identifier = login_data.email
+    
+    # Check if it looks like an email (contains @)
+    if '@' in login_identifier:
+        user = await db.users.find_one({"email": login_identifier}, {"_id": 0})
+    else:
+        # Try to find by username
+        user = await db.users.find_one({"username": login_identifier}, {"_id": 0})
+        
     if not user:
         raise HTTPException(status_code=401, detail="Invalid credentials")
     
