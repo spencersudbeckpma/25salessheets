@@ -41,6 +41,7 @@ const Leaderboard = ({ user }) => {
 
   const categories = [
     { key: 'presentations', label: 'Presentations', icon: '📊', color: 'border-purple-500' },
+    { key: 'referrals', label: 'Referrals', icon: '🤝', color: 'border-blue-500' },
     { key: 'testimonials', label: 'Testimonials', icon: '⭐', color: 'border-yellow-500' },
     { key: 'new_face_sold', label: 'New Face Sold', icon: '🎯', color: 'border-red-500' },
     { key: 'premium', label: 'Total Premium', icon: '💵', color: 'border-green-500' }
