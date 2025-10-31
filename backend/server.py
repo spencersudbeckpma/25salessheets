@@ -818,11 +818,13 @@ async def get_leaderboard(period: str, current_user: dict = Depends(get_current_
                 "user_id": uid,
                 "name": user_dict.get(uid, {}).get('name', 'Unknown'),
                 "presentations": 0,
+                "referrals": 0,
                 "testimonials": 0,
                 "new_face_sold": 0,
                 "premium": 0.0
             }
         user_stats[uid]['presentations'] += activity['presentations']
+        user_stats[uid]['referrals'] += activity['referrals']
         user_stats[uid]['testimonials'] += activity['testimonials']
         user_stats[uid]['new_face_sold'] += activity['new_face_sold']
         user_stats[uid]['premium'] += activity['premium']
@@ -830,6 +832,7 @@ async def get_leaderboard(period: str, current_user: dict = Depends(get_current_
     # Create leaderboards for each category - Top 5 from ENTIRE organization
     leaderboard = {
         "presentations": sorted(user_stats.values(), key=lambda x: x['presentations'], reverse=True)[:5],
+        "referrals": sorted(user_stats.values(), key=lambda x: x['referrals'], reverse=True)[:5],
         "testimonials": sorted(user_stats.values(), key=lambda x: x['testimonials'], reverse=True)[:5],
         "new_face_sold": sorted(user_stats.values(), key=lambda x: x['new_face_sold'], reverse=True)[:5],
         "premium": sorted(user_stats.values(), key=lambda x: x['premium'], reverse=True)[:5]
