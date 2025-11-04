@@ -151,7 +151,11 @@ const ActivityInput = ({ user }) => {
                 data-testid={`${cat.key}-input`}
                 type="number"
                 min="0"
-                step={cat.key === 'premium' ? '0.01' : cat.key === 'presentations' ? '0.5' : '1'}
+                step={
+                  cat.key === 'premium' ? '0.01' : 
+                  (cat.key === 'presentations' || cat.key === 'contacts' || cat.key === 'appointments') ? '0.5' : 
+                  '1'
+                }
                 value={activity[cat.key] === 0 ? '' : activity[cat.key]}
                 onChange={(e) => {
                   const value = e.target.value;
