@@ -64,8 +64,8 @@ class Activity(BaseModel):
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
     user_id: str
     date: str  # YYYY-MM-DD format
-    contacts: int = 0
-    appointments: int = 0
+    contacts: float = 0.0
+    appointments: float = 0.0
     presentations: float = 0.0
     referrals: int = 0
     testimonials: int = 0
