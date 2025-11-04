@@ -78,8 +78,8 @@ class Activity(BaseModel):
 
 class ActivityCreate(BaseModel):
     date: str
-    contacts: int = 0
-    appointments: int = 0
+    contacts: float = 0.0
+    appointments: float = 0.0
     presentations: float = 0.0
     referrals: int = 0
     testimonials: int = 0
