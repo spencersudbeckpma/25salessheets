@@ -79,8 +79,8 @@ const ActivityInput = ({ user }) => {
       
       // Clean and parse all values before sending
       const cleanedActivity = {
-        contacts: parseInt(activity.contacts) || 0,
-        appointments: parseInt(activity.appointments) || 0,
+        contacts: parseFloat(activity.contacts) || 0,
+        appointments: parseFloat(activity.appointments) || 0,
         presentations: parseFloat(activity.presentations) || 0,
         referrals: parseInt(activity.referrals) || 0,
         testimonials: parseInt(activity.testimonials) || 0,
