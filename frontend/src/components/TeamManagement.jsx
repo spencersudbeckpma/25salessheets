@@ -135,8 +135,8 @@ const TeamManagement = ({ user }) => {
       
       // Clean and parse all values before sending
       const cleanedActivity = {
-        contacts: parseInt(editActivity.contacts) || 0,
-        appointments: parseInt(editActivity.appointments) || 0,
+        contacts: parseFloat(editActivity.contacts) || 0,
+        appointments: parseFloat(editActivity.appointments) || 0,
         presentations: parseFloat(editActivity.presentations) || 0,
         referrals: parseInt(editActivity.referrals) || 0,
         testimonials: parseInt(editActivity.testimonials) || 0,
