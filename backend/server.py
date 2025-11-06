@@ -391,12 +391,11 @@ async def get_my_stats(period: str, current_user: dict = Depends(get_current_use
     from datetime import timedelta
     from pytz import timezone as pytz_timezone
     
-    # Use Central Time if no date provided
-    central_tz = pytz_timezone('America/Chicago')
+    # Get today's date (use UTC to avoid timezone issues)
     if user_date:
         today = datetime.strptime(user_date, '%Y-%m-%d').date()
     else:
-        today = datetime.now(central_tz).date()
+        today = datetime.utcnow().date()
     
     if period == "daily":
         start_date = today
@@ -442,12 +441,11 @@ async def get_team_hierarchy(period: str, current_user: dict = Depends(get_curre
     from datetime import timedelta
     from pytz import timezone as pytz_timezone
     
-    # Use Central Time if no date provided
-    central_tz = pytz_timezone('America/Chicago')
+    # Get today's date (use UTC to avoid timezone issues)
     if user_date:
         today = datetime.strptime(user_date, '%Y-%m-%d').date()
     else:
-        today = datetime.now(central_tz).date()
+        today = datetime.utcnow().date()
     
     if period == "daily":
         start_date = today
@@ -765,12 +763,11 @@ async def get_leaderboard(period: str, current_user: dict = Depends(get_current_
     from datetime import timedelta
     from pytz import timezone as pytz_timezone
     
-    # Use Central Time if no date provided
-    central_tz = pytz_timezone('America/Chicago')
+    # Get today's date (use UTC to avoid timezone issues)
     if user_date:
         today = datetime.strptime(user_date, '%Y-%m-%d').date()
     else:
-        today = datetime.now(central_tz).date()
+        today = datetime.utcnow().date()
     
     if period == "daily":
         start_date = today
