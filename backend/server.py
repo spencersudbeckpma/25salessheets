@@ -389,7 +389,6 @@ async def get_team_member_activities(user_id: str, current_user: dict = Depends(
 @api_router.get("/stats/my/{period}")
 async def get_my_stats(period: str, current_user: dict = Depends(get_current_user), user_date: str = None):
     from datetime import timedelta
-    from pytz import timezone as pytz_timezone
     
     # Get today's date (use UTC to avoid timezone issues)
     if user_date:
@@ -439,7 +438,6 @@ async def get_team_members(current_user: dict = Depends(get_current_user)):
 @api_router.get("/team/hierarchy/{period}")
 async def get_team_hierarchy(period: str, current_user: dict = Depends(get_current_user), user_date: str = None):
     from datetime import timedelta
-    from pytz import timezone as pytz_timezone
     
     # Get today's date (use UTC to avoid timezone issues)
     if user_date:
@@ -761,7 +759,6 @@ async def delete_all_user_activities(user_id: str, current_user: dict = Depends(
 @api_router.get("/leaderboard/{period}")
 async def get_leaderboard(period: str, current_user: dict = Depends(get_current_user), user_date: str = None):
     from datetime import timedelta
-    from pytz import timezone as pytz_timezone
     
     # Get today's date (use UTC to avoid timezone issues)
     if user_date:
