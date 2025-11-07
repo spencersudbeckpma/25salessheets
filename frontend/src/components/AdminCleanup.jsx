@@ -127,17 +127,62 @@ const AdminCleanup = ({ user }) => {
         {/* Quick Actions */}
         <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
           <h3 className="font-semibold text-blue-900 mb-3">Quick Actions</h3>
-          <Button 
-            onClick={populateTodaysActivities} 
-            disabled={loading}
-            className="w-full bg-blue-600 hover:bg-blue-700"
-          >
-            📊 Populate Today's Activities (All Users)
-          </Button>
+          <div className="space-y-2">
+            <Button 
+              onClick={runDiagnostic} 
+              disabled={loading}
+              className="w-full bg-purple-600 hover:bg-purple-700"
+            >
+              🔍 Run Diagnostic (Check Database)
+            </Button>
+            <Button 
+              onClick={populateTodaysActivities} 
+              disabled={loading}
+              className="w-full bg-blue-600 hover:bg-blue-700"
+            >
+              📊 Populate Today's Activities (All Users)
+            </Button>
+          </div>
           <p className="text-xs text-gray-600 mt-2">
-            Adds sample activities for today to test rollup functionality. Run once after deployment.
+            Run diagnostic first to see database state, then populate if needed.
           </p>
         </div>
+
+        {/* Diagnostic Results */}
+        {diagnosticInfo && (
+          <div className="p-4 bg-green-50 border border-green-300 rounded-lg">
+            <h3 className="font-semibold text-green-900 mb-3">📋 Diagnostic Results</h3>
+            <div className="space-y-2 text-sm font-mono">
+              <div><strong>Database:</strong> {diagnosticInfo.database}</div>
+              <div><strong>Today's Date:</strong> {diagnosticInfo.today}</div>
+              <div><strong>Total Users:</strong> {diagnosticInfo.counts.total_users}</div>
+              <div><strong>Total Activities:</strong> {diagnosticInfo.counts.total_activities}</div>
+              <div className={diagnosticInfo.counts.activities_for_today > 0 ? 'text-green-700' : 'text-red-700'}>
+                <strong>Activities for TODAY:</strong> {diagnosticInfo.counts.activities_for_today}
+                {diagnosticInfo.counts.activities_for_today === 0 && ' ⚠️ NO DATA - Click Populate button above!'}
+              </div>
+              <hr className="my-2"/>
+              <div><strong>Your Name:</strong> {diagnosticInfo.current_user.name}</div>
+              <div><strong>Your Activities Today:</strong> {diagnosticInfo.current_user.activities_today}</div>
+              <div><strong>Your Subordinates:</strong> {diagnosticInfo.subordinates_count}</div>
+              {diagnosticInfo.subordinates.length > 0 && (
+                <div className="ml-4">
+                  {diagnosticInfo.subordinates.map((name, i) => (
+                    <div key={i}>- {name}</div>
+                  ))}
+                </div>
+              )}
+              {diagnosticInfo.current_user.today_data && (
+                <div className="mt-2 p-2 bg-white rounded">
+                  <strong>Your Today's Data:</strong>
+                  <div>Contacts: {diagnosticInfo.current_user.today_data.contacts}</div>
+                  <div>Appointments: {diagnosticInfo.current_user.today_data.appointments}</div>
+                  <div>Premium: ${diagnosticInfo.current_user.today_data.premium}</div>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
 
         {/* Search Section */}
         <div className="space-y-3">
