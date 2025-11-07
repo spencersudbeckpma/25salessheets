@@ -199,6 +199,46 @@ async def register(user_data: UserCreate):
         }
     }
 
+@api_router.get("/admin/diagnostic")
+async def diagnostic(current_user: dict = Depends(get_current_user)):
+    """Diagnostic endpoint to check database state"""
+    if current_user['role'] != 'state_manager':
+        raise HTTPException(status_code=403, detail="Admin access required")
+    
+    from datetime import date
+    today = date.today().isoformat()
+    
+    # Get counts
+    user_count = await db.users.count_documents({})
+    activity_count = await db.activities.count_documents({})
+    today_activity_count = await db.activities.count_documents({"date": today})
+    
+    # Get current user's activities
+    my_activities = await db.activities.find({"user_id": current_user['id']}).to_list(100)
+    my_today = [a for a in my_activities if a['date'] == today]
+    
+    # Get my subordinates
+    subordinates = await db.users.find({"manager_id": current_user['id']}, {"_id": 0, "name": 1, "id": 1}).to_list(100)
+    
+    return {
+        "database": os.getenv('DB_NAME', 'unknown'),
+        "today": today,
+        "counts": {
+            "total_users": user_count,
+            "total_activities": activity_count,
+            "activities_for_today": today_activity_count
+        },
+        "current_user": {
+            "name": current_user['name'],
+            "id": current_user['id'],
+            "total_activities": len(my_activities),
+            "activities_today": len(my_today),
+            "today_data": my_today[0] if my_today else None
+        },
+        "subordinates_count": len(subordinates),
+        "subordinates": [s['name'] for s in subordinates]
+    }
+
 @api_router.post("/admin/populate-todays-activities")
 async def populate_todays_activities(current_user: dict = Depends(get_current_user)):
     """
