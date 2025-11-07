@@ -15,6 +15,24 @@ const AdminCleanup = ({ user }) => {
   const [selectedUser, setSelectedUser] = useState(null);
   const [activities, setActivities] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [diagnosticInfo, setDiagnosticInfo] = useState(null);
+
+  const runDiagnostic = async () => {
+    setLoading(true);
+    try {
+      const token = localStorage.getItem('token');
+      const response = await axios.get(`${API}/admin/diagnostic`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      
+      setDiagnosticInfo(response.data);
+      toast.success('Diagnostic complete - check results below');
+    } catch (error) {
+      toast.error('Diagnostic failed: ' + (error.response?.data?.detail || error.message));
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const searchUsers = async () => {
     setLoading(true);
