@@ -79,13 +79,48 @@ const AdminCleanup = ({ user }) => {
     }
   };
 
+  const populateTodaysActivities = async () => {
+    if (!window.confirm('This will add sample activities for TODAY for all users. Continue?')) {
+      return;
+    }
+    
+    setLoading(true);
+    try {
+      const token = localStorage.getItem('token');
+      const response = await axios.post(`${API}/admin/populate-todays-activities`, {}, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      
+      toast.success(`✅ ${response.data.message}`);
+    } catch (error) {
+      toast.error(error.response?.data?.detail || 'Failed to populate activities');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <Card className="shadow-lg bg-white" data-testid="admin-cleanup-card">
       <CardHeader>
-        <CardTitle className="text-xl text-red-600">🛠️ Admin Cleanup Tool</CardTitle>
-        <p className="text-sm text-gray-600">Search for users and manage their activities</p>
+        <CardTitle className="text-xl text-red-600">🛠️ Admin Tools</CardTitle>
+        <p className="text-sm text-gray-600">Administrative functions and data management</p>
       </CardHeader>
       <CardContent className="space-y-6">
+        {/* Quick Actions */}
+        <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
+          <h3 className="font-semibold text-blue-900 mb-3">Quick Actions</h3>
+          <Button 
+            onClick={populateTodaysActivities} 
+            disabled={loading}
+            className="w-full bg-blue-600 hover:bg-blue-700"
+          >
+            📊 Populate Today's Activities (All Users)
+          </Button>
+          <p className="text-xs text-gray-600 mt-2">
+            Adds sample activities for today to test rollup functionality. Run once after deployment.
+          </p>
+        </div>
+
         {/* Search Section */}
         <div className="space-y-3">
           <Label htmlFor="search-name">Search User by Name</Label>
