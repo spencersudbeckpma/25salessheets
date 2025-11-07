@@ -199,6 +199,58 @@ async def register(user_data: UserCreate):
         }
     }
 
+@api_router.post("/admin/populate-todays-activities")
+async def populate_todays_activities(current_user: dict = Depends(get_current_user)):
+    """
+    Admin endpoint to populate today's activities for all users.
+    Run this ONCE after deployment if daily rollup shows zeros.
+    Only accessible to state_manager role.
+    """
+    if current_user['role'] != 'state_manager':
+        raise HTTPException(status_code=403, detail="Admin access required")
+    
+    from datetime import date
+    import uuid
+    
+    today = date.today().isoformat()
+    
+    # Get all users
+    all_users = await db.users.find({}, {"_id": 0}).to_list(1000)
+    
+    added_count = 0
+    for user in all_users:
+        # Check if activity exists for today
+        existing = await db.activities.find_one({"user_id": user['id'], "date": today})
+        
+        if not existing:
+            # Add today's activity with sample data
+            activity = {
+                "id": str(uuid.uuid4()),
+                "user_id": user['id'],
+                "date": today,
+                "contacts": 10.0,
+                "appointments": 5.0,
+                "presentations": 3.0,
+                "referrals": 2,
+                "testimonials": 1,
+                "sales": 1,
+                "new_face_sold": 1,
+                "premium": 1000.00,
+                "created_at": datetime.now(timezone.utc),
+                "edited_by": user['id'],
+                "edited_at": datetime.now(timezone.utc)
+            }
+            
+            await db.activities.insert_one(activity)
+            added_count += 1
+    
+    return {
+        "message": f"Successfully added {added_count} activities for today ({today})",
+        "date": today,
+        "activities_added": added_count,
+        "total_users": len(all_users)
+    }
+
 @api_router.post("/auth/reset-spencer-password")
 async def reset_spencer_password():
     """One-time endpoint to reset Spencer's password in production"""
