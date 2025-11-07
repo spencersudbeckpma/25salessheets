@@ -505,6 +505,7 @@ async def get_team_hierarchy(period: str, current_user: dict = Depends(get_curre
             if child_hierarchy:
                 children.append(child_hierarchy)
                 # Add child's rolled up stats to parent's rolled up stats
+                print(f"DEBUG rollup: Adding child {child_hierarchy.get('name')} stats - Contacts={child_hierarchy['stats']['contacts']}")
                 rolled_up_stats["contacts"] += child_hierarchy["stats"]["contacts"]
                 rolled_up_stats["appointments"] += child_hierarchy["stats"]["appointments"]
                 rolled_up_stats["presentations"] += child_hierarchy["stats"]["presentations"]
@@ -513,6 +514,8 @@ async def get_team_hierarchy(period: str, current_user: dict = Depends(get_curre
                 rolled_up_stats["sales"] += child_hierarchy["stats"]["sales"]
                 rolled_up_stats["new_face_sold"] += child_hierarchy["stats"]["new_face_sold"]
                 rolled_up_stats["premium"] += child_hierarchy["stats"]["premium"]
+        
+        print(f"DEBUG final rolled_up_stats for {user.get('name')}: Contacts={rolled_up_stats['contacts']}, Premium={rolled_up_stats['premium']}")
         
         return {
             **user,
