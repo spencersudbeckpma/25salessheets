@@ -487,7 +487,8 @@ async def get_my_stats(period: str, current_user: dict = Depends(get_current_use
     if user_date:
         today = datetime.strptime(user_date, '%Y-%m-%d').date()
     else:
-        today = datetime.utcnow().date()
+        central_tz = pytz_timezone('America/Chicago')
+        today = datetime.now(central_tz).date()
     
     if period == "daily":
         start_date = today
@@ -536,7 +537,8 @@ async def get_team_hierarchy(period: str, current_user: dict = Depends(get_curre
     if user_date:
         today = datetime.strptime(user_date, '%Y-%m-%d').date()
     else:
-        today = datetime.utcnow().date()
+        central_tz = pytz_timezone('America/Chicago')
+        today = datetime.now(central_tz).date()
     
     if period == "daily":
         start_date = today
@@ -865,7 +867,8 @@ async def get_leaderboard(period: str, current_user: dict = Depends(get_current_
     if user_date:
         today = datetime.strptime(user_date, '%Y-%m-%d').date()
     else:
-        today = datetime.utcnow().date()
+        central_tz = pytz_timezone('America/Chicago')
+        today = datetime.now(central_tz).date()
     
     if period == "daily":
         start_date = today
