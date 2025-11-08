@@ -219,8 +219,8 @@ async def diagnostic(current_user: dict = Depends(get_current_user)):
     today_activity_count = await db.activities.count_documents({"date": today})
     
     # Get current user's activities
-    my_activities = await db.activities.find({"user_id": current_user['id']}).to_list(100)
-    my_today = [a for a in my_activities if a['date'] == today]
+    my_activities = await db.activities.find({"user_id": current_user['id']}, {"_id": 0}).to_list(100)
+    my_today = [a for a in my_activities if a.get('date') == today]
     
     # Get my subordinates
     subordinates = await db.users.find({"manager_id": current_user['id']}, {"_id": 0, "name": 1, "id": 1}).to_list(100)
@@ -228,6 +228,7 @@ async def diagnostic(current_user: dict = Depends(get_current_user)):
     return {
         "database": os.getenv('DB_NAME', 'unknown'),
         "today": today,
+        "today_central_time": f"{today} (America/Chicago)",
         "counts": {
             "total_users": user_count,
             "total_activities": activity_count,
@@ -238,7 +239,11 @@ async def diagnostic(current_user: dict = Depends(get_current_user)):
             "id": current_user['id'],
             "total_activities": len(my_activities),
             "activities_today": len(my_today),
-            "today_data": my_today[0] if my_today else None
+            "today_data": {
+                "contacts": my_today[0].get('contacts', 0),
+                "appointments": my_today[0].get('appointments', 0),
+                "premium": my_today[0].get('premium', 0)
+            } if my_today else None
         },
         "subordinates_count": len(subordinates),
         "subordinates": [s['name'] for s in subordinates]
