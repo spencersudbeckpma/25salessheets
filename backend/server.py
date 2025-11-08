@@ -483,7 +483,7 @@ async def get_team_member_activities(user_id: str, current_user: dict = Depends(
 async def get_my_stats(period: str, current_user: dict = Depends(get_current_user), user_date: str = None):
     from datetime import timedelta
     
-    # Get today's date (use UTC to avoid timezone issues)
+    # Use Central Time for date calculations
     if user_date:
         today = datetime.strptime(user_date, '%Y-%m-%d').date()
     else:
@@ -533,7 +533,7 @@ async def get_team_members(current_user: dict = Depends(get_current_user)):
 async def get_team_hierarchy(period: str, current_user: dict = Depends(get_current_user), user_date: str = None):
     from datetime import timedelta
     
-    # Get today's date (use UTC to avoid timezone issues)
+    # Use Central Time for date calculations
     if user_date:
         today = datetime.strptime(user_date, '%Y-%m-%d').date()
     else:
@@ -863,7 +863,7 @@ async def delete_all_user_activities(user_id: str, current_user: dict = Depends(
 async def get_leaderboard(period: str, current_user: dict = Depends(get_current_user), user_date: str = None):
     from datetime import timedelta
     
-    # Get today's date (use UTC to avoid timezone issues)
+    # Use Central Time for date calculations
     if user_date:
         today = datetime.strptime(user_date, '%Y-%m-%d').date()
     else:
