@@ -255,9 +255,12 @@ async def populate_todays_activities(current_user: dict = Depends(get_current_us
         raise HTTPException(status_code=403, detail="Admin access required")
     
     from datetime import date
+    from pytz import timezone as pytz_timezone
     import uuid
     
-    today = date.today().isoformat()
+    # Get today in Central Time
+    central_tz = pytz_timezone('America/Chicago')
+    today = datetime.now(central_tz).date().isoformat()
     
     # Get all users
     all_users = await db.users.find({}, {"_id": 0}).to_list(1000)
