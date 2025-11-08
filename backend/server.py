@@ -207,7 +207,11 @@ async def diagnostic(current_user: dict = Depends(get_current_user)):
         raise HTTPException(status_code=403, detail="Admin access required")
     
     from datetime import date
-    today = date.today().isoformat()
+    from pytz import timezone as pytz_timezone
+    
+    # Get today in Central Time
+    central_tz = pytz_timezone('America/Chicago')
+    today = datetime.now(central_tz).date().isoformat()
     
     # Get counts
     user_count = await db.users.count_documents({})
