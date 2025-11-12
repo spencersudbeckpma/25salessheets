@@ -71,7 +71,7 @@ class Activity(BaseModel):
     referrals: int = 0
     testimonials: int = 0
     sales: int = 0
-    new_face_sold: int = 0
+    new_face_sold: float = 0.0
     premium: float = 0.0
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     edited_by: Optional[str] = None
