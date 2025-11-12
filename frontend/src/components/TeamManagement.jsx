@@ -141,7 +141,7 @@ const TeamManagement = ({ user }) => {
         referrals: parseInt(editActivity.referrals) || 0,
         testimonials: parseInt(editActivity.testimonials) || 0,
         sales: parseInt(editActivity.sales) || 0,
-        new_face_sold: parseInt(editActivity.new_face_sold) || 0,
+        new_face_sold: parseFloat(editActivity.new_face_sold) || 0,
         premium: parseFloat(editActivity.premium) || 0
       };
       
