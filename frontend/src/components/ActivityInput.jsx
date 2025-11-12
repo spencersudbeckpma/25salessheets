@@ -85,7 +85,7 @@ const ActivityInput = ({ user }) => {
         referrals: parseInt(activity.referrals) || 0,
         testimonials: parseInt(activity.testimonials) || 0,
         sales: parseInt(activity.sales) || 0,
-        new_face_sold: parseInt(activity.new_face_sold) || 0,
+        new_face_sold: parseFloat(activity.new_face_sold) || 0,
         premium: parseFloat(activity.premium) || 0
       };
       
