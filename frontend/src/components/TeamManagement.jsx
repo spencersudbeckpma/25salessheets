@@ -316,7 +316,7 @@ const TeamManagement = ({ user }) => {
                             min="0"
                             step={
                               key === 'premium' ? '0.01' : 
-                              (key === 'presentations' || key === 'contacts' || key === 'appointments') ? '0.5' : 
+                              (key === 'presentations' || key === 'contacts' || key === 'appointments' || key === 'new_face_sold') ? '0.5' : 
                               '1'
                             }
                             value={editActivity[key] === 0 ? '' : editActivity[key]}
