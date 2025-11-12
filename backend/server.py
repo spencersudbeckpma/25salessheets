@@ -85,7 +85,7 @@ class ActivityCreate(BaseModel):
     referrals: int = 0
     testimonials: int = 0
     sales: int = 0
-    new_face_sold: int = 0
+    new_face_sold: float = 0.0
     premium: float = 0.0
 
 class Invite(BaseModel):
