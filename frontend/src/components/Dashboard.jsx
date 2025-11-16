@@ -121,6 +121,10 @@ const Dashboard = ({ user, setUser }) => {
             <Leaderboard user={user} />
           </TabsContent>
 
+          <TabsContent value="reports" data-testid="reports-content" className="mt-4 md:mt-6">
+            <Reports user={user} />
+          </TabsContent>
+
           {user.role === 'state_manager' && (
             <TabsContent value="admin" data-testid="admin-content" className="mt-4 md:mt-6">
               <AdminCleanup user={user} />
