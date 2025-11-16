@@ -82,6 +82,13 @@ const Dashboard = ({ user, setUser }) => {
               >
                 Leaderboard
               </TabsTrigger>
+              <TabsTrigger 
+                value="reports" 
+                data-testid="reports-tab" 
+                className="py-2.5 px-3 text-xs md:text-sm whitespace-nowrap flex-shrink-0"
+              >
+                📊 Reports
+              </TabsTrigger>
               {user.role === 'state_manager' && (
                 <TabsTrigger 
                   value="admin" 
