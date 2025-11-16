@@ -200,6 +200,139 @@ async def register(user_data: UserCreate):
         }
     }
 
+@api_router.get("/reports/excel/{period}")
+async def generate_excel_report(period: str, current_user: dict = Depends(get_current_user)):
+    """
+    Generate Excel report for weekly, monthly, quarterly, or yearly data.
+    Returns Excel file with one row per team member showing totals.
+    """
+    from datetime import timedelta
+    from pytz import timezone as pytz_timezone
+    from openpyxl import Workbook
+    from openpyxl.styles import Font, PatternFill, Alignment
+    from io import BytesIO
+    from fastapi.responses import StreamingResponse
+    
+    # Use Central Time for date calculations
+    central_tz = pytz_timezone('America/Chicago')
+    today = datetime.now(central_tz).date()
+    
+    if period == "weekly":
+        start_date = today - timedelta(days=today.weekday())
+        period_name = f"Week of {start_date.strftime('%B %d, %Y')}"
+    elif period == "monthly":
+        start_date = today.replace(day=1)
+        period_name = start_date.strftime('%B %Y')
+    elif period == "quarterly":
+        quarter = (today.month - 1) // 3
+        start_date = today.replace(month=quarter * 3 + 1, day=1)
+        period_name = f"Q{quarter + 1} {today.year}"
+    elif period == "yearly":
+        start_date = today.replace(month=1, day=1)
+        period_name = f"Year {today.year}"
+    else:
+        raise HTTPException(status_code=400, detail="Invalid period")
+    
+    # Get all subordinates recursively
+    async def get_all_team_members(user_id: str):
+        members = []
+        user = await db.users.find_one({"id": user_id}, {"_id": 0, "password_hash": 0})
+        if user:
+            members.append(user)
+            subordinates = await db.users.find({"manager_id": user_id}, {"_id": 0}).to_list(1000)
+            for sub in subordinates:
+                members.extend(await get_all_team_members(sub['id']))
+        return members
+    
+    team_members = await get_all_team_members(current_user['id'])
+    
+    # Get activities for each team member
+    report_data = []
+    for member in team_members:
+        activities = await db.activities.find({
+            "user_id": member['id'],
+            "date": {"$gte": start_date.isoformat()}
+        }, {"_id": 0}).to_list(1000)
+        
+        totals = {
+            "name": member['name'],
+            "email": member['email'],
+            "role": member['role'].replace('_', ' ').title(),
+            "contacts": sum(a['contacts'] for a in activities),
+            "appointments": sum(a['appointments'] for a in activities),
+            "presentations": sum(a['presentations'] for a in activities),
+            "referrals": sum(a['referrals'] for a in activities),
+            "testimonials": sum(a['testimonials'] for a in activities),
+            "sales": sum(a['sales'] for a in activities),
+            "new_face_sold": sum(a['new_face_sold'] for a in activities),
+            "premium": sum(a['premium'] for a in activities)
+        }
+        report_data.append(totals)
+    
+    # Create Excel workbook
+    wb = Workbook()
+    ws = wb.active
+    ws.title = f"{period.capitalize()} Report"
+    
+    # Add title
+    ws.merge_cells('A1:K1')
+    title_cell = ws['A1']
+    title_cell.value = f"Sales Activity Report - {period_name}"
+    title_cell.font = Font(size=16, bold=True)
+    title_cell.alignment = Alignment(horizontal='center')
+    title_cell.fill = PatternFill(start_color="4472C4", end_color="4472C4", fill_type="solid")
+    title_cell.font = Font(size=16, bold=True, color="FFFFFF")
+    
+    # Add headers
+    headers = ["Name", "Email", "Role", "Contacts", "Appointments", "Presentations", 
+               "Referrals", "Testimonials", "Sales", "New Face Sold", "Total Premium"]
+    for col_num, header in enumerate(headers, 1):
+        cell = ws.cell(row=2, column=col_num)
+        cell.value = header
+        cell.font = Font(bold=True)
+        cell.fill = PatternFill(start_color="D9E1F2", end_color="D9E1F2", fill_type="solid")
+        cell.alignment = Alignment(horizontal='center')
+    
+    # Add data
+    for row_num, data in enumerate(report_data, 3):
+        ws.cell(row=row_num, column=1).value = data['name']
+        ws.cell(row=row_num, column=2).value = data['email']
+        ws.cell(row=row_num, column=3).value = data['role']
+        ws.cell(row=row_num, column=4).value = data['contacts']
+        ws.cell(row=row_num, column=5).value = data['appointments']
+        ws.cell(row=row_num, column=6).value = data['presentations']
+        ws.cell(row=row_num, column=7).value = data['referrals']
+        ws.cell(row=row_num, column=8).value = data['testimonials']
+        ws.cell(row=row_num, column=9).value = data['sales']
+        ws.cell(row=row_num, column=10).value = data['new_face_sold']
+        ws.cell(row=row_num, column=11).value = f"${data['premium']:.2f}"
+    
+    # Auto-size columns
+    for column in ws.columns:
+        max_length = 0
+        column_letter = column[0].column_letter
+        for cell in column:
+            try:
+                if len(str(cell.value)) > max_length:
+                    max_length = len(str(cell.value))
+            except:
+                pass
+        adjusted_width = min(max_length + 2, 50)
+        ws.column_dimensions[column_letter].width = adjusted_width
+    
+    # Save to BytesIO
+    excel_file = BytesIO()
+    wb.save(excel_file)
+    excel_file.seek(0)
+    
+    filename = f"sales_report_{period}_{today.isoformat()}.xlsx"
+    
+    return StreamingResponse(
+        excel_file,
+        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        headers={"Content-Disposition": f"attachment; filename={filename}"}
+    )
+
 @api_router.get("/admin/diagnostic")
 async def diagnostic(current_user: dict = Depends(get_current_user)):
     """Diagnostic endpoint to check database state"""
