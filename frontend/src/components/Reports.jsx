@@ -143,6 +143,59 @@ const Reports = ({ user }) => {
           ))}
         </div>
 
+        {/* New Face Customer Reports */}
+        <div className="mt-8">
+          <h3 className="text-xl font-semibold mb-4 flex items-center gap-2">
+            🎯 New Face Customer Reports
+          </h3>
+          <p className="text-sm text-gray-600 mb-4">
+            Download detailed lists of new face customers with names, counties, and policy amounts
+          </p>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="p-6 border-2 border-green-200 rounded-lg hover:border-green-400 transition-all">
+              <div className="text-3xl mb-2">📆</div>
+              <h4 className="font-semibold mb-2">Monthly New Faces</h4>
+              <p className="text-sm text-gray-600 mb-4">All customers this month</p>
+              <Button
+                onClick={() => downloadNewFaceReport('monthly')}
+                disabled={loading}
+                className="w-full bg-green-500 hover:bg-green-600 text-white"
+              >
+                <FileDown size={18} className="mr-2" />
+                Download Monthly
+              </Button>
+            </div>
+
+            <div className="p-6 border-2 border-purple-200 rounded-lg hover:border-purple-400 transition-all">
+              <div className="text-3xl mb-2">📊</div>
+              <h4 className="font-semibold mb-2">Quarterly New Faces</h4>
+              <p className="text-sm text-gray-600 mb-4">All customers this quarter</p>
+              <Button
+                onClick={() => downloadNewFaceReport('quarterly')}
+                disabled={loading}
+                className="w-full bg-purple-500 hover:bg-purple-600 text-white"
+              >
+                <FileDown size={18} className="mr-2" />
+                Download Quarterly
+              </Button>
+            </div>
+
+            <div className="p-6 border-2 border-orange-200 rounded-lg hover:border-orange-400 transition-all">
+              <div className="text-3xl mb-2">📈</div>
+              <h4 className="font-semibold mb-2">Yearly New Faces</h4>
+              <p className="text-sm text-gray-600 mb-4">All customers this year</p>
+              <Button
+                onClick={() => downloadNewFaceReport('yearly')}
+                disabled={loading}
+                className="w-full bg-orange-500 hover:bg-orange-600 text-white"
+              >
+                <FileDown size={18} className="mr-2" />
+                Download Yearly
+              </Button>
+            </div>
+          </div>
+        </div>
+
         <div className="mt-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
           <h4 className="font-semibold text-blue-900 mb-2">📋 Report Details</h4>
           <ul className="text-sm text-gray-700 space-y-1">
