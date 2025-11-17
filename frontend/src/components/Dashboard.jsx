@@ -86,6 +86,13 @@ const Dashboard = ({ user, setUser }) => {
               {user.role === 'state_manager' && (
                 <>
                   <TabsTrigger 
+                    value="newface" 
+                    data-testid="newface-tab" 
+                    className="py-2.5 px-3 text-xs md:text-sm whitespace-nowrap flex-shrink-0"
+                  >
+                    🎯 New Faces
+                  </TabsTrigger>
+                  <TabsTrigger 
                     value="reports" 
                     data-testid="reports-tab" 
                     className="py-2.5 px-3 text-xs md:text-sm whitespace-nowrap flex-shrink-0"
