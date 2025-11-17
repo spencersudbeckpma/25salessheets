@@ -308,15 +308,18 @@ async def generate_excel_report(period: str, current_user: dict = Depends(get_cu
         ws.cell(row=row_num, column=11).value = f"${data['premium']:.2f}"
     
     # Auto-size columns
-    for column in ws.columns:
+    for col_idx in range(1, 12):  # 11 columns (A to K)
+        column_letter = ws.cell(row=2, column=col_idx).column_letter
         max_length = 0
-        column_letter = column[0].column_letter
-        for cell in column:
-            try:
-                if cell.value and len(str(cell.value)) > max_length:
-                    max_length = len(str(cell.value))
-            except:
-                pass
+        for row in ws.iter_rows(min_row=2, max_row=ws.max_row, min_col=col_idx, max_col=col_idx):
+            for cell in row:
+                if cell.value:
+                    try:
+                        cell_length = len(str(cell.value))
+                        if cell_length > max_length:
+                            max_length = cell_length
+                    except:
+                        pass
         adjusted_width = min(max_length + 2, 50)
         ws.column_dimensions[column_letter].width = adjusted_width
     
