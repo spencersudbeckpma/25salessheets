@@ -32,10 +32,30 @@ const ActivityInput = ({ user }) => {
     premium: 0
   });
   const [loading, setLoading] = useState(false);
+  const [showNewFaceForm, setShowNewFaceForm] = useState(false);
+  const [newFaceCustomers, setNewFaceCustomers] = useState([]);
+  const [newFaceForm, setNewFaceForm] = useState({
+    customer_name: '',
+    county: '',
+    policy_amount: ''
+  });
 
   useEffect(() => {
     fetchActivity();
+    fetchNewFaceCustomers();
   }, [selectedDate]);
+
+  const fetchNewFaceCustomers = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await axios.get(`${API}/new-face-customers/date/${selectedDate}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      setNewFaceCustomers(response.data);
+    } catch (error) {
+      console.error('Failed to fetch new face customers');
+    }
+  };
 
   const fetchActivity = async () => {
     try {
