@@ -88,6 +88,23 @@ class ActivityCreate(BaseModel):
     new_face_sold: float = 0.0
     premium: float = 0.0
 
+class NewFaceCustomer(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    user_id: str
+    user_name: str
+    date: str  # YYYY-MM-DD format
+    customer_name: str
+    county: str
+    policy_amount: float
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
+class NewFaceCustomerCreate(BaseModel):
+    date: str
+    customer_name: str
+    county: str
+    policy_amount: float
+
 class Invite(BaseModel):
     model_config = ConfigDict(extra="ignore")
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
