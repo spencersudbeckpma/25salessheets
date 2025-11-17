@@ -217,6 +217,88 @@ async def register(user_data: UserCreate):
         }
     }
 
+@api_router.post("/new-face-customers")
+async def create_new_face_customer(customer: NewFaceCustomerCreate, current_user: dict = Depends(get_current_user)):
+    """Add a new face customer record"""
+    # Check how many records exist for this user on this date
+    count = await db.new_face_customers.count_documents({
+        "user_id": current_user['id'],
+        "date": customer.date
+    })
+    
+    if count >= 3:
+        raise HTTPException(status_code=400, detail="Maximum 3 new face customers per day")
+    
+    new_customer = {
+        "id": str(uuid.uuid4()),
+        "user_id": current_user['id'],
+        "user_name": current_user['name'],
+        "date": customer.date,
+        "customer_name": customer.customer_name,
+        "county": customer.county,
+        "policy_amount": customer.policy_amount,
+        "created_at": datetime.now(timezone.utc).isoformat()
+    }
+    
+    await db.new_face_customers.insert_one(new_customer)
+    return {"message": "New face customer added", "id": new_customer['id']}
+
+@api_router.get("/new-face-customers/my")
+async def get_my_new_face_customers(current_user: dict = Depends(get_current_user)):
+    """Get my new face customer records"""
+    customers = await db.new_face_customers.find(
+        {"user_id": current_user['id']},
+        {"_id": 0}
+    ).sort("date", -1).to_list(1000)
+    return customers
+
+@api_router.get("/new-face-customers/date/{date}")
+async def get_new_face_customers_by_date(date: str, current_user: dict = Depends(get_current_user)):
+    """Get new face customers for a specific date"""
+    customers = await db.new_face_customers.find(
+        {"user_id": current_user['id'], "date": date},
+        {"_id": 0}
+    ).to_list(10)
+    return customers
+
+@api_router.get("/new-face-customers/all")
+async def get_all_new_face_customers(current_user: dict = Depends(get_current_user)):
+    """Get all new face customers from entire team (State Manager only)"""
+    if current_user['role'] != 'state_manager':
+        raise HTTPException(status_code=403, detail="Access denied")
+    
+    # Get all team members recursively
+    async def get_all_team_ids(user_id: str):
+        ids = [user_id]
+        subordinates = await db.users.find({"manager_id": user_id}, {"_id": 0, "id": 1}).to_list(1000)
+        for sub in subordinates:
+            ids.extend(await get_all_team_ids(sub['id']))
+        return ids
+    
+    team_ids = await get_all_team_ids(current_user['id'])
+    
+    customers = await db.new_face_customers.find(
+        {"user_id": {"$in": team_ids}},
+        {"_id": 0}
+    ).sort("date", -1).to_list(10000)
+    
+    return customers
+
+@api_router.delete("/new-face-customers/{customer_id}")
+async def delete_new_face_customer(customer_id: str, current_user: dict = Depends(get_current_user)):
+    """Delete a new face customer record"""
+    customer = await db.new_face_customers.find_one({"id": customer_id}, {"_id": 0})
+    
+    if not customer:
+        raise HTTPException(status_code=404, detail="Customer not found")
+    
+    # Only owner or state manager can delete
+    if customer['user_id'] != current_user['id'] and current_user['role'] != 'state_manager':
+        raise HTTPException(status_code=403, detail="Access denied")
+    
+    await db.new_face_customers.delete_one({"id": customer_id})
+    return {"message": "Customer deleted"}
+
 @api_router.get("/reports/excel/{period}")
 async def generate_excel_report(period: str, current_user: dict = Depends(get_current_user)):
     """
