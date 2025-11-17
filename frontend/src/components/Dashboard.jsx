@@ -47,7 +47,7 @@ const Dashboard = ({ user, setUser }) => {
         {/* Main Content */}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4 md:space-y-6">
           <div className="overflow-x-auto -mx-2 px-2">
-            <TabsList className={`inline-flex w-full md:grid md:w-full ${user.role === 'state_manager' ? 'md:grid-cols-7' : 'md:grid-cols-5'} gap-1 md:gap-2 bg-white rounded-lg shadow-md p-1.5 md:p-2 h-auto min-w-max md:min-w-0`} data-testid="dashboard-tabs">
+            <TabsList className={`inline-flex w-full md:grid md:w-full ${user.role === 'state_manager' ? 'md:grid-cols-8' : 'md:grid-cols-5'} gap-1 md:gap-2 bg-white rounded-lg shadow-md p-1.5 md:p-2 h-auto min-w-max md:min-w-0`} data-testid="dashboard-tabs">
               <TabsTrigger 
                 value="activity" 
                 data-testid="activity-tab" 
