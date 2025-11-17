@@ -37,6 +37,32 @@ const Reports = ({ user }) => {
     }
   };
 
+  const downloadNewFaceReport = async (period) => {
+    setLoading(true);
+    try {
+      const token = localStorage.getItem('token');
+      const response = await axios.get(`${API}/reports/excel/newface/${period}`, {
+        headers: { Authorization: `Bearer ${token}` },
+        responseType: 'blob'
+      });
+      
+      // Create download link
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', `new_face_report_${period}_${new Date().toISOString().split('T')[0]}.xlsx`);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      
+      toast.success(`New Face ${period.charAt(0).toUpperCase() + period.slice(1)} report downloaded!`);
+    } catch (error) {
+      toast.error(error.response?.data?.detail || 'Failed to generate report');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const reportTypes = [
     {
       period: 'weekly',
