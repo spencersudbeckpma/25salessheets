@@ -127,6 +127,55 @@ const ActivityInput = ({ user }) => {
     }
   };
 
+  const saveNewFaceCustomer = async () => {
+    if (!newFaceForm.customer_name || !newFaceForm.county || !newFaceForm.policy_amount) {
+      toast.error('Please fill all customer fields');
+      return;
+    }
+
+    if (newFaceCustomers.length >= 3) {
+      toast.error('Maximum 3 new face customers per day');
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const token = localStorage.getItem('token');
+      await axios.post(`${API}/new-face-customers`, {
+        date: selectedDate,
+        customer_name: newFaceForm.customer_name,
+        county: newFaceForm.county,
+        policy_amount: parseFloat(newFaceForm.policy_amount) || 0
+      }, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      
+      toast.success('New face customer added!');
+      setNewFaceForm({ customer_name: '', county: '', policy_amount: '' });
+      setShowNewFaceForm(false);
+      fetchNewFaceCustomers();
+    } catch (error) {
+      toast.error(error.response?.data?.detail || 'Failed to add customer');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const deleteNewFaceCustomer = async (customerId) => {
+    if (!window.confirm('Delete this customer record?')) return;
+    
+    try {
+      const token = localStorage.getItem('token');
+      await axios.delete(`${API}/new-face-customers/${customerId}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      toast.success('Customer deleted');
+      fetchNewFaceCustomers();
+    } catch (error) {
+      toast.error('Failed to delete customer');
+    }
+  };
+
   const categories = [
     { key: 'contacts', label: 'Contacts', icon: '📞' },
     { key: 'appointments', label: 'Appointments', icon: '📅' },
