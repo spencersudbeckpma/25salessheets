@@ -259,6 +259,93 @@ const ActivityInput = ({ user }) => {
           <Save size={18} />
           {loading ? 'Saving...' : 'Save Activity'}
         </Button>
+
+        {/* New Face Customer Tracking */}
+        {activity.new_face_sold > 0 && (
+          <div className="mt-6 p-4 bg-green-50 border-2 border-green-300 rounded-lg">
+            <h3 className="font-semibold text-green-900 mb-3 flex items-center gap-2">
+              🎯 New Face Customer Details ({newFaceCustomers.length}/3)
+            </h3>
+            
+            {/* Show existing customers for this date */}
+            {newFaceCustomers.length > 0 && (
+              <div className="mb-4 space-y-2">
+                {newFaceCustomers.map((customer) => (
+                  <div key={customer.id} className="p-3 bg-white rounded border border-green-200 flex justify-between items-center">
+                    <div>
+                      <div className="font-semibold">{customer.customer_name}</div>
+                      <div className="text-sm text-gray-600">County: {customer.county} | Policy: ${customer.policy_amount.toLocaleString()}</div>
+                    </div>
+                    <Button
+                      onClick={() => deleteNewFaceCustomer(customer.id)}
+                      className="bg-red-500 hover:bg-red-600 text-white text-xs px-3 py-1"
+                    >
+                      Delete
+                    </Button>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {newFaceCustomers.length < 3 && !showNewFaceForm && (
+              <Button
+                onClick={() => setShowNewFaceForm(true)}
+                className="w-full bg-green-600 hover:bg-green-700"
+              >
+                + Add Customer Details
+              </Button>
+            )}
+
+            {showNewFaceForm && (
+              <div className="space-y-3 p-4 bg-white rounded border border-green-300">
+                <div>
+                  <Label>Customer Name</Label>
+                  <Input
+                    value={newFaceForm.customer_name}
+                    onChange={(e) => setNewFaceForm({...newFaceForm, customer_name: e.target.value})}
+                    placeholder="John Doe"
+                  />
+                </div>
+                <div>
+                  <Label>County</Label>
+                  <Input
+                    value={newFaceForm.county}
+                    onChange={(e) => setNewFaceForm({...newFaceForm, county: e.target.value})}
+                    placeholder="County name"
+                  />
+                </div>
+                <div>
+                  <Label>Policy Amount</Label>
+                  <Input
+                    type="number"
+                    step="0.01"
+                    value={newFaceForm.policy_amount}
+                    onChange={(e) => setNewFaceForm({...newFaceForm, policy_amount: e.target.value})}
+                    placeholder="5000.00"
+                  />
+                </div>
+                <div className="flex gap-2">
+                  <Button
+                    onClick={saveNewFaceCustomer}
+                    disabled={loading}
+                    className="flex-1 bg-green-600 hover:bg-green-700"
+                  >
+                    Save Customer
+                  </Button>
+                  <Button
+                    onClick={() => {
+                      setShowNewFaceForm(false);
+                      setNewFaceForm({ customer_name: '', county: '', policy_amount: '' });
+                    }}
+                    className="flex-1 bg-gray-500 hover:bg-gray-600"
+                  >
+                    Cancel
+                  </Button>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
       </CardContent>
     </Card>
   );
