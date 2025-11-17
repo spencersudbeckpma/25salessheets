@@ -133,6 +133,10 @@ const Dashboard = ({ user, setUser }) => {
 
           {user.role === 'state_manager' && (
             <>
+              <TabsContent value="newface" data-testid="newface-content" className="mt-4 md:mt-6">
+                <NewFaceTracking user={user} />
+              </TabsContent>
+
               <TabsContent value="reports" data-testid="reports-content" className="mt-4 md:mt-6">
                 <Reports user={user} />
               </TabsContent>
