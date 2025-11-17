@@ -206,8 +206,6 @@ async def generate_excel_report(period: str, current_user: dict = Depends(get_cu
     Generate Excel report for weekly, monthly, quarterly, or yearly data.
     Returns Excel file with one row per team member showing totals.
     """
-    from datetime import timedelta
-    from pytz import timezone as pytz_timezone
     from openpyxl import Workbook
     from openpyxl.styles import Font, PatternFill, Alignment
     from io import BytesIO
@@ -236,12 +234,15 @@ async def generate_excel_report(period: str, current_user: dict = Depends(get_cu
     # Get all subordinates recursively
     async def get_all_team_members(user_id: str):
         members = []
-        user = await db.users.find_one({"id": user_id}, {"_id": 0, "password_hash": 0})
-        if user:
+        user_doc = await db.users.find_one({"id": user_id}, {"_id": 0, "password_hash": 0})
+        if user_doc:
+            # Convert to dict to ensure it's serializable
+            user = dict(user_doc)
             members.append(user)
-            subordinates = await db.users.find({"manager_id": user_id}, {"_id": 0}).to_list(1000)
+            subordinates = await db.users.find({"manager_id": user_id}, {"_id": 0, "password_hash": 0}).to_list(1000)
             for sub in subordinates:
-                members.extend(await get_all_team_members(sub['id']))
+                sub_members = await get_all_team_members(sub['id'])
+                members.extend(sub_members)
         return members
     
     team_members = await get_all_team_members(current_user['id'])
@@ -255,17 +256,17 @@ async def generate_excel_report(period: str, current_user: dict = Depends(get_cu
         }, {"_id": 0}).to_list(1000)
         
         totals = {
-            "name": member['name'],
-            "email": member['email'],
-            "role": member['role'].replace('_', ' ').title(),
-            "contacts": sum(a['contacts'] for a in activities),
-            "appointments": sum(a['appointments'] for a in activities),
-            "presentations": sum(a['presentations'] for a in activities),
-            "referrals": sum(a['referrals'] for a in activities),
-            "testimonials": sum(a['testimonials'] for a in activities),
-            "sales": sum(a['sales'] for a in activities),
-            "new_face_sold": sum(a['new_face_sold'] for a in activities),
-            "premium": sum(a['premium'] for a in activities)
+            "name": str(member.get('name', 'Unknown')),
+            "email": str(member.get('email', '')),
+            "role": str(member.get('role', 'unknown')).replace('_', ' ').title(),
+            "contacts": float(sum(a.get('contacts', 0) for a in activities)),
+            "appointments": float(sum(a.get('appointments', 0) for a in activities)),
+            "presentations": float(sum(a.get('presentations', 0) for a in activities)),
+            "referrals": int(sum(a.get('referrals', 0) for a in activities)),
+            "testimonials": int(sum(a.get('testimonials', 0) for a in activities)),
+            "sales": int(sum(a.get('sales', 0) for a in activities)),
+            "new_face_sold": float(sum(a.get('new_face_sold', 0) for a in activities)),
+            "premium": float(sum(a.get('premium', 0) for a in activities))
         }
         report_data.append(totals)
     
@@ -278,10 +279,9 @@ async def generate_excel_report(period: str, current_user: dict = Depends(get_cu
     ws.merge_cells('A1:K1')
     title_cell = ws['A1']
     title_cell.value = f"Sales Activity Report - {period_name}"
-    title_cell.font = Font(size=16, bold=True)
+    title_cell.font = Font(size=16, bold=True, color="FFFFFF")
     title_cell.alignment = Alignment(horizontal='center')
     title_cell.fill = PatternFill(start_color="4472C4", end_color="4472C4", fill_type="solid")
-    title_cell.font = Font(size=16, bold=True, color="FFFFFF")
     
     # Add headers
     headers = ["Name", "Email", "Role", "Contacts", "Appointments", "Presentations", 
@@ -313,7 +313,7 @@ async def generate_excel_report(period: str, current_user: dict = Depends(get_cu
         column_letter = column[0].column_letter
         for cell in column:
             try:
-                if len(str(cell.value)) > max_length:
+                if cell.value and len(str(cell.value)) > max_length:
                     max_length = len(str(cell.value))
             except:
                 pass
