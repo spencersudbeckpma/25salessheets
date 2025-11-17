@@ -299,6 +299,132 @@ async def delete_new_face_customer(customer_id: str, current_user: dict = Depend
     await db.new_face_customers.delete_one({"id": customer_id})
     return {"message": "Customer deleted"}
 
+@api_router.get("/reports/excel/newface/{period}")
+async def generate_newface_report(period: str, current_user: dict = Depends(get_current_user)):
+    """
+    Generate Excel report for new face customers by period.
+    Shows customer name, county, policy amount, date, and agent.
+    """
+    if current_user['role'] != 'state_manager':
+        raise HTTPException(status_code=403, detail="Access denied")
+    
+    from openpyxl import Workbook
+    from openpyxl.styles import Font, PatternFill, Alignment
+    from io import BytesIO
+    from fastapi.responses import StreamingResponse
+    
+    # Use Central Time for date calculations
+    central_tz = pytz_timezone('America/Chicago')
+    today = datetime.now(central_tz).date()
+    
+    if period == "monthly":
+        start_date = today.replace(day=1)
+        period_name = start_date.strftime('%B %Y')
+    elif period == "quarterly":
+        quarter = (today.month - 1) // 3
+        start_date = today.replace(month=quarter * 3 + 1, day=1)
+        period_name = f"Q{quarter + 1} {today.year}"
+    elif period == "yearly":
+        start_date = today.replace(month=1, day=1)
+        period_name = f"Year {today.year}"
+    else:
+        raise HTTPException(status_code=400, detail="Invalid period")
+    
+    # Get all team members recursively
+    async def get_all_team_ids(user_id: str):
+        ids = [user_id]
+        subordinates = await db.users.find({"manager_id": user_id}, {"_id": 0, "id": 1}).to_list(1000)
+        for sub in subordinates:
+            ids.extend(await get_all_team_ids(sub['id']))
+        return ids
+    
+    team_ids = await get_all_team_ids(current_user['id'])
+    
+    # Get new face customers for the period
+    customers = await db.new_face_customers.find({
+        "user_id": {"$in": team_ids},
+        "date": {"$gte": start_date.isoformat()}
+    }, {"_id": 0}).sort("date", -1).to_list(10000)
+    
+    # Create Excel workbook
+    wb = Workbook()
+    ws = wb.active
+    ws.title = "New Face Customers"
+    
+    # Add title
+    ws.merge_cells('A1:F1')
+    title_cell = ws['A1']
+    title_cell.value = f"New Face Customer Report - {period_name}"
+    title_cell.font = Font(size=16, bold=True, color="FFFFFF")
+    title_cell.alignment = Alignment(horizontal='center')
+    title_cell.fill = PatternFill(start_color="28A745", end_color="28A745", fill_type="solid")
+    
+    # Add headers
+    headers = ["Date", "Agent Name", "Customer Name", "County", "Policy Amount", "Total"]
+    for col_num, header in enumerate(headers, 1):
+        cell = ws.cell(row=2, column=col_num)
+        cell.value = header
+        cell.font = Font(bold=True)
+        cell.fill = PatternFill(start_color="D4EDDA", end_color="D4EDDA", fill_type="solid")
+        cell.alignment = Alignment(horizontal='center')
+    
+    # Add data
+    total_policy = 0
+    for row_num, customer in enumerate(customers, 3):
+        ws.cell(row=row_num, column=1).value = customer.get('date', '')
+        ws.cell(row=row_num, column=2).value = customer.get('user_name', 'Unknown')
+        ws.cell(row=row_num, column=3).value = customer.get('customer_name', '')
+        ws.cell(row=row_num, column=4).value = customer.get('county', '')
+        ws.cell(row=row_num, column=5).value = customer.get('policy_amount', 0)
+        total_policy += customer.get('policy_amount', 0)
+    
+    # Add summary row
+    if customers:
+        summary_row = len(customers) + 3
+        ws.cell(row=summary_row, column=1).value = "TOTAL"
+        ws.cell(row=summary_row, column=1).font = Font(bold=True)
+        ws.cell(row=summary_row, column=2).value = f"{len(customers)} Customers"
+        ws.cell(row=summary_row, column=5).value = total_policy
+        ws.cell(row=summary_row, column=5).font = Font(bold=True)
+        
+        for col in range(1, 7):
+            ws.cell(row=summary_row, column=col).fill = PatternFill(start_color="C3E6CB", end_color="C3E6CB", fill_type="solid")
+    
+    # Auto-size columns
+    for col_idx in range(1, 7):
+        column_letter = ws.cell(row=2, column=col_idx).column_letter
+        max_length = 0
+        for row in ws.iter_rows(min_row=2, max_row=ws.max_row, min_col=col_idx, max_col=col_idx):
+            for cell in row:
+                if cell.value:
+                    try:
+                        cell_length = len(str(cell.value))
+                        if cell_length > max_length:
+                            max_length = cell_length
+                    except:
+                        pass
+        adjusted_width = min(max_length + 2, 50)
+        ws.column_dimensions[column_letter].width = adjusted_width
+    
+    # Format currency column
+    for row in range(3, ws.max_row + 1):
+        cell = ws.cell(row=row, column=5)
+        if cell.value and isinstance(cell.value, (int, float)):
+            cell.number_format = '$#,##0.00'
+    
+    # Save to BytesIO
+    excel_file = BytesIO()
+    wb.save(excel_file)
+    excel_file.seek(0)
+    
+    filename = f"new_face_report_{period}_{today.isoformat()}.xlsx"
+    
+    return StreamingResponse(
+        excel_file,
+        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        headers={"Content-Disposition": f"attachment; filename={filename}"}
+    )
+
 @api_router.get("/reports/excel/{period}")
 async def generate_excel_report(period: str, current_user: dict = Depends(get_current_user)):
     """
