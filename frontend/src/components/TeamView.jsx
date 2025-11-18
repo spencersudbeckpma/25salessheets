@@ -291,7 +291,7 @@ const TeamView = ({ user }) => {
             <h3 className="font-semibold text-lg mb-4 text-slate-700">
               Team Total ({period.charAt(0).toUpperCase() + period.slice(1)})
             </h3>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
               <div className="bg-white p-4 rounded-lg border-l-4 border-blue-400 shadow-sm">
                 <div className="text-xs text-slate-500 mb-1">Contacts</div>
                 <div className="font-bold text-2xl text-slate-800">{hierarchy.stats.contacts}</div>
@@ -303,6 +303,10 @@ const TeamView = ({ user }) => {
               <div className="bg-white p-4 rounded-lg border-l-4 border-purple-400 shadow-sm">
                 <div className="text-xs text-slate-500 mb-1">Presentations</div>
                 <div className="font-bold text-2xl text-slate-800">{hierarchy.stats.presentations}</div>
+              </div>
+              <div className="bg-white p-4 rounded-lg border-l-4 border-red-400 shadow-sm">
+                <div className="text-xs text-slate-500 mb-1">Sales</div>
+                <div className="font-bold text-2xl text-slate-800">{hierarchy.stats.sales}</div>
               </div>
               <div className="bg-white p-4 rounded-lg border-l-4 border-emerald-400 shadow-sm">
                 <div className="text-xs text-slate-500 mb-1">Total Premium</div>
