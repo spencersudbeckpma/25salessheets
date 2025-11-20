@@ -816,12 +816,13 @@ async def download_daily_report_excel(report_type: str, date: str, current_user:
             ws.cell(row=row_num, column=2).value = value
     
     # Auto-adjust column widths
-    for column in ws.columns:
+    for col_idx in range(1, ws.max_column + 1):
         max_length = 0
-        column_letter = column[0].column_letter
-        for cell in column:
+        column_letter = ws.cell(row=2, column=col_idx).column_letter
+        for row in range(1, ws.max_row + 1):
+            cell = ws.cell(row=row, column=col_idx)
             try:
-                if len(str(cell.value)) > max_length:
+                if cell.value and len(str(cell.value)) > max_length:
                     max_length = len(str(cell.value))
             except:
                 pass
