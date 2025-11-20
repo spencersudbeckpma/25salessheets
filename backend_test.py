@@ -462,85 +462,157 @@ class DailyReportTester:
             self.test_results['failed'] += 1
             self.test_results['errors'].append(f"Invalid report type test exception: {str(e)}")
 
-    def test_timezone_bug_fix(self):
-        """CRITICAL: Test the timezone bug fix - verify date accuracy"""
-        print_header("🚨 TIMEZONE BUG FIX VERIFICATION")
+    def test_week_dates_endpoint(self):
+        """CRITICAL: Test the new /api/team/week-dates endpoint - verify correct year and Central Time"""
+        print_header("🚨 WEEK DATES ENDPOINT VERIFICATION")
         
         if not self.state_manager_token:
-            print_error("No state manager token - skipping timezone bug fix tests")
+            print_error("No state manager token - skipping week dates tests")
             return
             
         headers = {"Authorization": f"Bearer {self.state_manager_token}"}
         
-        # Test specific dates mentioned in the bug report
-        today = datetime.now().date()
-        yesterday = today - timedelta(days=1)
-        specific_date = "2024-11-20"  # Date mentioned in bug report
+        print_info("🔍 Testing GET /api/team/week-dates endpoint")
+        print_info("🎯 CRITICAL: Verify dates show 2024 (not 2025) and use Central Time")
         
-        dates_to_test = [
-            (today.isoformat(), "today", "TODAY's activities"),
-            (yesterday.isoformat(), "yesterday", "YESTERDAY's activities"),
-            (specific_date, "2024-11-20", "specific date activities")
-        ]
-        
-        print_info("🔍 Testing Date Accuracy - ensuring date parameter matches data returned")
-        
-        for date_str, description, expected_data in dates_to_test:
-            print_info(f"Testing individual report for {description} ({date_str})...")
+        try:
+            response = self.session.get(
+                f"{BACKEND_URL}/team/week-dates",
+                headers=headers
+            )
             
-            try:
-                response = self.session.get(
-                    f"{BACKEND_URL}/reports/daily/individual",
-                    params={"date": date_str},
-                    headers=headers
-                )
+            if response.status_code == 200:
+                data = response.json()
+                print_success("✅ Week dates endpoint returned 200 OK")
+                self.test_results['passed'] += 1
                 
-                if response.status_code == 200:
-                    data = response.json()
-                    
-                    # CRITICAL: Verify date field matches request
-                    if data.get('date') == date_str:
-                        print_success(f"✅ Date field matches request: {date_str}")
-                        self.test_results['passed'] += 1
-                    else:
-                        print_error(f"❌ TIMEZONE BUG: Date field mismatch! Request: {date_str}, Response: {data.get('date')}")
-                        self.test_results['failed'] += 1
-                        self.test_results['errors'].append(f"CRITICAL: Date mismatch for {description} - Request: {date_str}, Response: {data.get('date')}")
-                    
-                    # Verify report type
-                    if data.get('report_type') == 'individual':
-                        print_success(f"✅ Report type correct: individual")
-                        self.test_results['passed'] += 1
-                    else:
-                        print_error(f"❌ Report type incorrect: {data.get('report_type')}")
-                        self.test_results['failed'] += 1
-                        
-                    # Check if we have activity data for this date
-                    if isinstance(data.get('data'), list) and len(data['data']) > 0:
-                        print_success(f"✅ Found {len(data['data'])} team members in report")
-                        
-                        # Check if any member has activity data
-                        has_activity = False
-                        for member in data['data']:
-                            if any(member.get(field, 0) > 0 for field in ['contacts', 'appointments', 'presentations', 'premium']):
-                                has_activity = True
-                                print_success(f"✅ Found activity data for {member.get('name', 'Unknown')}")
-                                break
-                        
-                        if not has_activity:
-                            print_warning(f"⚠️ No activity data found for {date_str} (expected for new/test data)")
-                    else:
-                        print_warning(f"⚠️ No team members found in report for {date_str}")
-                        
+                # Validate response structure
+                if 'week_dates' in data and 'week_start' in data and 'today' in data:
+                    print_success("✅ Response has required fields: week_dates, week_start, today")
+                    self.test_results['passed'] += 1
                 else:
-                    print_error(f"❌ Report for {description} failed: {response.status_code} - {response.text}")
+                    print_error("❌ Missing required fields in response")
                     self.test_results['failed'] += 1
-                    self.test_results['errors'].append(f"Report for {description} failed: {response.status_code}")
-                    
-            except Exception as e:
-                print_error(f"❌ Exception testing {description}: {str(e)}")
+                    self.test_results['errors'].append("Week dates response missing required fields")
+                    return
+                
+                week_dates = data.get('week_dates', [])
+                week_start = data.get('week_start', '')
+                today_date = data.get('today', '')
+                
+                # CRITICAL: Check year is 2024, not 2025
+                print_info("🔍 CRITICAL: Checking year in all dates...")
+                year_correct = True
+                for date_info in week_dates:
+                    date_str = date_info.get('date', '')
+                    if date_str.startswith('2025'):
+                        print_error(f"❌ CRITICAL BUG: Found 2025 date: {date_str} (should be 2024)")
+                        year_correct = False
+                        self.test_results['failed'] += 1
+                        self.test_results['errors'].append(f"CRITICAL: Wrong year 2025 in date: {date_str}")
+                    elif date_str.startswith('2024'):
+                        print_success(f"✅ Correct year 2024 in date: {date_str}")
+                
+                if year_correct:
+                    print_success("✅ CRITICAL: All dates have correct year (2024)")
+                    self.test_results['passed'] += 1
+                
+                # Check week_start and today also have correct year
+                if week_start.startswith('2024'):
+                    print_success(f"✅ Week start has correct year: {week_start}")
+                    self.test_results['passed'] += 1
+                else:
+                    print_error(f"❌ Week start has wrong year: {week_start}")
+                    self.test_results['failed'] += 1
+                    self.test_results['errors'].append(f"Week start wrong year: {week_start}")
+                
+                if today_date.startswith('2024'):
+                    print_success(f"✅ Today date has correct year: {today_date}")
+                    self.test_results['passed'] += 1
+                else:
+                    print_error(f"❌ Today date has wrong year: {today_date}")
+                    self.test_results['failed'] += 1
+                    self.test_results['errors'].append(f"Today date wrong year: {today_date}")
+                
+                # Verify we have 7 days (Monday through Sunday)
+                if len(week_dates) == 7:
+                    print_success("✅ Week has correct number of days (7)")
+                    self.test_results['passed'] += 1
+                else:
+                    print_error(f"❌ Week has {len(week_dates)} days, expected 7")
+                    self.test_results['failed'] += 1
+                    self.test_results['errors'].append(f"Week has {len(week_dates)} days instead of 7")
+                
+                # Verify days are consecutive and start with Monday
+                expected_days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']
+                for i, date_info in enumerate(week_dates):
+                    day_name = date_info.get('day_name', '')
+                    if day_name == expected_days[i]:
+                        print_success(f"✅ Day {i+1} correct: {day_name}")
+                    else:
+                        print_error(f"❌ Day {i+1} incorrect: got {day_name}, expected {expected_days[i]}")
+                        self.test_results['failed'] += 1
+                        self.test_results['errors'].append(f"Day order wrong: {day_name} vs {expected_days[i]}")
+                
+                if len(week_dates) == 7:
+                    self.test_results['passed'] += 1
+                
+                # Verify dates are in YYYY-MM-DD format
+                date_format_correct = True
+                for date_info in week_dates:
+                    date_str = date_info.get('date', '')
+                    try:
+                        datetime.strptime(date_str, '%Y-%m-%d')
+                        print_success(f"✅ Date format correct: {date_str}")
+                    except ValueError:
+                        print_error(f"❌ Date format incorrect: {date_str}")
+                        date_format_correct = False
+                        self.test_results['failed'] += 1
+                        self.test_results['errors'].append(f"Date format wrong: {date_str}")
+                
+                if date_format_correct:
+                    print_success("✅ All dates have correct YYYY-MM-DD format")
+                    self.test_results['passed'] += 1
+                
+                # Verify today flag is set correctly
+                today_found = False
+                for date_info in week_dates:
+                    if date_info.get('is_today', False):
+                        today_found = True
+                        today_date_in_week = date_info.get('date', '')
+                        print_success(f"✅ Today flag found for: {today_date_in_week}")
+                        
+                        # Verify it matches the today field
+                        if today_date_in_week == today_date:
+                            print_success("✅ Today flag matches today field")
+                            self.test_results['passed'] += 1
+                        else:
+                            print_error(f"❌ Today flag mismatch: {today_date_in_week} vs {today_date}")
+                            self.test_results['failed'] += 1
+                            self.test_results['errors'].append(f"Today flag mismatch: {today_date_in_week} vs {today_date}")
+                        break
+                
+                if today_found:
+                    print_success("✅ Today flag is correctly set")
+                    self.test_results['passed'] += 1
+                else:
+                    print_warning("⚠️ No today flag found (may be weekend or edge case)")
+                
+                # Print the actual week dates for verification
+                print_info("📅 Week dates returned:")
+                for date_info in week_dates:
+                    is_today_marker = " (TODAY)" if date_info.get('is_today', False) else ""
+                    print_info(f"   {date_info.get('day_name', 'Unknown')} - {date_info.get('date', 'Unknown')}{is_today_marker}")
+                
+            else:
+                print_error(f"❌ Week dates endpoint failed: {response.status_code} - {response.text}")
                 self.test_results['failed'] += 1
-                self.test_results['errors'].append(f"Date test {description} exception: {str(e)}")
+                self.test_results['errors'].append(f"Week dates endpoint failed: {response.status_code}")
+                
+        except Exception as e:
+            print_error(f"❌ Exception testing week dates endpoint: {str(e)}")
+            self.test_results['failed'] += 1
+            self.test_results['errors'].append(f"Week dates endpoint exception: {str(e)}")
 
     def test_compare_with_working_endpoint(self):
         """Compare Daily Report with working team hierarchy endpoint"""
