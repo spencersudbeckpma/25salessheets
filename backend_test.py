@@ -842,11 +842,11 @@ class DailyReportTester:
                 self.test_results['errors'].append(f"Date test {description} exception: {str(e)}")
 
     def run_all_tests(self):
-        """Run all tests - FOCUS ON TIMEZONE BUG FIX VERIFICATION"""
-        print_header("🚨 TIMEZONE BUG FIX VERIFICATION - DAILY REPORT API TESTING")
+        """Run all tests - FOCUS ON WEEK DATES BUG FIX VERIFICATION"""
+        print_header("🚨 URGENT DATE BUG FIX VERIFICATION - TEAM VIEW WEEKLY DATES")
         print_info(f"Testing against: {BACKEND_URL}")
-        print_info("🎯 PRIMARY FOCUS: Verify date accuracy and timezone bug fix")
-        print_info("🔍 ISSUE: User reported 'showing Wednesday's numbers but Tuesday's date' in Central time")
+        print_info("🎯 PRIMARY FOCUS: Verify /api/team/week-dates returns correct year (2024, not 2025)")
+        print_info("🔍 ISSUE: User screenshot shows Team View displaying wrong year (2025 instead of 2024)")
         
         # Setup
         if not self.setup_test_users():
@@ -855,8 +855,8 @@ class DailyReportTester:
             
         self.setup_test_data()
         
-        # Run tests - PRIORITIZE TIMEZONE BUG FIX VERIFICATION
-        self.test_timezone_bug_fix()  # CRITICAL TEST FIRST
+        # Run tests - PRIORITIZE WEEK DATES BUG FIX VERIFICATION
+        self.test_week_dates_endpoint()  # CRITICAL TEST FIRST - NEW ENDPOINT
         self.test_compare_with_working_endpoint()  # Compare with working endpoint
         self.test_activity_matching()  # Verify activity matching
         self.test_different_dates()  # Test various dates
