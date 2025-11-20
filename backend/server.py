@@ -569,8 +569,8 @@ async def get_daily_report(report_type: str, date: str, current_user: dict = Dep
     date: ISO format date string (YYYY-MM-DD)
     Returns JSON data for on-screen viewing
     """
-    if current_user['role'] != 'state_manager':
-        raise HTTPException(status_code=403, detail="Only State Managers can access daily reports")
+    if current_user['role'] not in ['state_manager', 'regional_manager', 'district_manager']:
+        raise HTTPException(status_code=403, detail="Only Managers (State, Regional, District) can access daily reports")
     
     # Validate date format - keep it simple like other endpoints
     try:
