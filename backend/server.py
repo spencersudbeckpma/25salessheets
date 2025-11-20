@@ -1204,10 +1204,8 @@ async def get_week_dates(current_user: dict = Depends(get_current_user)):
     
     for i in range(7):
         current_day = monday + timedelta(days=i)
-        # Force year to 2024 to match user expectations
-        current_day_2024 = current_day.replace(year=2024)
         week_dates.append({
-            "date": current_day_2024.isoformat(),
+            "date": current_day.isoformat(),
             "day_name": days_of_week[i],
             "is_today": current_day == today
         })
