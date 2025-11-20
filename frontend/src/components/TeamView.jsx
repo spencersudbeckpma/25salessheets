@@ -219,7 +219,7 @@ const TeamView = ({ user }) => {
                     <div className={`font-semibold text-sm mb-3 ${activity.dayName === 'Total' ? 'text-emerald-700' : 'text-slate-700'}`}>
                       {activity.dayName ? `${activity.dayName} ${activity.dayName !== 'Total' ? '- ' + activity.date : ''}` : activity.date}
                     </div>
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm">
+                    <div className="grid grid-cols-2 md:grid-cols-5 gap-3 text-sm">
                       <div className="flex flex-col">
                         <span className="text-xs text-slate-500">Contacts</span>
                         <span className={`font-bold text-lg ${activity.dayName === 'Total' ? 'text-emerald-700' : 'text-slate-800'}`}>{activity.contacts}</span>
@@ -231,6 +231,10 @@ const TeamView = ({ user }) => {
                       <div className="flex flex-col">
                         <span className="text-xs text-slate-500">Presentations</span>
                         <span className={`font-bold text-lg ${activity.dayName === 'Total' ? 'text-emerald-700' : 'text-slate-800'}`}>{activity.presentations}</span>
+                      </div>
+                      <div className="flex flex-col">
+                        <span className="text-xs text-slate-500">Sales</span>
+                        <span className={`font-bold text-lg ${activity.dayName === 'Total' ? 'text-emerald-700' : 'text-slate-800'}`}>{activity.sales}</span>
                       </div>
                       <div className="flex flex-col">
                         <span className="text-xs text-slate-500">Total Premium</span>
