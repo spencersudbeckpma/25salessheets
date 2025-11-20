@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """
-Backend Testing Script for Daily Report API Endpoints - TIMEZONE BUG FIX VERIFICATION
-Tests the timezone bug fix for Daily Report endpoints
-Focus: Verify date accuracy and compare with working endpoints
+Backend Testing Script - URGENT DATE BUG FIX VERIFICATION
+Tests the new Team View Weekly Dates endpoint and date bug fix
+Focus: Verify /api/team/week-dates returns correct year (2024, not 2025) in Central Time
 """
 
 import requests
