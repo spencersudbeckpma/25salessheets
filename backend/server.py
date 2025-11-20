@@ -561,6 +561,286 @@ async def generate_excel_report(period: str, current_user: dict = Depends(get_cu
         headers={"Content-Disposition": f"attachment; filename={filename}"}
     )
 
+@api_router.get("/reports/daily/{report_type}")
+async def get_daily_report(report_type: str, date: str, current_user: dict = Depends(get_current_user)):
+    """
+    Get daily report for a specific date.
+    report_type: 'individual', 'team', or 'organization'
+    date: ISO format date string (YYYY-MM-DD)
+    Returns JSON data for on-screen viewing
+    """
+    if current_user['role'] != 'state_manager':
+        raise HTTPException(status_code=403, detail="Only State Managers can access daily reports")
+    
+    # Validate and parse date
+    try:
+        report_date = datetime.fromisoformat(date).date()
+    except ValueError:
+        raise HTTPException(status_code=400, detail="Invalid date format. Use YYYY-MM-DD")
+    
+    # Helper function to get all subordinates recursively
+    async def get_all_subordinates(user_id: str):
+        members = []
+        subordinates = await db.users.find({"manager_id": user_id}, {"_id": 0, "password_hash": 0}).to_list(1000)
+        for sub in subordinates:
+            members.append(sub)
+            sub_members = await get_all_subordinates(sub['id'])
+            members.extend(sub_members)
+        return members
+    
+    if report_type == "individual":
+        # Get all team members under current user
+        team_members = await get_all_subordinates(current_user['id'])
+        team_members.insert(0, current_user)  # Include self
+        
+        report_data = []
+        for member in team_members:
+            activity = await db.activities.find_one({
+                "user_id": member['id'],
+                "date": report_date.isoformat()
+            }, {"_id": 0})
+            
+            report_data.append({
+                "name": member.get('name', 'Unknown'),
+                "email": member.get('email', ''),
+                "role": member.get('role', 'unknown').replace('_', ' ').title(),
+                "contacts": activity.get('contacts', 0) if activity else 0,
+                "appointments": activity.get('appointments', 0) if activity else 0,
+                "presentations": activity.get('presentations', 0) if activity else 0,
+                "referrals": activity.get('referrals', 0) if activity else 0,
+                "testimonials": activity.get('testimonials', 0) if activity else 0,
+                "sales": activity.get('sales', 0) if activity else 0,
+                "new_face_sold": activity.get('new_face_sold', 0) if activity else 0,
+                "premium": activity.get('premium', 0) if activity else 0
+            })
+        
+        return {
+            "report_type": "individual",
+            "date": report_date.isoformat(),
+            "data": report_data
+        }
+    
+    elif report_type == "team":
+        # Get direct reports and their teams
+        direct_reports = await db.users.find({"manager_id": current_user['id']}, {"_id": 0, "password_hash": 0}).to_list(1000)
+        
+        report_data = []
+        for manager in direct_reports:
+            # Get all members under this manager
+            team_members = await get_all_subordinates(manager['id'])
+            team_members.insert(0, manager)  # Include manager
+            
+            # Aggregate totals for this team
+            team_totals = {
+                "contacts": 0, "appointments": 0, "presentations": 0,
+                "referrals": 0, "testimonials": 0, "sales": 0,
+                "new_face_sold": 0, "premium": 0
+            }
+            
+            for member in team_members:
+                activity = await db.activities.find_one({
+                    "user_id": member['id'],
+                    "date": report_date.isoformat()
+                }, {"_id": 0})
+                
+                if activity:
+                    team_totals["contacts"] += activity.get('contacts', 0)
+                    team_totals["appointments"] += activity.get('appointments', 0)
+                    team_totals["presentations"] += activity.get('presentations', 0)
+                    team_totals["referrals"] += activity.get('referrals', 0)
+                    team_totals["testimonials"] += activity.get('testimonials', 0)
+                    team_totals["sales"] += activity.get('sales', 0)
+                    team_totals["new_face_sold"] += activity.get('new_face_sold', 0)
+                    team_totals["premium"] += activity.get('premium', 0)
+            
+            report_data.append({
+                "team_name": manager.get('name', 'Unknown') + "'s Team",
+                "manager": manager.get('name', 'Unknown'),
+                "role": manager.get('role', 'unknown').replace('_', ' ').title(),
+                **team_totals
+            })
+        
+        return {
+            "report_type": "team",
+            "date": report_date.isoformat(),
+            "data": report_data
+        }
+    
+    elif report_type == "organization":
+        # Get all organization members
+        all_members = await get_all_subordinates(current_user['id'])
+        all_members.insert(0, current_user)  # Include self
+        
+        # Aggregate organization totals
+        org_totals = {
+            "contacts": 0, "appointments": 0, "presentations": 0,
+            "referrals": 0, "testimonials": 0, "sales": 0,
+            "new_face_sold": 0, "premium": 0
+        }
+        
+        for member in all_members:
+            activity = await db.activities.find_one({
+                "user_id": member['id'],
+                "date": report_date.isoformat()
+            }, {"_id": 0})
+            
+            if activity:
+                org_totals["contacts"] += activity.get('contacts', 0)
+                org_totals["appointments"] += activity.get('appointments', 0)
+                org_totals["presentations"] += activity.get('presentations', 0)
+                org_totals["referrals"] += activity.get('referrals', 0)
+                org_totals["testimonials"] += activity.get('testimonials', 0)
+                org_totals["sales"] += activity.get('sales', 0)
+                org_totals["new_face_sold"] += activity.get('new_face_sold', 0)
+                org_totals["premium"] += activity.get('premium', 0)
+        
+        return {
+            "report_type": "organization",
+            "date": report_date.isoformat(),
+            "total_members": len(all_members),
+            "data": org_totals
+        }
+    
+    else:
+        raise HTTPException(status_code=400, detail="Invalid report type. Use 'individual', 'team', or 'organization'")
+
+@api_router.get("/reports/daily/excel/{report_type}")
+async def download_daily_report_excel(report_type: str, date: str, current_user: dict = Depends(get_current_user)):
+    """
+    Download daily report as Excel file.
+    report_type: 'individual', 'team', or 'organization'
+    date: ISO format date string (YYYY-MM-DD)
+    """
+    from openpyxl import Workbook
+    from openpyxl.styles import Font, PatternFill, Alignment
+    from io import BytesIO
+    from fastapi.responses import StreamingResponse
+    
+    if current_user['role'] != 'state_manager':
+        raise HTTPException(status_code=403, detail="Only State Managers can download daily reports")
+    
+    # Get the report data
+    report_json = await get_daily_report(report_type, date, current_user)
+    
+    # Create Excel workbook
+    wb = Workbook()
+    ws = wb.active
+    ws.title = f"Daily {report_type.capitalize()}"
+    
+    # Add title
+    report_date_obj = datetime.fromisoformat(date).date()
+    date_str = report_date_obj.strftime('%B %d, %Y')
+    
+    ws.merge_cells('A1:K1')
+    title_cell = ws['A1']
+    title_cell.value = f"Daily {report_type.capitalize()} Report - {date_str}"
+    title_cell.font = Font(size=16, bold=True, color="FFFFFF")
+    title_cell.alignment = Alignment(horizontal='center')
+    title_cell.fill = PatternFill(start_color="4472C4", end_color="4472C4", fill_type="solid")
+    
+    if report_type == "individual":
+        # Add headers
+        headers = ["Name", "Email", "Role", "Contacts", "Appointments", "Presentations", 
+                   "Referrals", "Testimonials", "Sales", "New Face Sold", "Total Premium"]
+        for col_num, header in enumerate(headers, 1):
+            cell = ws.cell(row=2, column=col_num)
+            cell.value = header
+            cell.font = Font(bold=True)
+            cell.fill = PatternFill(start_color="D9E1F2", end_color="D9E1F2", fill_type="solid")
+            cell.alignment = Alignment(horizontal='center')
+        
+        # Add data
+        for row_num, data in enumerate(report_json['data'], 3):
+            ws.cell(row=row_num, column=1).value = data['name']
+            ws.cell(row=row_num, column=2).value = data['email']
+            ws.cell(row=row_num, column=3).value = data['role']
+            ws.cell(row=row_num, column=4).value = data['contacts']
+            ws.cell(row=row_num, column=5).value = data['appointments']
+            ws.cell(row=row_num, column=6).value = data['presentations']
+            ws.cell(row=row_num, column=7).value = data['referrals']
+            ws.cell(row=row_num, column=8).value = data['testimonials']
+            ws.cell(row=row_num, column=9).value = data['sales']
+            ws.cell(row=row_num, column=10).value = data['new_face_sold']
+            ws.cell(row=row_num, column=11).value = data['premium']
+    
+    elif report_type == "team":
+        # Add headers
+        headers = ["Team Name", "Manager", "Role", "Contacts", "Appointments", "Presentations", 
+                   "Referrals", "Testimonials", "Sales", "New Face Sold", "Total Premium"]
+        for col_num, header in enumerate(headers, 1):
+            cell = ws.cell(row=2, column=col_num)
+            cell.value = header
+            cell.font = Font(bold=True)
+            cell.fill = PatternFill(start_color="D9E1F2", end_color="D9E1F2", fill_type="solid")
+            cell.alignment = Alignment(horizontal='center')
+        
+        # Add data
+        for row_num, data in enumerate(report_json['data'], 3):
+            ws.cell(row=row_num, column=1).value = data['team_name']
+            ws.cell(row=row_num, column=2).value = data['manager']
+            ws.cell(row=row_num, column=3).value = data['role']
+            ws.cell(row=row_num, column=4).value = data['contacts']
+            ws.cell(row=row_num, column=5).value = data['appointments']
+            ws.cell(row=row_num, column=6).value = data['presentations']
+            ws.cell(row=row_num, column=7).value = data['referrals']
+            ws.cell(row=row_num, column=8).value = data['testimonials']
+            ws.cell(row=row_num, column=9).value = data['sales']
+            ws.cell(row=row_num, column=10).value = data['new_face_sold']
+            ws.cell(row=row_num, column=11).value = data['premium']
+    
+    elif report_type == "organization":
+        # Add headers
+        headers = ["Metric", "Total"]
+        for col_num, header in enumerate(headers, 1):
+            cell = ws.cell(row=2, column=col_num)
+            cell.value = header
+            cell.font = Font(bold=True)
+            cell.fill = PatternFill(start_color="D9E1F2", end_color="D9E1F2", fill_type="solid")
+            cell.alignment = Alignment(horizontal='center')
+        
+        # Add data
+        metrics = [
+            ("Total Members", report_json['total_members']),
+            ("Contacts", report_json['data']['contacts']),
+            ("Appointments", report_json['data']['appointments']),
+            ("Presentations", report_json['data']['presentations']),
+            ("Referrals", report_json['data']['referrals']),
+            ("Testimonials", report_json['data']['testimonials']),
+            ("Sales", report_json['data']['sales']),
+            ("New Face Sold", report_json['data']['new_face_sold']),
+            ("Total Premium", report_json['data']['premium'])
+        ]
+        
+        for row_num, (metric, value) in enumerate(metrics, 3):
+            ws.cell(row=row_num, column=1).value = metric
+            ws.cell(row=row_num, column=2).value = value
+    
+    # Auto-adjust column widths
+    for column in ws.columns:
+        max_length = 0
+        column_letter = column[0].column_letter
+        for cell in column:
+            try:
+                if len(str(cell.value)) > max_length:
+                    max_length = len(str(cell.value))
+            except:
+                pass
+        adjusted_width = min(max_length + 2, 50)
+        ws.column_dimensions[column_letter].width = adjusted_width
+    
+    # Save to BytesIO
+    excel_file = BytesIO()
+    wb.save(excel_file)
+    excel_file.seek(0)
+    
+    filename = f"daily_{report_type}_report_{date}.xlsx"
+    
+    return StreamingResponse(
+        excel_file,
+        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        headers={"Content-Disposition": f"attachment; filename={filename}"}
+    )
+
 @api_router.get("/admin/diagnostic")
 async def diagnostic(current_user: dict = Depends(get_current_user)):
     """Diagnostic endpoint to check database state"""
