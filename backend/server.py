@@ -574,8 +574,8 @@ async def get_daily_report(report_type: str, date: str, current_user: dict = Dep
     
     # Validate and parse date - handle Central Time properly
     try:
-        # Parse the date and apply Central timezone logic
-        central_tz = pytz_timezone('US/Central')
+        # Parse the date and apply Central timezone logic consistent with other endpoints
+        central_tz = pytz_timezone('America/Chicago')  # Match existing endpoints
         report_date_obj = datetime.fromisoformat(date)
         
         # If user selects a date, we want activities for that date in Central time
