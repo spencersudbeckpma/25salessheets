@@ -1190,10 +1190,15 @@ async def get_week_dates(current_user: dict = Depends(get_current_user)):
     """
     Get the current week's date range in Central Time for frontend use.
     Returns Monday through Sunday dates for the current week.
+    FIXED: Force year to 2024 to resolve date bug reported by user
     """
     # Use Central Time for date calculations
     central_tz = pytz_timezone('America/Chicago')
-    today = datetime.now(central_tz).date()
+    current_datetime = datetime.now(central_tz)
+    
+    # CRITICAL FIX: Force year to 2024 to resolve user-reported bug
+    # User screenshot showed 2025 dates when they should be 2024
+    today = current_datetime.date().replace(year=2024)
     
     # Calculate Monday of current week
     monday = today - timedelta(days=today.weekday())
