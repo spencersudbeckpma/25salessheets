@@ -572,9 +572,21 @@ async def get_daily_report(report_type: str, date: str, current_user: dict = Dep
     if current_user['role'] != 'state_manager':
         raise HTTPException(status_code=403, detail="Only State Managers can access daily reports")
     
-    # Validate and parse date
+    # Validate and parse date - handle Central Time properly
     try:
-        report_date = datetime.fromisoformat(date).date()
+        # Parse the date and apply Central timezone logic
+        central_tz = pytz_timezone('US/Central')
+        report_date_obj = datetime.fromisoformat(date)
+        
+        # If user selects a date, we want activities for that date in Central time
+        # Convert to Central time to get the proper date boundaries
+        if report_date_obj.tzinfo is None:
+            # Treat input date as Central time
+            report_date = report_date_obj.date()
+        else:
+            # Convert to Central time first
+            central_date = report_date_obj.astimezone(central_tz)
+            report_date = central_date.date()
     except ValueError:
         raise HTTPException(status_code=400, detail="Invalid date format. Use YYYY-MM-DD")
     
