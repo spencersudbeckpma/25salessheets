@@ -254,7 +254,7 @@ frontend:
 
 test_plan:
   current_focus:
-    - "Wednesday Activity Bug Investigation - Backend APIs"
+    - "Team View - Weekly period shows day-by-day breakdown with total"
   stuck_tasks: []
   test_all: false
   test_priority: "high_first"
