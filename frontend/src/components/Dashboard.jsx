@@ -100,21 +100,25 @@ const Dashboard = ({ user, setUser }) => {
                   >
                     📊 Reports
                   </TabsTrigger>
-                  <TabsTrigger 
-                    value="daily-report" 
-                    data-testid="daily-report-tab" 
-                    className="py-2.5 px-3 text-xs md:text-sm whitespace-nowrap flex-shrink-0"
-                  >
-                    📅 Daily Report
-                  </TabsTrigger>
-                  <TabsTrigger 
-                    value="admin" 
-                    data-testid="admin-tab" 
-                    className="py-2.5 px-3 text-xs md:text-sm whitespace-nowrap flex-shrink-0 bg-red-50"
-                  >
-                    🛠️ Admin
-                  </TabsTrigger>
                 </>
+              )}
+              {['state_manager', 'regional_manager', 'district_manager'].includes(user.role) && (
+                <TabsTrigger 
+                  value="daily-report" 
+                  data-testid="daily-report-tab" 
+                  className="py-2.5 px-3 text-xs md:text-sm whitespace-nowrap flex-shrink-0"
+                >
+                  📅 Daily Report
+                </TabsTrigger>
+              )}
+              {user.role === 'state_manager' && (
+                <TabsTrigger 
+                  value="admin" 
+                  data-testid="admin-tab" 
+                  className="py-2.5 px-3 text-xs md:text-sm whitespace-nowrap flex-shrink-0 bg-red-50"
+                >
+                  🛠️ Admin
+                </TabsTrigger>
               )}
             </TabsList>
           </div>
