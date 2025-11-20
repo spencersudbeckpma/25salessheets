@@ -1185,6 +1185,37 @@ async def get_team_members(current_user: dict = Depends(get_current_user)):
     members = await db.users.find({"manager_id": current_user['id']}, {"_id": 0, "password_hash": 0}).to_list(1000)
     return members
 
+@api_router.get("/team/week-dates")
+async def get_week_dates(current_user: dict = Depends(get_current_user)):
+    """
+    Get the current week's date range in Central Time for frontend use.
+    Returns Monday through Sunday dates for the current week.
+    """
+    # Use Central Time for date calculations
+    central_tz = pytz_timezone('America/Chicago')
+    today = datetime.now(central_tz).date()
+    
+    # Calculate Monday of current week
+    monday = today - timedelta(days=today.weekday())
+    
+    # Generate all 7 days of the week
+    week_dates = []
+    days_of_week = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']
+    
+    for i in range(7):
+        current_day = monday + timedelta(days=i)
+        week_dates.append({
+            "date": current_day.isoformat(),
+            "day_name": days_of_week[i],
+            "is_today": current_day == today
+        })
+    
+    return {
+        "week_dates": week_dates,
+        "week_start": monday.isoformat(),
+        "today": today.isoformat()
+    }
+
 @api_router.get("/team/hierarchy/{period}")
 async def get_team_hierarchy(period: str, current_user: dict = Depends(get_current_user), user_date: str = None):
     from datetime import timedelta
