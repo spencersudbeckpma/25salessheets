@@ -149,6 +149,10 @@ const Dashboard = ({ user, setUser }) => {
                 <Reports user={user} />
               </TabsContent>
 
+              <TabsContent value="daily-report" data-testid="daily-report-content" className="mt-4 md:mt-6">
+                <DailyReport user={user} />
+              </TabsContent>
+
               <TabsContent value="admin" data-testid="admin-content" className="mt-4 md:mt-6">
                 <AdminCleanup user={user} />
               </TabsContent>
