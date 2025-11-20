@@ -770,9 +770,11 @@ class DailyReportTester:
                 self.test_results['errors'].append(f"Date test {description} exception: {str(e)}")
 
     def run_all_tests(self):
-        """Run all tests"""
-        print_header("DAILY REPORT API ENDPOINT TESTING")
+        """Run all tests - FOCUS ON TIMEZONE BUG FIX VERIFICATION"""
+        print_header("🚨 TIMEZONE BUG FIX VERIFICATION - DAILY REPORT API TESTING")
         print_info(f"Testing against: {BACKEND_URL}")
+        print_info("🎯 PRIMARY FOCUS: Verify date accuracy and timezone bug fix")
+        print_info("🔍 ISSUE: User reported 'showing Wednesday's numbers but Tuesday's date' in Central time")
         
         # Setup
         if not self.setup_test_users():
