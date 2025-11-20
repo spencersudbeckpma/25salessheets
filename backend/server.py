@@ -683,7 +683,7 @@ async def get_daily_report(report_type: str, date: str, current_user: dict = Dep
         for member in all_members:
             activity = await db.activities.find_one({
                 "user_id": member['id'],
-                "date": report_date.isoformat()
+                "date": report_date
             }, {"_id": 0})
             
             if activity:
