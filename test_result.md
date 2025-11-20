@@ -105,6 +105,21 @@
 user_problem_statement: "CRM Sales Tracker with hierarchical team management. User requested: (A) Daily period should show individual's stats for that specific day, (B) Weekly period should show breakdown of each day within the week for each person plus weekly total, (C) Fix the aggregate rollup calculation at the top showing 0 values despite team members having data."
 
 backend:
+  - task: "Wednesday Activity Bug Investigation - Backend APIs"
+    implemented: true
+    working: true
+    file: "/app/backend/server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: "NA"
+        agent: "user"
+        comment: "CRITICAL BUG REPORT: User reports Wednesday showing zero activity in Team View weekly breakdown when activity exists for today (Wednesday). Need to investigate date verification, activity data check, and date matching."
+      - working: true
+        agent: "testing"
+        comment: "✅ COMPREHENSIVE INVESTIGATION COMPLETED: All backend APIs working correctly. VERIFIED: (1) Wednesday (2025-11-19) correctly identified as today by GET /api/team/week-dates, (2) Wednesday activity exists in database (20.0 contacts, 10.0 appointments, $3500 premium), (3) GET /api/team/hierarchy/weekly returns correct weekly stats (35.0 contacts, $6000 premium), (4) GET /api/team/hierarchy/daily shows Wednesday activity correctly, (5) All date calculations, timezone handling, and activity matching working properly. CONCLUSION: Backend is NOT the issue. The problem is likely in the frontend Team View component. All 28 backend tests passed successfully."
+
   - task: "Team hierarchy API with period-based aggregation"
     implemented: true
     working: true
