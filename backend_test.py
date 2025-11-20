@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """
-Backend Testing Script - URGENT DATE BUG FIX VERIFICATION
-Tests the new Team View Weekly Dates endpoint and date bug fix
-Focus: Verify /api/team/week-dates returns correct year (2024, not 2025) in Central Time
+Backend Testing Script - CRITICAL WEDNESDAY ACTIVITY BUG INVESTIGATION
+URGENT ISSUE: User reports Wednesday showing zero activity when activity exists
+Focus: Investigate date verification, activity data check, and date matching issues
 """
 
 import requests
