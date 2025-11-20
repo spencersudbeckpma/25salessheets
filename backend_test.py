@@ -842,11 +842,11 @@ class DailyReportTester:
                 self.test_results['errors'].append(f"Date test {description} exception: {str(e)}")
 
     def run_all_tests(self):
-        """Run all tests - FOCUS ON WEEK DATES BUG FIX VERIFICATION"""
-        print_header("🚨 URGENT DATE BUG FIX VERIFICATION - TEAM VIEW WEEKLY DATES")
+        """Run all tests - FOCUS ON WEDNESDAY ACTIVITY BUG INVESTIGATION"""
+        print_header("🚨 CRITICAL WEDNESDAY ACTIVITY BUG INVESTIGATION")
         print_info(f"Testing against: {BACKEND_URL}")
-        print_info("🎯 PRIMARY FOCUS: Verify /api/team/week-dates returns correct year (2024, not 2025)")
-        print_info("🔍 ISSUE: User screenshot shows Team View displaying wrong year (2025 instead of 2024)")
+        print_info("🎯 PRIMARY FOCUS: Investigate why Wednesday shows zero activity when activity exists")
+        print_info("🔍 ISSUE: User reports Wednesday showing zero in Team View weekly breakdown")
         
         # Setup
         if not self.setup_test_users():
@@ -855,8 +855,9 @@ class DailyReportTester:
             
         self.setup_test_data()
         
-        # Run tests - PRIORITIZE WEEK DATES BUG FIX VERIFICATION
-        self.test_week_dates_endpoint()  # CRITICAL TEST FIRST - NEW ENDPOINT
+        # Run tests - PRIORITIZE WEDNESDAY ACTIVITY BUG INVESTIGATION
+        self.test_wednesday_activity_bug()  # CRITICAL TEST FIRST - NEW INVESTIGATION
+        self.test_week_dates_endpoint()  # Check date calculation
         self.test_compare_with_working_endpoint()  # Compare with working endpoint
         self.test_activity_matching()  # Verify activity matching
         self.test_different_dates()  # Test various dates
