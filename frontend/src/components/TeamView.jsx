@@ -41,6 +41,16 @@ const TeamView = ({ user }) => {
   const fetchMemberStats = async (memberId) => {
     try {
       const token = localStorage.getItem('token');
+      
+      // Get correct week dates from server for weekly period
+      let weekDates = null;
+      if (period === 'weekly') {
+        const weekResponse = await axios.get(`${API}/team/week-dates`, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        weekDates = weekResponse.data.week_dates;
+      }
+      
       const response = await axios.get(`${API}/users/${memberId}/activities`, {
         headers: { Authorization: `Bearer ${token}` }
       });
@@ -50,28 +60,22 @@ const TeamView = ({ user }) => {
       let processedStats = null;
       
       if (period === 'daily') {
-        // Show today's activity only
-        const today = new Date().toISOString().split('T')[0];
+        // Show today's activity only - get today from server
+        const todayResponse = await axios.get(`${API}/team/week-dates`, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        const today = todayResponse.data.today;
         const todayActivity = activities.find(a => a.date === today);
         processedStats = todayActivity ? [todayActivity] : [];
       } else if (period === 'weekly') {
-        // Show breakdown by day for the current week
-        const today = new Date();
-        const monday = new Date(today);
-        monday.setDate(today.getDate() - today.getDay() + 1); // Get Monday
-        
+        // Use server-provided week dates instead of client-side calculation
         const weekActivities = [];
-        const daysOfWeek = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
         
-        for (let i = 0; i < 7; i++) {
-          const currentDay = new Date(monday);
-          currentDay.setDate(monday.getDate() + i);
-          const dateStr = currentDay.toISOString().split('T')[0];
-          
-          const dayActivity = activities.find(a => a.date === dateStr);
+        for (const dateInfo of weekDates) {
+          const dayActivity = activities.find(a => a.date === dateInfo.date);
           weekActivities.push({
-            date: dateStr,
-            dayName: daysOfWeek[i],
+            date: dateInfo.date,
+            dayName: dateInfo.day_name,
             contacts: dayActivity?.contacts || 0,
             appointments: dayActivity?.appointments || 0,
             presentations: dayActivity?.presentations || 0,
