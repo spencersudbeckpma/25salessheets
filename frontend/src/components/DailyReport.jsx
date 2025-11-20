@@ -237,7 +237,7 @@ const DailyReport = ({ user }) => {
           Daily Reports
         </CardTitle>
         <p className="text-sm text-gray-600 mt-2">
-          View and download daily activity reports for individuals, teams, or organization-wide
+          View and download daily activity reports for your team hierarchy (individuals, teams, organization)
         </p>
       </CardHeader>
       <CardContent>
