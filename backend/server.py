@@ -1212,8 +1212,8 @@ async def get_week_dates(current_user: dict = Depends(get_current_user)):
     
     return {
         "week_dates": week_dates,
-        "week_start": monday.replace(year=2024).isoformat(),
-        "today": today.replace(year=2024).isoformat()
+        "week_start": monday.isoformat(),
+        "today": today.isoformat()
     }
 
 @api_router.get("/team/hierarchy/{period}")
