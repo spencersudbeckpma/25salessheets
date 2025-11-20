@@ -781,12 +781,15 @@ class DailyReportTester:
             
         self.setup_test_data()
         
-        # Run tests
+        # Run tests - PRIORITIZE TIMEZONE BUG FIX VERIFICATION
+        self.test_timezone_bug_fix()  # CRITICAL TEST FIRST
+        self.test_compare_with_working_endpoint()  # Compare with working endpoint
+        self.test_activity_matching()  # Verify activity matching
+        self.test_different_dates()  # Test various dates
         self.test_daily_report_json_endpoint()
         self.test_daily_report_excel_endpoint()
         self.test_access_control()
         self.test_error_cases()
-        self.test_different_dates()
         
         # Print summary
         self.print_test_summary()
