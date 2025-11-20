@@ -251,8 +251,7 @@ frontend:
 
 test_plan:
   current_focus:
-    - "Daily Report API endpoints"
-    - "Daily Report Component"
+    - "Wednesday Activity Bug Investigation - Backend APIs"
   stuck_tasks: []
   test_all: false
   test_priority: "high_first"
