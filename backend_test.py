@@ -87,13 +87,34 @@ class DailyReportTester:
         """Setup test users for testing"""
         print_header("SETTING UP TEST USERS")
         
-        # Register state manager
-        self.state_manager_token = self.register_test_user(
-            "state.manager@test.com",
-            "TestPassword123!",
-            "State Manager Test",
-            "state_manager"
-        )
+        # Try to login with existing state manager first
+        try:
+            response = self.session.post(f"{BACKEND_URL}/auth/login", json={
+                "email": "spencer.sudbeck@pmagent.net",
+                "password": "Bizlink25"
+            })
+            if response.status_code == 200:
+                data = response.json()
+                self.state_manager_token = data['token']
+                print_success(f"Logged in existing state manager: {data['user']['name']}")
+            else:
+                print_warning("Could not login existing state manager, trying to register new one")
+                # Register state manager
+                self.state_manager_token = self.register_test_user(
+                    "state.manager@test.com",
+                    "TestPassword123!",
+                    "State Manager Test",
+                    "state_manager"
+                )
+        except Exception as e:
+            print_warning(f"Exception logging in existing state manager: {str(e)}")
+            # Register state manager
+            self.state_manager_token = self.register_test_user(
+                "state.manager@test.com",
+                "TestPassword123!",
+                "State Manager Test",
+                "state_manager"
+            )
         
         # Register non-state manager (agent)
         self.non_state_manager_token = self.register_test_user(
