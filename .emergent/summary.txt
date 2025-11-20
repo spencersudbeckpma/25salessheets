@@ -1,65 +1,105 @@
 <analysis>
-The AI engineer successfully rebuilt a comprehensive CRM Sales Tracker from scratch based on a detailed product specification. Initial work involved setting up the React frontend (Shadcn/UI, Tailwind CSS, Recharts) and FastAPI backend (MongoDB, JWT auth). Key features implemented include user management, hierarchical roles, daily activity logging, personal/managerial data editing, team management, and organization-wide leaderboards. Iterative fixes addressed UI layout issues, mobile responsiveness, decimal input for presentations, a critical bug where manager edits were adding instead of replacing values, and timezone discrepancies in date calculations. A secure admin cleanup tool was also created to address persistent data issues. The most recent task involved adding expandable individual stats to the Team View, which was implemented but its verification is pending user clarification on how to proceed with testing.
+The user's primary language is English. The next agent must respond in English.
+
+The trajectory details the iterative development and enhancement of a full-stack CRM Sales Tracker application. The initial phase involved building the core application with a React frontend and FastAPI backend, including user authentication, hierarchical team structures, activity logging, and leaderboards.
+
+A significant portion of the work involved iterative refinement and complex debugging based on user feedback. Key challenges addressed include:
+1.  **Login and Authentication:** A persistent issue on the user's iPad, caused by aggressive browser autofill, led to a multi-step debugging process. This culminated in implementing a dual username/email login system and a temporary, user-specific One-Tap Login button to bypass the form. The discrepancy between development and production databases further complicated this, requiring a one-time password reset endpoint for the production environment.
+2.  **Data Integrity and Display:** The user reported issues with data rollups and incorrect dates. Investigation revealed this was due to outdated demo data and a critical timezone mismatch between the backend (initially Central, mistakenly changed to UTC) and the frontend (user's local time). The final fix was to standardize the backend on 'US/Central' time.
+3.  **Feature Expansion:** The AI engineer successfully added several major features:
+    *   Detailed daily/weekly breakdowns in the Team View.
+    *   A dedicated Reports section for downloading team performance data as Excel spreadsheets, restricted to State Managers.
+    *   A New Face Customer Tracking system, allowing users to log customer details (Name, County, Policy Amount) after a new sale, with a corresponding report page and downloadable Excel files.
+
+The most recent work involved adding Sales to the team view and starting to clarify a new request for a daily report. The overall process shows a responsive AI engineer building features, troubleshooting complex bugs, and adapting to user needs.
 </analysis>
 
 <product_requirements>
-The goal is to rebuild a full-stack CRM Sales Tracker application. It should support a hierarchical team structure (State, Regional, District, Agent managers) with role-based access controls. Users must be able to track 8 daily sales activity categories (Contacts, Appointments, Presentations, Referrals, Testimonials, Sales, New Face Sold, Total Premium) with daily, weekly, monthly, quarterly, and yearly aggregations.
+The application is a comprehensive CRM Sales Tracker designed for a sales organization with a hierarchical structure (State Manager, Regional Manager, District Manager, Agent).
 
-Key features include secure JWT-based user management and authentication, a team invitation system, personal statistics dashboards, and both personal and manager data editing capabilities with audit trails. A competitive leaderboard, showing the top 5 performers across the entire organization in key categories, is required. The UI should be modern, responsive (mobile-friendly), and built with Shadcn/UI and Tailwind CSS, featuring interactive charts. Specific refinements included allowing decimal input for Presentations, displaying Total Premium instead of Sales in team views, and implementing hierarchical rollup of statistics for managers. Persistent issues with data editing duplication and timezone discrepancies were also addressed.
+**Core Features Implemented:**
+*   **User Management:** Secure JWT-based authentication supporting both email and username logins. A role-based access control (RBAC) system ensures managers only see data for their own teams.
+*   **Activity Logging:** Users can log 8 daily activity metrics: Contacts, Appointments, Presentations, Referrals, Testimonials, Sales, New Face Sold, and Total Premium. Contacts, Appointments, Presentations, and New Face Sold support decimal inputs.
+*   **Data Visualization:**
+    *   **Team View:** Displays the user's organizational hierarchy with aggregated performance stats. Includes expandable cards for individual team members with daily and weekly breakdowns.
+    *   **Leaderboard:** Shows the top 5 organization-wide performers for Presentations, Referrals, Testimonials, New Face Sold, and Total Premium.
+*   **Reporting & Tracking:**
+    *   **Excel Reports:** A State Manager-exclusive feature to download weekly, monthly, quarterly, and yearly performance reports for the entire organization.
+    *   **New Face Customer Tracking:** A system to log customer details (Name, County, Policy Amount) upon a New Face sale, with a dedicated tracking dashboard and downloadable reports.
+
+The application has undergone significant debugging to resolve timezone discrepancies and production vs. development environment mismatches.
 </product_requirements>
 
 <key_technical_concepts>
-- **Backend:** FastAPI (Python), MongoDB (with Motor async driver), JWT authentication, bcrypt hashing, Pydantic,  for timezone.
-- **Frontend:** React 18, React Router, Shadcn/UI components, Tailwind CSS, Recharts for data visualization, React hooks for state management.
-- **Architecture:** Full-stack with  prefix for backend endpoints, environment variable for URLs (, ).
+- **Backend:** FastAPI, MongoDB (with Motor), Pydantic, JWT for authentication, bcrypt,  for timezone management (standardized to 'US/Central'),  for Excel generation.
+- **Frontend:** React, Shadcn/UI, Tailwind CSS, Recharts for charts, React Hooks.
+- **Architecture:** Full-stack with separate frontend/backend services. API routes prefixed with . Environment variables manage DB and backend URLs.
+- **Development Process:** Iterative development, extensive debugging, use of temporary helper endpoints/UI for production fixes, and role-based access control (RBAC) for feature visibility.
 </key_technical_concepts>
 
 <code_architecture>
+The application follows a standard full-stack architecture with a React frontend communicating with a FastAPI backend, which in turn connects to a MongoDB database.
 
-- ****: Main FastAPI application.
-    - **Importance**: Handles all API endpoints (auth, activity CRUD, stats, team, invites, leaderboard), MongoDB interactions, and business logic.
-    - **Changes**: Updated for leaderboard periods (top 5), hierarchical rollup, decimal presentations (float), timezone handling (pytz), and bug fixes for activity updates (replacing instead of adding). Added debug and cleanup endpoints.
-- ****: A utility script to identify and delete duplicate activities.
-    - **Importance**: Created to address a specific user-reported bug where activity edits might lead to duplicate data in the database.
-- ****: Main React component.
-    - **Importance**: Sets up global layout and routing for the application, integrating different pages/components.
-    - **Changes**: Updated for mobile responsiveness with global styles, and for overall layout improvements.
-- ** / **: Global styling for the frontend.
-    - **Importance**: Defines base styles and Tailwind CSS directives.
-    - **Changes**: Adjusted for mobile responsiveness and general layout.
-- ****: Layout for the main authenticated user interface.
-    - **Importance**: Manages navigation tabs (ActivityInput, My Stats, Team View, Team Management, Leaderboard, AdminCleanup) and user authentication state.
-    - **Changes**: Layout adjustments, mobile responsiveness, and restricting the Admin tab visibility to  roles.
-- ****: User login and registration component.
-    - **Importance**: Handles user authentication and invite code processing.
-- ****: Component for users to log daily activities.
-    - **Importance**: Provides input fields for the 8 activity categories.
-    - **Changes**: Layout improvements, fixes for default date (local time), input field handling (allowing empty values, parsing numbers correctly).
-- ****: Displays personal activity statistics and allows editing.
-    - **Importance**: Shows aggregated stats and a history of user's activities.
-    - **Changes**: Layout improvements, handling decimal presentations, input field refinements for editing.
-- ****: Displays team hierarchy and performance.
-    - **Importance**: Visualizes the organizational structure and aggregated stats.
-    - **Changes**: Layout improvements, adding period filters (Daily, Weekly, Monthly, Yearly), changing Sales to Total Premium, and adding expandable detail cards for individual team member stats.
-- ****: Interface for managers to manage teams and edit subordinate data.
-    - **Importance**: Facilitates inviting new members, removing users, and editing team activity data.
-    - **Changes**: Layout improvements, handling decimal presentations, input field refinements for editing, fixing the duplication bug by ensuring state refresh on date change.
-- ****: Displays competitive rankings.
-    - **Importance**: Shows top performers across the organization.
-    - **Changes**: Displaying top 5 (instead of 3) for organization-wide competition, updated for time periods.
-- ****: A dedicated component for admin-level data cleanup.
-    - **Importance**: Provides a UI for State Managers to trigger specific cleanup actions, particularly for persistent data issues.
-    - **Changes**: Newly created to address the user's need for direct data cleanup, especially for James VanKuelen duplicates.
+**Directory Structure:**
+
+
+**Key File Summaries:**
+
+- ****
+    - **Importance:** This is the core of the application, defining all API endpoints, database models (Pydantic), and business logic.
+    - **Summary of Changes:** This file was heavily modified to:
+        - Add endpoints for Excel reports (), New Face Customer tracking (), and diagnostics.
+        - Fix a critical bug by standardizing all date/time operations to 'US/Central' timezone, removing the incorrect UTC logic.
+        - Update data models to allow  values for Contacts, Appointments, and New Face Sold.
+        - Implement a flexible login endpoint that accepts either a username or an email.
+        - Add temporary endpoints for one-time production fixes, like resetting a user's password.
+
+- ****
+    - **Importance:** Displays the core hierarchical team data, which is a primary feature. It was one of the most frequently edited files.
+    - **Summary of Changes:**
+        - Implemented expandable cards to show detailed daily and weekly breakdowns for individual team members.
+        - UI was redesigned twice based on user feedback, first to a bold theme, then to a more subtle and professional color scheme.
+        - The number of metrics displayed was streamlined to 4 key items, and recently, Sales was being added back.
+
+- ****
+    - **Importance:** Handles user authentication, which was a major pain point for the user.
+    - **Summary of Changes:**
+        - The login form was updated to disable autocomplete to combat browser issues.
+        - A conditional, user-specific One-Tap Login button was added to provide a workaround for the user's persistent iPad autofill problem. This button is only visible when spencer is typed in the username field.
+
+- ****
+    - **Importance:** The main layout component that controls navigation tabs.
+    - **Summary of Changes:** Edited to add new tabs for Reports and New Face Tracking, with logic to ensure they are only visible to users with the  role.
+
+- ****
+    - **Importance:** The primary data entry point for all users.
+    - **Summary of Changes:**
+        - Input fields for Contacts, Appointments, and New Face Sold were updated to use  and allow decimal steps.
+        - A new UI section was conditionally added to allow users to input customer details (Name, County, Policy Amount) after logging a New Face Sold.
+
+- ** & **
+    - **Importance:** These are entirely new components created to house major new features requested by the user.
+    - **Summary of Changes:** Created from scratch to provide UI for downloading various Excel reports and for viewing/searching the New Face Customer data, respectively.
 </code_architecture>
 
 <pending_tasks>
-- User clarification on What’s the best option here the last time I forked I had issues and Do I start a new thing then? to proceed with verifying the break out each individual person and team for the different categories weekly daily, etc. feature in Team View.
+- **Daily Report:** The user requested to add in a daily report as well to the app. The AI was in the process of clarifying the specific requirements for this new report type when the conversation ended.
+- **Finalize Sales in Team View:** The Sales metric was added to the top-level aggregate summary and the individual member cards, but it still needs to be added to the expanded daily/weekly breakdown views within  to be fully complete.
 </pending_tasks>
 
 <current_work>
-Immediately before this summary request, the AI engineer was implementing the user's request to break out each individual person and team for the different categories weekly daily, etc. within the Team View. This involved updating the  component to include expandable detail cards for each team member, allowing managers to view individual statistics by period (daily, weekly, monthly, annual). Two  operations were performed on  to achieve this. After applying the changes and restarting the frontend, the AI asked the user for a screenshot regarding a previous issue about forking. The user's subsequent question, Do I start a new thing then?, indicates a potential misunderstanding or confusion about how to proceed with testing or viewing the newly implemented feature, halting immediate progress on verification.
+Immediately before this summary, the AI engineer was multitasking between two user requests.
+
+The primary task being coded was adding the Sales metric to the Team View. The AI had successfully edited  to add Sales to the aggregate summary card at the top and was in the process of adding it to the individual team member cards. The last action on this was a successful  on  to add the Sales metric to the main card for each team member. The next logical step, though not explicitly stated, would be to add it to the expanded daily/weekly breakdown views for consistency.
+
+While working on this, the user made a new request: I would like to add in a daily report as well to the app. The AI's last action was to begin clarifying the requirements for this new daily report feature by asking the user for more details. Therefore, the work state is split: one task is partially complete, and a new, undefined task has just been introduced.
 </current_work>
 
 <optional_next_step>
-Clarify the user's question about forking and starting a new thing to enable them to verify the newly implemented individual stats breakdown in the Team View.
+Complete adding the Sales metric to the expanded daily/weekly breakdown views in  to fully finalize the previous request before starting on the new daily report feature.
 </optional_next_step>
+
+<g.direct_quotes>
+User request for the in-progress task: Can I add sales to the team view and Have you added sales to my team view.
+User request for the next pending task: I would like to add in a daily report as well to the app.
+</g.direct_quotes>

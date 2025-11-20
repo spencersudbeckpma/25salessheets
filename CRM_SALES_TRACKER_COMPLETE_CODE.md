@@ -67,7 +67,7 @@ pytz==2023.3
 
 ### File: frontend/.env
 ```env
-REACT_APP_BACKEND_URL=https://your-app-name.preview.emergentagent.com
+REACT_APP_BACKEND_URL=https://sales-leaderboard-5.preview.emergentagent.com
 WDS_SOCKET_PORT=443
 REACT_APP_ENABLE_VISUAL_EDITS=false
 ENABLE_HEALTH_CHECK=false
