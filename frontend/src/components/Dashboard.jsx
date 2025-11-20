@@ -101,6 +101,13 @@ const Dashboard = ({ user, setUser }) => {
                     📊 Reports
                   </TabsTrigger>
                   <TabsTrigger 
+                    value="daily-report" 
+                    data-testid="daily-report-tab" 
+                    className="py-2.5 px-3 text-xs md:text-sm whitespace-nowrap flex-shrink-0"
+                  >
+                    📅 Daily Report
+                  </TabsTrigger>
+                  <TabsTrigger 
                     value="admin" 
                     data-testid="admin-tab" 
                     className="py-2.5 px-3 text-xs md:text-sm whitespace-nowrap flex-shrink-0 bg-red-50"
