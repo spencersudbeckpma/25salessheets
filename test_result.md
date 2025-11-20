@@ -169,8 +169,21 @@ metadata:
   test_sequence: 1
   run_ui: true
 
+  - task: "Team View - Add Sales metric to all views"
+    implemented: true
+    working: "NA"
+    file: "/app/frontend/src/components/TeamView.jsx"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+      - working: "NA"
+        agent: "main"
+        comment: "User requested to add Sales metric back. Modified TeamView.jsx to include Sales in: 1) Aggregate summary at top (5 metrics total), 2) Individual team member cards (5 metrics), 3) Expanded daily/weekly breakdown views (changed from 4 to 5 metrics in grid). Grid changed from grid-cols-4 to grid-cols-5 to accommodate all 5 metrics."
+
 test_plan:
-  current_focus: []
+  current_focus:
+    - "Team View - Add Sales metric to all views"
   stuck_tasks: []
   test_all: false
   test_priority: "high_first"
