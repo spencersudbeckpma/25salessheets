@@ -462,8 +462,231 @@ class DailyReportTester:
             self.test_results['failed'] += 1
             self.test_results['errors'].append(f"Invalid report type test exception: {str(e)}")
 
+    def test_wednesday_activity_bug(self):
+        """CRITICAL: Test Wednesday activity bug - investigate why Wednesday shows zero when activity exists"""
+        print_header("🚨 WEDNESDAY ACTIVITY BUG INVESTIGATION")
+        
+        if not self.state_manager_token:
+            print_error("No state manager token - skipping Wednesday activity bug tests")
+            return
+            
+        headers = {"Authorization": f"Bearer {self.state_manager_token}"}
+        
+        print_info("🔍 CRITICAL INVESTIGATION: Wednesday showing zero activity when activity exists")
+        print_info("🎯 Testing date calculation, activity data, and date matching")
+        
+        # Step 1: Check Today's Date Calculation
+        print_info("\n📅 STEP 1: Check Today's Date Calculation")
+        try:
+            response = self.session.get(f"{BACKEND_URL}/team/week-dates", headers=headers)
+            
+            if response.status_code == 200:
+                data = response.json()
+                print_success("✅ GET /api/team/week-dates endpoint accessible")
+                
+                week_dates = data.get('week_dates', [])
+                today_date = data.get('today', '')
+                
+                print_info(f"🗓️ System thinks today is: {today_date}")
+                
+                # Find Wednesday in the week
+                wednesday_info = None
+                for date_info in week_dates:
+                    if date_info.get('day_name') == 'Wednesday':
+                        wednesday_info = date_info
+                        break
+                
+                if wednesday_info:
+                    wednesday_date = wednesday_info.get('date', '')
+                    is_today = wednesday_info.get('is_today', False)
+                    print_info(f"📅 Wednesday date: {wednesday_date}")
+                    print_info(f"🎯 Is Wednesday today? {is_today}")
+                    
+                    if is_today:
+                        print_success("✅ System correctly identifies today as Wednesday")
+                        self.test_results['passed'] += 1
+                    else:
+                        print_warning("⚠️ Today is not Wednesday according to system")
+                        
+                    # Store Wednesday date for further testing
+                    self.wednesday_date = wednesday_date
+                else:
+                    print_error("❌ Could not find Wednesday in week dates")
+                    self.test_results['failed'] += 1
+                    return
+                    
+            else:
+                print_error(f"❌ Week dates endpoint failed: {response.status_code}")
+                self.test_results['failed'] += 1
+                return
+                
+        except Exception as e:
+            print_error(f"❌ Exception in date calculation test: {str(e)}")
+            self.test_results['failed'] += 1
+            return
+        
+        # Step 2: Check Activity Data for Wednesday
+        print_info("\n📊 STEP 2: Check Activity Data for Wednesday")
+        wednesday_date = getattr(self, 'wednesday_date', '2024-11-20')  # Fallback to specific date
+        
+        try:
+            # First, create test activity for Wednesday to ensure data exists
+            print_info(f"Creating test activity for Wednesday ({wednesday_date})...")
+            activity_data = {
+                "date": wednesday_date,
+                "contacts": 20.0,
+                "appointments": 10.0,
+                "presentations": 6.0,
+                "referrals": 4,
+                "testimonials": 2,
+                "sales": 3,
+                "new_face_sold": 2.0,
+                "premium": 3500.00
+            }
+            
+            create_response = self.session.put(
+                f"{BACKEND_URL}/activities/{wednesday_date}",
+                json=activity_data,
+                headers=headers
+            )
+            
+            if create_response.status_code == 200:
+                print_success(f"✅ Created/updated activity for Wednesday ({wednesday_date})")
+                self.test_results['passed'] += 1
+            else:
+                print_info(f"Activity may already exist for Wednesday (status: {create_response.status_code})")
+            
+            # Verify activity exists by fetching user's activities
+            print_info("Checking if Wednesday activity exists in database...")
+            my_activities_response = self.session.get(f"{BACKEND_URL}/activities/my", headers=headers)
+            
+            if my_activities_response.status_code == 200:
+                activities = my_activities_response.json()
+                wednesday_activity = None
+                
+                for activity in activities:
+                    if activity.get('date') == wednesday_date:
+                        wednesday_activity = activity
+                        break
+                
+                if wednesday_activity:
+                    print_success(f"✅ CONFIRMED: Activity exists for Wednesday ({wednesday_date})")
+                    print_info(f"   Contacts: {wednesday_activity.get('contacts', 0)}")
+                    print_info(f"   Appointments: {wednesday_activity.get('appointments', 0)}")
+                    print_info(f"   Premium: ${wednesday_activity.get('premium', 0)}")
+                    self.test_results['passed'] += 1
+                else:
+                    print_error(f"❌ CRITICAL: No activity found for Wednesday ({wednesday_date}) in database")
+                    self.test_results['failed'] += 1
+                    self.test_results['errors'].append(f"No Wednesday activity in database: {wednesday_date}")
+            else:
+                print_error(f"❌ Could not fetch user activities: {my_activities_response.status_code}")
+                self.test_results['failed'] += 1
+                
+        except Exception as e:
+            print_error(f"❌ Exception checking Wednesday activity data: {str(e)}")
+            self.test_results['failed'] += 1
+        
+        # Step 3: Test Team Hierarchy Weekly View
+        print_info("\n🏢 STEP 3: Test Team Hierarchy Weekly View")
+        try:
+            hierarchy_response = self.session.get(
+                f"{BACKEND_URL}/team/hierarchy/weekly",
+                headers=headers
+            )
+            
+            if hierarchy_response.status_code == 200:
+                hierarchy_data = hierarchy_response.json()
+                print_success("✅ Team hierarchy weekly endpoint accessible")
+                
+                # Check if hierarchy shows Wednesday activity
+                stats = hierarchy_data.get('stats', {})
+                if stats:
+                    contacts = stats.get('contacts', 0)
+                    appointments = stats.get('appointments', 0)
+                    premium = stats.get('premium', 0)
+                    
+                    print_info(f"📊 Team hierarchy weekly stats:")
+                    print_info(f"   Contacts: {contacts}")
+                    print_info(f"   Appointments: {appointments}")
+                    print_info(f"   Premium: ${premium}")
+                    
+                    if contacts > 0 or appointments > 0 or premium > 0:
+                        print_success("✅ Team hierarchy shows non-zero activity for the week")
+                        self.test_results['passed'] += 1
+                    else:
+                        print_error("❌ CRITICAL BUG: Team hierarchy shows zero activity despite Wednesday data existing")
+                        self.test_results['failed'] += 1
+                        self.test_results['errors'].append("Team hierarchy weekly shows zero activity")
+                else:
+                    print_warning("⚠️ No stats found in team hierarchy response")
+                    
+            else:
+                print_error(f"❌ Team hierarchy weekly failed: {hierarchy_response.status_code}")
+                self.test_results['failed'] += 1
+                
+        except Exception as e:
+            print_error(f"❌ Exception testing team hierarchy weekly: {str(e)}")
+            self.test_results['failed'] += 1
+        
+        # Step 4: Test Individual User Activities Endpoint
+        print_info("\n👤 STEP 4: Test Individual User Activities Endpoint")
+        try:
+            # Test daily report for Wednesday
+            daily_response = self.session.get(
+                f"{BACKEND_URL}/reports/daily/individual",
+                params={"date": wednesday_date},
+                headers=headers
+            )
+            
+            if daily_response.status_code == 200:
+                daily_data = daily_response.json()
+                print_success(f"✅ Daily report accessible for Wednesday ({wednesday_date})")
+                
+                # CRITICAL: Check if date field matches request
+                if daily_data.get('date') == wednesday_date:
+                    print_success(f"✅ CRITICAL: Date field matches request ({wednesday_date})")
+                    self.test_results['passed'] += 1
+                else:
+                    print_error(f"❌ CRITICAL DATE MISMATCH: Request {wednesday_date} != Response {daily_data.get('date')}")
+                    self.test_results['failed'] += 1
+                    self.test_results['errors'].append(f"Date mismatch in daily report: {wednesday_date} vs {daily_data.get('date')}")
+                
+                # Check if Wednesday activity appears in the report
+                data_array = daily_data.get('data', [])
+                if data_array:
+                    found_wednesday_activity = False
+                    for member in data_array:
+                        contacts = member.get('contacts', 0)
+                        appointments = member.get('appointments', 0)
+                        premium = member.get('premium', 0)
+                        
+                        if contacts > 0 or appointments > 0 or premium > 0:
+                            found_wednesday_activity = True
+                            print_success(f"✅ Found Wednesday activity for {member.get('name', 'Unknown')}")
+                            print_info(f"   Contacts: {contacts}, Appointments: {appointments}, Premium: ${premium}")
+                            break
+                    
+                    if found_wednesday_activity:
+                        print_success("✅ Wednesday activity correctly appears in daily report")
+                        self.test_results['passed'] += 1
+                    else:
+                        print_error("❌ CRITICAL BUG: No Wednesday activity found in daily report despite database having data")
+                        self.test_results['failed'] += 1
+                        self.test_results['errors'].append("Wednesday activity missing from daily report")
+                else:
+                    print_warning("⚠️ No data array in daily report response")
+                    
+            else:
+                print_error(f"❌ Daily report for Wednesday failed: {daily_response.status_code}")
+                self.test_results['failed'] += 1
+                
+        except Exception as e:
+            print_error(f"❌ Exception testing individual activities: {str(e)}")
+            self.test_results['failed'] += 1
+
     def test_week_dates_endpoint(self):
-        """CRITICAL: Test the new /api/team/week-dates endpoint - verify correct year and Central Time"""
+        """Test the /api/team/week-dates endpoint for date accuracy"""
         print_header("🚨 WEEK DATES ENDPOINT VERIFICATION")
         
         if not self.state_manager_token:
