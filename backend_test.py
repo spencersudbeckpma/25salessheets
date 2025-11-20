@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 """
-Backend Testing Script for Daily Report API Endpoints
-Tests the new daily report endpoints with comprehensive validation
+Backend Testing Script for Daily Report API Endpoints - TIMEZONE BUG FIX VERIFICATION
+Tests the timezone bug fix for Daily Report endpoints
+Focus: Verify date accuracy and compare with working endpoints
 """
 
 import requests
