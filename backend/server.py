@@ -698,7 +698,7 @@ async def get_daily_report(report_type: str, date: str, current_user: dict = Dep
         
         return {
             "report_type": "organization",
-            "date": report_date.isoformat(),
+            "date": report_date,
             "total_members": len(all_members),
             "data": org_totals
         }
