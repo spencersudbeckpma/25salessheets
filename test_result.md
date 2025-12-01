@@ -278,6 +278,21 @@ backend:
         agent: "testing"
         comment: "🎉 FRONTEND MANAGER HIERARCHY DRILL-DOWN TESTING COMPLETED: All critical functionality working perfectly! COMPREHENSIVE VERIFICATION: (1) ✅ MANAGER REPORTS TAB ACCESS: Successfully accessible to state_manager role, tab loads correctly with proper UI, (2) ✅ INDIVIDUAL REPORT WITH CLICKABLE NAMES: Monthly report displays table with 3 clickable manager names showing 👥 icon, 'Actions' column displays 'Click name for team' text as expected, (3) ✅ MANAGER HIERARCHY DRILL-DOWN: Clicking manager name successfully loads purple-themed hierarchy view with 'Manager's Team Hierarchy' header, displays relationship badges (Manager/Direct Report/Indirect Report) with proper color coding, shows complete team structure with all 8 activity metrics, (4) ✅ UI STATE MANAGEMENT: hierarchyData state correctly set when clicking manager names, fetchManagerHierarchy function working properly, clearHierarchyView function accessible via '← Back to Report' button, (5) ✅ DATA LOADING: GET /api/reports/managers successfully loads available managers, manager selection dropdown populated correctly, network requests working for hierarchy drill-down. MINOR ISSUE: Back button navigation has slight delay but functionality works. The user's reported issue of 'can't see full teams broke down' is RESOLVED - the manager hierarchy drill-down feature is fully functional and working as designed."
 
+  - task: "Historical Period Selection Feature - NEW FUNCTIONALITY"
+    implemented: true
+    working: true
+    file: "/app/backend/server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: "NA"
+        agent: "main"
+        comment: "Extended Manager Reports to support viewing previous months, quarters, and years with custom selectors. Added historical period parameters: month (YYYY-MM), quarter (YYYY-Q1), year (YYYY) to existing endpoints GET /api/reports/period/{report_type} and GET /api/reports/manager-hierarchy/{manager_id}. Supports backward compatibility - existing behavior works without new parameters (defaults to current period). Includes comprehensive parameter validation and proper date calculations for historical periods."
+      - working: true
+        agent: "testing"
+        comment: "🕰️ COMPREHENSIVE HISTORICAL PERIOD SELECTION TESTING COMPLETED: All 47 tests passed successfully! CRITICAL VERIFICATION: (1) ✅ HISTORICAL MONTHLY PERIODS: Tested all report types (individual/team/organization) for previous months (2025-10, 2025-09, 2024-12, 2024-11) - all return correct start_date calculations (1st of selected month) and proper period_name formatting, (2) ✅ HISTORICAL QUARTERLY PERIODS: Tested all report types for previous quarters (2025-Q3, 2025-Q2, 2024-Q4, 2024-Q3) - all return correct start_date calculations (1st of quarter: Jan/Apr/Jul/Oct) and proper Q# YYYY formatting, (3) ✅ HISTORICAL YEARLY PERIODS: Tested all report types for previous years (2024, 2023, 2022) - all return correct start_date calculations (January 1st of selected year) and proper Year YYYY formatting, (4) ✅ MANAGER HIERARCHY INTEGRATION: Manager hierarchy drill-down works correctly with historical periods (monthly/quarterly/yearly), maintains same period selection logic and response structure, (5) ✅ PARAMETER VALIDATION: Invalid formats correctly return 400 Bad Request (invalid months: 2025-13/2025-00, invalid quarters: 2025-Q5/2025-Q0, invalid years: invalid-year/202a), (6) ✅ BACKWARD COMPATIBILITY: Existing behavior works when no period parameters provided, defaults to current month/quarter/year as expected. The Historical Period Selection Feature is production-ready with comprehensive date calculations, proper validation, and seamless integration with existing manager reporting functionality."
+
 frontend:
   - task: "Daily Report Component"
     implemented: true
