@@ -275,7 +275,7 @@ frontend:
 
 test_plan:
   current_focus:
-    - "Team View - Weekly period shows day-by-day breakdown with total"
+    - "Manager Reports Period-based API endpoints (Monthly, Quarterly, Yearly)"
   stuck_tasks: []
   test_all: false
   test_priority: "high_first"
