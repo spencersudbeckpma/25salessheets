@@ -3,18 +3,19 @@ import axios from 'axios';
 import { toast } from 'sonner';
 import { Card, CardHeader, CardTitle, CardContent } from './ui/card';
 import { Button } from './ui/button';
-import { FileDown, Calendar, Users, Building, TrendingUp } from 'lucide-react';
+import { FileDown, Calendar, Users, Building, TrendingUp, Clock, BarChart3, LineChart } from 'lucide-react';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
 
 const DailyReport = ({ user }) => {
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
+  const [selectedPeriod, setSelectedPeriod] = useState('daily');
   const [activeTab, setActiveTab] = useState('individual');
   const [reportData, setReportData] = useState(null);
   const [loading, setLoading] = useState(false);
 
-  const fetchReport = async (reportType) => {
+  const fetchDailyReport = async (reportType) => {
     setLoading(true);
     try {
       const token = localStorage.getItem('token');
@@ -23,16 +24,34 @@ const DailyReport = ({ user }) => {
         params: { date: selectedDate }
       });
       setReportData(response.data);
-      toast.success('Report loaded successfully!');
+      toast.success('Daily report loaded successfully!');
     } catch (error) {
-      toast.error(error.response?.data?.detail || 'Failed to load report');
+      toast.error(error.response?.data?.detail || 'Failed to load daily report');
       setReportData(null);
     } finally {
       setLoading(false);
     }
   };
 
-  const downloadExcel = async (reportType) => {
+  const fetchPeriodReport = async (reportType) => {
+    setLoading(true);
+    try {
+      const token = localStorage.getItem('token');
+      const response = await axios.get(`${API}/reports/period/${reportType}`, {
+        headers: { Authorization: `Bearer ${token}` },
+        params: { period: selectedPeriod }
+      });
+      setReportData(response.data);
+      toast.success(`${selectedPeriod.charAt(0).toUpperCase() + selectedPeriod.slice(1)} report loaded successfully!`);
+    } catch (error) {
+      toast.error(error.response?.data?.detail || `Failed to load ${selectedPeriod} report`);
+      setReportData(null);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const downloadDailyExcel = async (reportType) => {
     setLoading(true);
     try {
       const token = localStorage.getItem('token');
@@ -42,7 +61,6 @@ const DailyReport = ({ user }) => {
         responseType: 'blob'
       });
       
-      // Create download link
       const url = window.URL.createObjectURL(new Blob([response.data]));
       const link = document.createElement('a');
       link.href = url;
@@ -51,9 +69,35 @@ const DailyReport = ({ user }) => {
       link.click();
       link.remove();
       
-      toast.success(`${reportType.charAt(0).toUpperCase() + reportType.slice(1)} report downloaded!`);
+      toast.success(`Daily ${reportType} report downloaded!`);
     } catch (error) {
-      toast.error(error.response?.data?.detail || 'Failed to download report');
+      toast.error(error.response?.data?.detail || 'Failed to download daily report');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const downloadPeriodExcel = async (reportType) => {
+    setLoading(true);
+    try {
+      const token = localStorage.getItem('token');
+      const response = await axios.get(`${API}/reports/period/excel/${reportType}`, {
+        headers: { Authorization: `Bearer ${token}` },
+        params: { period: selectedPeriod },
+        responseType: 'blob'
+      });
+      
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', `${selectedPeriod}_${reportType}_report_${new Date().toISOString().split('T')[0]}.xlsx`);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      
+      toast.success(`${selectedPeriod.charAt(0).toUpperCase() + selectedPeriod.slice(1)} ${reportType} report downloaded!`);
+    } catch (error) {
+      toast.error(error.response?.data?.detail || `Failed to download ${selectedPeriod} report`);
     } finally {
       setLoading(false);
     }
@@ -64,9 +108,30 @@ const DailyReport = ({ user }) => {
     setReportData(null);
   };
 
+  const handlePeriodChange = (period) => {
+    setSelectedPeriod(period);
+    setReportData(null);
+  };
+
   const handleDateChange = (e) => {
     setSelectedDate(e.target.value);
     setReportData(null);
+  };
+
+  const viewReport = () => {
+    if (selectedPeriod === 'daily') {
+      fetchDailyReport(activeTab);
+    } else {
+      fetchPeriodReport(activeTab);
+    }
+  };
+
+  const downloadExcel = () => {
+    if (selectedPeriod === 'daily') {
+      downloadDailyExcel(activeTab);
+    } else {
+      downloadPeriodExcel(activeTab);
+    }
   };
 
   const renderIndividualReport = () => {
