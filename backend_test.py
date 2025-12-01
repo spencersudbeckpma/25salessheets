@@ -2157,9 +2157,8 @@ class ManagerReportsTester:
                 # Extract date from period_name like "Daily - November 30, 2025"
                 if 'Daily -' in period_name:
                     try:
-                        from datetime import datetime
                         date_part = period_name.replace('Daily - ', '')
-                        parsed_date = datetime.strptime(date_part, '%B %d, %Y').date()
+                        parsed_date = dt.strptime(date_part, '%B %d, %Y').date()
                         hierarchy_date = parsed_date.isoformat()
                         print_info(f"Hierarchy endpoint uses date: {hierarchy_date}")
                     except:
