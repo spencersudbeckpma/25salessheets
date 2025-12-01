@@ -548,7 +548,7 @@ const DailyReport = ({ user }) => {
         {!loading && !reportData && (
           <div className="text-center py-12 text-gray-500">
             <Clock size={48} className="mx-auto mb-4 text-gray-400" />
-            <p>Select a period and click "View Report" to see activity data</p>
+            <p>Select a period and click &quot;View Report&quot; to see activity data</p>
           </div>
         )}
 
