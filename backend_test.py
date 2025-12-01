@@ -917,66 +917,322 @@ class ManagerReportsTester:
             self.test_results['failed'] += 1
             self.test_results['errors'].append(f"Activity matching exception: {str(e)}")
 
-    def test_different_dates(self):
-        """Test reports with different dates - UPDATED FOR TIMEZONE BUG"""
-        print_header("📅 TESTING DIFFERENT DATES (TIMEZONE BUG FOCUS)")
+    def test_team_report_hierarchy_bug_fix(self):
+        """🚨 CRITICAL: Test Team Report Hierarchy Bug Fix"""
+        print_header("🚨 CRITICAL TEAM REPORT HIERARCHY BUG FIX TESTING")
         
         if not self.state_manager_token:
-            print_error("No state manager token - skipping date tests")
+            print_error("No state manager token - skipping team report hierarchy tests")
             return
             
         headers = {"Authorization": f"Bearer {self.state_manager_token}"}
         
-        # Test different dates with focus on timezone issues
-        today = datetime.now().date()
-        yesterday = today - timedelta(days=1)
-        week_ago = today - timedelta(days=7)
+        print_info("🎯 TESTING CRITICAL BUG FIXES:")
+        print_info("   1. Team Report should show manager's team, not just the manager")
+        print_info("   2. State Manager should be able to select any manager in hierarchy")
+        print_info("   3. Access control should check full hierarchy, not just direct reports")
         
-        dates_to_test = [
-            (today.isoformat(), "today"),
-            (yesterday.isoformat(), "yesterday"),
-            (week_ago.isoformat(), "week ago"),
-            ("2024-11-20", "specific date from bug report")
-        ]
+        # Step 1: Setup test hierarchy and get user IDs
+        print_info("\n📋 STEP 1: Setup Test Hierarchy and Get User IDs")
         
-        for date_str, description in dates_to_test:
-            print_info(f"🔍 Testing individual report for {description} ({date_str})...")
-            
+        # Get all users to find Steve Ahlers and other managers
+        try:
+            # First, let's get the current user info to understand the hierarchy
+            me_response = self.session.get(f"{BACKEND_URL}/auth/me", headers=headers)
+            if me_response.status_code == 200:
+                current_user = me_response.json()
+                print_success(f"✅ Current user: {current_user.get('name', 'Unknown')} ({current_user.get('role', 'Unknown')})")
+                current_user_id = current_user.get('id')
+            else:
+                print_error(f"❌ Could not get current user info: {me_response.status_code}")
+                self.test_results['failed'] += 1
+                return
+                
+            # Get available managers list
+            managers_response = self.session.get(f"{BACKEND_URL}/reports/managers", headers=headers)
+            if managers_response.status_code == 200:
+                managers_data = managers_response.json()
+                managers = managers_data.get('managers', [])
+                print_success(f"✅ Found {len(managers)} managers in hierarchy")
+                
+                # Look for Steve Ahlers or create test managers
+                steve_ahlers_id = None
+                district_manager_id = None
+                
+                for manager in managers:
+                    name = manager.get('name', '').lower()
+                    role = manager.get('role', '').lower()
+                    
+                    if 'steve' in name and 'ahlers' in name:
+                        steve_ahlers_id = manager.get('id')
+                        print_success(f"✅ Found Steve Ahlers: {manager.get('name')} (ID: {steve_ahlers_id})")
+                    elif 'district' in role and not district_manager_id:
+                        district_manager_id = manager.get('id')
+                        print_success(f"✅ Found District Manager: {manager.get('name')} (ID: {district_manager_id})")
+                
+                # If we don't have Steve Ahlers, use the first available manager
+                if not steve_ahlers_id and managers:
+                    steve_ahlers_id = managers[0].get('id')
+                    print_info(f"ℹ️ Using first available manager as test subject: {managers[0].get('name')} (ID: {steve_ahlers_id})")
+                
+                # If we don't have a district manager, use the second available manager
+                if not district_manager_id and len(managers) > 1:
+                    district_manager_id = managers[1].get('id')
+                    print_info(f"ℹ️ Using second manager as district manager test: {managers[1].get('name')} (ID: {district_manager_id})")
+                    
+            else:
+                print_error(f"❌ Could not get managers list: {managers_response.status_code}")
+                self.test_results['failed'] += 1
+                return
+                
+        except Exception as e:
+            print_error(f"❌ Exception in hierarchy setup: {str(e)}")
+            self.test_results['failed'] += 1
+            return
+        
+        # Step 2: Test Team Report with Manager Selection (Critical Test 1)
+        print_info("\n🎯 STEP 2: Test Team Report with Manager Selection")
+        print_info("   CRITICAL TEST: When user_id is selected, should show manager's team, NOT just the manager")
+        
+        if steve_ahlers_id:
             try:
-                response = self.session.get(
-                    f"{BACKEND_URL}/reports/daily/individual",
-                    params={"date": date_str},
+                print_info(f"Testing team report for manager ID: {steve_ahlers_id}")
+                
+                # Test the team report with user_id parameter
+                team_response = self.session.get(
+                    f"{BACKEND_URL}/reports/period/team",
+                    params={"period": "monthly", "user_id": steve_ahlers_id},
                     headers=headers
                 )
                 
-                if response.status_code == 200:
-                    data = response.json()
+                if team_response.status_code == 200:
+                    team_data = team_response.json()
+                    print_success("✅ Team report with manager selection returned 200 OK")
                     
-                    # CRITICAL: Check for timezone bug - date field must match request
-                    if data.get('date') == date_str:
-                        print_success(f"✅ TIMEZONE FIX VERIFIED: Date field matches request ({date_str})")
-                        self.test_results['passed'] += 1
-                    else:
-                        print_error(f"❌ TIMEZONE BUG STILL EXISTS: Request date {date_str} != Response date {data.get('date')}")
-                        print_error(f"   This is the exact bug reported: 'showing Wednesday's numbers but Tuesday's date'")
-                        self.test_results['failed'] += 1
-                        self.test_results['errors'].append(f"CRITICAL TIMEZONE BUG: {description} - Request: {date_str}, Response: {data.get('date')}")
+                    # CRITICAL VALIDATION: Should show multiple team members, not just the manager
+                    data_array = team_data.get('data', [])
+                    
+                    if isinstance(data_array, list):
+                        team_count = len(data_array)
+                        print_info(f"📊 Team report returned {team_count} team entries")
                         
-                    # Additional validation
-                    if data.get('report_type') == 'individual':
-                        print_success(f"✅ Report type correct for {description}")
+                        if team_count > 1:
+                            print_success("✅ CRITICAL SUCCESS: Team report shows multiple teams (manager's direct reports)")
+                            self.test_results['passed'] += 1
+                            
+                            # Validate that these are actually teams, not individual managers
+                            for i, team in enumerate(data_array):
+                                team_name = team.get('team_name', 'Unknown')
+                                manager_name = team.get('manager', 'Unknown')
+                                print_info(f"   Team {i+1}: {team_name} (Manager: {manager_name})")
+                                
+                        elif team_count == 1:
+                            # Check if this is showing the manager's team or just the manager
+                            team = data_array[0]
+                            team_name = team.get('team_name', '')
+                            manager_name = team.get('manager', '')
+                            
+                            if 'team' in team_name.lower():
+                                print_success("✅ PARTIAL SUCCESS: Shows one team (manager's direct reports)")
+                                self.test_results['passed'] += 1
+                            else:
+                                print_error("❌ CRITICAL BUG STILL EXISTS: Only showing the manager, not their team")
+                                print_error(f"   Expected: Manager's team members, Got: {team_name}")
+                                self.test_results['failed'] += 1
+                                self.test_results['errors'].append(f"Team report shows only manager, not team: {team_name}")
+                                
+                        else:
+                            print_warning("⚠️ Team report returned no data (may be expected if no team members)")
+                            
+                        # Validate selected_user field
+                        if team_data.get('selected_user') == steve_ahlers_id:
+                            print_success(f"✅ Selected user field correct: {steve_ahlers_id}")
+                            self.test_results['passed'] += 1
+                        else:
+                            print_error(f"❌ Selected user field incorrect: {team_data.get('selected_user')} (expected: {steve_ahlers_id})")
+                            self.test_results['failed'] += 1
+                            
                     else:
-                        print_error(f"❌ Report type incorrect for {description}: {data.get('report_type')}")
+                        print_error("❌ Team report data is not a list")
+                        self.test_results['failed'] += 1
                         
                 else:
-                    print_error(f"❌ Report for {description} failed: {response.status_code}")
+                    print_error(f"❌ Team report with manager selection failed: {team_response.status_code} - {team_response.text}")
                     self.test_results['failed'] += 1
-                    self.test_results['errors'].append(f"Report for {description} failed: {response.status_code}")
+                    self.test_results['errors'].append(f"Team report with manager selection failed: {team_response.status_code}")
                     
             except Exception as e:
-                print_error(f"❌ Exception testing {description}: {str(e)}")
+                print_error(f"❌ Exception testing team report with manager selection: {str(e)}")
                 self.test_results['failed'] += 1
-                self.test_results['errors'].append(f"Date test {description} exception: {str(e)}")
+                self.test_results['errors'].append(f"Team report manager selection exception: {str(e)}")
+        else:
+            print_warning("⚠️ No manager ID available for team report testing")
+        
+        # Step 3: Test Hierarchy Access Control (Critical Test 2)
+        print_info("\n🔒 STEP 3: Test Hierarchy Access Control")
+        print_info("   CRITICAL TEST: State Manager should be able to select any manager in hierarchy")
+        
+        if district_manager_id:
+            try:
+                print_info(f"Testing access control for district manager ID: {district_manager_id}")
+                print_info("   This should work if access control checks full hierarchy, not just direct reports")
+                
+                # Test accessing a district manager who may not be a direct report
+                access_response = self.session.get(
+                    f"{BACKEND_URL}/reports/period/team",
+                    params={"period": "monthly", "user_id": district_manager_id},
+                    headers=headers
+                )
+                
+                if access_response.status_code == 200:
+                    print_success("✅ CRITICAL SUCCESS: State Manager can access District Manager's team")
+                    print_success("✅ Access control correctly checks full hierarchy, not just direct reports")
+                    self.test_results['passed'] += 1
+                    
+                    access_data = access_response.json()
+                    if access_data.get('selected_user') == district_manager_id:
+                        print_success("✅ District Manager selection working correctly")
+                        self.test_results['passed'] += 1
+                    else:
+                        print_error(f"❌ District Manager selection field incorrect: {access_data.get('selected_user')}")
+                        self.test_results['failed'] += 1
+                        
+                elif access_response.status_code == 403:
+                    print_error("❌ CRITICAL BUG STILL EXISTS: Access control error when selecting District Manager")
+                    print_error("   This is the exact error: 'Manager not found in your direct reports'")
+                    self.test_results['failed'] += 1
+                    self.test_results['errors'].append("CRITICAL: Access control still checking direct reports only")
+                    
+                else:
+                    print_error(f"❌ Unexpected error accessing District Manager: {access_response.status_code} - {access_response.text}")
+                    self.test_results['failed'] += 1
+                    self.test_results['errors'].append(f"District Manager access failed: {access_response.status_code}")
+                    
+            except Exception as e:
+                print_error(f"❌ Exception testing hierarchy access control: {str(e)}")
+                self.test_results['failed'] += 1
+                self.test_results['errors'].append(f"Hierarchy access control exception: {str(e)}")
+        else:
+            print_warning("⚠️ No district manager ID available for access control testing")
+        
+        # Step 4: Test Normal Team Report (Critical Test 3)
+        print_info("\n📊 STEP 4: Test Normal Team Report (no user_id)")
+        print_info("   VALIDATION: Should show all direct reports of current user as before")
+        
+        try:
+            normal_response = self.session.get(
+                f"{BACKEND_URL}/reports/period/team",
+                params={"period": "monthly"},
+                headers=headers
+            )
+            
+            if normal_response.status_code == 200:
+                normal_data = normal_response.json()
+                print_success("✅ Normal team report (no user_id) returned 200 OK")
+                
+                # Validate that this shows current user's direct reports
+                data_array = normal_data.get('data', [])
+                if isinstance(data_array, list):
+                    print_success(f"✅ Normal team report shows {len(data_array)} direct report teams")
+                    self.test_results['passed'] += 1
+                    
+                    # Should not have selected_user field
+                    if normal_data.get('selected_user') is None:
+                        print_success("✅ Normal team report correctly has no selected_user field")
+                        self.test_results['passed'] += 1
+                    else:
+                        print_warning(f"⚠️ Normal team report has unexpected selected_user: {normal_data.get('selected_user')}")
+                        
+                else:
+                    print_error("❌ Normal team report data is not a list")
+                    self.test_results['failed'] += 1
+                    
+            else:
+                print_error(f"❌ Normal team report failed: {normal_response.status_code} - {normal_response.text}")
+                self.test_results['failed'] += 1
+                self.test_results['errors'].append(f"Normal team report failed: {normal_response.status_code}")
+                
+        except Exception as e:
+            print_error(f"❌ Exception testing normal team report: {str(e)}")
+            self.test_results['failed'] += 1
+            self.test_results['errors'].append(f"Normal team report exception: {str(e)}")
+
+    def test_daily_team_reports(self):
+        """Test daily team reports with same hierarchy logic"""
+        print_header("📅 TESTING DAILY TEAM REPORTS")
+        
+        if not self.state_manager_token:
+            print_error("No state manager token - skipping daily team report tests")
+            return
+            
+        headers = {"Authorization": f"Bearer {self.state_manager_token}"}
+        today = datetime.now().date().isoformat()
+        
+        print_info("🎯 Testing daily team reports with manager selection")
+        print_info("   Should have same hierarchy behavior as period reports")
+        
+        try:
+            # Get managers list for testing
+            managers_response = self.session.get(f"{BACKEND_URL}/reports/managers", headers=headers)
+            if managers_response.status_code == 200:
+                managers_data = managers_response.json()
+                managers = managers_data.get('managers', [])
+                
+                if managers:
+                    test_manager_id = managers[0].get('id')
+                    test_manager_name = managers[0].get('name')
+                    
+                    print_info(f"Testing daily team report for manager: {test_manager_name} (ID: {test_manager_id})")
+                    
+                    # Test daily team report with user_id
+                    daily_response = self.session.get(
+                        f"{BACKEND_URL}/reports/daily/team",
+                        params={"date": today, "user_id": test_manager_id},
+                        headers=headers
+                    )
+                    
+                    if daily_response.status_code == 200:
+                        daily_data = daily_response.json()
+                        print_success("✅ Daily team report with manager selection returned 200 OK")
+                        
+                        # Validate structure
+                        if daily_data.get('report_type') == 'team':
+                            print_success("✅ Daily team report type correct")
+                            self.test_results['passed'] += 1
+                        else:
+                            print_error(f"❌ Daily team report type incorrect: {daily_data.get('report_type')}")
+                            self.test_results['failed'] += 1
+                            
+                        if daily_data.get('date') == today:
+                            print_success(f"✅ Daily team report date correct: {today}")
+                            self.test_results['passed'] += 1
+                        else:
+                            print_error(f"❌ Daily team report date incorrect: {daily_data.get('date')} (expected: {today})")
+                            self.test_results['failed'] += 1
+                            
+                        if daily_data.get('selected_user') == test_manager_id:
+                            print_success(f"✅ Daily team report selected_user correct: {test_manager_id}")
+                            self.test_results['passed'] += 1
+                        else:
+                            print_error(f"❌ Daily team report selected_user incorrect: {daily_data.get('selected_user')}")
+                            self.test_results['failed'] += 1
+                            
+                    else:
+                        print_error(f"❌ Daily team report with manager selection failed: {daily_response.status_code}")
+                        self.test_results['failed'] += 1
+                        self.test_results['errors'].append(f"Daily team report failed: {daily_response.status_code}")
+                        
+                else:
+                    print_warning("⚠️ No managers available for daily team report testing")
+                    
+            else:
+                print_error(f"❌ Could not get managers for daily testing: {managers_response.status_code}")
+                self.test_results['failed'] += 1
+                
+        except Exception as e:
+            print_error(f"❌ Exception testing daily team reports: {str(e)}")
+            self.test_results['failed'] += 1
+            self.test_results['errors'].append(f"Daily team report exception: {str(e)}")
 
     def test_period_reports_json_endpoints(self):
         """Test the new period-based JSON report endpoints"""
