@@ -9,7 +9,7 @@ from pathlib import Path
 from pydantic import BaseModel, Field, ConfigDict, EmailStr
 from typing import List, Optional, Dict, Any
 import uuid
-from datetime import datetime, timezone, timedelta, date
+from datetime import datetime, timezone, timedelta, date as date_class
 import bcrypt
 import jwt
 import string
