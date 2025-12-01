@@ -2720,6 +2720,13 @@ class ManagerReportsTester:
         self.test_individual_manager_period_reports()
         self.test_hierarchy_access_control_new()
         
+        # NEW: Historical Period Selection Feature Tests
+        print_header("🕰️ HISTORICAL PERIOD SELECTION FEATURE TESTING")
+        self.test_historical_period_selection()
+        self.test_historical_parameter_validation()
+        self.test_manager_hierarchy_historical_periods()
+        self.test_backward_compatibility()
+        
         # Print summary
         self.print_test_summary()
         
