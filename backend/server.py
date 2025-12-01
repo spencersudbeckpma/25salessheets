@@ -706,6 +706,305 @@ async def get_daily_report(report_type: str, date: str, current_user: dict = Dep
     else:
         raise HTTPException(status_code=400, detail="Invalid report type. Use 'individual', 'team', or 'organization'")
 
+@api_router.get("/reports/period/{report_type}")
+async def get_period_report(report_type: str, period: str, current_user: dict = Depends(get_current_user)):
+    """
+    Get period report (monthly, quarterly, yearly) for a specific period.
+    report_type: 'individual', 'team', or 'organization'
+    period: 'monthly', 'quarterly', or 'yearly'
+    Returns JSON data for on-screen viewing
+    """
+    if current_user['role'] not in ['state_manager', 'regional_manager', 'district_manager']:
+        raise HTTPException(status_code=403, detail="Only Managers (State, Regional, District) can access period reports")
+    
+    # Use Central Time for date calculations
+    central_tz = pytz_timezone('America/Chicago')
+    today = datetime.now(central_tz).date()
+    
+    # Calculate date range based on period
+    if period == "monthly":
+        start_date = today.replace(day=1)
+        period_name = f"Month of {start_date.strftime('%B %Y')}"
+    elif period == "quarterly":
+        quarter = (today.month - 1) // 3
+        start_date = today.replace(month=quarter * 3 + 1, day=1)
+        period_name = f"Q{quarter + 1} {today.year}"
+    elif period == "yearly":
+        start_date = today.replace(month=1, day=1)
+        period_name = f"Year {today.year}"
+    else:
+        raise HTTPException(status_code=400, detail="Invalid period. Use 'monthly', 'quarterly', or 'yearly'")
+    
+    # Helper function to get all subordinates recursively
+    async def get_all_subordinates(user_id: str):
+        members = []
+        subordinates = await db.users.find({"manager_id": user_id}, {"_id": 0, "password_hash": 0}).to_list(1000)
+        for sub in subordinates:
+            members.append(sub)
+            sub_members = await get_all_subordinates(sub['id'])
+            members.extend(sub_members)
+        return members
+    
+    if report_type == "individual":
+        # Get all team members under current user
+        team_members = await get_all_subordinates(current_user['id'])
+        team_members.insert(0, current_user)  # Include self
+        
+        report_data = []
+        for member in team_members:
+            activities = await db.activities.find({
+                "user_id": member['id'],
+                "date": {"$gte": start_date.isoformat()}
+            }, {"_id": 0}).to_list(10000)
+            
+            totals = {
+                "name": member.get('name', 'Unknown'),
+                "email": member.get('email', ''),
+                "role": member.get('role', 'unknown').replace('_', ' ').title(),
+                "contacts": sum(a.get('contacts', 0) for a in activities),
+                "appointments": sum(a.get('appointments', 0) for a in activities),
+                "presentations": sum(a.get('presentations', 0) for a in activities),
+                "referrals": sum(a.get('referrals', 0) for a in activities),
+                "testimonials": sum(a.get('testimonials', 0) for a in activities),
+                "sales": sum(a.get('sales', 0) for a in activities),
+                "new_face_sold": sum(a.get('new_face_sold', 0) for a in activities),
+                "premium": sum(a.get('premium', 0) for a in activities)
+            }
+            report_data.append(totals)
+        
+        return {
+            "report_type": "individual",
+            "period": period,
+            "period_name": period_name,
+            "start_date": start_date.isoformat(),
+            "data": report_data
+        }
+    
+    elif report_type == "team":
+        # Get direct reports and their teams
+        direct_reports = await db.users.find({"manager_id": current_user['id']}, {"_id": 0, "password_hash": 0}).to_list(1000)
+        
+        report_data = []
+        for manager in direct_reports:
+            # Get all members under this manager
+            team_members = await get_all_subordinates(manager['id'])
+            team_members.insert(0, manager)  # Include manager
+            
+            # Aggregate totals for this team
+            team_totals = {
+                "contacts": 0, "appointments": 0, "presentations": 0,
+                "referrals": 0, "testimonials": 0, "sales": 0,
+                "new_face_sold": 0, "premium": 0
+            }
+            
+            for member in team_members:
+                activities = await db.activities.find({
+                    "user_id": member['id'],
+                    "date": {"$gte": start_date.isoformat()}
+                }, {"_id": 0}).to_list(10000)
+                
+                for activity in activities:
+                    team_totals["contacts"] += activity.get('contacts', 0)
+                    team_totals["appointments"] += activity.get('appointments', 0)
+                    team_totals["presentations"] += activity.get('presentations', 0)
+                    team_totals["referrals"] += activity.get('referrals', 0)
+                    team_totals["testimonials"] += activity.get('testimonials', 0)
+                    team_totals["sales"] += activity.get('sales', 0)
+                    team_totals["new_face_sold"] += activity.get('new_face_sold', 0)
+                    team_totals["premium"] += activity.get('premium', 0)
+            
+            report_data.append({
+                "team_name": manager.get('name', 'Unknown') + "'s Team",
+                "manager": manager.get('name', 'Unknown'),
+                "role": manager.get('role', 'unknown').replace('_', ' ').title(),
+                **team_totals
+            })
+        
+        return {
+            "report_type": "team",
+            "period": period,
+            "period_name": period_name,
+            "start_date": start_date.isoformat(),
+            "data": report_data
+        }
+    
+    elif report_type == "organization":
+        # Get all organization members
+        all_members = await get_all_subordinates(current_user['id'])
+        all_members.insert(0, current_user)  # Include self
+        
+        # Aggregate organization totals
+        org_totals = {
+            "contacts": 0, "appointments": 0, "presentations": 0,
+            "referrals": 0, "testimonials": 0, "sales": 0,
+            "new_face_sold": 0, "premium": 0
+        }
+        
+        for member in all_members:
+            activities = await db.activities.find({
+                "user_id": member['id'],
+                "date": {"$gte": start_date.isoformat()}
+            }, {"_id": 0}).to_list(10000)
+            
+            for activity in activities:
+                org_totals["contacts"] += activity.get('contacts', 0)
+                org_totals["appointments"] += activity.get('appointments', 0)
+                org_totals["presentations"] += activity.get('presentations', 0)
+                org_totals["referrals"] += activity.get('referrals', 0)
+                org_totals["testimonials"] += activity.get('testimonials', 0)
+                org_totals["sales"] += activity.get('sales', 0)
+                org_totals["new_face_sold"] += activity.get('new_face_sold', 0)
+                org_totals["premium"] += activity.get('premium', 0)
+        
+        return {
+            "report_type": "organization",
+            "period": period,
+            "period_name": period_name,
+            "start_date": start_date.isoformat(),
+            "total_members": len(all_members),
+            "data": org_totals
+        }
+    
+    else:
+        raise HTTPException(status_code=400, detail="Invalid report type. Use 'individual', 'team', or 'organization'")
+
+@api_router.get("/reports/period/excel/{report_type}")
+async def download_period_report_excel(report_type: str, period: str, current_user: dict = Depends(get_current_user)):
+    """
+    Download period report (monthly, quarterly, yearly) as Excel file.
+    report_type: 'individual', 'team', or 'organization'
+    period: 'monthly', 'quarterly', or 'yearly'
+    """
+    from openpyxl import Workbook
+    from openpyxl.styles import Font, PatternFill, Alignment
+    from io import BytesIO
+    from fastapi.responses import StreamingResponse
+    
+    if current_user['role'] not in ['state_manager', 'regional_manager', 'district_manager']:
+        raise HTTPException(status_code=403, detail="Only Managers (State, Regional, District) can download period reports")
+    
+    # Get the report data
+    report_json = await get_period_report(report_type, period, current_user)
+    
+    # Create Excel workbook
+    wb = Workbook()
+    ws = wb.active
+    ws.title = f"{period.capitalize()} {report_type.capitalize()}"
+    
+    # Add title
+    period_name = report_json.get('period_name', f'{period.capitalize()} Report')
+    
+    ws.merge_cells('A1:K1')
+    title_cell = ws['A1']
+    title_cell.value = f"{period.capitalize()} {report_type.capitalize()} Report - {period_name}"
+    title_cell.font = Font(size=16, bold=True, color="FFFFFF")
+    title_cell.alignment = Alignment(horizontal='center')
+    title_cell.fill = PatternFill(start_color="4472C4", end_color="4472C4", fill_type="solid")
+    
+    if report_type == "individual":
+        # Add headers
+        headers = ["Name", "Email", "Role", "Contacts", "Appointments", "Presentations", 
+                   "Referrals", "Testimonials", "Sales", "New Face Sold", "Total Premium"]
+        for col_num, header in enumerate(headers, 1):
+            cell = ws.cell(row=2, column=col_num)
+            cell.value = header
+            cell.font = Font(bold=True)
+            cell.fill = PatternFill(start_color="D9E1F2", end_color="D9E1F2", fill_type="solid")
+            cell.alignment = Alignment(horizontal='center')
+        
+        # Add data
+        for row_num, data in enumerate(report_json['data'], 3):
+            ws.cell(row=row_num, column=1).value = data['name']
+            ws.cell(row=row_num, column=2).value = data['email']
+            ws.cell(row=row_num, column=3).value = data['role']
+            ws.cell(row=row_num, column=4).value = data['contacts']
+            ws.cell(row=row_num, column=5).value = data['appointments']
+            ws.cell(row=row_num, column=6).value = data['presentations']
+            ws.cell(row=row_num, column=7).value = data['referrals']
+            ws.cell(row=row_num, column=8).value = data['testimonials']
+            ws.cell(row=row_num, column=9).value = data['sales']
+            ws.cell(row=row_num, column=10).value = data['new_face_sold']
+            ws.cell(row=row_num, column=11).value = data['premium']
+    
+    elif report_type == "team":
+        # Add headers
+        headers = ["Team Name", "Manager", "Role", "Contacts", "Appointments", "Presentations", 
+                   "Referrals", "Testimonials", "Sales", "New Face Sold", "Total Premium"]
+        for col_num, header in enumerate(headers, 1):
+            cell = ws.cell(row=2, column=col_num)
+            cell.value = header
+            cell.font = Font(bold=True)
+            cell.fill = PatternFill(start_color="D9E1F2", end_color="D9E1F2", fill_type="solid")
+            cell.alignment = Alignment(horizontal='center')
+        
+        # Add data
+        for row_num, data in enumerate(report_json['data'], 3):
+            ws.cell(row=row_num, column=1).value = data['team_name']
+            ws.cell(row=row_num, column=2).value = data['manager']
+            ws.cell(row=row_num, column=3).value = data['role']
+            ws.cell(row=row_num, column=4).value = data['contacts']
+            ws.cell(row=row_num, column=5).value = data['appointments']
+            ws.cell(row=row_num, column=6).value = data['presentations']
+            ws.cell(row=row_num, column=7).value = data['referrals']
+            ws.cell(row=row_num, column=8).value = data['testimonials']
+            ws.cell(row=row_num, column=9).value = data['sales']
+            ws.cell(row=row_num, column=10).value = data['new_face_sold']
+            ws.cell(row=row_num, column=11).value = data['premium']
+    
+    elif report_type == "organization":
+        # Add headers
+        headers = ["Metric", "Total"]
+        for col_num, header in enumerate(headers, 1):
+            cell = ws.cell(row=2, column=col_num)
+            cell.value = header
+            cell.font = Font(bold=True)
+            cell.fill = PatternFill(start_color="D9E1F2", end_color="D9E1F2", fill_type="solid")
+            cell.alignment = Alignment(horizontal='center')
+        
+        # Add data
+        metrics = [
+            ("Total Members", report_json['total_members']),
+            ("Contacts", report_json['data']['contacts']),
+            ("Appointments", report_json['data']['appointments']),
+            ("Presentations", report_json['data']['presentations']),
+            ("Referrals", report_json['data']['referrals']),
+            ("Testimonials", report_json['data']['testimonials']),
+            ("Sales", report_json['data']['sales']),
+            ("New Face Sold", report_json['data']['new_face_sold']),
+            ("Total Premium", report_json['data']['premium'])
+        ]
+        
+        for row_num, (metric, value) in enumerate(metrics, 3):
+            ws.cell(row=row_num, column=1).value = metric
+            ws.cell(row=row_num, column=2).value = value
+    
+    # Auto-adjust column widths
+    for col_idx in range(1, ws.max_column + 1):
+        max_length = 0
+        column_letter = ws.cell(row=2, column=col_idx).column_letter
+        for row in range(1, ws.max_row + 1):
+            cell = ws.cell(row=row, column=col_idx)
+            try:
+                if cell.value and len(str(cell.value)) > max_length:
+                    max_length = len(str(cell.value))
+            except:
+                pass
+        adjusted_width = min(max_length + 2, 50)
+        ws.column_dimensions[column_letter].width = adjusted_width
+    
+    # Save to BytesIO
+    excel_file = BytesIO()
+    wb.save(excel_file)
+    excel_file.seek(0)
+    
+    filename = f"{period}_{report_type}_report_{datetime.now().strftime('%Y%m%d')}.xlsx"
+    
+    return StreamingResponse(
+        excel_file,
+        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        headers={"Content-Disposition": f"attachment; filename={filename}"}
+    )
+
 @api_router.get("/reports/daily/excel/{report_type}")
 async def download_daily_report_excel(report_type: str, date: str, current_user: dict = Depends(get_current_user)):
     """
