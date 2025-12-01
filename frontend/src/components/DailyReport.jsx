@@ -161,11 +161,13 @@ const DailyReport = ({ user }) => {
     setActiveTab(tab);
     setSelectedManagerId(''); // Reset manager selection when changing tabs
     setReportData(null);
+    setHierarchyData(null); // Clear hierarchy view
   };
 
   const handlePeriodChange = (period) => {
     setSelectedPeriod(period);
     setReportData(null);
+    setHierarchyData(null); // Clear hierarchy view when period changes
   };
 
   const handleDateChange = (e) => {
