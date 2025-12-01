@@ -1,12 +1,14 @@
 #!/usr/bin/env python3
 """
-Backend Testing Script - COMPREHENSIVE MANAGER REPORTS TESTING
-NEW FUNCTIONALITY: Individual Manager Selection Feature
-Focus: Test new manager selection endpoints and user_id parameter functionality
-- GET /api/reports/managers (list available managers)
-- Daily reports with user_id parameter
-- Period reports with user_id parameter
-- Hierarchical access control verification
+Backend Testing Script - COMPREHENSIVE MANAGER HIERARCHY DRILL-DOWN TESTING
+NEW FUNCTIONALITY: Manager Hierarchy Drill-Down Feature
+Focus: Test new manager hierarchy drill-down endpoint functionality
+- GET /api/reports/manager-hierarchy/{manager_id}?period={period}
+- Access control for different manager levels
+- Manager hierarchy structure validation
+- Period calculations (daily, monthly, quarterly, yearly)
+- Response format verification
+- Data integrity checks
 """
 
 import requests
