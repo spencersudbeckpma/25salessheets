@@ -93,8 +93,8 @@ class ForgotPasswordTester:
             return None
 
     def setup_test_users(self):
-        """Setup test users for team report hierarchy testing"""
-        print_header("SETTING UP TEST USERS FOR TEAM REPORT HIERARCHY TESTING")
+        """Setup test users for forgot password functionality testing"""
+        print_header("SETTING UP TEST USERS FOR FORGOT PASSWORD TESTING")
         
         # Try to login with existing state manager first
         try:
@@ -110,102 +110,62 @@ class ForgotPasswordTester:
             else:
                 print_warning("Could not login existing state manager, trying to register new one")
                 self.state_manager_token = self.register_test_user(
-                    "state.manager@test.com",
+                    "state.manager.forgot@test.com",
                     "TestPassword123!",
-                    "State Manager Test",
+                    "State Manager Forgot Test",
                     "state_manager"
                 )
+                if self.state_manager_token:
+                    user_info = self.get_user_info(self.state_manager_token)
+                    self.state_manager_id = user_info.get('id') if user_info else None
         except Exception as e:
             print_warning(f"Exception logging in existing state manager: {str(e)}")
             self.state_manager_token = self.register_test_user(
-                "state.manager@test.com",
+                "state.manager.forgot@test.com",
                 "TestPassword123!",
-                "State Manager Test",
+                "State Manager Forgot Test",
                 "state_manager"
             )
+            if self.state_manager_token:
+                user_info = self.get_user_info(self.state_manager_token)
+                self.state_manager_id = user_info.get('id') if user_info else None
         
-        # Create a proper hierarchy for testing
-        # State Manager -> Regional Manager -> District Manager -> Agents
-        
-        # Register Steve Ahlers as District Manager under State Manager
-        self.steve_ahlers_token = self.register_test_user_with_manager(
-            "steve.ahlers@test.com", 
-            "TestPassword123!",
-            "Steve Ahlers",
-            "district_manager",
-            self.state_manager_id
-        )
-        
-        # Register Ryan Rozell as District Manager under State Manager  
-        self.ryan_rozell_token = self.register_test_user_with_manager(
-            "ryan.rozell@test.com", 
-            "TestPassword123!",
-            "Ryan Rozell",
-            "district_manager", 
-            self.state_manager_id
-        )
-        
-        # Get Steve Ahlers ID for creating his team
-        if self.steve_ahlers_token:
-            steve_user = self.get_user_info(self.steve_ahlers_token)
-            self.steve_ahlers_id = steve_user.get('id') if steve_user else None
-        else:
-            self.steve_ahlers_id = None
-            
-        # Get Ryan Rozell ID for access control testing
-        if self.ryan_rozell_token:
-            ryan_user = self.get_user_info(self.ryan_rozell_token)
-            self.ryan_rozell_id = ryan_user.get('id') if ryan_user else None
-        else:
-            self.ryan_rozell_id = None
-        
-        # Create team members under Steve Ahlers
-        if self.steve_ahlers_id:
-            self.agent1_token = self.register_test_user_with_manager(
-                "agent1.steve@test.com",
+        # Register District Manager under State Manager for hierarchy testing
+        if self.state_manager_id:
+            self.district_manager_token = self.register_test_user_with_manager(
+                "district.manager.forgot@test.com", 
                 "TestPassword123!",
-                "Agent One (Steve's Team)",
-                "agent",
-                self.steve_ahlers_id
+                "District Manager Forgot Test",
+                "district_manager",
+                self.state_manager_id
             )
             
-            self.agent2_token = self.register_test_user_with_manager(
-                "agent2.steve@test.com",
-                "TestPassword123!", 
-                "Agent Two (Steve's Team)",
-                "agent",
-                self.steve_ahlers_id
-            )
+            if self.district_manager_token:
+                user_info = self.get_user_info(self.district_manager_token)
+                self.district_manager_id = user_info.get('id') if user_info else None
         
-        # Create team members under Ryan Rozell
-        if self.ryan_rozell_id:
-            self.agent3_token = self.register_test_user_with_manager(
-                "agent3.ryan@test.com",
+        # Register Agent under District Manager for hierarchy testing
+        if self.district_manager_id:
+            self.agent_token = self.register_test_user_with_manager(
+                "agent.forgot@test.com",
                 "TestPassword123!",
-                "Agent Three (Ryan's Team)",
+                "Agent Forgot Test",
                 "agent",
-                self.ryan_rozell_id
+                self.district_manager_id
             )
-        
-        # Register regular agent (should not have access)
-        self.agent_token = self.register_test_user(
-            "agent.user@test.com", 
-            "TestPassword123!",
-            "Agent Test User",
-            "agent"
-        )
+            
+            if self.agent_token:
+                user_info = self.get_user_info(self.agent_token)
+                self.agent_id = user_info.get('id') if user_info else None
         
         if not self.state_manager_token:
             print_error("Failed to setup state manager - cannot continue testing")
             return False
             
-        print_success("✅ Test hierarchy created:")
-        print_info("   State Manager (Spencer)")
-        print_info("   ├── Steve Ahlers (District Manager)")
-        print_info("   │   ├── Agent One")
-        print_info("   │   └── Agent Two")
-        print_info("   └── Ryan Rozell (District Manager)")
-        print_info("       └── Agent Three")
+        print_success("✅ Test hierarchy created for forgot password testing:")
+        print_info("   State Manager (for admin reset)")
+        print_info("   └── District Manager (team member)")
+        print_info("       └── Agent (team member)")
             
         return True
 
