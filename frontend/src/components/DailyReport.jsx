@@ -88,8 +88,13 @@ const DailyReport = ({ user }) => {
     try {
       const token = localStorage.getItem('token');
       const params = { period: selectedPeriod };
+      
       if ((reportType === 'individual' || reportType === 'team') && selectedManagerId) {
         params.user_id = selectedManagerId;
+      }
+      
+      if (selectedPeriod === 'monthly') {
+        params.month = selectedMonth;
       }
       
       const response = await axios.get(`${API}/reports/period/${reportType}`, {
