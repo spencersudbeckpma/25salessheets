@@ -562,12 +562,16 @@ async def generate_excel_report(period: str, current_user: dict = Depends(get_cu
     )
 
 @api_router.get("/reports/manager-hierarchy/{manager_id}")
-async def get_manager_hierarchy_report(manager_id: str, period: str, current_user: dict = Depends(get_current_user)):
+async def get_manager_hierarchy_report(manager_id: str, period: str, current_user: dict = Depends(get_current_user), date: str = None, month: str = None, quarter: str = None, year: str = None):
     """
     Get full hierarchy report for a specific manager.
     Shows the manager + all their direct and indirect reports with totals for the period.
     manager_id: ID of the manager to get hierarchy for
     period: 'daily', 'monthly', 'quarterly', or 'yearly'
+    date: ISO format date string for daily reports (YYYY-MM-DD)
+    month: Optional - specific month for monthly reports in YYYY-MM format
+    quarter: Optional - specific quarter for quarterly reports in YYYY-Q1 format
+    year: Optional - specific year for yearly reports in YYYY format
     """
     if current_user['role'] not in ['state_manager', 'regional_manager', 'district_manager']:
         raise HTTPException(status_code=403, detail="Only Managers can access hierarchy reports")
