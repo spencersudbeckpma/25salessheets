@@ -922,8 +922,18 @@ async def get_period_report(report_type: str, period: str, current_user: dict = 
     
     # Calculate date range based on period
     if period == "monthly":
-        start_date = today.replace(day=1)
-        period_name = f"Month of {start_date.strftime('%B %Y')}"
+        if month:
+            # Parse the selected month (YYYY-MM format)
+            try:
+                year, month_num = month.split('-')
+                start_date = date(int(year), int(month_num), 1)
+                period_name = f"Month of {start_date.strftime('%B %Y')}"
+            except ValueError:
+                raise HTTPException(status_code=400, detail="Invalid month format. Use YYYY-MM")
+        else:
+            # Default to current month
+            start_date = today.replace(day=1)
+            period_name = f"Month of {start_date.strftime('%B %Y')}"
     elif period == "quarterly":
         quarter = (today.month - 1) // 3
         start_date = today.replace(month=quarter * 3 + 1, day=1)
