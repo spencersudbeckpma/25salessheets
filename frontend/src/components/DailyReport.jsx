@@ -177,7 +177,7 @@ const DailyReport = ({ user }) => {
         </div>
         {reportData.data.length === 0 && (
           <div className="text-center py-8 text-gray-500">
-            No activity recorded for this date
+            No activity recorded for this period
           </div>
         )}
       </div>
