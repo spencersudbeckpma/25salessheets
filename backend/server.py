@@ -874,6 +874,34 @@ async def get_daily_report(report_type: str, date: str, current_user: dict = Dep
             direct_reports = target_direct_reports  # Show the selected manager's direct reports
         
         report_data = []
+        
+        # If a specific manager is selected, include their individual numbers first
+        if user_id and target_manager:
+            # Add the manager's individual activity
+            manager_activity = await db.activities.find_one({
+                "user_id": target_manager['id'],
+                "date": report_date
+            }, {"_id": 0})
+            
+            manager_totals = {
+                "contacts": manager_activity.get('contacts', 0) if manager_activity else 0,
+                "appointments": manager_activity.get('appointments', 0) if manager_activity else 0,
+                "presentations": manager_activity.get('presentations', 0) if manager_activity else 0,
+                "referrals": manager_activity.get('referrals', 0) if manager_activity else 0,
+                "testimonials": manager_activity.get('testimonials', 0) if manager_activity else 0,
+                "sales": manager_activity.get('sales', 0) if manager_activity else 0,
+                "new_face_sold": manager_activity.get('new_face_sold', 0) if manager_activity else 0,
+                "premium": manager_activity.get('premium', 0) if manager_activity else 0
+            }
+            
+            report_data.append({
+                "team_name": target_manager.get('name', 'Unknown') + " (Individual)",
+                "manager": target_manager.get('name', 'Unknown'),
+                "role": target_manager.get('role', 'unknown').replace('_', ' ').title(),
+                **manager_totals
+            })
+        
+        # Add team data for direct reports
         for manager in direct_reports:
             # Get all members under this manager
             team_members = await get_all_subordinates(manager['id'])
