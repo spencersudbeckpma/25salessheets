@@ -395,7 +395,7 @@ class ManagerReportsTester:
             )
             
             if response.status_code == 403:
-                print_success("JSON endpoint correctly denied access to non-state_manager")
+                print_success("JSON endpoint correctly denied access to agent")
                 self.test_results['passed'] += 1
             else:
                 print_error(f"JSON endpoint should return 403, got {response.status_code}")
