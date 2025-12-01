@@ -293,6 +293,21 @@ backend:
         agent: "testing"
         comment: "🕰️ COMPREHENSIVE HISTORICAL PERIOD SELECTION TESTING COMPLETED: All 47 tests passed successfully! CRITICAL VERIFICATION: (1) ✅ HISTORICAL MONTHLY PERIODS: Tested all report types (individual/team/organization) for previous months (2025-10, 2025-09, 2024-12, 2024-11) - all return correct start_date calculations (1st of selected month) and proper period_name formatting, (2) ✅ HISTORICAL QUARTERLY PERIODS: Tested all report types for previous quarters (2025-Q3, 2025-Q2, 2024-Q4, 2024-Q3) - all return correct start_date calculations (1st of quarter: Jan/Apr/Jul/Oct) and proper Q# YYYY formatting, (3) ✅ HISTORICAL YEARLY PERIODS: Tested all report types for previous years (2024, 2023, 2022) - all return correct start_date calculations (January 1st of selected year) and proper Year YYYY formatting, (4) ✅ MANAGER HIERARCHY INTEGRATION: Manager hierarchy drill-down works correctly with historical periods (monthly/quarterly/yearly), maintains same period selection logic and response structure, (5) ✅ PARAMETER VALIDATION: Invalid formats correctly return 400 Bad Request (invalid months: 2025-13/2025-00, invalid quarters: 2025-Q5/2025-Q0, invalid years: invalid-year/202a), (6) ✅ BACKWARD COMPATIBILITY: Existing behavior works when no period parameters provided, defaults to current month/quarter/year as expected. The Historical Period Selection Feature is production-ready with comprehensive date calculations, proper validation, and seamless integration with existing manager reporting functionality."
 
+  - task: "Team Report Hierarchy Bug Fix - URGENT BUG FIX"
+    implemented: true
+    working: true
+    file: "/app/backend/server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: "NA"
+        agent: "user"
+        comment: "URGENT BUG REPORT: User reported two critical issues: (1) Team Report only showing selected manager (Steve Ahlers), not his full team, (2) Access control error 'Manager not found in your direct reports' when State Manager tries to select District Manager (Ryan Rozell). Expected fixes: When user_id is selected, should show that manager's direct reports (their team), not just the manager themselves. Access control should check full hierarchy (all subordinates) instead of just direct reports."
+      - working: true
+        agent: "testing"
+        comment: "🚨 CRITICAL TEAM REPORT HIERARCHY BUG FIX TESTING COMPLETED: All 16 tests passed successfully! COMPREHENSIVE VERIFICATION: (1) ✅ TEAM REPORT WITH MANAGER SELECTION: GET /api/reports/period/team?period=monthly&user_id={steve_ahlers_id} correctly returns multiple team entries (Steve's direct reports), NOT just Steve himself. Tested with proper hierarchy: State Manager -> Steve Ahlers (District Manager) -> Agent One & Agent Two. Result shows 2 team entries for Steve's direct reports, (2) ✅ HIERARCHY ACCESS CONTROL: State Manager can successfully access Ryan Rozell's team without 'Manager not found in your direct reports' error. Access control correctly checks full hierarchy, not just direct reports. Tested Ryan Rozell (District Manager) selection returns 1 team entry for his direct report (Agent Three), (3) ✅ NORMAL TEAM REPORT: GET /api/reports/period/team?period=monthly (without user_id) correctly shows all direct reports of current user (2 direct report teams), (4) ✅ DAILY TEAM REPORTS: Same hierarchy logic works correctly for daily reports with manager selection. CRITICAL SUCCESS: Both reported bugs have been fixed - team reports now show actual teams (multiple people) instead of just the manager, and State Manager can select any manager in organization hierarchy without access errors."
+
 frontend:
   - task: "Daily Report Component"
     implemented: true
