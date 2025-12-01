@@ -561,6 +561,137 @@ async def generate_excel_report(period: str, current_user: dict = Depends(get_cu
         headers={"Content-Disposition": f"attachment; filename={filename}"}
     )
 
+@api_router.get("/reports/manager-hierarchy/{manager_id}")
+async def get_manager_hierarchy_report(manager_id: str, period: str, current_user: dict = Depends(get_current_user)):
+    """
+    Get full hierarchy report for a specific manager.
+    Shows the manager + all their direct and indirect reports with totals for the period.
+    manager_id: ID of the manager to get hierarchy for
+    period: 'daily', 'monthly', 'quarterly', or 'yearly'
+    """
+    if current_user['role'] not in ['state_manager', 'regional_manager', 'district_manager']:
+        raise HTTPException(status_code=403, detail="Only Managers can access hierarchy reports")
+    
+    # Verify the requested manager is in current user's hierarchy
+    async def get_all_subordinates(user_id: str):
+        members = []
+        subordinates = await db.users.find({"manager_id": user_id}, {"_id": 0, "password_hash": 0}).to_list(1000)
+        for sub in subordinates:
+            members.append(sub)
+            sub_members = await get_all_subordinates(sub['id'])
+            members.extend(sub_members)
+        return members
+    
+    user_hierarchy = await get_all_subordinates(current_user['id'])
+    user_hierarchy.insert(0, current_user)  # Include self
+    
+    target_manager = None
+    for member in user_hierarchy:
+        if member['id'] == manager_id:
+            target_manager = member
+            break
+    
+    if not target_manager:
+        raise HTTPException(status_code=403, detail="Manager not found in your hierarchy")
+    
+    # Get the target manager's hierarchy
+    manager_hierarchy = await get_all_subordinates(manager_id)
+    manager_hierarchy.insert(0, target_manager)  # Include the manager themselves
+    
+    # Calculate date range based on period
+    central_tz = pytz_timezone('America/Chicago')
+    today = datetime.now(central_tz).date()
+    
+    if period == "daily":
+        start_date = today
+        period_name = f"Daily - {start_date.strftime('%B %d, %Y')}"
+        date_filter = start_date.isoformat()
+    elif period == "monthly":
+        start_date = today.replace(day=1)
+        period_name = f"Month of {start_date.strftime('%B %Y')}"
+        date_filter = {"$gte": start_date.isoformat()}
+    elif period == "quarterly":
+        quarter = (today.month - 1) // 3
+        start_date = today.replace(month=quarter * 3 + 1, day=1)
+        period_name = f"Q{quarter + 1} {today.year}"
+        date_filter = {"$gte": start_date.isoformat()}
+    elif period == "yearly":
+        start_date = today.replace(month=1, day=1)
+        period_name = f"Year {today.year}"
+        date_filter = {"$gte": start_date.isoformat()}
+    else:
+        raise HTTPException(status_code=400, detail="Invalid period. Use 'daily', 'monthly', 'quarterly', or 'yearly'")
+    
+    # Build hierarchy structure with totals
+    hierarchy_data = []
+    
+    for member in manager_hierarchy:
+        # Get activities for the period
+        if period == "daily":
+            activities = await db.activities.find({
+                "user_id": member['id'],
+                "date": date_filter
+            }, {"_id": 0}).to_list(1000)
+        else:
+            activities = await db.activities.find({
+                "user_id": member['id'],
+                "date": date_filter
+            }, {"_id": 0}).to_list(10000)
+        
+        # Calculate totals
+        if period == "daily":
+            # For daily, show the single day's data
+            activity = activities[0] if activities else {}
+            totals = {
+                "contacts": activity.get('contacts', 0),
+                "appointments": activity.get('appointments', 0),
+                "presentations": activity.get('presentations', 0),
+                "referrals": activity.get('referrals', 0),
+                "testimonials": activity.get('testimonials', 0),
+                "sales": activity.get('sales', 0),
+                "new_face_sold": activity.get('new_face_sold', 0),
+                "premium": activity.get('premium', 0)
+            }
+        else:
+            # For periods, sum all activities
+            totals = {
+                "contacts": sum(a.get('contacts', 0) for a in activities),
+                "appointments": sum(a.get('appointments', 0) for a in activities),
+                "presentations": sum(a.get('presentations', 0) for a in activities),
+                "referrals": sum(a.get('referrals', 0) for a in activities),
+                "testimonials": sum(a.get('testimonials', 0) for a in activities),
+                "sales": sum(a.get('sales', 0) for a in activities),
+                "new_face_sold": sum(a.get('new_face_sold', 0) for a in activities),
+                "premium": sum(a.get('premium', 0) for a in activities)
+            }
+        
+        # Determine relationship to target manager
+        if member['id'] == manager_id:
+            relationship = "Manager"
+        elif member.get('manager_id') == manager_id:
+            relationship = "Direct Report"
+        else:
+            relationship = "Indirect Report"
+        
+        hierarchy_data.append({
+            "id": member['id'],
+            "name": member.get('name', 'Unknown'),
+            "email": member.get('email', ''),
+            "role": member.get('role', 'unknown').replace('_', ' ').title(),
+            "relationship": relationship,
+            "manager_id": member.get('manager_id'),
+            **totals
+        })
+    
+    return {
+        "manager_name": target_manager.get('name', 'Unknown'),
+        "manager_role": target_manager.get('role', 'unknown').replace('_', ' ').title(),
+        "period": period,
+        "period_name": period_name,
+        "hierarchy_data": hierarchy_data,
+        "total_members": len(hierarchy_data)
+    }
+
 @api_router.get("/reports/managers")
 async def get_available_managers(current_user: dict = Depends(get_current_user)):
     """
