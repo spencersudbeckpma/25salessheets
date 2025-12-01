@@ -79,6 +79,13 @@ const Dashboard = ({ user, setUser }) => {
                 Team Mgmt
               </TabsTrigger>
               <TabsTrigger 
+                value="change-password" 
+                data-testid="change-password-tab" 
+                className="py-2.5 px-3 text-xs md:text-sm whitespace-nowrap flex-shrink-0"
+              >
+                🔐 Password
+              </TabsTrigger>
+              <TabsTrigger 
                 value="leaderboard" 
                 data-testid="leaderboard-tab" 
                 className="py-2.5 px-3 text-xs md:text-sm whitespace-nowrap flex-shrink-0"
