@@ -937,12 +937,35 @@ async def get_period_report(report_type: str, period: str, current_user: dict = 
             start_date = today.replace(day=1)
             period_name = f"Month of {start_date.strftime('%B %Y')}"
     elif period == "quarterly":
-        quarter = (today.month - 1) // 3
-        start_date = today.replace(month=quarter * 3 + 1, day=1)
-        period_name = f"Q{quarter + 1} {today.year}"
+        if quarter:
+            # Parse the selected quarter (YYYY-Q1 format)
+            try:
+                year_str, quarter_str = quarter.split('-Q')
+                quarter_num = int(quarter_str)
+                if quarter_num < 1 or quarter_num > 4:
+                    raise ValueError("Quarter must be 1-4")
+                start_date = date(int(year_str), (quarter_num - 1) * 3 + 1, 1)
+                period_name = f"Q{quarter_num} {year_str}"
+            except ValueError:
+                raise HTTPException(status_code=400, detail="Invalid quarter format. Use YYYY-Q1")
+        else:
+            # Default to current quarter
+            quarter_num = (today.month - 1) // 3
+            start_date = today.replace(month=quarter_num * 3 + 1, day=1)
+            period_name = f"Q{quarter_num + 1} {today.year}"
     elif period == "yearly":
-        start_date = today.replace(month=1, day=1)
-        period_name = f"Year {today.year}"
+        if year:
+            # Parse the selected year
+            try:
+                year_num = int(year)
+                start_date = date(year_num, 1, 1)
+                period_name = f"Year {year_num}"
+            except ValueError:
+                raise HTTPException(status_code=400, detail="Invalid year format. Use YYYY")
+        else:
+            # Default to current year
+            start_date = today.replace(month=1, day=1)
+            period_name = f"Year {today.year}"
     else:
         raise HTTPException(status_code=400, detail="Invalid period. Use 'monthly', 'quarterly', or 'yearly'")
     
