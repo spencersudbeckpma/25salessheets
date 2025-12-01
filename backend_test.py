@@ -1095,6 +1095,7 @@ class ManagerReportsTester:
         """Validate that period calculations are correct"""
         try:
             from datetime import datetime
+            import pytz
             
             start_date_str = data.get('start_date', '')
             period_name = data.get('period_name', '')
@@ -1105,7 +1106,10 @@ class ManagerReportsTester:
                 
             # Parse start date
             start_date = datetime.fromisoformat(start_date_str).date()
-            today = datetime.now().date()
+            
+            # Use Central Time for calculations (same as backend)
+            central_tz = pytz.timezone('America/Chicago')
+            today = datetime.now(central_tz).date()
             
             if period == 'monthly':
                 # Should start from 1st of current month
