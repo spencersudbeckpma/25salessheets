@@ -2109,7 +2109,8 @@ class ManagerReportsTester:
         
         # Create test activity data to ensure we have data to verify
         print_info("Creating test activity data for integrity verification...")
-        today = datetime.now().date().isoformat()
+        from datetime import datetime as dt
+        today = dt.now().date().isoformat()
         
         activity_data = {
             "date": today,
