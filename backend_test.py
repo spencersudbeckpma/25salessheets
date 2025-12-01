@@ -951,6 +951,29 @@ class ManagerReportsTester:
                     # CRITICAL: Check for timezone bug - date field must match request
                     if data.get('date') == date_str:
                         print_success(f"✅ TIMEZONE FIX VERIFIED: Date field matches request ({date_str})")
+                        self.test_results['passed'] += 1
+                    else:
+                        print_error(f"❌ TIMEZONE BUG STILL EXISTS: Request date {date_str} != Response date {data.get('date')}")
+                        print_error(f"   This is the exact bug reported: 'showing Wednesday's numbers but Tuesday's date'")
+                        self.test_results['failed'] += 1
+                        self.test_results['errors'].append(f"CRITICAL TIMEZONE BUG: {description} - Request: {date_str}, Response: {data.get('date')}")
+                        
+                    # Additional validation
+                    if data.get('report_type') == 'individual':
+                        print_success(f"✅ Report type correct for {description}")
+                    else:
+                        print_error(f"❌ Report type incorrect for {description}: {data.get('report_type')}")
+                        
+                else:
+                    print_error(f"❌ Report for {description} failed: {response.status_code}")
+                    self.test_results['failed'] += 1
+                    self.test_results['errors'].append(f"Report for {description} failed: {response.status_code}")
+                    
+            except Exception as e:
+                print_error(f"❌ Exception testing {description}: {str(e)}")
+                self.test_results['failed'] += 1
+                self.test_results['errors'].append(f"Date test {description} exception: {str(e)}")
+
     def test_period_reports_json_endpoints(self):
         """Test the new period-based JSON report endpoints"""
         print_header("TESTING PERIOD REPORTS JSON ENDPOINTS")
