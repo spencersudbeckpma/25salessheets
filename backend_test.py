@@ -91,8 +91,8 @@ class ManagerReportsTester:
             return None
 
     def setup_test_users(self):
-        """Setup test users for comprehensive manager testing"""
-        print_header("SETTING UP TEST USERS FOR MANAGER REPORTS")
+        """Setup test users for team report hierarchy testing"""
+        print_header("SETTING UP TEST USERS FOR TEAM REPORT HIERARCHY TESTING")
         
         # Try to login with existing state manager first
         try:
@@ -103,6 +103,7 @@ class ManagerReportsTester:
             if response.status_code == 200:
                 data = response.json()
                 self.state_manager_token = data['token']
+                self.state_manager_id = data['user']['id']
                 print_success(f"Logged in existing state manager: {data['user']['name']}")
             else:
                 print_warning("Could not login existing state manager, trying to register new one")
@@ -121,23 +122,70 @@ class ManagerReportsTester:
                 "state_manager"
             )
         
-        # Register regional manager
-        self.regional_manager_token = self.register_test_user(
-            "regional.manager@test.com", 
+        # Create a proper hierarchy for testing
+        # State Manager -> Regional Manager -> District Manager -> Agents
+        
+        # Register Steve Ahlers as District Manager under State Manager
+        self.steve_ahlers_token = self.register_test_user_with_manager(
+            "steve.ahlers@test.com", 
             "TestPassword123!",
-            "Regional Manager Test",
-            "regional_manager"
+            "Steve Ahlers",
+            "district_manager",
+            self.state_manager_id
         )
         
-        # Register district manager
-        self.district_manager_token = self.register_test_user(
-            "district.manager@test.com", 
+        # Register Ryan Rozell as District Manager under State Manager  
+        self.ryan_rozell_token = self.register_test_user_with_manager(
+            "ryan.rozell@test.com", 
             "TestPassword123!",
-            "District Manager Test",
-            "district_manager"
+            "Ryan Rozell",
+            "district_manager", 
+            self.state_manager_id
         )
         
-        # Register agent (should not have access)
+        # Get Steve Ahlers ID for creating his team
+        if self.steve_ahlers_token:
+            steve_user = self.get_user_info(self.steve_ahlers_token)
+            self.steve_ahlers_id = steve_user.get('id') if steve_user else None
+        else:
+            self.steve_ahlers_id = None
+            
+        # Get Ryan Rozell ID for access control testing
+        if self.ryan_rozell_token:
+            ryan_user = self.get_user_info(self.ryan_rozell_token)
+            self.ryan_rozell_id = ryan_user.get('id') if ryan_user else None
+        else:
+            self.ryan_rozell_id = None
+        
+        # Create team members under Steve Ahlers
+        if self.steve_ahlers_id:
+            self.agent1_token = self.register_test_user_with_manager(
+                "agent1.steve@test.com",
+                "TestPassword123!",
+                "Agent One (Steve's Team)",
+                "agent",
+                self.steve_ahlers_id
+            )
+            
+            self.agent2_token = self.register_test_user_with_manager(
+                "agent2.steve@test.com",
+                "TestPassword123!", 
+                "Agent Two (Steve's Team)",
+                "agent",
+                self.steve_ahlers_id
+            )
+        
+        # Create team members under Ryan Rozell
+        if self.ryan_rozell_id:
+            self.agent3_token = self.register_test_user_with_manager(
+                "agent3.ryan@test.com",
+                "TestPassword123!",
+                "Agent Three (Ryan's Team)",
+                "agent",
+                self.ryan_rozell_id
+            )
+        
+        # Register regular agent (should not have access)
         self.agent_token = self.register_test_user(
             "agent.user@test.com", 
             "TestPassword123!",
@@ -149,16 +197,64 @@ class ManagerReportsTester:
             print_error("Failed to setup state manager - cannot continue testing")
             return False
             
-        if not self.regional_manager_token:
-            print_warning("Failed to setup regional manager - will skip some access control tests")
-            
-        if not self.district_manager_token:
-            print_warning("Failed to setup district manager - will skip some access control tests")
-            
-        if not self.agent_token:
-            print_warning("Failed to setup agent - will skip agent access control tests")
+        print_success("✅ Test hierarchy created:")
+        print_info("   State Manager (Spencer)")
+        print_info("   ├── Steve Ahlers (District Manager)")
+        print_info("   │   ├── Agent One")
+        print_info("   │   └── Agent Two")
+        print_info("   └── Ryan Rozell (District Manager)")
+        print_info("       └── Agent Three")
             
         return True
+
+    def register_test_user_with_manager(self, email, password, name, role, manager_id):
+        """Register a test user with a specific manager"""
+        try:
+            response = self.session.post(f"{BACKEND_URL}/auth/register", json={
+                "email": email,
+                "password": password,
+                "name": name,
+                "role": role,
+                "manager_id": manager_id
+            })
+            
+            if response.status_code == 200:
+                data = response.json()
+                print_success(f"Registered {role}: {name} under manager {manager_id}")
+                return data['token']
+            elif response.status_code == 400 and "already registered" in response.text:
+                # User exists, try to login
+                login_response = self.session.post(f"{BACKEND_URL}/auth/login", json={
+                    "email": email,
+                    "password": password
+                })
+                if login_response.status_code == 200:
+                    data = login_response.json()
+                    print_info(f"Logged in existing {role}: {name}")
+                    return data['token']
+                else:
+                    print_error(f"Failed to login existing user {email}: {login_response.text}")
+                    return None
+            else:
+                print_error(f"Failed to register {email}: {response.status_code} - {response.text}")
+                return None
+        except Exception as e:
+            print_error(f"Exception registering {email}: {str(e)}")
+            return None
+
+    def get_user_info(self, token):
+        """Get user info from token"""
+        try:
+            headers = {"Authorization": f"Bearer {token}"}
+            response = self.session.get(f"{BACKEND_URL}/auth/me", headers=headers)
+            if response.status_code == 200:
+                return response.json()
+            else:
+                print_error(f"Failed to get user info: {response.status_code}")
+                return None
+        except Exception as e:
+            print_error(f"Exception getting user info: {str(e)}")
+            return None
 
     def create_test_activity(self, token, date_str):
         """Create test activity data for a specific date"""
