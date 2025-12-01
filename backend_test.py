@@ -1780,7 +1780,7 @@ class ManagerReportsTester:
         self.test_manager_selection_endpoints()
         self.test_individual_manager_daily_reports()
         self.test_individual_manager_period_reports()
-        self.test_hierarchy_access_control()
+        self.test_hierarchy_access_control_new()
         
         # Print summary
         self.print_test_summary()
