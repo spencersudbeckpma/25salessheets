@@ -1879,6 +1879,103 @@ async def change_password(password_request: PasswordChangeRequest, current_user:
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to change password: {str(e)}")
 
+@api_router.post("/auth/admin-reset-password")
+async def admin_reset_password(reset_request: PasswordResetRequest, current_user: dict = Depends(get_current_user)):
+    """
+    Admin reset password for team members.
+    Only State Managers can reset passwords for users in their hierarchy.
+    """
+    try:
+        # Only State Managers can reset passwords
+        if current_user['role'] != 'state_manager':
+            raise HTTPException(status_code=403, detail="Only State Managers can reset passwords")
+        
+        # Helper function to get all subordinates recursively
+        async def get_all_subordinates(user_id: str):
+            members = []
+            subordinates = await db.users.find({"manager_id": user_id}, {"_id": 0, "password_hash": 0}).to_list(1000)
+            for sub in subordinates:
+                members.append(sub)
+                sub_members = await get_all_subordinates(sub['id'])
+                members.extend(sub_members)
+            return members
+        
+        # Get all users under current user's hierarchy
+        all_subordinates = await get_all_subordinates(current_user['id'])
+        all_subordinates.insert(0, current_user)  # Include self
+        
+        # Find the target user
+        target_user = None
+        for member in all_subordinates:
+            if member['id'] == reset_request.user_id:
+                target_user = member
+                break
+        
+        if not target_user:
+            raise HTTPException(status_code=403, detail="User not found in your hierarchy")
+        
+        # Validate new password (basic validation)
+        if len(reset_request.new_password) < 6:
+            raise HTTPException(status_code=400, detail="New password must be at least 6 characters long")
+        
+        # Hash the new password
+        salt = bcrypt.gensalt()
+        new_password_hash = bcrypt.hashpw(reset_request.new_password.encode('utf-8'), salt)
+        
+        # Update password in database
+        await db.users.update_one(
+            {"id": reset_request.user_id},
+            {"$set": {"password_hash": new_password_hash.decode('utf-8')}}
+        )
+        
+        return {
+            "message": f"Password reset successfully for {target_user.get('name', 'user')}",
+            "user_name": target_user.get('name', 'Unknown'),
+            "user_email": target_user.get('email', 'Unknown')
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to reset password: {str(e)}")
+
+@api_router.post("/auth/forgot-password")
+async def forgot_password(forgot_request: ForgotPasswordRequest):
+    """
+    Generate temporary password for users who forgot their password.
+    Since we don't have email service, generates a temporary password that admins can share.
+    """
+    try:
+        # Check if user exists
+        user = await db.users.find_one({"email": forgot_request.email})
+        if not user:
+            # Don't reveal if user exists or not for security
+            return {"message": "If the email exists, password reset instructions would be sent"}
+        
+        # Generate a temporary password
+        import secrets
+        import string
+        temp_password = ''.join(secrets.choice(string.ascii_letters + string.digits) for _ in range(8))
+        
+        # Hash the temporary password
+        salt = bcrypt.gensalt()
+        temp_password_hash = bcrypt.hashpw(temp_password.encode('utf-8'), salt)
+        
+        # Update user with temporary password
+        await db.users.update_one(
+            {"email": forgot_request.email},
+            {"$set": {"password_hash": temp_password_hash.decode('utf-8')}}
+        )
+        
+        return {
+            "message": "Temporary password generated",
+            "temporary_password": temp_password,
+            "user_name": user.get('name', 'Unknown'),
+            "instructions": "Use this temporary password to login, then change it immediately using the Change Password feature"
+        }
+        
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to generate temporary password: {str(e)}")
 # Activity Routes
 @api_router.post("/activities")
 async def create_activity(activity_data: ActivityCreate, current_user: dict = Depends(get_current_user)):
