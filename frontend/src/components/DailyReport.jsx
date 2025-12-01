@@ -210,25 +210,49 @@ const DailyReport = ({ user }) => {
                 <th className="px-4 py-3 text-center text-sm font-semibold">Sales</th>
                 <th className="px-4 py-3 text-center text-sm font-semibold">New Face</th>
                 <th className="px-4 py-3 text-center text-sm font-semibold">Premium</th>
+                <th className="px-4 py-3 text-center text-sm font-semibold">Actions</th>
               </tr>
             </thead>
             <tbody>
-              {reportData.data.map((person, idx) => (
-                <tr key={idx} className={idx % 2 === 0 ? 'bg-gray-50' : 'bg-white'}>
-                  <td className="px-4 py-3 text-sm font-medium text-gray-900">{person.name}</td>
-                  <td className="px-4 py-3 text-sm text-gray-600">{person.role}</td>
-                  <td className="px-4 py-3 text-sm text-center">{person.contacts}</td>
-                  <td className="px-4 py-3 text-sm text-center">{person.appointments}</td>
-                  <td className="px-4 py-3 text-sm text-center">{person.presentations}</td>
-                  <td className="px-4 py-3 text-sm text-center">{person.referrals}</td>
-                  <td className="px-4 py-3 text-sm text-center">{person.testimonials}</td>
-                  <td className="px-4 py-3 text-sm text-center">{person.sales}</td>
-                  <td className="px-4 py-3 text-sm text-center">{person.new_face_sold}</td>
-                  <td className="px-4 py-3 text-sm text-center font-semibold text-green-600">
-                    ${typeof person.premium === 'number' ? person.premium.toFixed(2) : person.premium}
-                  </td>
-                </tr>
-              ))}
+              {reportData.data.map((person, idx) => {
+                // Find the manager in available managers to get their ID
+                const managerData = availableManagers.find(m => m.name === person.name);
+                const isClickable = managerData && ['State Manager', 'Regional Manager', 'District Manager'].includes(person.role);
+                
+                return (
+                  <tr key={idx} className={idx % 2 === 0 ? 'bg-gray-50' : 'bg-white'}>
+                    <td className="px-4 py-3 text-sm font-medium text-gray-900">
+                      {isClickable ? (
+                        <button
+                          onClick={() => fetchManagerHierarchy(managerData.id, person.name)}
+                          className="text-blue-600 hover:text-blue-800 hover:underline font-semibold"
+                          title={`Click to view ${person.name}'s team hierarchy`}
+                        >
+                          {person.name} 👥
+                        </button>
+                      ) : (
+                        person.name
+                      )}
+                    </td>
+                    <td className="px-4 py-3 text-sm text-gray-600">{person.role}</td>
+                    <td className="px-4 py-3 text-sm text-center">{person.contacts}</td>
+                    <td className="px-4 py-3 text-sm text-center">{person.appointments}</td>
+                    <td className="px-4 py-3 text-sm text-center">{person.presentations}</td>
+                    <td className="px-4 py-3 text-sm text-center">{person.referrals}</td>
+                    <td className="px-4 py-3 text-sm text-center">{person.testimonials}</td>
+                    <td className="px-4 py-3 text-sm text-center">{person.sales}</td>
+                    <td className="px-4 py-3 text-sm text-center">{person.new_face_sold}</td>
+                    <td className="px-4 py-3 text-sm text-center font-semibold text-green-600">
+                      ${typeof person.premium === 'number' ? person.premium.toFixed(2) : person.premium}
+                    </td>
+                    <td className="px-4 py-3 text-sm text-center">
+                      {isClickable && (
+                        <span className="text-xs text-gray-500">Click name for team</span>
+                      )}
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         </div>
@@ -237,6 +261,9 @@ const DailyReport = ({ user }) => {
             No activity recorded for this period
           </div>
         )}
+        <div className="mt-4 text-xs text-gray-500">
+          💡 <strong>Tip:</strong> Click on a manager's name (👥) to view their entire team hierarchy with totals
+        </div>
       </div>
     );
   };
