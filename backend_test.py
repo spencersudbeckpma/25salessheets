@@ -2226,6 +2226,459 @@ class ManagerReportsTester:
             self.test_results['failed'] += 1
             self.test_results['errors'].append(f"Data integrity test exception: {str(e)}")
 
+    def test_historical_period_selection(self):
+        """Test the new Historical Period Selection Feature"""
+        print_header("🕰️ TESTING HISTORICAL PERIOD SELECTION FEATURE")
+        
+        if not self.state_manager_token:
+            print_error("No state manager token - skipping historical period tests")
+            return
+            
+        headers = {"Authorization": f"Bearer {self.state_manager_token}"}
+        
+        # Test historical monthly periods
+        print_info("Testing historical monthly periods...")
+        historical_months = ["2025-10", "2025-09", "2024-12", "2024-11"]
+        
+        for month in historical_months:
+            for report_type in ['individual', 'team', 'organization']:
+                print_info(f"Testing {report_type} report for month {month}...")
+                
+                try:
+                    response = self.session.get(
+                        f"{BACKEND_URL}/reports/period/{report_type}",
+                        params={"period": "monthly", "month": month},
+                        headers=headers
+                    )
+                    
+                    if response.status_code == 200:
+                        data = response.json()
+                        
+                        # Validate historical month calculation
+                        if self.validate_historical_month_calculation(data, month):
+                            print_success(f"✅ Historical {report_type} report for {month} - date calculation correct")
+                            self.test_results['passed'] += 1
+                        else:
+                            print_error(f"❌ Historical {report_type} report for {month} - date calculation incorrect")
+                            self.test_results['failed'] += 1
+                            
+                    else:
+                        print_error(f"❌ Historical {report_type} report for {month} failed: {response.status_code}")
+                        self.test_results['failed'] += 1
+                        
+                except Exception as e:
+                    print_error(f"❌ Exception testing historical {report_type} for {month}: {str(e)}")
+                    self.test_results['failed'] += 1
+        
+        # Test historical quarterly periods
+        print_info("Testing historical quarterly periods...")
+        historical_quarters = ["2025-Q3", "2025-Q2", "2024-Q4", "2024-Q3"]
+        
+        for quarter in historical_quarters:
+            for report_type in ['individual', 'team', 'organization']:
+                print_info(f"Testing {report_type} report for quarter {quarter}...")
+                
+                try:
+                    response = self.session.get(
+                        f"{BACKEND_URL}/reports/period/{report_type}",
+                        params={"period": "quarterly", "quarter": quarter},
+                        headers=headers
+                    )
+                    
+                    if response.status_code == 200:
+                        data = response.json()
+                        
+                        # Validate historical quarter calculation
+                        if self.validate_historical_quarter_calculation(data, quarter):
+                            print_success(f"✅ Historical {report_type} report for {quarter} - date calculation correct")
+                            self.test_results['passed'] += 1
+                        else:
+                            print_error(f"❌ Historical {report_type} report for {quarter} - date calculation incorrect")
+                            self.test_results['failed'] += 1
+                            
+                    else:
+                        print_error(f"❌ Historical {report_type} report for {quarter} failed: {response.status_code}")
+                        self.test_results['failed'] += 1
+                        
+                except Exception as e:
+                    print_error(f"❌ Exception testing historical {report_type} for {quarter}: {str(e)}")
+                    self.test_results['failed'] += 1
+        
+        # Test historical yearly periods
+        print_info("Testing historical yearly periods...")
+        historical_years = ["2024", "2023", "2022"]
+        
+        for year in historical_years:
+            for report_type in ['individual', 'team', 'organization']:
+                print_info(f"Testing {report_type} report for year {year}...")
+                
+                try:
+                    response = self.session.get(
+                        f"{BACKEND_URL}/reports/period/{report_type}",
+                        params={"period": "yearly", "year": year},
+                        headers=headers
+                    )
+                    
+                    if response.status_code == 200:
+                        data = response.json()
+                        
+                        # Validate historical year calculation
+                        if self.validate_historical_year_calculation(data, year):
+                            print_success(f"✅ Historical {report_type} report for {year} - date calculation correct")
+                            self.test_results['passed'] += 1
+                        else:
+                            print_error(f"❌ Historical {report_type} report for {year} - date calculation incorrect")
+                            self.test_results['failed'] += 1
+                            
+                    else:
+                        print_error(f"❌ Historical {report_type} report for {year} failed: {response.status_code}")
+                        self.test_results['failed'] += 1
+                        
+                except Exception as e:
+                    print_error(f"❌ Exception testing historical {report_type} for {year}: {str(e)}")
+                    self.test_results['failed'] += 1
+
+    def validate_historical_month_calculation(self, data, month):
+        """Validate historical month date calculations"""
+        try:
+            from datetime import datetime
+            
+            start_date_str = data.get('start_date', '')
+            period_name = data.get('period_name', '')
+            
+            if not start_date_str:
+                print_error("Missing start_date in historical month report")
+                return False
+                
+            # Parse the month parameter (YYYY-MM)
+            year_str, month_num = month.split('-')
+            expected_start = datetime(int(year_str), int(month_num), 1).date()
+            
+            # Parse actual start date
+            actual_start = datetime.fromisoformat(start_date_str).date()
+            
+            if actual_start != expected_start:
+                print_error(f"Historical month start date incorrect: {actual_start} (expected: {expected_start})")
+                return False
+                
+            # Validate period name contains the correct month and year
+            expected_month_name = expected_start.strftime('%B %Y')
+            if expected_month_name not in period_name:
+                print_warning(f"Historical month period name may be incorrect: {period_name} (expected to contain: {expected_month_name})")
+                
+            return True
+            
+        except Exception as e:
+            print_error(f"Exception validating historical month calculation: {str(e)}")
+            return False
+
+    def validate_historical_quarter_calculation(self, data, quarter):
+        """Validate historical quarter date calculations"""
+        try:
+            from datetime import datetime
+            
+            start_date_str = data.get('start_date', '')
+            period_name = data.get('period_name', '')
+            
+            if not start_date_str:
+                print_error("Missing start_date in historical quarter report")
+                return False
+                
+            # Parse the quarter parameter (YYYY-Q1)
+            year_str, quarter_str = quarter.split('-Q')
+            quarter_num = int(quarter_str)
+            
+            if quarter_num < 1 or quarter_num > 4:
+                print_error(f"Invalid quarter number: {quarter_num}")
+                return False
+                
+            expected_start = datetime(int(year_str), (quarter_num - 1) * 3 + 1, 1).date()
+            
+            # Parse actual start date
+            actual_start = datetime.fromisoformat(start_date_str).date()
+            
+            if actual_start != expected_start:
+                print_error(f"Historical quarter start date incorrect: {actual_start} (expected: {expected_start})")
+                return False
+                
+            # Validate period name contains the correct quarter and year
+            expected_period_name = f"Q{quarter_num} {year_str}"
+            if expected_period_name not in period_name:
+                print_warning(f"Historical quarter period name may be incorrect: {period_name} (expected to contain: {expected_period_name})")
+                
+            return True
+            
+        except Exception as e:
+            print_error(f"Exception validating historical quarter calculation: {str(e)}")
+            return False
+
+    def validate_historical_year_calculation(self, data, year):
+        """Validate historical year date calculations"""
+        try:
+            from datetime import datetime
+            
+            start_date_str = data.get('start_date', '')
+            period_name = data.get('period_name', '')
+            
+            if not start_date_str:
+                print_error("Missing start_date in historical year report")
+                return False
+                
+            expected_start = datetime(int(year), 1, 1).date()
+            
+            # Parse actual start date
+            actual_start = datetime.fromisoformat(start_date_str).date()
+            
+            if actual_start != expected_start:
+                print_error(f"Historical year start date incorrect: {actual_start} (expected: {expected_start})")
+                return False
+                
+            # Validate period name contains the correct year
+            if year not in period_name:
+                print_warning(f"Historical year period name may be incorrect: {period_name} (expected to contain: {year})")
+                
+            return True
+            
+        except Exception as e:
+            print_error(f"Exception validating historical year calculation: {str(e)}")
+            return False
+
+    def test_historical_parameter_validation(self):
+        """Test parameter validation for historical periods"""
+        print_header("🔍 TESTING HISTORICAL PARAMETER VALIDATION")
+        
+        if not self.state_manager_token:
+            print_error("No state manager token - skipping parameter validation tests")
+            return
+            
+        headers = {"Authorization": f"Bearer {self.state_manager_token}"}
+        
+        # Test invalid month formats
+        print_info("Testing invalid month formats...")
+        invalid_months = ["2025-13", "2025-00", "invalid-month", "2025/10", "25-10"]
+        
+        for invalid_month in invalid_months:
+            try:
+                response = self.session.get(
+                    f"{BACKEND_URL}/reports/period/individual",
+                    params={"period": "monthly", "month": invalid_month},
+                    headers=headers
+                )
+                
+                if response.status_code == 400:
+                    print_success(f"✅ Invalid month format '{invalid_month}' correctly returned 400")
+                    self.test_results['passed'] += 1
+                else:
+                    print_error(f"❌ Invalid month format '{invalid_month}' should return 400, got {response.status_code}")
+                    self.test_results['failed'] += 1
+                    
+            except Exception as e:
+                print_error(f"❌ Exception testing invalid month '{invalid_month}': {str(e)}")
+                self.test_results['failed'] += 1
+        
+        # Test invalid quarter formats
+        print_info("Testing invalid quarter formats...")
+        invalid_quarters = ["2025-Q5", "2025-Q0", "invalid-quarter", "2025/Q1", "25-Q1"]
+        
+        for invalid_quarter in invalid_quarters:
+            try:
+                response = self.session.get(
+                    f"{BACKEND_URL}/reports/period/individual",
+                    params={"period": "quarterly", "quarter": invalid_quarter},
+                    headers=headers
+                )
+                
+                if response.status_code == 400:
+                    print_success(f"✅ Invalid quarter format '{invalid_quarter}' correctly returned 400")
+                    self.test_results['passed'] += 1
+                else:
+                    print_error(f"❌ Invalid quarter format '{invalid_quarter}' should return 400, got {response.status_code}")
+                    self.test_results['failed'] += 1
+                    
+            except Exception as e:
+                print_error(f"❌ Exception testing invalid quarter '{invalid_quarter}': {str(e)}")
+                self.test_results['failed'] += 1
+        
+        # Test invalid year formats
+        print_info("Testing invalid year formats...")
+        invalid_years = ["invalid-year", "25", "202a", ""]
+        
+        for invalid_year in invalid_years:
+            try:
+                response = self.session.get(
+                    f"{BACKEND_URL}/reports/period/individual",
+                    params={"period": "yearly", "year": invalid_year},
+                    headers=headers
+                )
+                
+                if response.status_code == 400:
+                    print_success(f"✅ Invalid year format '{invalid_year}' correctly returned 400")
+                    self.test_results['passed'] += 1
+                else:
+                    print_error(f"❌ Invalid year format '{invalid_year}' should return 400, got {response.status_code}")
+                    self.test_results['failed'] += 1
+                    
+            except Exception as e:
+                print_error(f"❌ Exception testing invalid year '{invalid_year}': {str(e)}")
+                self.test_results['failed'] += 1
+
+    def test_manager_hierarchy_historical_periods(self):
+        """Test manager hierarchy with historical periods"""
+        print_header("👥 TESTING MANAGER HIERARCHY WITH HISTORICAL PERIODS")
+        
+        if not self.state_manager_token:
+            print_error("No state manager token - skipping manager hierarchy historical tests")
+            return
+            
+        headers = {"Authorization": f"Bearer {self.state_manager_token}"}
+        
+        # First get available managers
+        try:
+            managers_response = self.session.get(f"{BACKEND_URL}/reports/managers", headers=headers)
+            
+            if managers_response.status_code != 200:
+                print_error("Could not get available managers - skipping hierarchy historical tests")
+                return
+                
+            managers_data = managers_response.json()
+            managers = managers_data.get('managers', [])
+            
+            if not managers:
+                print_warning("No managers available - skipping hierarchy historical tests")
+                return
+                
+            # Use the first manager for testing
+            test_manager = managers[0]
+            manager_id = test_manager.get('id')
+            
+            print_info(f"Testing historical periods for manager: {test_manager.get('name', 'Unknown')}")
+            
+            # Test historical monthly periods with manager hierarchy
+            historical_months = ["2025-10", "2024-12"]
+            
+            for month in historical_months:
+                print_info(f"Testing manager hierarchy for month {month}...")
+                
+                try:
+                    response = self.session.get(
+                        f"{BACKEND_URL}/reports/manager-hierarchy/{manager_id}",
+                        params={"period": "monthly", "month": month},
+                        headers=headers
+                    )
+                    
+                    if response.status_code == 200:
+                        data = response.json()
+                        
+                        # Validate response structure
+                        if self.validate_manager_hierarchy_response_structure(data, "monthly"):
+                            print_success(f"✅ Manager hierarchy for {month} - structure valid")
+                            self.test_results['passed'] += 1
+                            
+                            # Validate historical month calculation in hierarchy
+                            if self.validate_historical_month_calculation(data, month):
+                                print_success(f"✅ Manager hierarchy for {month} - date calculation correct")
+                                self.test_results['passed'] += 1
+                            else:
+                                print_error(f"❌ Manager hierarchy for {month} - date calculation incorrect")
+                                self.test_results['failed'] += 1
+                        else:
+                            print_error(f"❌ Manager hierarchy for {month} - structure invalid")
+                            self.test_results['failed'] += 1
+                            
+                    else:
+                        print_error(f"❌ Manager hierarchy for {month} failed: {response.status_code}")
+                        self.test_results['failed'] += 1
+                        
+                except Exception as e:
+                    print_error(f"❌ Exception testing manager hierarchy for {month}: {str(e)}")
+                    self.test_results['failed'] += 1
+                    
+        except Exception as e:
+            print_error(f"❌ Exception in manager hierarchy historical tests: {str(e)}")
+            self.test_results['failed'] += 1
+
+    def validate_manager_hierarchy_response_structure(self, data, period):
+        """Validate manager hierarchy response structure"""
+        try:
+            required_fields = ['manager_name', 'manager_role', 'period', 'period_name', 'hierarchy_data', 'total_members']
+            
+            for field in required_fields:
+                if field not in data:
+                    print_error(f"Missing required field in manager hierarchy response: {field}")
+                    return False
+                    
+            if data.get('period') != period:
+                print_error(f"Incorrect period in manager hierarchy response: {data.get('period')} (expected: {period})")
+                return False
+                
+            hierarchy_data = data.get('hierarchy_data', [])
+            if not isinstance(hierarchy_data, list):
+                print_error("hierarchy_data should be a list")
+                return False
+                
+            # Check hierarchy member structure
+            if hierarchy_data:
+                member = hierarchy_data[0]
+                required_member_fields = ['id', 'name', 'email', 'role', 'relationship', 'manager_id', 'contacts', 'appointments', 'presentations', 'referrals', 'testimonials', 'sales', 'new_face_sold', 'premium']
+                
+                for field in required_member_fields:
+                    if field not in member:
+                        print_error(f"Missing required field in hierarchy member: {field}")
+                        return False
+                        
+            return True
+            
+        except Exception as e:
+            print_error(f"Exception validating manager hierarchy response structure: {str(e)}")
+            return False
+
+    def test_backward_compatibility(self):
+        """Test backward compatibility - existing behavior without period parameters"""
+        print_header("🔄 TESTING BACKWARD COMPATIBILITY")
+        
+        if not self.state_manager_token:
+            print_error("No state manager token - skipping backward compatibility tests")
+            return
+            
+        headers = {"Authorization": f"Bearer {self.state_manager_token}"}
+        
+        # Test that existing endpoints work without new parameters (should default to current period)
+        print_info("Testing backward compatibility for period reports...")
+        
+        report_types = ['individual', 'team', 'organization']
+        periods = ['monthly', 'quarterly', 'yearly']
+        
+        for report_type in report_types:
+            for period in periods:
+                print_info(f"Testing {report_type} {period} report without historical parameters...")
+                
+                try:
+                    # Test without any historical parameters (should use current period)
+                    response = self.session.get(
+                        f"{BACKEND_URL}/reports/period/{report_type}",
+                        params={"period": period},
+                        headers=headers
+                    )
+                    
+                    if response.status_code == 200:
+                        data = response.json()
+                        
+                        # Should return current period data
+                        if data.get('period') == period and data.get('report_type') == report_type:
+                            print_success(f"✅ Backward compatibility for {report_type} {period} - defaults to current period")
+                            self.test_results['passed'] += 1
+                        else:
+                            print_error(f"❌ Backward compatibility for {report_type} {period} - incorrect response structure")
+                            self.test_results['failed'] += 1
+                            
+                    else:
+                        print_error(f"❌ Backward compatibility for {report_type} {period} failed: {response.status_code}")
+                        self.test_results['failed'] += 1
+                        
+                except Exception as e:
+                    print_error(f"❌ Exception testing backward compatibility for {report_type} {period}: {str(e)}")
+                    self.test_results['failed'] += 1
+
     def run_all_tests(self):
         """Run all tests - COMPREHENSIVE MANAGER HIERARCHY DRILL-DOWN TESTING"""
         print_header("🚀 COMPREHENSIVE MANAGER HIERARCHY DRILL-DOWN TESTING")
