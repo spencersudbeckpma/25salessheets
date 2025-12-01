@@ -556,8 +556,8 @@ const DailyReport = ({ user }) => {
         <div className="mt-8 p-4 bg-blue-50 border border-blue-200 rounded-lg">
           <h4 className="font-semibold text-blue-900 mb-2">📋 Report Types & Periods</h4>
           <ul className="text-sm text-gray-700 space-y-1">
-            <li>• <strong>Individual:</strong> Shows each team member's activity for the selected period</li>
-            <li>• <strong>Team:</strong> Shows aggregated totals for each direct report's team</li>
+            <li>• <strong>Individual:</strong> Shows each team member&apos;s activity for the selected period</li>
+            <li>• <strong>Team:</strong> Shows aggregated totals for each direct report&apos;s team</li>
             <li>• <strong>Organization:</strong> Shows organization-wide totals for the selected period</li>
             <li>• <strong>Daily:</strong> Activity for a specific date</li>
             <li>• <strong>Monthly:</strong> Current month totals (1st through last day)</li>
