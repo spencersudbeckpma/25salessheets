@@ -10,6 +10,7 @@ import Reports from './Reports';
 import NewFaceTracking from './NewFaceTracking';
 import DailyReport from './DailyReport';
 import ChangePassword from './ChangePassword';
+import PasswordManagement from './PasswordManagement';
 import { Button } from './ui/button';
 import { LogOut } from 'lucide-react';
 
