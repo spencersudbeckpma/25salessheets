@@ -36,6 +36,29 @@ const DailyReport = ({ user }) => {
     }
   };
 
+  const fetchManagerHierarchy = async (managerId, managerName) => {
+    setLoading(true);
+    try {
+      const token = localStorage.getItem('token');
+      const response = await axios.get(`${API}/reports/manager-hierarchy/${managerId}`, {
+        headers: { Authorization: `Bearer ${token}` },
+        params: { period: selectedPeriod }
+      });
+      setHierarchyData(response.data);
+      setReportData(null); // Clear regular report when showing hierarchy
+      toast.success(`${managerName}'s team hierarchy loaded!`);
+    } catch (error) {
+      toast.error(error.response?.data?.detail || 'Failed to load team hierarchy');
+      setHierarchyData(null);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const clearHierarchyView = () => {
+    setHierarchyData(null);
+  };
+
   const fetchDailyReport = async (reportType) => {
     setLoading(true);
     try {
