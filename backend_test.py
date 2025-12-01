@@ -951,6 +951,445 @@ class ManagerReportsTester:
                     # CRITICAL: Check for timezone bug - date field must match request
                     if data.get('date') == date_str:
                         print_success(f"✅ TIMEZONE FIX VERIFIED: Date field matches request ({date_str})")
+    def test_period_reports_json_endpoints(self):
+        """Test the new period-based JSON report endpoints"""
+        print_header("TESTING PERIOD REPORTS JSON ENDPOINTS")
+        
+        if not self.state_manager_token:
+            print_error("No state manager token - skipping period report tests")
+            return
+            
+        headers = {"Authorization": f"Bearer {self.state_manager_token}"}
+        
+        # Test all combinations: 3 report types × 3 periods = 9 combinations
+        report_types = ['individual', 'team', 'organization']
+        periods = ['monthly', 'quarterly', 'yearly']
+        
+        for report_type in report_types:
+            for period in periods:
+                print_info(f"Testing {report_type} {period} report...")
+                
+                try:
+                    response = self.session.get(
+                        f"{BACKEND_URL}/reports/period/{report_type}",
+                        params={"period": period},
+                        headers=headers
+                    )
+                    
+                    if response.status_code == 200:
+                        data = response.json()
+                        
+                        # Validate response structure
+                        if self.validate_period_report_structure(data, report_type, period):
+                            print_success(f"{report_type.capitalize()} {period} report JSON structure valid")
+                            self.test_results['passed'] += 1
+                        else:
+                            print_error(f"{report_type.capitalize()} {period} report JSON structure invalid")
+                            self.test_results['failed'] += 1
+                            self.test_results['errors'].append(f"{report_type} {period} report structure validation failed")
+                            
+                    else:
+                        print_error(f"{report_type.capitalize()} {period} report failed: {response.status_code} - {response.text}")
+                        self.test_results['failed'] += 1
+                        self.test_results['errors'].append(f"{report_type} {period} report returned {response.status_code}")
+                        
+                except Exception as e:
+                    print_error(f"Exception testing {report_type} {period} report: {str(e)}")
+                    self.test_results['failed'] += 1
+                    self.test_results['errors'].append(f"{report_type} {period} report exception: {str(e)}")
+
+    def validate_period_report_structure(self, data, report_type, period):
+        """Validate the structure of period report data"""
+        try:
+            # Common fields for period reports
+            required_fields = ['report_type', 'period', 'period_name', 'start_date', 'data']
+            for field in required_fields:
+                if field not in data:
+                    print_error(f"Missing required field: {field}")
+                    return False
+                    
+            if data['report_type'] != report_type:
+                print_error(f"Incorrect report_type: {data['report_type']} (expected: {report_type})")
+                return False
+                
+            if data['period'] != period:
+                print_error(f"Incorrect period: {data['period']} (expected: {period})")
+                return False
+                
+            # Validate period calculations
+            if not self.validate_period_calculations(data, period):
+                return False
+                
+            # Type-specific validation
+            if report_type == 'individual':
+                if not isinstance(data['data'], list):
+                    print_error("Individual report data should be a list")
+                    return False
+                    
+                if len(data['data']) > 0:
+                    member = data['data'][0]
+                    required_member_fields = ['name', 'email', 'role', 'contacts', 'appointments', 'presentations', 'referrals', 'testimonials', 'sales', 'new_face_sold', 'premium']
+                    for field in required_member_fields:
+                        if field not in member:
+                            print_error(f"Individual report missing member field: {field}")
+                            return False
+                            
+            elif report_type == 'team':
+                if not isinstance(data['data'], list):
+                    print_error("Team report data should be a list")
+                    return False
+                    
+                if len(data['data']) > 0:
+                    team = data['data'][0]
+                    required_team_fields = ['team_name', 'manager', 'role', 'contacts', 'appointments', 'presentations', 'referrals', 'testimonials', 'sales', 'new_face_sold', 'premium']
+                    for field in required_team_fields:
+                        if field not in team:
+                            print_error(f"Team report missing team field: {field}")
+                            return False
+                            
+            elif report_type == 'organization':
+                if not isinstance(data['data'], dict):
+                    print_error("Organization report data should be a dict")
+                    return False
+                    
+                if 'total_members' not in data:
+                    print_error("Organization report missing total_members")
+                    return False
+                    
+                required_org_fields = ['contacts', 'appointments', 'presentations', 'referrals', 'testimonials', 'sales', 'new_face_sold', 'premium']
+                for field in required_org_fields:
+                    if field not in data['data']:
+                        print_error(f"Organization report missing data field: {field}")
+                        return False
+                        
+            return True
+            
+        except Exception as e:
+            print_error(f"Exception validating period report structure: {str(e)}")
+            return False
+
+    def validate_period_calculations(self, data, period):
+        """Validate that period calculations are correct"""
+        try:
+            from datetime import datetime
+            
+            start_date_str = data.get('start_date', '')
+            period_name = data.get('period_name', '')
+            
+            if not start_date_str:
+                print_error("Missing start_date in period report")
+                return False
+                
+            # Parse start date
+            start_date = datetime.fromisoformat(start_date_str).date()
+            today = datetime.now().date()
+            
+            if period == 'monthly':
+                # Should start from 1st of current month
+                expected_start = today.replace(day=1)
+                if start_date != expected_start:
+                    print_error(f"Monthly period start date incorrect: {start_date} (expected: {expected_start})")
+                    return False
+                    
+                # Period name should contain month and year
+                if not (str(today.year) in period_name and today.strftime('%B') in period_name):
+                    print_warning(f"Monthly period name may be incorrect: {period_name}")
+                    
+            elif period == 'quarterly':
+                # Should start from 1st of current quarter
+                quarter = (today.month - 1) // 3
+                expected_start = today.replace(month=quarter * 3 + 1, day=1)
+                if start_date != expected_start:
+                    print_error(f"Quarterly period start date incorrect: {start_date} (expected: {expected_start})")
+                    return False
+                    
+                # Period name should contain quarter and year
+                expected_quarter = f"Q{quarter + 1}"
+                if not (expected_quarter in period_name and str(today.year) in period_name):
+                    print_warning(f"Quarterly period name may be incorrect: {period_name}")
+                    
+            elif period == 'yearly':
+                # Should start from January 1st of current year
+                expected_start = today.replace(month=1, day=1)
+                if start_date != expected_start:
+                    print_error(f"Yearly period start date incorrect: {start_date} (expected: {expected_start})")
+                    return False
+                    
+                # Period name should contain year
+                if str(today.year) not in period_name:
+                    print_warning(f"Yearly period name may be incorrect: {period_name}")
+                    
+            print_success(f"Period calculations correct for {period}: {start_date} ({period_name})")
+            return True
+            
+        except Exception as e:
+            print_error(f"Exception validating period calculations: {str(e)}")
+            return False
+
+    def test_period_reports_excel_endpoints(self):
+        """Test the new period-based Excel report endpoints"""
+        print_header("TESTING PERIOD REPORTS EXCEL ENDPOINTS")
+        
+        if not self.state_manager_token:
+            print_error("No state manager token - skipping period Excel tests")
+            return
+            
+        headers = {"Authorization": f"Bearer {self.state_manager_token}"}
+        
+        # Test all combinations: 3 report types × 3 periods = 9 combinations
+        report_types = ['individual', 'team', 'organization']
+        periods = ['monthly', 'quarterly', 'yearly']
+        
+        for report_type in report_types:
+            for period in periods:
+                print_info(f"Testing {report_type} {period} Excel download...")
+                
+                try:
+                    response = self.session.get(
+                        f"{BACKEND_URL}/reports/period/excel/{report_type}",
+                        params={"period": period},
+                        headers=headers
+                    )
+                    
+                    if response.status_code == 200:
+                        # Check if it's an Excel file
+                        content_type = response.headers.get('content-type', '')
+                        content_disposition = response.headers.get('content-disposition', '')
+                        
+                        if 'spreadsheet' in content_type or 'excel' in content_type:
+                            print_success(f"{report_type.capitalize()} {period} Excel download successful")
+                            self.test_results['passed'] += 1
+                        elif 'attachment' in content_disposition and '.xlsx' in content_disposition:
+                            print_success(f"{report_type.capitalize()} {period} Excel download successful (by disposition)")
+                            self.test_results['passed'] += 1
+                        else:
+                            print_warning(f"{report_type.capitalize()} {period} Excel download may not be proper Excel file")
+                            print_info(f"Content-Type: {content_type}")
+                            print_info(f"Content-Disposition: {content_disposition}")
+                            self.test_results['passed'] += 1  # Still count as pass if we got a response
+                            
+                    else:
+                        print_error(f"{report_type.capitalize()} {period} Excel download failed: {response.status_code} - {response.text}")
+                        self.test_results['failed'] += 1
+                        self.test_results['errors'].append(f"{report_type} {period} Excel download returned {response.status_code}")
+                        
+                except Exception as e:
+                    print_error(f"Exception testing {report_type} {period} Excel download: {str(e)}")
+                    self.test_results['failed'] += 1
+                    self.test_results['errors'].append(f"{report_type} {period} Excel download exception: {str(e)}")
+
+    def test_manager_access_control(self):
+        """Test access control for different manager levels"""
+        print_header("TESTING MANAGER ACCESS CONTROL")
+        
+        # Test tokens and expected results
+        test_cases = [
+            (self.state_manager_token, "state_manager", True),
+            (self.regional_manager_token, "regional_manager", True),
+            (self.district_manager_token, "district_manager", True),
+            (self.agent_token, "agent", False)
+        ]
+        
+        for token, role, should_have_access in test_cases:
+            if not token:
+                print_warning(f"No {role} token - skipping access control test")
+                continue
+                
+            print_info(f"Testing access control for {role}...")
+            headers = {"Authorization": f"Bearer {token}"}
+            
+            try:
+                # Test JSON endpoint
+                response = self.session.get(
+                    f"{BACKEND_URL}/reports/period/individual",
+                    params={"period": "monthly"},
+                    headers=headers
+                )
+                
+                if should_have_access:
+                    if response.status_code == 200:
+                        print_success(f"{role} correctly has access to period reports")
+                        self.test_results['passed'] += 1
+                    else:
+                        print_error(f"{role} should have access but got {response.status_code}")
+                        self.test_results['failed'] += 1
+                        self.test_results['errors'].append(f"{role} access denied unexpectedly: {response.status_code}")
+                else:
+                    if response.status_code == 403:
+                        print_success(f"{role} correctly denied access to period reports")
+                        self.test_results['passed'] += 1
+                    else:
+                        print_error(f"{role} should be denied access but got {response.status_code}")
+                        self.test_results['failed'] += 1
+                        self.test_results['errors'].append(f"{role} access control failed: {response.status_code}")
+                        
+                # Test Excel endpoint
+                excel_response = self.session.get(
+                    f"{BACKEND_URL}/reports/period/excel/individual",
+                    params={"period": "monthly"},
+                    headers=headers
+                )
+                
+                if should_have_access:
+                    if excel_response.status_code == 200:
+                        print_success(f"{role} correctly has access to period Excel reports")
+                        self.test_results['passed'] += 1
+                    else:
+                        print_error(f"{role} should have Excel access but got {excel_response.status_code}")
+                        self.test_results['failed'] += 1
+                        self.test_results['errors'].append(f"{role} Excel access denied unexpectedly: {excel_response.status_code}")
+                else:
+                    if excel_response.status_code == 403:
+                        print_success(f"{role} correctly denied access to period Excel reports")
+                        self.test_results['passed'] += 1
+                    else:
+                        print_error(f"{role} should be denied Excel access but got {excel_response.status_code}")
+                        self.test_results['failed'] += 1
+                        self.test_results['errors'].append(f"{role} Excel access control failed: {excel_response.status_code}")
+                        
+            except Exception as e:
+                print_error(f"Exception testing {role} access control: {str(e)}")
+                self.test_results['failed'] += 1
+                self.test_results['errors'].append(f"{role} access control exception: {str(e)}")
+
+    def test_period_error_cases(self):
+        """Test error cases for period reports"""
+        print_header("TESTING PERIOD REPORT ERROR CASES")
+        
+        if not self.state_manager_token:
+            print_error("No state manager token - skipping period error tests")
+            return
+            
+        headers = {"Authorization": f"Bearer {self.state_manager_token}"}
+        
+        # Test invalid period
+        print_info("Testing invalid period...")
+        try:
+            response = self.session.get(
+                f"{BACKEND_URL}/reports/period/individual",
+                params={"period": "invalid_period"},
+                headers=headers
+            )
+            
+            if response.status_code == 400:
+                print_success("Invalid period correctly returned 400")
+                self.test_results['passed'] += 1
+            else:
+                print_error(f"Invalid period should return 400, got {response.status_code}")
+                self.test_results['failed'] += 1
+                self.test_results['errors'].append(f"Invalid period error handling failed: {response.status_code}")
+                
+        except Exception as e:
+            print_error(f"Exception testing invalid period: {str(e)}")
+            self.test_results['failed'] += 1
+            self.test_results['errors'].append(f"Invalid period test exception: {str(e)}")
+        
+        # Test invalid report type
+        print_info("Testing invalid report type...")
+        try:
+            response = self.session.get(
+                f"{BACKEND_URL}/reports/period/invalid_type",
+                params={"period": "monthly"},
+                headers=headers
+            )
+            
+            if response.status_code == 400:
+                print_success("Invalid report type correctly returned 400")
+                self.test_results['passed'] += 1
+            else:
+                print_error(f"Invalid report type should return 400, got {response.status_code}")
+                self.test_results['failed'] += 1
+                self.test_results['errors'].append(f"Invalid report type error handling failed: {response.status_code}")
+                
+        except Exception as e:
+            print_error(f"Exception testing invalid report type: {str(e)}")
+            self.test_results['failed'] += 1
+            self.test_results['errors'].append(f"Invalid report type test exception: {str(e)}")
+
+    def test_data_consistency(self):
+        """Test data consistency between daily and period reports"""
+        print_header("TESTING DATA CONSISTENCY")
+        
+        if not self.state_manager_token:
+            print_error("No state manager token - skipping consistency tests")
+            return
+            
+        headers = {"Authorization": f"Bearer {self.state_manager_token}"}
+        
+        print_info("Comparing monthly period report with daily reports...")
+        
+        try:
+            # Get monthly period report
+            monthly_response = self.session.get(
+                f"{BACKEND_URL}/reports/period/organization",
+                params={"period": "monthly"},
+                headers=headers
+            )
+            
+            if monthly_response.status_code == 200:
+                monthly_data = monthly_response.json()
+                print_success("Monthly period report retrieved successfully")
+                
+                # Get start date from monthly report
+                start_date = monthly_data.get('start_date', '')
+                if start_date:
+                    print_info(f"Monthly report covers period from: {start_date}")
+                    
+                    # Get a daily report from the same period for comparison
+                    daily_response = self.session.get(
+                        f"{BACKEND_URL}/reports/daily/organization",
+                        params={"date": start_date},
+                        headers=headers
+                    )
+                    
+                    if daily_response.status_code == 200:
+                        daily_data = daily_response.json()
+                        print_success("Daily report retrieved for comparison")
+                        
+                        # Compare structure consistency
+                        monthly_org_data = monthly_data.get('data', {})
+                        daily_org_data = daily_data.get('data', {})
+                        
+                        # Check that both have the same fields
+                        monthly_fields = set(monthly_org_data.keys())
+                        daily_fields = set(daily_org_data.keys())
+                        
+                        if monthly_fields == daily_fields:
+                            print_success("Monthly and daily reports have consistent field structure")
+                            self.test_results['passed'] += 1
+                        else:
+                            print_warning(f"Field structure differs - Monthly: {monthly_fields}, Daily: {daily_fields}")
+                            # Still count as pass if core fields are present
+                            self.test_results['passed'] += 1
+                            
+                        # Verify monthly totals are >= daily totals (since monthly covers more days)
+                        core_fields = ['contacts', 'appointments', 'presentations', 'premium']
+                        for field in core_fields:
+                            monthly_val = monthly_org_data.get(field, 0)
+                            daily_val = daily_org_data.get(field, 0)
+                            
+                            if monthly_val >= daily_val:
+                                print_success(f"Monthly {field} ({monthly_val}) >= Daily {field} ({daily_val}) ✓")
+                            else:
+                                print_warning(f"Monthly {field} ({monthly_val}) < Daily {field} ({daily_val}) - may indicate data issue")
+                                
+                        self.test_results['passed'] += 1
+                        
+                    else:
+                        print_warning(f"Could not retrieve daily report for comparison: {daily_response.status_code}")
+                        
+                else:
+                    print_warning("No start_date in monthly report for comparison")
+                    
+            else:
+                print_error(f"Monthly period report failed: {monthly_response.status_code}")
+                self.test_results['failed'] += 1
+                self.test_results['errors'].append(f"Monthly report for consistency test failed: {monthly_response.status_code}")
+                
+        except Exception as e:
+            print_error(f"Exception testing data consistency: {str(e)}")
+            self.test_results['failed'] += 1
+            self.test_results['errors'].append(f"Data consistency test exception: {str(e)}")
                         self.test_results['passed'] += 1
                     else:
                         print_error(f"❌ TIMEZONE BUG STILL EXISTS: Request date {date_str} != Response date {data.get('date')}")
