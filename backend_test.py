@@ -2211,11 +2211,12 @@ class ManagerReportsTester:
             self.test_results['errors'].append(f"Data integrity test exception: {str(e)}")
 
     def run_all_tests(self):
-        """Run all tests - COMPREHENSIVE MANAGER REPORTS TESTING"""
-        print_header("🚀 COMPREHENSIVE MANAGER REPORTS TESTING")
+        """Run all tests - COMPREHENSIVE MANAGER HIERARCHY DRILL-DOWN TESTING"""
+        print_header("🚀 COMPREHENSIVE MANAGER HIERARCHY DRILL-DOWN TESTING")
         print_info(f"Testing against: {BACKEND_URL}")
-        print_info("🎯 PRIMARY FOCUS: Test new individual manager selection functionality")
-        print_info("🔍 TESTING: Manager list endpoint, user_id parameter in reports, hierarchy access control")
+        print_info("🎯 PRIMARY FOCUS: Test new manager hierarchy drill-down functionality")
+        print_info("🔍 TESTING: GET /api/reports/manager-hierarchy/{manager_id}?period={period}")
+        print_info("📋 COVERAGE: Access control, hierarchy structure, period calculations, data integrity")
         
         # Setup
         if not self.setup_test_users():
@@ -2224,21 +2225,27 @@ class ManagerReportsTester:
             
         self.setup_test_data()
         
-        # Run NEW PERIOD REPORTS TESTS FIRST (Priority)
+        # Run NEW MANAGER HIERARCHY DRILL-DOWN TESTS (Priority)
+        self.test_manager_hierarchy_drill_down_access_control()  # Test access control for different roles
+        self.test_manager_hierarchy_structure()  # Test response structure and hierarchy data
+        self.test_manager_hierarchy_periods()  # Test all 4 periods (daily, monthly, quarterly, yearly)
+        self.test_manager_hierarchy_invalid_cases()  # Test error handling
+        self.test_manager_hierarchy_data_integrity()  # Test data consistency
+        
+        # Run existing tests for regression testing
         self.test_period_reports_json_endpoints()  # Test all 9 JSON endpoint combinations
         self.test_period_reports_excel_endpoints()  # Test all 9 Excel endpoint combinations
         self.test_manager_access_control()  # Test hierarchical access control
         self.test_period_error_cases()  # Test error handling
         self.test_data_consistency()  # Test data consistency between daily and period reports
         
-        # Run existing tests for regression testing
         self.test_daily_report_json_endpoint()
         self.test_daily_report_excel_endpoint()
         self.test_access_control()
         self.test_error_cases()
         self.test_different_dates()
         
-        # NEW: Test manager selection functionality
+        # Manager selection functionality tests
         self.test_manager_selection_endpoints()
         self.test_individual_manager_daily_reports()
         self.test_individual_manager_period_reports()
