@@ -1414,11 +1414,11 @@ class ManagerReportsTester:
                 self.test_results['errors'].append(f"Date test {description} exception: {str(e)}")
 
     def run_all_tests(self):
-        """Run all tests - FOCUS ON WEDNESDAY ACTIVITY BUG INVESTIGATION"""
-        print_header("🚨 CRITICAL WEDNESDAY ACTIVITY BUG INVESTIGATION")
+        """Run all tests - COMPREHENSIVE MANAGER REPORTS TESTING"""
+        print_header("🚀 COMPREHENSIVE MANAGER REPORTS TESTING")
         print_info(f"Testing against: {BACKEND_URL}")
-        print_info("🎯 PRIMARY FOCUS: Investigate why Wednesday shows zero activity when activity exists")
-        print_info("🔍 ISSUE: User reports Wednesday showing zero in Team View weekly breakdown")
+        print_info("🎯 PRIMARY FOCUS: Test new period-based reporting endpoints (Monthly, Quarterly, Yearly)")
+        print_info("🔍 TESTING: All 9 combinations (3 report types × 3 periods) + hierarchical access control")
         
         # Setup
         if not self.setup_test_users():
@@ -1427,16 +1427,19 @@ class ManagerReportsTester:
             
         self.setup_test_data()
         
-        # Run tests - PRIORITIZE WEDNESDAY ACTIVITY BUG INVESTIGATION
-        self.test_wednesday_activity_bug()  # CRITICAL TEST FIRST - NEW INVESTIGATION
-        self.test_week_dates_endpoint()  # Check date calculation
-        self.test_compare_with_working_endpoint()  # Compare with working endpoint
-        self.test_activity_matching()  # Verify activity matching
-        self.test_different_dates()  # Test various dates
+        # Run NEW PERIOD REPORTS TESTS FIRST (Priority)
+        self.test_period_reports_json_endpoints()  # Test all 9 JSON endpoint combinations
+        self.test_period_reports_excel_endpoints()  # Test all 9 Excel endpoint combinations
+        self.test_manager_access_control()  # Test hierarchical access control
+        self.test_period_error_cases()  # Test error handling
+        self.test_data_consistency()  # Test data consistency between daily and period reports
+        
+        # Run existing tests for regression testing
         self.test_daily_report_json_endpoint()
         self.test_daily_report_excel_endpoint()
         self.test_access_control()
         self.test_error_cases()
+        self.test_different_dates()
         
         # Print summary
         self.print_test_summary()
