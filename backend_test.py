@@ -290,8 +290,8 @@ class ManagerReportsTester:
             return False
 
     def setup_test_data(self):
-        """Setup test activity data"""
-        print_header("SETTING UP TEST DATA")
+        """Setup test activity data for hierarchy testing"""
+        print_header("SETTING UP TEST DATA FOR HIERARCHY TESTING")
         
         if not self.state_manager_token:
             print_error("No state manager token available")
@@ -308,8 +308,36 @@ class ManagerReportsTester:
             week_ago.isoformat()
         ]
         
+        # Create activities for State Manager
         for date_str in dates_to_create:
             self.create_test_activity(self.state_manager_token, date_str)
+            
+        # Create activities for Steve Ahlers and his team
+        if hasattr(self, 'steve_ahlers_token') and self.steve_ahlers_token:
+            print_info("Creating activities for Steve Ahlers...")
+            for date_str in dates_to_create:
+                self.create_test_activity(self.steve_ahlers_token, date_str)
+                
+        if hasattr(self, 'agent1_token') and self.agent1_token:
+            print_info("Creating activities for Agent One (Steve's team)...")
+            for date_str in dates_to_create:
+                self.create_test_activity(self.agent1_token, date_str)
+                
+        if hasattr(self, 'agent2_token') and self.agent2_token:
+            print_info("Creating activities for Agent Two (Steve's team)...")
+            for date_str in dates_to_create:
+                self.create_test_activity(self.agent2_token, date_str)
+        
+        # Create activities for Ryan Rozell and his team
+        if hasattr(self, 'ryan_rozell_token') and self.ryan_rozell_token:
+            print_info("Creating activities for Ryan Rozell...")
+            for date_str in dates_to_create:
+                self.create_test_activity(self.ryan_rozell_token, date_str)
+                
+        if hasattr(self, 'agent3_token') and self.agent3_token:
+            print_info("Creating activities for Agent Three (Ryan's team)...")
+            for date_str in dates_to_create:
+                self.create_test_activity(self.agent3_token, date_str)
             
         return True
 
