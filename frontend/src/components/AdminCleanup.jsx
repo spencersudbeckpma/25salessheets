@@ -261,6 +261,12 @@ const AdminCleanup = ({ user }) => {
         )}
       </CardContent>
     </Card>
+
+      {/* Password Management Section */}
+      <div className="mt-8">
+        <PasswordManagement user={user} />
+      </div>
+    </div>
   );
 };
 
