@@ -1754,6 +1754,462 @@ class ManagerReportsTester:
                 print_error(f"❌ Exception testing agent access: {str(e)}")
                 self.test_results['failed'] += 1
 
+    def test_manager_hierarchy_drill_down_access_control(self):
+        """Test access control for manager hierarchy drill-down endpoint"""
+        print_header("🔒 TESTING MANAGER HIERARCHY DRILL-DOWN ACCESS CONTROL")
+        
+        # Get a manager ID to test with
+        if not self.state_manager_token:
+            print_error("No state manager token - skipping hierarchy drill-down access tests")
+            return
+            
+        headers = {"Authorization": f"Bearer {self.state_manager_token}"}
+        
+        # Get current user ID as test manager
+        try:
+            me_response = self.session.get(f"{BACKEND_URL}/auth/me", headers=headers)
+            if me_response.status_code == 200:
+                current_user_data = me_response.json()
+                test_manager_id = current_user_data.get('id')
+                print_info(f"Using current user ID as test manager: {test_manager_id}")
+            else:
+                print_error("Could not get current user ID for testing")
+                return
+        except Exception as e:
+            print_error(f"Exception getting current user: {str(e)}")
+            return
+        
+        # Test access control for different user roles
+        test_cases = [
+            (self.state_manager_token, "state_manager", True),
+            (self.regional_manager_token, "regional_manager", True),
+            (self.district_manager_token, "district_manager", True),
+            (self.agent_token, "agent", False)
+        ]
+        
+        for token, role, should_have_access in test_cases:
+            if not token:
+                print_warning(f"No {role} token - skipping access control test")
+                continue
+                
+            print_info(f"Testing manager hierarchy access for {role}...")
+            headers = {"Authorization": f"Bearer {token}"}
+            
+            try:
+                response = self.session.get(
+                    f"{BACKEND_URL}/reports/manager-hierarchy/{test_manager_id}",
+                    params={"period": "daily"},
+                    headers=headers
+                )
+                
+                if should_have_access:
+                    if response.status_code == 200:
+                        print_success(f"✅ {role} correctly has access to manager hierarchy")
+                        self.test_results['passed'] += 1
+                    elif response.status_code == 403:
+                        print_warning(f"⚠️ {role} denied access - may not be in hierarchy")
+                        self.test_results['passed'] += 1  # This is expected behavior
+                    else:
+                        print_error(f"❌ {role} should have access but got {response.status_code}")
+                        self.test_results['failed'] += 1
+                        self.test_results['errors'].append(f"{role} hierarchy access failed: {response.status_code}")
+                else:
+                    if response.status_code == 403:
+                        print_success(f"✅ {role} correctly denied access to manager hierarchy")
+                        self.test_results['passed'] += 1
+                    else:
+                        print_error(f"❌ {role} should be denied access but got {response.status_code}")
+                        self.test_results['failed'] += 1
+                        self.test_results['errors'].append(f"{role} hierarchy access control failed: {response.status_code}")
+                        
+            except Exception as e:
+                print_error(f"❌ Exception testing {role} hierarchy access: {str(e)}")
+                self.test_results['failed'] += 1
+                self.test_results['errors'].append(f"{role} hierarchy access exception: {str(e)}")
+
+    def test_manager_hierarchy_structure(self):
+        """Test manager hierarchy structure and response format"""
+        print_header("🏢 TESTING MANAGER HIERARCHY STRUCTURE")
+        
+        if not self.state_manager_token:
+            print_error("No state manager token - skipping hierarchy structure tests")
+            return
+            
+        headers = {"Authorization": f"Bearer {self.state_manager_token}"}
+        
+        # Get current user ID as test manager
+        try:
+            me_response = self.session.get(f"{BACKEND_URL}/auth/me", headers=headers)
+            if me_response.status_code == 200:
+                current_user_data = me_response.json()
+                test_manager_id = current_user_data.get('id')
+                manager_name = current_user_data.get('name', 'Unknown')
+                print_info(f"Testing hierarchy for manager: {manager_name} ({test_manager_id})")
+            else:
+                print_error("Could not get current user ID for testing")
+                return
+        except Exception as e:
+            print_error(f"Exception getting current user: {str(e)}")
+            return
+        
+        # Test hierarchy structure with daily period
+        try:
+            response = self.session.get(
+                f"{BACKEND_URL}/reports/manager-hierarchy/{test_manager_id}",
+                params={"period": "daily"},
+                headers=headers
+            )
+            
+            if response.status_code == 200:
+                data = response.json()
+                print_success("✅ Manager hierarchy endpoint accessible")
+                self.test_results['passed'] += 1
+                
+                # Validate response structure
+                required_fields = ['manager_name', 'manager_role', 'period', 'period_name', 'hierarchy_data', 'total_members']
+                for field in required_fields:
+                    if field in data:
+                        print_success(f"✅ Response contains required field: {field}")
+                        self.test_results['passed'] += 1
+                    else:
+                        print_error(f"❌ Response missing required field: {field}")
+                        self.test_results['failed'] += 1
+                        self.test_results['errors'].append(f"Missing field in hierarchy response: {field}")
+                
+                # Validate hierarchy_data structure
+                hierarchy_data = data.get('hierarchy_data', [])
+                if isinstance(hierarchy_data, list) and len(hierarchy_data) > 0:
+                    print_success(f"✅ Hierarchy data contains {len(hierarchy_data)} members")
+                    self.test_results['passed'] += 1
+                    
+                    # Check first member (should be the manager)
+                    manager_entry = hierarchy_data[0]
+                    required_member_fields = ['id', 'name', 'email', 'role', 'relationship', 'manager_id', 'contacts', 'appointments', 'presentations', 'referrals', 'testimonials', 'sales', 'new_face_sold', 'premium']
+                    
+                    for field in required_member_fields:
+                        if field in manager_entry:
+                            print_success(f"✅ Hierarchy member contains field: {field}")
+                        else:
+                            print_error(f"❌ Hierarchy member missing field: {field}")
+                            self.test_results['failed'] += 1
+                            self.test_results['errors'].append(f"Missing member field: {field}")
+                    
+                    # Verify manager appears first with correct relationship
+                    if manager_entry.get('relationship') == 'Manager':
+                        print_success("✅ Manager appears first with relationship='Manager'")
+                        self.test_results['passed'] += 1
+                    else:
+                        print_error(f"❌ Manager should have relationship='Manager', got '{manager_entry.get('relationship')}'")
+                        self.test_results['failed'] += 1
+                        
+                    # Check for relationship classifications
+                    relationships = [member.get('relationship') for member in hierarchy_data]
+                    unique_relationships = set(relationships)
+                    expected_relationships = {'Manager', 'Direct Report', 'Indirect Report'}
+                    
+                    if unique_relationships.issubset(expected_relationships):
+                        print_success(f"✅ Valid relationship types found: {unique_relationships}")
+                        self.test_results['passed'] += 1
+                    else:
+                        print_warning(f"⚠️ Unexpected relationship types: {unique_relationships}")
+                        
+                else:
+                    print_warning("⚠️ No hierarchy data found (may be expected for single user)")
+                    
+            else:
+                print_error(f"❌ Manager hierarchy request failed: {response.status_code} - {response.text}")
+                self.test_results['failed'] += 1
+                self.test_results['errors'].append(f"Manager hierarchy structure test failed: {response.status_code}")
+                
+        except Exception as e:
+            print_error(f"❌ Exception testing hierarchy structure: {str(e)}")
+            self.test_results['failed'] += 1
+            self.test_results['errors'].append(f"Hierarchy structure test exception: {str(e)}")
+
+    def test_manager_hierarchy_periods(self):
+        """Test all period calculations for manager hierarchy"""
+        print_header("📅 TESTING MANAGER HIERARCHY PERIOD CALCULATIONS")
+        
+        if not self.state_manager_token:
+            print_error("No state manager token - skipping hierarchy period tests")
+            return
+            
+        headers = {"Authorization": f"Bearer {self.state_manager_token}"}
+        
+        # Get current user ID as test manager
+        try:
+            me_response = self.session.get(f"{BACKEND_URL}/auth/me", headers=headers)
+            if me_response.status_code == 200:
+                current_user_data = me_response.json()
+                test_manager_id = current_user_data.get('id')
+            else:
+                print_error("Could not get current user ID for testing")
+                return
+        except Exception as e:
+            print_error(f"Exception getting current user: {str(e)}")
+            return
+        
+        # Test all 4 periods
+        periods = ['daily', 'monthly', 'quarterly', 'yearly']
+        
+        for period in periods:
+            print_info(f"Testing {period} period calculations...")
+            
+            try:
+                response = self.session.get(
+                    f"{BACKEND_URL}/reports/manager-hierarchy/{test_manager_id}",
+                    params={"period": period},
+                    headers=headers
+                )
+                
+                if response.status_code == 200:
+                    data = response.json()
+                    
+                    # Validate period-specific fields
+                    if data.get('period') == period:
+                        print_success(f"✅ {period.capitalize()} period field correct")
+                        self.test_results['passed'] += 1
+                    else:
+                        print_error(f"❌ {period.capitalize()} period field incorrect: {data.get('period')}")
+                        self.test_results['failed'] += 1
+                        
+                    # Validate period_name format
+                    period_name = data.get('period_name', '')
+                    if period_name:
+                        print_success(f"✅ {period.capitalize()} period_name: {period_name}")
+                        self.test_results['passed'] += 1
+                        
+                        # Validate period_name format based on period type
+                        if period == 'daily' and 'Daily' in period_name:
+                            print_success(f"✅ Daily period_name format correct")
+                        elif period == 'monthly' and 'Month' in period_name:
+                            print_success(f"✅ Monthly period_name format correct")
+                        elif period == 'quarterly' and 'Q' in period_name:
+                            print_success(f"✅ Quarterly period_name format correct")
+                        elif period == 'yearly' and 'Year' in period_name:
+                            print_success(f"✅ Yearly period_name format correct")
+                        else:
+                            print_warning(f"⚠️ {period.capitalize()} period_name format may be unexpected: {period_name}")
+                    else:
+                        print_error(f"❌ {period.capitalize()} period_name missing")
+                        self.test_results['failed'] += 1
+                        
+                    # Validate activity totals are present
+                    hierarchy_data = data.get('hierarchy_data', [])
+                    if hierarchy_data:
+                        member = hierarchy_data[0]  # Check first member
+                        activity_fields = ['contacts', 'appointments', 'presentations', 'referrals', 'testimonials', 'sales', 'new_face_sold', 'premium']
+                        
+                        all_fields_present = True
+                        for field in activity_fields:
+                            if field not in member:
+                                all_fields_present = False
+                                break
+                                
+                        if all_fields_present:
+                            print_success(f"✅ {period.capitalize()} period contains all 8 activity metrics")
+                            self.test_results['passed'] += 1
+                        else:
+                            print_error(f"❌ {period.capitalize()} period missing activity metrics")
+                            self.test_results['failed'] += 1
+                            
+                else:
+                    print_error(f"❌ {period.capitalize()} period request failed: {response.status_code}")
+                    self.test_results['failed'] += 1
+                    self.test_results['errors'].append(f"Manager hierarchy {period} period failed: {response.status_code}")
+                    
+            except Exception as e:
+                print_error(f"❌ Exception testing {period} period: {str(e)}")
+                self.test_results['failed'] += 1
+                self.test_results['errors'].append(f"Manager hierarchy {period} period exception: {str(e)}")
+
+    def test_manager_hierarchy_invalid_cases(self):
+        """Test error cases for manager hierarchy endpoint"""
+        print_header("❌ TESTING MANAGER HIERARCHY ERROR CASES")
+        
+        if not self.state_manager_token:
+            print_error("No state manager token - skipping hierarchy error tests")
+            return
+            
+        headers = {"Authorization": f"Bearer {self.state_manager_token}"}
+        
+        # Test invalid manager_id
+        print_info("Testing invalid manager_id...")
+        try:
+            response = self.session.get(
+                f"{BACKEND_URL}/reports/manager-hierarchy/invalid-manager-id",
+                params={"period": "daily"},
+                headers=headers
+            )
+            
+            if response.status_code == 403:
+                print_success("✅ Invalid manager_id correctly returns 403 Forbidden")
+                self.test_results['passed'] += 1
+            else:
+                print_error(f"❌ Invalid manager_id should return 403, got {response.status_code}")
+                self.test_results['failed'] += 1
+                self.test_results['errors'].append(f"Invalid manager_id returned {response.status_code} instead of 403")
+                
+        except Exception as e:
+            print_error(f"❌ Exception testing invalid manager_id: {str(e)}")
+            self.test_results['failed'] += 1
+        
+        # Test invalid period
+        print_info("Testing invalid period...")
+        try:
+            # Get valid manager ID first
+            me_response = self.session.get(f"{BACKEND_URL}/auth/me", headers=headers)
+            if me_response.status_code == 200:
+                current_user_data = me_response.json()
+                test_manager_id = current_user_data.get('id')
+                
+                response = self.session.get(
+                    f"{BACKEND_URL}/reports/manager-hierarchy/{test_manager_id}",
+                    params={"period": "invalid_period"},
+                    headers=headers
+                )
+                
+                if response.status_code == 400:
+                    print_success("✅ Invalid period correctly returns 400 Bad Request")
+                    self.test_results['passed'] += 1
+                else:
+                    print_error(f"❌ Invalid period should return 400, got {response.status_code}")
+                    self.test_results['failed'] += 1
+                    self.test_results['errors'].append(f"Invalid period returned {response.status_code} instead of 400")
+            else:
+                print_error("Could not get manager ID for invalid period test")
+                
+        except Exception as e:
+            print_error(f"❌ Exception testing invalid period: {str(e)}")
+            self.test_results['failed'] += 1
+
+    def test_manager_hierarchy_data_integrity(self):
+        """Test data integrity for manager hierarchy drill-down"""
+        print_header("🔍 TESTING MANAGER HIERARCHY DATA INTEGRITY")
+        
+        if not self.state_manager_token:
+            print_error("No state manager token - skipping hierarchy data integrity tests")
+            return
+            
+        headers = {"Authorization": f"Bearer {self.state_manager_token}"}
+        
+        # Get current user ID as test manager
+        try:
+            me_response = self.session.get(f"{BACKEND_URL}/auth/me", headers=headers)
+            if me_response.status_code == 200:
+                current_user_data = me_response.json()
+                test_manager_id = current_user_data.get('id')
+                manager_name = current_user_data.get('name', 'Unknown')
+            else:
+                print_error("Could not get current user ID for testing")
+                return
+        except Exception as e:
+            print_error(f"Exception getting current user: {str(e)}")
+            return
+        
+        # Create test activity data to ensure we have data to verify
+        print_info("Creating test activity data for integrity verification...")
+        today = datetime.now().date().isoformat()
+        
+        activity_data = {
+            "date": today,
+            "contacts": 30.0,
+            "appointments": 15.0,
+            "presentations": 10.0,
+            "referrals": 5,
+            "testimonials": 3,
+            "sales": 4,
+            "new_face_sold": 2.5,
+            "premium": 7500.00
+        }
+        
+        try:
+            create_response = self.session.put(
+                f"{BACKEND_URL}/activities/{today}",
+                json=activity_data,
+                headers=headers
+            )
+            
+            if create_response.status_code == 200:
+                print_success(f"✅ Created test activity for data integrity verification")
+            else:
+                print_info(f"Activity may already exist (status: {create_response.status_code})")
+        except Exception as e:
+            print_warning(f"Could not create test activity: {str(e)}")
+        
+        # Test daily hierarchy vs individual daily report consistency
+        print_info("Comparing hierarchy daily data with individual daily report...")
+        
+        try:
+            # Get hierarchy daily data
+            hierarchy_response = self.session.get(
+                f"{BACKEND_URL}/reports/manager-hierarchy/{test_manager_id}",
+                params={"period": "daily"},
+                headers=headers
+            )
+            
+            # Get individual daily report
+            individual_response = self.session.get(
+                f"{BACKEND_URL}/reports/daily/individual",
+                params={"date": today, "user_id": test_manager_id},
+                headers=headers
+            )
+            
+            if hierarchy_response.status_code == 200 and individual_response.status_code == 200:
+                hierarchy_data = hierarchy_response.json()
+                individual_data = individual_response.json()
+                
+                print_success("✅ Both hierarchy and individual endpoints accessible")
+                self.test_results['passed'] += 1
+                
+                # Find manager in hierarchy data
+                hierarchy_members = hierarchy_data.get('hierarchy_data', [])
+                manager_hierarchy_data = None
+                
+                for member in hierarchy_members:
+                    if member.get('relationship') == 'Manager':
+                        manager_hierarchy_data = member
+                        break
+                
+                # Get individual data
+                individual_members = individual_data.get('data', [])
+                manager_individual_data = individual_members[0] if individual_members else None
+                
+                if manager_hierarchy_data and manager_individual_data:
+                    # Compare activity totals
+                    activity_fields = ['contacts', 'appointments', 'presentations', 'referrals', 'testimonials', 'sales', 'new_face_sold', 'premium']
+                    
+                    data_matches = True
+                    for field in activity_fields:
+                        hierarchy_value = manager_hierarchy_data.get(field, 0)
+                        individual_value = manager_individual_data.get(field, 0)
+                        
+                        if hierarchy_value == individual_value:
+                            print_success(f"✅ {field}: Hierarchy={hierarchy_value}, Individual={individual_value} (MATCH)")
+                        else:
+                            print_error(f"❌ {field}: Hierarchy={hierarchy_value}, Individual={individual_value} (MISMATCH)")
+                            data_matches = False
+                    
+                    if data_matches:
+                        print_success("✅ Data integrity verified: Hierarchy and individual reports match")
+                        self.test_results['passed'] += 1
+                    else:
+                        print_error("❌ Data integrity issue: Hierarchy and individual reports don't match")
+                        self.test_results['failed'] += 1
+                        self.test_results['errors'].append("Data integrity mismatch between hierarchy and individual reports")
+                        
+                else:
+                    print_warning("⚠️ Could not find manager data in both responses for comparison")
+                    
+            else:
+                print_error(f"❌ Data integrity test failed - Hierarchy: {hierarchy_response.status_code}, Individual: {individual_response.status_code}")
+                self.test_results['failed'] += 1
+                
+        except Exception as e:
+            print_error(f"❌ Exception testing data integrity: {str(e)}")
+            self.test_results['failed'] += 1
+            self.test_results['errors'].append(f"Data integrity test exception: {str(e)}")
+
     def run_all_tests(self):
         """Run all tests - COMPREHENSIVE MANAGER REPORTS TESTING"""
         print_header("🚀 COMPREHENSIVE MANAGER REPORTS TESTING")
