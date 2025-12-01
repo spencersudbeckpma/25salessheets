@@ -268,6 +268,98 @@ const DailyReport = ({ user }) => {
     );
   };
 
+  const renderHierarchyView = () => {
+    if (!hierarchyData) return null;
+
+    return (
+      <div className="mt-6">
+        <div className="mb-4 p-4 bg-purple-50 border border-purple-200 rounded-lg">
+          <div className="flex items-center justify-between">
+            <div>
+              <h3 className="font-semibold text-purple-900">
+                👥 {hierarchyData.manager_name}&apos;s Team Hierarchy - {hierarchyData.period_name}
+              </h3>
+              <p className="text-sm text-purple-700 mt-1">
+                {hierarchyData.manager_role} • {hierarchyData.total_members} team member{hierarchyData.total_members !== 1 ? 's' : ''}
+              </p>
+            </div>
+            <Button
+              onClick={clearHierarchyView}
+              className="bg-gray-600 hover:bg-gray-700 text-white"
+            >
+              ← Back to Report
+            </Button>
+          </div>
+        </div>
+        
+        <div className="overflow-x-auto">
+          <table className="min-w-full bg-white border border-gray-200 rounded-lg">
+            <thead className="bg-gradient-to-r from-purple-500 to-purple-600 text-white">
+              <tr>
+                <th className="px-4 py-3 text-left text-sm font-semibold">Name</th>
+                <th className="px-4 py-3 text-left text-sm font-semibold">Role</th>
+                <th className="px-4 py-3 text-left text-sm font-semibold">Relationship</th>
+                <th className="px-4 py-3 text-center text-sm font-semibold">Contacts</th>
+                <th className="px-4 py-3 text-center text-sm font-semibold">Appointments</th>
+                <th className="px-4 py-3 text-center text-sm font-semibold">Presentations</th>
+                <th className="px-4 py-3 text-center text-sm font-semibold">Referrals</th>
+                <th className="px-4 py-3 text-center text-sm font-semibold">Testimonials</th>
+                <th className="px-4 py-3 text-center text-sm font-semibold">Sales</th>
+                <th className="px-4 py-3 text-center text-sm font-semibold">New Face</th>
+                <th className="px-4 py-3 text-center text-sm font-semibold">Premium</th>
+              </tr>
+            </thead>
+            <tbody>
+              {hierarchyData.hierarchy_data.map((person, idx) => (
+                <tr 
+                  key={idx} 
+                  className={`
+                    ${idx % 2 === 0 ? 'bg-gray-50' : 'bg-white'}
+                    ${person.relationship === 'Manager' ? 'border-l-4 border-purple-500 bg-purple-50' : ''}
+                    ${person.relationship === 'Direct Report' ? 'border-l-4 border-green-500' : ''}
+                    ${person.relationship === 'Indirect Report' ? 'border-l-4 border-blue-500' : ''}
+                  `}
+                >
+                  <td className="px-4 py-3 text-sm font-medium text-gray-900">
+                    {person.relationship === 'Manager' && '👑 '}
+                    {person.name}
+                  </td>
+                  <td className="px-4 py-3 text-sm text-gray-600">{person.role}</td>
+                  <td className="px-4 py-3 text-sm">
+                    <span className={`px-2 py-1 rounded-full text-xs font-semibold ${
+                      person.relationship === 'Manager' ? 'bg-purple-100 text-purple-800' :
+                      person.relationship === 'Direct Report' ? 'bg-green-100 text-green-800' :
+                      'bg-blue-100 text-blue-800'
+                    }`}>
+                      {person.relationship}
+                    </span>
+                  </td>
+                  <td className="px-4 py-3 text-sm text-center">{person.contacts}</td>
+                  <td className="px-4 py-3 text-sm text-center">{person.appointments}</td>
+                  <td className="px-4 py-3 text-sm text-center">{person.presentations}</td>
+                  <td className="px-4 py-3 text-sm text-center">{person.referrals}</td>
+                  <td className="px-4 py-3 text-sm text-center">{person.testimonials}</td>
+                  <td className="px-4 py-3 text-sm text-center">{person.sales}</td>
+                  <td className="px-4 py-3 text-sm text-center">{person.new_face_sold}</td>
+                  <td className="px-4 py-3 text-sm text-center font-semibold text-green-600">
+                    ${typeof person.premium === 'number' ? person.premium.toFixed(2) : person.premium}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+        
+        <div className="mt-4 text-xs text-gray-500">
+          💡 <strong>Legend:</strong> 👑 Manager • 
+          <span className="text-purple-600">■</span> Manager • 
+          <span className="text-green-600">■</span> Direct Report • 
+          <span className="text-blue-600">■</span> Indirect Report
+        </div>
+      </div>
+    );
+  };
+
   const renderTeamReport = () => {
     if (!reportData || reportData.report_type !== 'team') return null;
 
