@@ -1084,19 +1084,25 @@ async def get_period_report(report_type: str, period: str, current_user: dict = 
         # Get direct reports and their teams
         direct_reports = await db.users.find({"manager_id": current_user['id']}, {"_id": 0, "password_hash": 0}).to_list(1000)
         
-        # If user_id specified, filter to just that manager's team
+        # If user_id specified, show that manager's team (not filter direct reports)
         if user_id:
+            # Get all subordinates to verify the user is in the hierarchy
+            all_subordinates = await get_all_subordinates(current_user['id'])
+            all_subordinates.insert(0, current_user)  # Include self
+            
             # Verify the requested user is in the hierarchy
             target_manager = None
-            for manager in direct_reports:
-                if manager['id'] == user_id:
-                    target_manager = manager
+            for member in all_subordinates:
+                if member['id'] == user_id:
+                    target_manager = member
                     break
             
             if not target_manager:
-                raise HTTPException(status_code=403, detail="Manager not found in your direct reports")
+                raise HTTPException(status_code=403, detail="Manager not found in your hierarchy")
             
-            direct_reports = [target_manager]  # Show only the selected manager's team
+            # Get the target manager's team (their direct reports)
+            target_direct_reports = await db.users.find({"manager_id": user_id}, {"_id": 0, "password_hash": 0}).to_list(1000)
+            direct_reports = target_direct_reports  # Show the selected manager's direct reports
         
         report_data = []
         for manager in direct_reports:
