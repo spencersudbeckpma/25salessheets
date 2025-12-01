@@ -904,12 +904,13 @@ async def get_daily_report(report_type: str, date: str, current_user: dict = Dep
         raise HTTPException(status_code=400, detail="Invalid report type. Use 'individual', 'team', or 'organization'")
 
 @api_router.get("/reports/period/{report_type}")
-async def get_period_report(report_type: str, period: str, current_user: dict = Depends(get_current_user), user_id: str = None):
+async def get_period_report(report_type: str, period: str, current_user: dict = Depends(get_current_user), user_id: str = None, month: str = None):
     """
     Get period report (monthly, quarterly, yearly) for a specific period.
     report_type: 'individual', 'team', or 'organization'
     period: 'monthly', 'quarterly', or 'yearly'
     user_id: Optional - specific user ID for individual reports (defaults to all team members)
+    month: Optional - specific month for monthly reports in YYYY-MM format (defaults to current month)
     Returns JSON data for on-screen viewing
     """
     if current_user['role'] not in ['state_manager', 'regional_manager', 'district_manager']:
