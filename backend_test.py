@@ -1466,12 +1466,12 @@ class ManagerReportsTester:
                 print(f"  • {error}")
 
 if __name__ == "__main__":
-    tester = DailyReportTester()
+    tester = ManagerReportsTester()
     success = tester.run_all_tests()
     
     if success:
-        print_success("\n🎉 All Daily Report API tests completed successfully!")
+        print_success("\n🎉 All Manager Reports API tests completed successfully!")
         sys.exit(0)
     else:
-        print_error("\n💥 Some Daily Report API tests failed!")
+        print_error("\n💥 Some Manager Reports API tests failed!")
         sys.exit(1)
