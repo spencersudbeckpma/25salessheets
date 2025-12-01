@@ -321,6 +321,22 @@ frontend:
         agent: "main"
         comment: "Created new DailyReport component with: 1) Date picker allowing selection of any past date up to today, 2) Three tabs for report types (Individual, Team, Organization), 3) View Report button to fetch and display data on screen, 4) Download Excel button to download formatted Excel files, 5) Different table/card layouts for each report type (Individual shows table with all members, Team shows table with team aggregations, Organization shows card grid with totals), 6) Proper loading states and error handling. Component added to Dashboard.jsx as new tab visible to State Managers, Regional Managers, and District Managers - each sees their own hierarchy level."
 
+backend:
+  - task: "Excel Download Bug Fix - Critical Parameter Consistency"
+    implemented: true
+    working: true
+    file: "/app/backend/server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: "NA"
+        agent: "user"
+        comment: "CRITICAL EXCEL DOWNLOAD BUG: Excel download shows different data than web interface. Web interface correctly shows Steve Ahlers' team (Ryan Rozell, Andrew Inman, Robert Whitman) but Excel download incorrectly shows different data (Steve Ahlers, Colton Cox). Need to fix Excel endpoints to accept same parameters as JSON endpoints."
+      - working: true
+        agent: "testing"
+        comment: "🎉 CRITICAL EXCEL DOWNLOAD BUG FIX VERIFIED SUCCESSFUL! Comprehensive testing completed with 14/15 tests passed. VERIFIED: (1) ✅ Team Report Excel with Manager Selection - Excel data matches JSON data exactly, shows Steve's direct reports correctly, (2) ✅ Individual Report Excel with Manager Selection - Both all individuals and specific user selection work correctly, (3) ✅ Daily Excel Downloads - All daily reports (team, individual) match JSON perfectly, team reports with manager selection work correctly, (4) ✅ Historical Period Excel Downloads - Previous month, quarter, and year all work correctly, (5) ✅ Parameter Consistency - Excel endpoints accept all same parameters as JSON endpoints (user_id, month, quarter, year). MINOR ISSUE: Daily Organization Report Excel has 9 rows vs JSON 8 fields (expected - Excel includes total_members as separate row). CONCLUSION: The critical bug where Excel showed different data than web interface has been COMPLETELY FIXED. Excel downloads now show identical data to web interface displays."
+
 test_plan:
   current_focus: []
   stuck_tasks: []
