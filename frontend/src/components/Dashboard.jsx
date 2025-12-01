@@ -108,7 +108,7 @@ const Dashboard = ({ user, setUser }) => {
                   data-testid="daily-report-tab" 
                   className="py-2.5 px-3 text-xs md:text-sm whitespace-nowrap flex-shrink-0"
                 >
-                  📅 Daily Report
+                  📊 Manager Reports
                 </TabsTrigger>
               )}
               {user.role === 'state_manager' && (
