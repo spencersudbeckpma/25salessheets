@@ -581,7 +581,7 @@ const DailyReport = ({ user }) => {
           </div>
         )}
 
-        {/* Date Picker - Only show for daily reports */}
+        {/* Date/Period Selectors - Show based on selected period */}
         {selectedPeriod === 'daily' && (
           <div className="mb-6 p-4 bg-gradient-to-r from-blue-50 to-indigo-100 rounded-lg border border-blue-300">
             <label className="block text-sm font-semibold text-gray-700 mb-2">
@@ -594,6 +594,69 @@ const DailyReport = ({ user }) => {
               max={new Date().toISOString().split('T')[0]}
               className="w-full md:w-64 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
             />
+          </div>
+        )}
+
+        {selectedPeriod === 'monthly' && (
+          <div className="mb-6 p-4 bg-gradient-to-r from-green-50 to-emerald-100 rounded-lg border border-green-300">
+            <label className="block text-sm font-semibold text-gray-700 mb-2">
+              Select Month
+            </label>
+            <input
+              type="month"
+              value={selectedMonth}
+              onChange={handleMonthChange}
+              max={new Date().toISOString().slice(0, 7)}
+              className="w-full md:w-64 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
+            />
+          </div>
+        )}
+
+        {selectedPeriod === 'quarterly' && (
+          <div className="mb-6 p-4 bg-gradient-to-r from-purple-50 to-violet-100 rounded-lg border border-purple-300">
+            <label className="block text-sm font-semibold text-gray-700 mb-2">
+              Select Quarter
+            </label>
+            <select
+              value={selectedQuarter}
+              onChange={handleQuarterChange}
+              className="w-full md:w-64 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
+            >
+              {/* Generate quarters for current year and previous years */}
+              {Array.from({ length: 12 }, (_, i) => {
+                const year = new Date().getFullYear() - Math.floor(i / 4);
+                const quarter = 4 - (i % 4);
+                const value = `${year}-Q${quarter}`;
+                return (
+                  <option key={value} value={value}>
+                    Q{quarter} {year}
+                  </option>
+                );
+              })}
+            </select>
+          </div>
+        )}
+
+        {selectedPeriod === 'yearly' && (
+          <div className="mb-6 p-4 bg-gradient-to-r from-orange-50 to-amber-100 rounded-lg border border-orange-300">
+            <label className="block text-sm font-semibold text-gray-700 mb-2">
+              Select Year
+            </label>
+            <select
+              value={selectedYear}
+              onChange={handleYearChange}
+              className="w-full md:w-64 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
+            >
+              {/* Generate years - current year and 4 years back */}
+              {Array.from({ length: 5 }, (_, i) => {
+                const year = new Date().getFullYear() - i;
+                return (
+                  <option key={year} value={year.toString()}>
+                    {year}
+                  </option>
+                );
+              })}
+            </select>
           </div>
         )}
 
