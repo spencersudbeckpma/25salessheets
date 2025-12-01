@@ -372,6 +372,33 @@ const DailyReport = ({ user }) => {
           </p>
         </div>
 
+        {/* Manager Selection - Only show for Individual reports */}
+        {activeTab === 'individual' && (
+          <div className="mb-6 p-4 bg-gradient-to-r from-green-50 to-emerald-100 rounded-lg border border-green-300">
+            <label className="block text-sm font-semibold text-gray-700 mb-2">
+              Select Manager (Optional)
+            </label>
+            <select
+              value={selectedManagerId}
+              onChange={(e) => {
+                setSelectedManagerId(e.target.value);
+                setReportData(null);
+              }}
+              className="w-full md:w-80 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
+            >
+              <option value="">All Team Members</option>
+              {availableManagers.map((manager) => (
+                <option key={manager.id} value={manager.id}>
+                  {manager.name} - {manager.role}
+                </option>
+              ))}
+            </select>
+            <p className="text-xs text-gray-500 mt-2">
+              {selectedManagerId ? 'Showing data for selected manager only' : 'Showing data for all team members under you'}
+            </p>
+          </div>
+        )}
+
         {/* Date Picker - Only show for daily reports */}
         {selectedPeriod === 'daily' && (
           <div className="mb-6 p-4 bg-gradient-to-r from-blue-50 to-indigo-100 rounded-lg border border-blue-300">
