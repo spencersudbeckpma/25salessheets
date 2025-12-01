@@ -3542,14 +3542,17 @@ class ManagerReportsTester:
             self.test_results['failed'] += 1
 
     def run_all_tests(self):
-        """Run all team report hierarchy bug fix tests"""
-        print_header("🚀 URGENT TEAM REPORT HIERARCHY BUG FIX TESTING")
+        """Run all team report enhancement tests"""
+        print_header("🚀 TEAM REPORTS ENHANCEMENT TESTING")
         print_info(f"Testing against: {BACKEND_URL}")
-        print_info("🚨 CRITICAL BUG FIXES BEING TESTED:")
-        print_info("   1. Team Report only showing selected manager, not his full team")
-        print_info("   2. Access control error when State Manager tries to select District Manager")
+        print_info("🎯 NEW FUNCTIONALITY BEING TESTED:")
+        print_info("   1. Manager selection includes manager's individual numbers")
+        print_info("   2. Manager's individual data marked as 'Manager Name (Individual)'")
+        print_info("   3. Direct reports' team totals marked as 'Manager Name's Team'")
+        print_info("   4. Both daily and period reports have same logic")
+        print_info("   5. Excel downloads include both individual and team data")
         print_info("🎯 ENDPOINTS: GET /api/reports/period/team?period=monthly&user_id={manager_id}")
-        print_info("🔍 VALIDATION: Manager selection should show team, not just manager")
+        print_info("🔍 VALIDATION: Manager selection should show individual + team data")
         
         # Setup
         if not self.setup_test_users():
@@ -3558,9 +3561,12 @@ class ManagerReportsTester:
             
         self.setup_test_data()
         
-        # Run CRITICAL team report hierarchy tests (Priority)
-        self.test_team_report_hierarchy_bug_fix()  # CRITICAL: Test the main bug fixes
-        self.test_daily_team_reports()  # Test daily team reports with same logic
+        # Run CRITICAL team report enhancement tests (Priority)
+        self.test_team_report_individual_plus_team_data()  # CRITICAL TEST 1
+        self.test_individual_vs_team_data_validation()     # CRITICAL TEST 2
+        self.test_daily_reports_same_logic()               # CRITICAL TEST 3
+        self.test_excel_download_consistency()             # CRITICAL TEST 4
+        self.test_expected_structure_validation()          # CRITICAL TEST 5
         
         # Run supporting tests to ensure other functionality still works
         self.test_daily_report_json_endpoint()
