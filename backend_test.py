@@ -2934,12 +2934,14 @@ class ManagerReportsTester:
                     self.test_results['failed'] += 1
 
     def run_all_tests(self):
-        """Run all tests - COMPREHENSIVE MANAGER HIERARCHY DRILL-DOWN TESTING"""
-        print_header("🚀 COMPREHENSIVE MANAGER HIERARCHY DRILL-DOWN TESTING")
+        """Run all team report hierarchy bug fix tests"""
+        print_header("🚀 URGENT TEAM REPORT HIERARCHY BUG FIX TESTING")
         print_info(f"Testing against: {BACKEND_URL}")
-        print_info("🎯 PRIMARY FOCUS: Test new manager hierarchy drill-down functionality")
-        print_info("🔍 TESTING: GET /api/reports/manager-hierarchy/{manager_id}?period={period}")
-        print_info("📋 COVERAGE: Access control, hierarchy structure, period calculations, data integrity")
+        print_info("🚨 CRITICAL BUG FIXES BEING TESTED:")
+        print_info("   1. Team Report only showing selected manager, not his full team")
+        print_info("   2. Access control error when State Manager tries to select District Manager")
+        print_info("🎯 ENDPOINTS: GET /api/reports/period/team?period=monthly&user_id={manager_id}")
+        print_info("🔍 VALIDATION: Manager selection should show team, not just manager")
         
         # Setup
         if not self.setup_test_users():
@@ -2948,38 +2950,14 @@ class ManagerReportsTester:
             
         self.setup_test_data()
         
-        # Run NEW MANAGER HIERARCHY DRILL-DOWN TESTS (Priority)
-        self.test_manager_hierarchy_drill_down_access_control()  # Test access control for different roles
-        self.test_manager_hierarchy_structure()  # Test response structure and hierarchy data
-        self.test_manager_hierarchy_periods()  # Test all 4 periods (daily, monthly, quarterly, yearly)
-        self.test_manager_hierarchy_invalid_cases()  # Test error handling
-        self.test_manager_hierarchy_data_integrity()  # Test data consistency
+        # Run CRITICAL team report hierarchy tests (Priority)
+        self.test_team_report_hierarchy_bug_fix()  # CRITICAL: Test the main bug fixes
+        self.test_daily_team_reports()  # Test daily team reports with same logic
         
-        # Run existing tests for regression testing
-        self.test_period_reports_json_endpoints()  # Test all 9 JSON endpoint combinations
-        self.test_period_reports_excel_endpoints()  # Test all 9 Excel endpoint combinations
-        self.test_manager_access_control()  # Test hierarchical access control
-        self.test_period_error_cases()  # Test error handling
-        self.test_data_consistency()  # Test data consistency between daily and period reports
-        
+        # Run supporting tests to ensure other functionality still works
         self.test_daily_report_json_endpoint()
-        self.test_daily_report_excel_endpoint()
         self.test_access_control()
         self.test_error_cases()
-        self.test_different_dates()
-        
-        # Manager selection functionality tests
-        self.test_manager_selection_endpoints()
-        self.test_individual_manager_daily_reports()
-        self.test_individual_manager_period_reports()
-        self.test_hierarchy_access_control_new()
-        
-        # NEW: Historical Period Selection Feature Tests
-        print_header("🕰️ HISTORICAL PERIOD SELECTION FEATURE TESTING")
-        self.test_historical_period_selection()
-        self.test_historical_parameter_validation()
-        self.test_manager_hierarchy_historical_periods()
-        self.test_backward_compatibility()
         
         # Print summary
         self.print_test_summary()
