@@ -260,6 +260,21 @@ backend:
         agent: "testing"
         comment: "🎉 COMPREHENSIVE MANAGER REPORTS TESTING COMPLETED: All 44 tests passed successfully! CRITICAL VERIFICATION: (1) ✅ ALL 9 JSON ENDPOINT COMBINATIONS WORKING: Tested individual/team/organization reports for monthly/quarterly/yearly periods - all return correct JSON structure with proper fields (report_type, period, period_name, start_date, data), (2) ✅ ALL 9 EXCEL ENDPOINT COMBINATIONS WORKING: All report types and periods generate and download Excel files successfully with proper content-type headers, (3) ✅ HIERARCHICAL ACCESS CONTROL VERIFIED: state_manager, regional_manager, and district_manager correctly have access to both JSON and Excel endpoints, while agent correctly receives 403 Forbidden, (4) ✅ PERIOD CALCULATIONS ACCURATE: Monthly starts from 1st of current month (2025-11-01), Quarterly from Q4 start (2025-10-01), Yearly from January 1st (2025-01-01) - all using Central Time zone correctly, (5) ✅ ERROR HANDLING PROPER: Invalid period and report_type parameters correctly return 400 Bad Request, (6) ✅ DATA CONSISTENCY VERIFIED: Monthly period reports show totals >= daily reports for same timeframe, field structures consistent between daily and period reports. The new manager reporting functionality is production-ready with complete hierarchical access control and comprehensive period-based reporting capabilities."
 
+  - task: "Individual Manager Selection Feature - NEW FUNCTIONALITY"
+    implemented: true
+    working: true
+    file: "/app/backend/server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: "NA"
+        agent: "main"
+        comment: "Added new individual manager selection functionality: 1) GET /api/reports/managers - Returns list of all managers under current user's hierarchy with id, name, email, role fields, 2) Updated Daily Report endpoint to accept user_id parameter: GET /api/reports/daily/individual?date={date}&user_id={user_id} - Returns only selected user's data when user_id specified, 3) Updated Period Report endpoints to accept user_id parameter: GET /api/reports/period/individual?period={period}&user_id={user_id} - Returns only selected user's totals for the period. All endpoints verify user is in hierarchy (403 if not). Response includes 'selected_user' field showing the user_id that was selected. When user_id specified, individual reports show only 1 row instead of all team members."
+      - working: true
+        agent: "testing"
+        comment: "🎯 COMPREHENSIVE MANAGER SELECTION TESTING COMPLETED: All 61 tests passed successfully! CRITICAL VERIFICATION: (1) ✅ MANAGER LIST ENDPOINT WORKING: GET /api/reports/managers returns correct structure with 'managers' array, each manager has required fields (id, name, email, role), respects hierarchy (only shows subordinates + self), (2) ✅ INDIVIDUAL DAILY REPORTS WITH USER_ID: Without user_id shows all team members, with user_id shows exactly 1 user, selected_user field correctly set, invalid user_id returns 403 Forbidden, (3) ✅ INDIVIDUAL PERIOD REPORTS WITH USER_ID: All periods (monthly/quarterly/yearly) work with user_id parameter, shows exactly 1 user when user_id specified, selected_user field correctly populated, (4) ✅ HIERARCHICAL ACCESS CONTROL: state_manager, regional_manager, district_manager can access manager list, agent correctly denied access (403), each manager level only sees their hierarchy, (5) ✅ RESPONSE FORMAT VERIFICATION: JSON includes 'selected_user' field showing user_id when specified, data array contains only 1 user when user_id provided, normal behavior when no user_id specified. The new individual manager selection functionality is production-ready with complete hierarchy verification and proper access control."
+
 frontend:
   - task: "Daily Report Component"
     implemented: true
