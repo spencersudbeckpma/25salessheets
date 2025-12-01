@@ -60,6 +60,10 @@ class UserLogin(BaseModel):
     email: str  # Changed from EmailStr to accept username or email
     password: str
 
+class PasswordChangeRequest(BaseModel):
+    current_password: str
+    new_password: str
+
 class Activity(BaseModel):
     model_config = ConfigDict(extra="ignore")
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
