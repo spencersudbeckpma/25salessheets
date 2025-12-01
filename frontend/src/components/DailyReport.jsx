@@ -101,6 +101,10 @@ const DailyReport = ({ user }) => {
       
       if (selectedPeriod === 'monthly') {
         params.month = selectedMonth;
+      } else if (selectedPeriod === 'quarterly') {
+        params.quarter = selectedQuarter;
+      } else if (selectedPeriod === 'yearly') {
+        params.year = selectedYear;
       }
       
       const response = await axios.get(`${API}/reports/period/${reportType}`, {
