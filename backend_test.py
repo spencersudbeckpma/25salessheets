@@ -375,14 +375,14 @@ class ManagerReportsTester:
                 self.test_results['errors'].append(f"{report_type} Excel download exception: {str(e)}")
 
     def test_access_control(self):
-        """Test access control - non-state_manager should get 403"""
+        """Test access control - agent should get 403"""
         print_header("TESTING ACCESS CONTROL")
         
-        if not self.non_state_manager_token:
-            print_warning("No non-state manager token - skipping access control tests")
+        if not self.agent_token:
+            print_warning("No agent token - skipping access control tests")
             return
             
-        headers = {"Authorization": f"Bearer {self.non_state_manager_token}"}
+        headers = {"Authorization": f"Bearer {self.agent_token}"}
         today = datetime.now().date().isoformat()
         
         # Test JSON endpoint
