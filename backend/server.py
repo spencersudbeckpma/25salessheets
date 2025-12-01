@@ -1331,11 +1331,12 @@ async def download_period_report_excel(report_type: str, period: str, current_us
     )
 
 @api_router.get("/reports/daily/excel/{report_type}")
-async def download_daily_report_excel(report_type: str, date: str, current_user: dict = Depends(get_current_user)):
+async def download_daily_report_excel(report_type: str, date: str, current_user: dict = Depends(get_current_user), user_id: str = None):
     """
     Download daily report as Excel file.
     report_type: 'individual', 'team', or 'organization'
     date: ISO format date string (YYYY-MM-DD)
+    user_id: Optional - specific user ID for individual/team reports
     """
     from openpyxl import Workbook
     from openpyxl.styles import Font, PatternFill, Alignment
@@ -1345,8 +1346,8 @@ async def download_daily_report_excel(report_type: str, date: str, current_user:
     if current_user['role'] not in ['state_manager', 'regional_manager', 'district_manager']:
         raise HTTPException(status_code=403, detail="Only Managers (State, Regional, District) can download daily reports")
     
-    # Get the report data
-    report_json = await get_daily_report(report_type, date, current_user)
+    # Get the report data with all parameters
+    report_json = await get_daily_report(report_type, date, current_user, user_id)
     
     # Create Excel workbook
     wb = Workbook()
