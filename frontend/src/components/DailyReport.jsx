@@ -294,31 +294,69 @@ const DailyReport = ({ user }) => {
     { id: 'organization', label: 'Organization', icon: TrendingUp, color: 'purple' }
   ];
 
+  const periods = [
+    { id: 'daily', label: 'Daily', icon: Calendar, color: 'blue', description: 'View data for a specific date' },
+    { id: 'monthly', label: 'Monthly', icon: BarChart3, color: 'green', description: 'Current month totals' },
+    { id: 'quarterly', label: 'Quarterly', icon: LineChart, color: 'purple', description: 'Current quarter totals' },
+    { id: 'yearly', label: 'Yearly', icon: TrendingUp, color: 'orange', description: 'Current year totals' }
+  ];
+
   return (
     <Card className="shadow-lg bg-white">
       <CardHeader>
         <CardTitle className="text-2xl flex items-center gap-2">
-          <Calendar className="text-blue-600" />
-          Daily Reports
+          <Clock className="text-blue-600" />
+          Manager Reports
         </CardTitle>
         <p className="text-sm text-gray-600 mt-2">
-          View and download daily activity reports for your team hierarchy (individuals, teams, organization)
+          View and download comprehensive activity reports for your team hierarchy across different time periods
         </p>
       </CardHeader>
       <CardContent>
-        {/* Date Picker */}
+        {/* Period Selection */}
         <div className="mb-6 p-4 bg-gradient-to-r from-slate-50 to-gray-100 rounded-lg border border-slate-300">
-          <label className="block text-sm font-semibold text-gray-700 mb-2">
-            Select Date
+          <label className="block text-sm font-semibold text-gray-700 mb-3">
+            Select Time Period
           </label>
-          <input
-            type="date"
-            value={selectedDate}
-            onChange={handleDateChange}
-            max={new Date().toISOString().split('T')[0]}
-            className="w-full md:w-64 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-          />
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+            {periods.map((period) => {
+              const Icon = period.icon;
+              return (
+                <button
+                  key={period.id}
+                  onClick={() => handlePeriodChange(period.id)}
+                  className={`flex flex-col items-center gap-2 p-3 rounded-lg font-medium transition-all border-2 ${
+                    selectedPeriod === period.id
+                      ? `bg-${period.color}-100 border-${period.color}-500 text-${period.color}-700`
+                      : 'bg-white border-gray-300 text-gray-700 hover:border-gray-400'
+                  }`}
+                >
+                  <Icon size={20} />
+                  <span className="text-sm">{period.label}</span>
+                </button>
+              );
+            })}
+          </div>
+          <p className="text-xs text-gray-500 mt-2">
+            {periods.find(p => p.id === selectedPeriod)?.description || ''}
+          </p>
         </div>
+
+        {/* Date Picker - Only show for daily reports */}
+        {selectedPeriod === 'daily' && (
+          <div className="mb-6 p-4 bg-gradient-to-r from-blue-50 to-indigo-100 rounded-lg border border-blue-300">
+            <label className="block text-sm font-semibold text-gray-700 mb-2">
+              Select Date
+            </label>
+            <input
+              type="date"
+              value={selectedDate}
+              onChange={handleDateChange}
+              max={new Date().toISOString().split('T')[0]}
+              className="w-full md:w-64 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+            />
+          </div>
+        )}
 
         {/* Tabs */}
         <div className="flex flex-wrap gap-2 mb-6">
