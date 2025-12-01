@@ -631,6 +631,20 @@ async def get_daily_report(report_type: str, date: str, current_user: dict = Dep
         team_members = await get_all_subordinates(current_user['id'])
         team_members.insert(0, current_user)  # Include self
         
+        # If user_id specified, filter to just that user
+        if user_id:
+            # Verify the requested user is in the hierarchy
+            target_user = None
+            for member in team_members:
+                if member['id'] == user_id:
+                    target_user = member
+                    break
+            
+            if not target_user:
+                raise HTTPException(status_code=403, detail="User not found in your hierarchy")
+            
+            team_members = [target_user]  # Show only the selected user
+        
         report_data = []
         for member in team_members:
             activity = await db.activities.find_one({
@@ -655,7 +669,8 @@ async def get_daily_report(report_type: str, date: str, current_user: dict = Dep
         return {
             "report_type": "individual",
             "date": report_date,
-            "data": report_data
+            "data": report_data,
+            "selected_user": user_id
         }
     
     elif report_type == "team":
