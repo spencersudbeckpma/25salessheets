@@ -191,6 +191,21 @@ const DailyReport = ({ user }) => {
     setReportData(null);
   };
 
+  const handleMonthChange = (e) => {
+    setSelectedMonth(e.target.value);
+    setReportData(null);
+  };
+
+  const handleQuarterChange = (e) => {
+    setSelectedQuarter(e.target.value);
+    setReportData(null);
+  };
+
+  const handleYearChange = (e) => {
+    setSelectedYear(e.target.value);
+    setReportData(null);
+  };
+
   const viewReport = () => {
     if (selectedPeriod === 'daily') {
       fetchDailyReport(activeTab);
