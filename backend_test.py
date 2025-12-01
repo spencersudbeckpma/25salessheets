@@ -1028,53 +1028,36 @@ class ManagerReportsTester:
         print_info("   2. State Manager should be able to select any manager in hierarchy")
         print_info("   3. Access control should check full hierarchy, not just direct reports")
         
-        # Step 1: Setup test hierarchy and get user IDs
-        print_info("\n📋 STEP 1: Setup Test Hierarchy and Get User IDs")
+        # Step 1: Use the test hierarchy we created
+        print_info("\n📋 STEP 1: Use Test Hierarchy Created in Setup")
         
-        # Get all users to find Steve Ahlers and other managers
+        # Use the Steve Ahlers and Ryan Rozell IDs from setup
+        steve_ahlers_id = getattr(self, 'steve_ahlers_id', None)
+        ryan_rozell_id = getattr(self, 'ryan_rozell_id', None)
+        
+        if steve_ahlers_id:
+            print_success(f"✅ Using Steve Ahlers ID: {steve_ahlers_id}")
+        else:
+            print_warning("⚠️ No Steve Ahlers ID available from setup")
+            
+        if ryan_rozell_id:
+            print_success(f"✅ Using Ryan Rozell ID: {ryan_rozell_id}")
+        else:
+            print_warning("⚠️ No Ryan Rozell ID available from setup")
+            
+        # Get managers list to verify hierarchy
         try:
-            # First, let's get the current user info to understand the hierarchy
-            me_response = self.session.get(f"{BACKEND_URL}/auth/me", headers=headers)
-            if me_response.status_code == 200:
-                current_user = me_response.json()
-                print_success(f"✅ Current user: {current_user.get('name', 'Unknown')} ({current_user.get('role', 'Unknown')})")
-                current_user_id = current_user.get('id')
-            else:
-                print_error(f"❌ Could not get current user info: {me_response.status_code}")
-                self.test_results['failed'] += 1
-                return
-                
-            # Get available managers list
             managers_response = self.session.get(f"{BACKEND_URL}/reports/managers", headers=headers)
             if managers_response.status_code == 200:
                 managers_data = managers_response.json()
                 managers = managers_data.get('managers', [])
                 print_success(f"✅ Found {len(managers)} managers in hierarchy")
                 
-                # Look for Steve Ahlers or create test managers
-                steve_ahlers_id = None
-                district_manager_id = None
-                
                 for manager in managers:
-                    name = manager.get('name', '').lower()
-                    role = manager.get('role', '').lower()
-                    
-                    if 'steve' in name and 'ahlers' in name:
-                        steve_ahlers_id = manager.get('id')
-                        print_success(f"✅ Found Steve Ahlers: {manager.get('name')} (ID: {steve_ahlers_id})")
-                    elif 'district' in role and not district_manager_id:
-                        district_manager_id = manager.get('id')
-                        print_success(f"✅ Found District Manager: {manager.get('name')} (ID: {district_manager_id})")
-                
-                # If we don't have Steve Ahlers, use the first available manager
-                if not steve_ahlers_id and managers:
-                    steve_ahlers_id = managers[0].get('id')
-                    print_info(f"ℹ️ Using first available manager as test subject: {managers[0].get('name')} (ID: {steve_ahlers_id})")
-                
-                # If we don't have a district manager, use the second available manager
-                if not district_manager_id and len(managers) > 1:
-                    district_manager_id = managers[1].get('id')
-                    print_info(f"ℹ️ Using second manager as district manager test: {managers[1].get('name')} (ID: {district_manager_id})")
+                    name = manager.get('name', 'Unknown')
+                    role = manager.get('role', 'Unknown')
+                    manager_id = manager.get('id', 'Unknown')
+                    print_info(f"   Manager: {name} ({role}) - ID: {manager_id}")
                     
             else:
                 print_error(f"❌ Could not get managers list: {managers_response.status_code}")
@@ -1082,7 +1065,7 @@ class ManagerReportsTester:
                 return
                 
         except Exception as e:
-            print_error(f"❌ Exception in hierarchy setup: {str(e)}")
+            print_error(f"❌ Exception getting managers list: {str(e)}")
             self.test_results['failed'] += 1
             return
         
