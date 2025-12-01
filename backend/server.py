@@ -1835,6 +1835,43 @@ async def get_me(current_user: dict = Depends(get_current_user)):
         "manager_id": current_user.get('manager_id')
     }
 
+@api_router.post("/auth/change-password")
+async def change_password(password_request: PasswordChangeRequest, current_user: dict = Depends(get_current_user)):
+    """
+    Change user's password.
+    Requires current password verification and sets new password.
+    """
+    try:
+        # Get the user's current password hash from database
+        user = await db.users.find_one({"id": current_user['id']})
+        if not user:
+            raise HTTPException(status_code=404, detail="User not found")
+        
+        # Verify current password
+        if not bcrypt.checkpw(password_request.current_password.encode('utf-8'), user['password_hash'].encode('utf-8')):
+            raise HTTPException(status_code=400, detail="Current password is incorrect")
+        
+        # Validate new password (basic validation)
+        if len(password_request.new_password) < 6:
+            raise HTTPException(status_code=400, detail="New password must be at least 6 characters long")
+        
+        # Hash the new password
+        salt = bcrypt.gensalt()
+        new_password_hash = bcrypt.hashpw(password_request.new_password.encode('utf-8'), salt)
+        
+        # Update password in database
+        await db.users.update_one(
+            {"id": current_user['id']},
+            {"$set": {"password_hash": new_password_hash.decode('utf-8')}}
+        )
+        
+        return {"message": "Password changed successfully"}
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to change password: {str(e)}")
+
 # Activity Routes
 @api_router.post("/activities")
 async def create_activity(activity_data: ActivityCreate, current_user: dict = Depends(get_current_user)):
