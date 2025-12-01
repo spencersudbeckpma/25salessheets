@@ -597,11 +597,12 @@ async def get_available_managers(current_user: dict = Depends(get_current_user))
     return {"managers": manager_list}
 
 @api_router.get("/reports/daily/{report_type}")
-async def get_daily_report(report_type: str, date: str, current_user: dict = Depends(get_current_user)):
+async def get_daily_report(report_type: str, date: str, current_user: dict = Depends(get_current_user), user_id: str = None):
     """
     Get daily report for a specific date.
     report_type: 'individual', 'team', or 'organization'
     date: ISO format date string (YYYY-MM-DD)
+    user_id: Optional - specific user ID for individual reports (defaults to all team members)
     Returns JSON data for on-screen viewing
     """
     if current_user['role'] not in ['state_manager', 'regional_manager', 'district_manager']:
