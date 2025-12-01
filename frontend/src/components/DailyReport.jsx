@@ -39,9 +39,14 @@ const DailyReport = ({ user }) => {
     setLoading(true);
     try {
       const token = localStorage.getItem('token');
+      const params = { date: selectedDate };
+      if (reportType === 'individual' && selectedManagerId) {
+        params.user_id = selectedManagerId;
+      }
+      
       const response = await axios.get(`${API}/reports/daily/${reportType}`, {
         headers: { Authorization: `Bearer ${token}` },
-        params: { date: selectedDate }
+        params: params
       });
       setReportData(response.data);
       toast.success('Daily report loaded successfully!');
@@ -57,9 +62,14 @@ const DailyReport = ({ user }) => {
     setLoading(true);
     try {
       const token = localStorage.getItem('token');
+      const params = { period: selectedPeriod };
+      if (reportType === 'individual' && selectedManagerId) {
+        params.user_id = selectedManagerId;
+      }
+      
       const response = await axios.get(`${API}/reports/period/${reportType}`, {
         headers: { Authorization: `Bearer ${token}` },
-        params: { period: selectedPeriod }
+        params: params
       });
       setReportData(response.data);
       toast.success(`${selectedPeriod.charAt(0).toUpperCase() + selectedPeriod.slice(1)} report loaded successfully!`);
