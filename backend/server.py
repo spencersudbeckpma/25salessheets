@@ -64,6 +64,13 @@ class PasswordChangeRequest(BaseModel):
     current_password: str
     new_password: str
 
+class PasswordResetRequest(BaseModel):
+    user_id: str
+    new_password: str
+
+class ForgotPasswordRequest(BaseModel):
+    email: str
+
 class Activity(BaseModel):
     model_config = ConfigDict(extra="ignore")
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
