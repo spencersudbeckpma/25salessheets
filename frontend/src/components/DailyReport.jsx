@@ -47,9 +47,22 @@ const DailyReport = ({ user }) => {
     setLoading(true);
     try {
       const token = localStorage.getItem('token');
+      const params = { period: selectedPeriod };
+      
+      // Add period-specific parameters
+      if (selectedPeriod === 'monthly') {
+        params.month = selectedMonth;
+      } else if (selectedPeriod === 'quarterly') {
+        params.quarter = selectedQuarter;
+      } else if (selectedPeriod === 'yearly') {
+        params.year = selectedYear;
+      } else if (selectedPeriod === 'daily') {
+        params.date = selectedDate;
+      }
+      
       const response = await axios.get(`${API}/reports/manager-hierarchy/${managerId}`, {
         headers: { Authorization: `Bearer ${token}` },
-        params: { period: selectedPeriod }
+        params: params
       });
       setHierarchyData(response.data);
       setReportData(null); // Clear regular report when showing hierarchy
