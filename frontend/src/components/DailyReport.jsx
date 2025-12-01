@@ -262,7 +262,7 @@ const DailyReport = ({ user }) => {
           </div>
         )}
         <div className="mt-4 text-xs text-gray-500">
-          💡 <strong>Tip:</strong> Click on a manager's name (👥) to view their entire team hierarchy with totals
+          💡 <strong>Tip:</strong> Click on a manager&apos;s name (👥) to view their entire team hierarchy with totals
         </div>
       </div>
     );
