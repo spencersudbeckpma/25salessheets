@@ -470,6 +470,10 @@ const DailyReport = ({ user }) => {
             <div className="mb-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
               <h3 className="font-semibold text-blue-900">
                 📊 {activeTab.charAt(0).toUpperCase() + activeTab.slice(1)} Report
+                {selectedManagerId && reportData.selected_user 
+                  ? ` - ${availableManagers.find(m => m.id === selectedManagerId)?.name || 'Selected Manager'}` 
+                  : ''
+                }
                 {selectedPeriod === 'daily' 
                   ? ` for ${new Date(selectedDate).toLocaleDateString('en-US', {
                       weekday: 'long',
