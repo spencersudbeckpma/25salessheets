@@ -290,7 +290,7 @@ frontend:
 
 test_plan:
   current_focus:
-    - "Manager Reports Period-based API endpoints (Monthly, Quarterly, Yearly)"
+    - "Individual Manager Selection Feature - NEW FUNCTIONALITY"
   stuck_tasks: []
   test_all: false
   test_priority: "high_first"
