@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """
-Backend Testing Script - CRITICAL WEDNESDAY ACTIVITY BUG INVESTIGATION
-URGENT ISSUE: User reports Wednesday showing zero activity when activity exists
-Focus: Investigate date verification, activity data check, and date matching issues
+Backend Testing Script - COMPREHENSIVE MANAGER REPORTS TESTING
+NEW FUNCTIONALITY: Extended reporting beyond daily to include Monthly, Quarterly, and Yearly reports
+Focus: Test new period-based reporting endpoints with hierarchical access control
 """
 
 import requests
