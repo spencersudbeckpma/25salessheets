@@ -1,8 +1,12 @@
 #!/usr/bin/env python3
 """
 Backend Testing Script - COMPREHENSIVE MANAGER REPORTS TESTING
-NEW FUNCTIONALITY: Extended reporting beyond daily to include Monthly, Quarterly, and Yearly reports
-Focus: Test new period-based reporting endpoints with hierarchical access control
+NEW FUNCTIONALITY: Individual Manager Selection Feature
+Focus: Test new manager selection endpoints and user_id parameter functionality
+- GET /api/reports/managers (list available managers)
+- Daily reports with user_id parameter
+- Period reports with user_id parameter
+- Hierarchical access control verification
 """
 
 import requests
