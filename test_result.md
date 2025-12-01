@@ -323,6 +323,21 @@ backend:
         agent: "testing"
         comment: "🎉 EXCEL TOTALS ROW ENHANCEMENT TESTING COMPLETED: All 11 comprehensive tests passed successfully! CRITICAL VERIFICATION: (1) ✅ PERIOD EXCEL REPORTS WITH TOTALS: Monthly/quarterly/yearly individual and team reports include totals rows with bold formatting and light red background, (2) ✅ DAILY EXCEL REPORTS WITH TOTALS: Individual and team daily reports include properly formatted totals rows, (3) ✅ TOTALS CALCULATION ACCURACY: All 8 activity metrics calculated correctly with 100% accuracy - contacts, appointments, presentations, referrals, testimonials, sales, new_face_sold, premium, (4) ✅ MANAGER SELECTION WITH TOTALS: Team reports with manager selection include both individual and team numbers with accurate totals, (5) ✅ EMPTY DATA HANDLING: Reports with no data correctly show totals row with zeros. FORMATTING VERIFIED: Bold text, light red background (FFE6E6), proper Excel styling applied. CALCULATION VERIFIED: Mathematical accuracy confirmed by comparing Excel totals with JSON data sums. The enhancement successfully adds professional totals rows to all Excel reports as requested."
 
+  - task: "Password Change Functionality - NEW FUNCTIONALITY"
+    implemented: true
+    working: true
+    file: "/app/backend/server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: "NA"
+        agent: "user"
+        comment: "NEW FUNCTIONALITY REQUEST: Added password change feature for all users (agents, managers) to update their own passwords securely. Endpoint: POST /api/auth/change-password with Bearer token authentication. Body: {'current_password': 'old_pass', 'new_password': 'new_pass'}. Security features: (1) Current password verification using bcrypt, (2) New password validation (minimum 6 characters), (3) Secure password hashing before storage, (4) Authentication required, (5) Works for all user roles."
+      - working: true
+        agent: "testing"
+        comment: "🔐 PASSWORD CHANGE FUNCTIONALITY TESTING COMPLETED: All 22 comprehensive tests passed successfully! CRITICAL VERIFICATION: (1) ✅ VALID PASSWORD CHANGE: Users can successfully change passwords with correct current password and valid new password, old password becomes invalid, new password works for login, user data integrity maintained, (2) ✅ CURRENT PASSWORD VALIDATION: Incorrect current password correctly returns 400 error with 'Current password is incorrect' message, original password remains unchanged, (3) ✅ NEW PASSWORD VALIDATION: Passwords under 6 characters correctly rejected with proper error message, tested empty, 1, 3, and 5 character passwords, (4) ✅ AUTHENTICATION REQUIRED: Endpoint correctly returns 401/403 for requests without Bearer token or with invalid token, (5) ✅ USER ROLES ACCESS: All user roles (agent, district_manager, regional_manager, state_manager) can successfully change passwords, (6) ✅ SECURITY VALIDATIONS: Password properly hashed using bcrypt, old password invalidated after change, new password securely stored and functional. The password change functionality is production-ready with comprehensive security measures and proper validation."
+
 frontend:
   - task: "Daily Report Component"
     implemented: true
