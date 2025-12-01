@@ -15,6 +15,7 @@ const DailyReport = ({ user }) => {
   const [selectedManagerId, setSelectedManagerId] = useState('');
   const [availableManagers, setAvailableManagers] = useState([]);
   const [reportData, setReportData] = useState(null);
+  const [hierarchyData, setHierarchyData] = useState(null);
   const [loading, setLoading] = useState(false);
 
   // Fetch available managers when component loads
