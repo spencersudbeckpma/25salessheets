@@ -561,6 +561,41 @@ async def generate_excel_report(period: str, current_user: dict = Depends(get_cu
         headers={"Content-Disposition": f"attachment; filename={filename}"}
     )
 
+@api_router.get("/reports/managers")
+async def get_available_managers(current_user: dict = Depends(get_current_user)):
+    """
+    Get list of managers available for individual reporting.
+    Returns all users under the current user's hierarchy.
+    """
+    if current_user['role'] not in ['state_manager', 'regional_manager', 'district_manager']:
+        raise HTTPException(status_code=403, detail="Only Managers can access manager list")
+    
+    # Helper function to get all subordinates recursively
+    async def get_all_subordinates(user_id: str):
+        members = []
+        subordinates = await db.users.find({"manager_id": user_id}, {"_id": 0, "password_hash": 0}).to_list(1000)
+        for sub in subordinates:
+            members.append(sub)
+            sub_members = await get_all_subordinates(sub['id'])
+            members.extend(sub_members)
+        return members
+    
+    # Get all subordinates
+    team_members = await get_all_subordinates(current_user['id'])
+    team_members.insert(0, current_user)  # Include self
+    
+    # Format for dropdown display
+    manager_list = []
+    for member in team_members:
+        manager_list.append({
+            "id": member.get('id'),
+            "name": member.get('name', 'Unknown'),
+            "email": member.get('email', ''),
+            "role": member.get('role', 'unknown').replace('_', ' ').title()
+        })
+    
+    return {"managers": manager_list}
+
 @api_router.get("/reports/daily/{report_type}")
 async def get_daily_report(report_type: str, date: str, current_user: dict = Depends(get_current_user)):
     """
