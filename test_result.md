@@ -290,7 +290,7 @@ frontend:
 
 test_plan:
   current_focus:
-    - "Individual Manager Selection Feature - NEW FUNCTIONALITY"
+    - "Manager Hierarchy Drill-Down Feature - NEW FUNCTIONALITY"
   stuck_tasks: []
   test_all: false
   test_priority: "high_first"
