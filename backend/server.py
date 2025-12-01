@@ -1365,6 +1365,40 @@ async def download_period_report_excel(report_type: str, period: str, current_us
             ws.cell(row=row_num, column=9).value = data['sales']
             ws.cell(row=row_num, column=10).value = data['new_face_sold']
             ws.cell(row=row_num, column=11).value = data['premium']
+        
+        # Add totals row for team reports
+        if report_json['data']:
+            totals_row = len(report_json['data']) + 4  # +3 for headers, +1 for spacing
+            ws.cell(row=totals_row, column=1).value = "TOTALS"
+            ws.cell(row=totals_row, column=1).font = Font(bold=True)
+            ws.cell(row=totals_row, column=1).fill = PatternFill(start_color="FFE6E6", end_color="FFE6E6", fill_type="solid")
+            
+            # Calculate totals
+            total_contacts = sum(data['contacts'] for data in report_json['data'])
+            total_appointments = sum(data['appointments'] for data in report_json['data'])
+            total_presentations = sum(data['presentations'] for data in report_json['data'])
+            total_referrals = sum(data['referrals'] for data in report_json['data'])
+            total_testimonials = sum(data['testimonials'] for data in report_json['data'])
+            total_sales = sum(data['sales'] for data in report_json['data'])
+            total_new_face = sum(data['new_face_sold'] for data in report_json['data'])
+            total_premium = sum(data['premium'] for data in report_json['data'])
+            
+            ws.cell(row=totals_row, column=4).value = total_contacts
+            ws.cell(row=totals_row, column=4).font = Font(bold=True)
+            ws.cell(row=totals_row, column=5).value = total_appointments
+            ws.cell(row=totals_row, column=5).font = Font(bold=True)
+            ws.cell(row=totals_row, column=6).value = total_presentations
+            ws.cell(row=totals_row, column=6).font = Font(bold=True)
+            ws.cell(row=totals_row, column=7).value = total_referrals
+            ws.cell(row=totals_row, column=7).font = Font(bold=True)
+            ws.cell(row=totals_row, column=8).value = total_testimonials
+            ws.cell(row=totals_row, column=8).font = Font(bold=True)
+            ws.cell(row=totals_row, column=9).value = total_sales
+            ws.cell(row=totals_row, column=9).font = Font(bold=True)
+            ws.cell(row=totals_row, column=10).value = total_new_face
+            ws.cell(row=totals_row, column=10).font = Font(bold=True)
+            ws.cell(row=totals_row, column=11).value = total_premium
+            ws.cell(row=totals_row, column=11).font = Font(bold=True)
     
     elif report_type == "organization":
         # Add headers
