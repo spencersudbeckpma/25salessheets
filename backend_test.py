@@ -251,57 +251,445 @@ class ForgotPasswordTester:
             print_warning(f"Exception creating activity for {date_str}: {str(e)}")
             return False
 
-    def setup_test_data(self):
-        """Setup test activity data for hierarchy testing"""
-        print_header("SETTING UP TEST DATA FOR HIERARCHY TESTING")
+    def test_admin_reset_password(self):
+        """Test admin reset password functionality (State Manager only)"""
+        print_header("🔐 TESTING ADMIN RESET PASSWORD FUNCTIONALITY")
         
-        if not self.state_manager_token:
-            print_error("No state manager token available")
-            return False
+        if not self.state_manager_token or not self.district_manager_id:
+            print_error("Missing required tokens/IDs for admin reset testing")
+            return
             
-        # Create activities for today, yesterday, and a week ago
-        today = datetime.now().date()
-        yesterday = today - timedelta(days=1)
-        week_ago = today - timedelta(days=7)
+        headers = {"Authorization": f"Bearer {self.state_manager_token}"}
         
-        dates_to_create = [
-            today.isoformat(),
-            yesterday.isoformat(), 
-            week_ago.isoformat()
-        ]
+        print_info("🎯 Testing admin reset password with State Manager resetting District Manager password")
         
-        # Create activities for State Manager
-        for date_str in dates_to_create:
-            self.create_test_activity(self.state_manager_token, date_str)
+        # Test 1: Valid admin reset by State Manager
+        print_info("\n📋 TEST 1: Valid Admin Reset by State Manager")
+        try:
+            reset_data = {
+                "user_id": self.district_manager_id,
+                "new_password": "NewPassword123!"
+            }
             
-        # Create activities for Steve Ahlers and his team
-        if hasattr(self, 'steve_ahlers_token') and self.steve_ahlers_token:
-            print_info("Creating activities for Steve Ahlers...")
-            for date_str in dates_to_create:
-                self.create_test_activity(self.steve_ahlers_token, date_str)
-                
-        if hasattr(self, 'agent1_token') and self.agent1_token:
-            print_info("Creating activities for Agent One (Steve's team)...")
-            for date_str in dates_to_create:
-                self.create_test_activity(self.agent1_token, date_str)
-                
-        if hasattr(self, 'agent2_token') and self.agent2_token:
-            print_info("Creating activities for Agent Two (Steve's team)...")
-            for date_str in dates_to_create:
-                self.create_test_activity(self.agent2_token, date_str)
-        
-        # Create activities for Ryan Rozell and his team
-        if hasattr(self, 'ryan_rozell_token') and self.ryan_rozell_token:
-            print_info("Creating activities for Ryan Rozell...")
-            for date_str in dates_to_create:
-                self.create_test_activity(self.ryan_rozell_token, date_str)
-                
-        if hasattr(self, 'agent3_token') and self.agent3_token:
-            print_info("Creating activities for Agent Three (Ryan's team)...")
-            for date_str in dates_to_create:
-                self.create_test_activity(self.agent3_token, date_str)
+            response = self.session.post(
+                f"{BACKEND_URL}/auth/admin-reset-password",
+                json=reset_data,
+                headers=headers
+            )
             
-        return True
+            if response.status_code == 200:
+                data = response.json()
+                print_success("✅ Admin reset password successful")
+                print_info(f"   Message: {data.get('message', 'No message')}")
+                print_info(f"   User: {data.get('user_name', 'Unknown')} ({data.get('user_email', 'Unknown')})")
+                self.test_results['passed'] += 1
+                
+                # Verify the reset user can login with new password
+                print_info("Verifying reset user can login with new password...")
+                login_response = self.session.post(f"{BACKEND_URL}/auth/login", json={
+                    "email": "district.manager.forgot@test.com",
+                    "password": "NewPassword123!"
+                })
+                
+                if login_response.status_code == 200:
+                    print_success("✅ Reset user can login with new password")
+                    self.test_results['passed'] += 1
+                else:
+                    print_error(f"❌ Reset user cannot login with new password: {login_response.status_code}")
+                    self.test_results['failed'] += 1
+                    self.test_results['errors'].append("Reset user cannot login with new password")
+                    
+            else:
+                print_error(f"❌ Admin reset failed: {response.status_code} - {response.text}")
+                self.test_results['failed'] += 1
+                self.test_results['errors'].append(f"Admin reset failed: {response.status_code}")
+                
+        except Exception as e:
+            print_error(f"❌ Exception in admin reset test: {str(e)}")
+            self.test_results['failed'] += 1
+            self.test_results['errors'].append(f"Admin reset exception: {str(e)}")
+        
+        # Test 2: Non-State Manager should fail with 403
+        print_info("\n📋 TEST 2: Non-State Manager Access Control")
+        if self.district_manager_token:
+            try:
+                district_headers = {"Authorization": f"Bearer {self.district_manager_token}"}
+                reset_data = {
+                    "user_id": self.agent_id,
+                    "new_password": "ShouldFail123!"
+                }
+                
+                response = self.session.post(
+                    f"{BACKEND_URL}/auth/admin-reset-password",
+                    json=reset_data,
+                    headers=district_headers
+                )
+                
+                if response.status_code == 403:
+                    print_success("✅ District Manager correctly denied access (403)")
+                    self.test_results['passed'] += 1
+                else:
+                    print_error(f"❌ District Manager should get 403, got {response.status_code}")
+                    self.test_results['failed'] += 1
+                    self.test_results['errors'].append(f"District Manager access control failed: {response.status_code}")
+                    
+            except Exception as e:
+                print_error(f"❌ Exception in access control test: {str(e)}")
+                self.test_results['failed'] += 1
+                self.test_results['errors'].append(f"Access control test exception: {str(e)}")
+        
+        # Test 3: Invalid user_id not in hierarchy
+        print_info("\n📋 TEST 3: Invalid User ID Not in Hierarchy")
+        try:
+            reset_data = {
+                "user_id": "invalid-user-id-12345",
+                "new_password": "ValidPassword123!"
+            }
+            
+            response = self.session.post(
+                f"{BACKEND_URL}/auth/admin-reset-password",
+                json=reset_data,
+                headers=headers
+            )
+            
+            if response.status_code == 403:
+                print_success("✅ Invalid user ID correctly rejected (403)")
+                self.test_results['passed'] += 1
+            else:
+                print_error(f"❌ Invalid user ID should get 403, got {response.status_code}")
+                self.test_results['failed'] += 1
+                self.test_results['errors'].append(f"Invalid user ID validation failed: {response.status_code}")
+                
+        except Exception as e:
+            print_error(f"❌ Exception in invalid user ID test: {str(e)}")
+            self.test_results['failed'] += 1
+            self.test_results['errors'].append(f"Invalid user ID test exception: {str(e)}")
+        
+        # Test 4: Password too short validation
+        print_info("\n📋 TEST 4: Password Length Validation")
+        try:
+            reset_data = {
+                "user_id": self.district_manager_id,
+                "new_password": "123"  # Too short
+            }
+            
+            response = self.session.post(
+                f"{BACKEND_URL}/auth/admin-reset-password",
+                json=reset_data,
+                headers=headers
+            )
+            
+            if response.status_code == 400:
+                print_success("✅ Short password correctly rejected (400)")
+                self.test_results['passed'] += 1
+            else:
+                print_error(f"❌ Short password should get 400, got {response.status_code}")
+                self.test_results['failed'] += 1
+                self.test_results['errors'].append(f"Password length validation failed: {response.status_code}")
+                
+        except Exception as e:
+            print_error(f"❌ Exception in password length test: {str(e)}")
+            self.test_results['failed'] += 1
+            self.test_results['errors'].append(f"Password length test exception: {str(e)}")
+
+    def test_forgot_password(self):
+        """Test forgot password functionality (Public endpoint)"""
+        print_header("🔑 TESTING FORGOT PASSWORD FUNCTIONALITY")
+        
+        print_info("🎯 Testing forgot password public endpoint")
+        print_info("   Should generate temporary password for any user")
+        print_info("   Should not reveal if email exists or not")
+        
+        # Test 1: Valid email address in system
+        print_info("\n📋 TEST 1: Valid Email Address in System")
+        try:
+            forgot_data = {
+                "email": "district.manager.forgot@test.com"
+            }
+            
+            response = self.session.post(
+                f"{BACKEND_URL}/auth/forgot-password",
+                json=forgot_data
+            )
+            
+            if response.status_code == 200:
+                data = response.json()
+                print_success("✅ Forgot password request successful")
+                print_info(f"   Message: {data.get('message', 'No message')}")
+                
+                # Check if temporary password is provided
+                temp_password = data.get('temporary_password')
+                if temp_password:
+                    print_success(f"✅ Temporary password generated: {temp_password}")
+                    print_info(f"   User: {data.get('user_name', 'Unknown')}")
+                    print_info(f"   Instructions: {data.get('instructions', 'No instructions')}")
+                    self.test_results['passed'] += 1
+                    
+                    # Verify temporary password is 8 characters long
+                    if len(temp_password) == 8:
+                        print_success("✅ Temporary password is 8 characters long")
+                        self.test_results['passed'] += 1
+                    else:
+                        print_error(f"❌ Temporary password should be 8 characters, got {len(temp_password)}")
+                        self.test_results['failed'] += 1
+                        self.test_results['errors'].append(f"Temporary password length incorrect: {len(temp_password)}")
+                    
+                    # Verify user can login with temporary password
+                    print_info("Verifying user can login with temporary password...")
+                    login_response = self.session.post(f"{BACKEND_URL}/auth/login", json={
+                        "email": "district.manager.forgot@test.com",
+                        "password": temp_password
+                    })
+                    
+                    if login_response.status_code == 200:
+                        print_success("✅ User can login with temporary password")
+                        self.test_results['passed'] += 1
+                        
+                        # Store the new token for further testing
+                        self.temp_token = login_response.json().get('token')
+                    else:
+                        print_error(f"❌ User cannot login with temporary password: {login_response.status_code}")
+                        self.test_results['failed'] += 1
+                        self.test_results['errors'].append("User cannot login with temporary password")
+                        
+                else:
+                    print_error("❌ No temporary password in response")
+                    self.test_results['failed'] += 1
+                    self.test_results['errors'].append("No temporary password generated")
+                    
+            else:
+                print_error(f"❌ Forgot password failed: {response.status_code} - {response.text}")
+                self.test_results['failed'] += 1
+                self.test_results['errors'].append(f"Forgot password failed: {response.status_code}")
+                
+        except Exception as e:
+            print_error(f"❌ Exception in forgot password test: {str(e)}")
+            self.test_results['failed'] += 1
+            self.test_results['errors'].append(f"Forgot password exception: {str(e)}")
+        
+        # Test 2: Invalid/non-existent email
+        print_info("\n📋 TEST 2: Invalid/Non-existent Email")
+        try:
+            forgot_data = {
+                "email": "nonexistent.user@test.com"
+            }
+            
+            response = self.session.post(
+                f"{BACKEND_URL}/auth/forgot-password",
+                json=forgot_data
+            )
+            
+            if response.status_code == 200:
+                data = response.json()
+                print_success("✅ Forgot password with invalid email returned 200 (security)")
+                print_info(f"   Message: {data.get('message', 'No message')}")
+                
+                # Should not reveal if email exists or not
+                if "If the email exists" in data.get('message', ''):
+                    print_success("✅ Response doesn't reveal if email exists (security)")
+                    self.test_results['passed'] += 1
+                else:
+                    print_warning("⚠️ Response message may reveal email existence")
+                    
+                # Should not have temporary_password field for non-existent email
+                if 'temporary_password' not in data:
+                    print_success("✅ No temporary password for non-existent email (security)")
+                    self.test_results['passed'] += 1
+                else:
+                    print_error("❌ Temporary password generated for non-existent email")
+                    self.test_results['failed'] += 1
+                    self.test_results['errors'].append("Temporary password generated for non-existent email")
+                    
+            else:
+                print_error(f"❌ Forgot password with invalid email failed: {response.status_code}")
+                self.test_results['failed'] += 1
+                self.test_results['errors'].append(f"Invalid email test failed: {response.status_code}")
+                
+        except Exception as e:
+            print_error(f"❌ Exception in invalid email test: {str(e)}")
+            self.test_results['failed'] += 1
+            self.test_results['errors'].append(f"Invalid email test exception: {str(e)}")
+
+    def test_password_security(self):
+        """Test password security validations"""
+        print_header("🔒 TESTING PASSWORD SECURITY VALIDATIONS")
+        
+        print_info("🎯 Testing password hashing and security measures")
+        
+        # Test 1: Verify passwords are properly hashed with bcrypt
+        print_info("\n📋 TEST 1: Password Hashing Verification")
+        
+        # Create a test user to verify password hashing
+        try:
+            test_user_token = self.register_test_user(
+                "security.test@test.com",
+                "SecurityTest123!",
+                "Security Test User",
+                "agent"
+            )
+            
+            if test_user_token:
+                print_success("✅ Test user created for security testing")
+                
+                # Try to login with correct password
+                login_response = self.session.post(f"{BACKEND_URL}/auth/login", json={
+                    "email": "security.test@test.com",
+                    "password": "SecurityTest123!"
+                })
+                
+                if login_response.status_code == 200:
+                    print_success("✅ Login with correct password works")
+                    self.test_results['passed'] += 1
+                else:
+                    print_error("❌ Login with correct password failed")
+                    self.test_results['failed'] += 1
+                    
+                # Try to login with incorrect password
+                wrong_login_response = self.session.post(f"{BACKEND_URL}/auth/login", json={
+                    "email": "security.test@test.com",
+                    "password": "WrongPassword123!"
+                })
+                
+                if wrong_login_response.status_code == 401:
+                    print_success("✅ Login with incorrect password correctly rejected")
+                    self.test_results['passed'] += 1
+                else:
+                    print_error(f"❌ Login with incorrect password should fail, got {wrong_login_response.status_code}")
+                    self.test_results['failed'] += 1
+                    
+            else:
+                print_error("❌ Could not create test user for security testing")
+                self.test_results['failed'] += 1
+                
+        except Exception as e:
+            print_error(f"❌ Exception in password hashing test: {str(e)}")
+            self.test_results['failed'] += 1
+            self.test_results['errors'].append(f"Password hashing test exception: {str(e)}")
+
+    def test_integration_workflow(self):
+        """Test complete integration workflow"""
+        print_header("🔄 TESTING COMPLETE INTEGRATION WORKFLOW")
+        
+        print_info("🎯 Testing complete forgot password workflow:")
+        print_info("   1. User forgets password")
+        print_info("   2. Admin uses forgot password feature")
+        print_info("   3. System generates temporary password")
+        print_info("   4. User logs in with temporary password")
+        print_info("   5. User changes to permanent password")
+        print_info("   6. User can login normally with new password")
+        
+        # Step 1-3: Already tested in forgot_password test
+        print_info("\n📋 WORKFLOW STEP 1-3: Generate temporary password (already tested)")
+        
+        # Step 4: User logs in with temporary password (already tested)
+        print_info("\n📋 WORKFLOW STEP 4: Login with temporary password (already tested)")
+        
+        # Step 5: User changes to permanent password
+        print_info("\n📋 WORKFLOW STEP 5: Change to Permanent Password")
+        
+        if hasattr(self, 'temp_token') and self.temp_token:
+            try:
+                headers = {"Authorization": f"Bearer {self.temp_token}"}
+                change_data = {
+                    "current_password": getattr(self, 'last_temp_password', 'TempPass123'),
+                    "new_password": "NewPermanentPassword123!"
+                }
+                
+                # First, let's get the actual temporary password from the forgot password test
+                # We'll use the district manager's temporary password
+                print_info("Getting temporary password for workflow test...")
+                
+                # Generate new temporary password for workflow test
+                forgot_data = {"email": "district.manager.forgot@test.com"}
+                forgot_response = self.session.post(f"{BACKEND_URL}/auth/forgot-password", json=forgot_data)
+                
+                if forgot_response.status_code == 200:
+                    forgot_result = forgot_response.json()
+                    temp_password = forgot_result.get('temporary_password')
+                    
+                    if temp_password:
+                        print_success(f"✅ Got temporary password for workflow: {temp_password}")
+                        
+                        # Login with temporary password
+                        login_response = self.session.post(f"{BACKEND_URL}/auth/login", json={
+                            "email": "district.manager.forgot@test.com",
+                            "password": temp_password
+                        })
+                        
+                        if login_response.status_code == 200:
+                            temp_token = login_response.json().get('token')
+                            headers = {"Authorization": f"Bearer {temp_token}"}
+                            
+                            # Change to permanent password
+                            change_data = {
+                                "current_password": temp_password,
+                                "new_password": "NewPermanentPassword123!"
+                            }
+                            
+                            change_response = self.session.post(
+                                f"{BACKEND_URL}/auth/change-password",
+                                json=change_data,
+                                headers=headers
+                            )
+                            
+                            if change_response.status_code == 200:
+                                print_success("✅ Successfully changed to permanent password")
+                                self.test_results['passed'] += 1
+                                
+                                # Step 6: Verify user can login with new permanent password
+                                print_info("\n📋 WORKFLOW STEP 6: Login with New Permanent Password")
+                                
+                                final_login_response = self.session.post(f"{BACKEND_URL}/auth/login", json={
+                                    "email": "district.manager.forgot@test.com",
+                                    "password": "NewPermanentPassword123!"
+                                })
+                                
+                                if final_login_response.status_code == 200:
+                                    print_success("✅ User can login with new permanent password")
+                                    self.test_results['passed'] += 1
+                                    
+                                    # Verify temporary password no longer works
+                                    old_login_response = self.session.post(f"{BACKEND_URL}/auth/login", json={
+                                        "email": "district.manager.forgot@test.com",
+                                        "password": temp_password
+                                    })
+                                    
+                                    if old_login_response.status_code == 401:
+                                        print_success("✅ Temporary password no longer works after change")
+                                        self.test_results['passed'] += 1
+                                    else:
+                                        print_error("❌ Temporary password still works after change")
+                                        self.test_results['failed'] += 1
+                                        self.test_results['errors'].append("Temporary password still valid after change")
+                                        
+                                else:
+                                    print_error(f"❌ Cannot login with new permanent password: {final_login_response.status_code}")
+                                    self.test_results['failed'] += 1
+                                    self.test_results['errors'].append("Cannot login with new permanent password")
+                                    
+                            else:
+                                print_error(f"❌ Password change failed: {change_response.status_code} - {change_response.text}")
+                                self.test_results['failed'] += 1
+                                self.test_results['errors'].append(f"Password change failed: {change_response.status_code}")
+                                
+                        else:
+                            print_error(f"❌ Cannot login with temporary password: {login_response.status_code}")
+                            self.test_results['failed'] += 1
+                            
+                    else:
+                        print_error("❌ No temporary password in forgot response")
+                        self.test_results['failed'] += 1
+                        
+                else:
+                    print_error(f"❌ Forgot password failed for workflow: {forgot_response.status_code}")
+                    self.test_results['failed'] += 1
+                    
+            except Exception as e:
+                print_error(f"❌ Exception in integration workflow test: {str(e)}")
+                self.test_results['failed'] += 1
+                self.test_results['errors'].append(f"Integration workflow exception: {str(e)}")
+        else:
+            print_warning("⚠️ No temporary token available for workflow testing")
 
     def test_daily_report_json_endpoint(self):
         """Test the JSON daily report endpoint"""
