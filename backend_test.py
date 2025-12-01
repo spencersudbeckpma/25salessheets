@@ -2141,17 +2141,33 @@ class ManagerReportsTester:
         print_info("Comparing hierarchy daily data with individual daily report...")
         
         try:
-            # Get hierarchy daily data
+            # Get hierarchy daily data first to see what date it uses
             hierarchy_response = self.session.get(
                 f"{BACKEND_URL}/reports/manager-hierarchy/{test_manager_id}",
                 params={"period": "daily"},
                 headers=headers
             )
             
-            # Get individual daily report
+            # Extract the date from hierarchy response to ensure we compare the same date
+            hierarchy_date = today  # Default fallback
+            if hierarchy_response.status_code == 200:
+                hierarchy_data_temp = hierarchy_response.json()
+                period_name = hierarchy_data_temp.get('period_name', '')
+                # Extract date from period_name like "Daily - November 30, 2025"
+                if 'Daily -' in period_name:
+                    try:
+                        from datetime import datetime
+                        date_part = period_name.replace('Daily - ', '')
+                        parsed_date = datetime.strptime(date_part, '%B %d, %Y').date()
+                        hierarchy_date = parsed_date.isoformat()
+                        print_info(f"Hierarchy endpoint uses date: {hierarchy_date}")
+                    except:
+                        print_warning("Could not parse hierarchy date, using today as fallback")
+            
+            # Get individual daily report for the same date the hierarchy uses
             individual_response = self.session.get(
                 f"{BACKEND_URL}/reports/daily/individual",
-                params={"date": today, "user_id": test_manager_id},
+                params={"date": hierarchy_date, "user_id": test_manager_id},
                 headers=headers
             )
             
