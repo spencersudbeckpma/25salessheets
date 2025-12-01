@@ -638,7 +638,7 @@ async def get_manager_hierarchy_report(manager_id: str, period: str, current_use
                 quarter_num = int(quarter_str)
                 if quarter_num < 1 or quarter_num > 4:
                     raise ValueError("Quarter must be 1-4")
-                start_date = date(int(year_str), (quarter_num - 1) * 3 + 1, 1)
+                start_date = date_class(int(year_str), (quarter_num - 1) * 3 + 1, 1)
                 period_name = f"Q{quarter_num} {year_str}"
                 date_filter = {"$gte": start_date.isoformat()}
             except ValueError:
@@ -654,7 +654,7 @@ async def get_manager_hierarchy_report(manager_id: str, period: str, current_use
             # Parse the selected year
             try:
                 year_num = int(year)
-                start_date = date(year_num, 1, 1)
+                start_date = date_class(year_num, 1, 1)
                 period_name = f"Year {year_num}"
                 date_filter = {"$gte": start_date.isoformat()}
             except ValueError:
@@ -973,7 +973,7 @@ async def get_period_report(report_type: str, period: str, current_user: dict = 
             # Parse the selected month (YYYY-MM format)
             try:
                 year, month_num = month.split('-')
-                start_date = date(int(year), int(month_num), 1)
+                start_date = date_class(int(year), int(month_num), 1)
                 period_name = f"Month of {start_date.strftime('%B %Y')}"
             except ValueError:
                 raise HTTPException(status_code=400, detail="Invalid month format. Use YYYY-MM")
@@ -989,7 +989,7 @@ async def get_period_report(report_type: str, period: str, current_user: dict = 
                 quarter_num = int(quarter_str)
                 if quarter_num < 1 or quarter_num > 4:
                     raise ValueError("Quarter must be 1-4")
-                start_date = date(int(year_str), (quarter_num - 1) * 3 + 1, 1)
+                start_date = date_class(int(year_str), (quarter_num - 1) * 3 + 1, 1)
                 period_name = f"Q{quarter_num} {year_str}"
             except ValueError:
                 raise HTTPException(status_code=400, detail="Invalid quarter format. Use YYYY-Q1")
@@ -1003,7 +1003,7 @@ async def get_period_report(report_type: str, period: str, current_user: dict = 
             # Parse the selected year
             try:
                 year_num = int(year)
-                start_date = date(year_num, 1, 1)
+                start_date = date_class(year_num, 1, 1)
                 period_name = f"Year {year_num}"
             except ValueError:
                 raise HTTPException(status_code=400, detail="Invalid year format. Use YYYY")
