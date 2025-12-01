@@ -607,22 +607,63 @@ async def get_manager_hierarchy_report(manager_id: str, period: str, current_use
     today = datetime.now(central_tz).date()
     
     if period == "daily":
-        start_date = today
-        period_name = f"Daily - {start_date.strftime('%B %d, %Y')}"
-        date_filter = start_date.isoformat()
+        if date:
+            start_date = datetime.strptime(date, '%Y-%m-%d').date()
+            period_name = f"Daily - {start_date.strftime('%B %d, %Y')}"
+            date_filter = start_date.isoformat()
+        else:
+            start_date = today
+            period_name = f"Daily - {start_date.strftime('%B %d, %Y')}"
+            date_filter = start_date.isoformat()
     elif period == "monthly":
-        start_date = today.replace(day=1)
-        period_name = f"Month of {start_date.strftime('%B %Y')}"
-        date_filter = {"$gte": start_date.isoformat()}
+        if month:
+            # Parse the selected month (YYYY-MM format)
+            try:
+                year_str, month_num = month.split('-')
+                start_date = date(int(year_str), int(month_num), 1)
+                period_name = f"Month of {start_date.strftime('%B %Y')}"
+                date_filter = {"$gte": start_date.isoformat()}
+            except ValueError:
+                raise HTTPException(status_code=400, detail="Invalid month format. Use YYYY-MM")
+        else:
+            # Default to current month
+            start_date = today.replace(day=1)
+            period_name = f"Month of {start_date.strftime('%B %Y')}"
+            date_filter = {"$gte": start_date.isoformat()}
     elif period == "quarterly":
-        quarter = (today.month - 1) // 3
-        start_date = today.replace(month=quarter * 3 + 1, day=1)
-        period_name = f"Q{quarter + 1} {today.year}"
-        date_filter = {"$gte": start_date.isoformat()}
+        if quarter:
+            # Parse the selected quarter (YYYY-Q1 format)
+            try:
+                year_str, quarter_str = quarter.split('-Q')
+                quarter_num = int(quarter_str)
+                if quarter_num < 1 or quarter_num > 4:
+                    raise ValueError("Quarter must be 1-4")
+                start_date = date(int(year_str), (quarter_num - 1) * 3 + 1, 1)
+                period_name = f"Q{quarter_num} {year_str}"
+                date_filter = {"$gte": start_date.isoformat()}
+            except ValueError:
+                raise HTTPException(status_code=400, detail="Invalid quarter format. Use YYYY-Q1")
+        else:
+            # Default to current quarter
+            quarter_num = (today.month - 1) // 3
+            start_date = today.replace(month=quarter_num * 3 + 1, day=1)
+            period_name = f"Q{quarter_num + 1} {today.year}"
+            date_filter = {"$gte": start_date.isoformat()}
     elif period == "yearly":
-        start_date = today.replace(month=1, day=1)
-        period_name = f"Year {today.year}"
-        date_filter = {"$gte": start_date.isoformat()}
+        if year:
+            # Parse the selected year
+            try:
+                year_num = int(year)
+                start_date = date(year_num, 1, 1)
+                period_name = f"Year {year_num}"
+                date_filter = {"$gte": start_date.isoformat()}
+            except ValueError:
+                raise HTTPException(status_code=400, detail="Invalid year format. Use YYYY")
+        else:
+            # Default to current year
+            start_date = today.replace(month=1, day=1)
+            period_name = f"Year {today.year}"
+            date_filter = {"$gte": start_date.isoformat()}
     else:
         raise HTTPException(status_code=400, detail="Invalid period. Use 'daily', 'monthly', 'quarterly', or 'yearly'")
     
