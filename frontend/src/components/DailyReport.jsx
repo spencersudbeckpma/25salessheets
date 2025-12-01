@@ -12,8 +12,28 @@ const DailyReport = ({ user }) => {
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
   const [selectedPeriod, setSelectedPeriod] = useState('daily');
   const [activeTab, setActiveTab] = useState('individual');
+  const [selectedManagerId, setSelectedManagerId] = useState('');
+  const [availableManagers, setAvailableManagers] = useState([]);
   const [reportData, setReportData] = useState(null);
   const [loading, setLoading] = useState(false);
+
+  // Fetch available managers when component loads
+  useEffect(() => {
+    fetchAvailableManagers();
+  }, []);
+
+  const fetchAvailableManagers = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await axios.get(`${API}/reports/managers`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      setAvailableManagers(response.data.managers);
+    } catch (error) {
+      console.error('Failed to fetch managers:', error);
+      // Don't show error to user - this is just for the dropdown
+    }
+  };
 
   const fetchDailyReport = async (reportType) => {
     setLoading(true);
