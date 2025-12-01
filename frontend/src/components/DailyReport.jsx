@@ -610,7 +610,9 @@ const DailyReport = ({ user }) => {
           </div>
         )}
 
-        {!loading && reportData && (
+        {!loading && hierarchyData && renderHierarchyView()}
+
+        {!loading && reportData && !hierarchyData && (
           <div>
             <div className="mb-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
               <h3 className="font-semibold text-blue-900">
