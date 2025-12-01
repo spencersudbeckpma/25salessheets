@@ -382,15 +382,15 @@ const DailyReport = ({ user }) => {
         {/* Action Buttons */}
         <div className="flex flex-wrap gap-3 mb-6">
           <Button
-            onClick={() => fetchReport(activeTab)}
+            onClick={viewReport}
             disabled={loading}
             className="bg-blue-600 hover:bg-blue-700 text-white"
           >
             <Calendar size={18} className="mr-2" />
-            View Report
+            View {selectedPeriod === 'daily' ? 'Daily' : selectedPeriod.charAt(0).toUpperCase() + selectedPeriod.slice(1)} Report
           </Button>
           <Button
-            onClick={() => downloadExcel(activeTab)}
+            onClick={downloadExcel}
             disabled={loading}
             className="bg-green-600 hover:bg-green-700 text-white"
           >
@@ -403,7 +403,7 @@ const DailyReport = ({ user }) => {
         {loading && (
           <div className="text-center py-12">
             <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
-            <p className="mt-4 text-gray-600">Loading report...</p>
+            <p className="mt-4 text-gray-600">Loading {selectedPeriod} report...</p>
           </div>
         )}
 
@@ -411,13 +411,16 @@ const DailyReport = ({ user }) => {
           <div>
             <div className="mb-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
               <h3 className="font-semibold text-blue-900">
-                📊 {activeTab.charAt(0).toUpperCase() + activeTab.slice(1)} Report for{' '}
-                {new Date(selectedDate).toLocaleDateString('en-US', {
-                  weekday: 'long',
-                  year: 'numeric',
-                  month: 'long',
-                  day: 'numeric'
-                })}
+                📊 {activeTab.charAt(0).toUpperCase() + activeTab.slice(1)} Report
+                {selectedPeriod === 'daily' 
+                  ? ` for ${new Date(selectedDate).toLocaleDateString('en-US', {
+                      weekday: 'long',
+                      year: 'numeric',
+                      month: 'long',
+                      day: 'numeric'
+                    })}`
+                  : ` - ${reportData.period_name || selectedPeriod.charAt(0).toUpperCase() + selectedPeriod.slice(1)}`
+                }
               </h3>
             </div>
             
@@ -429,18 +432,22 @@ const DailyReport = ({ user }) => {
 
         {!loading && !reportData && (
           <div className="text-center py-12 text-gray-500">
-            <Calendar size={48} className="mx-auto mb-4 text-gray-400" />
-            <p>Select a date and click "View Report" to see daily activity data</p>
+            <Clock size={48} className="mx-auto mb-4 text-gray-400" />
+            <p>Select a period and click "View Report" to see activity data</p>
           </div>
         )}
 
         {/* Info Box */}
         <div className="mt-8 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-          <h4 className="font-semibold text-blue-900 mb-2">📋 Report Types</h4>
+          <h4 className="font-semibold text-blue-900 mb-2">📋 Report Types & Periods</h4>
           <ul className="text-sm text-gray-700 space-y-1">
-            <li>• <strong>Individual:</strong> Shows each team member's daily activity</li>
+            <li>• <strong>Individual:</strong> Shows each team member's activity for the selected period</li>
             <li>• <strong>Team:</strong> Shows aggregated totals for each direct report's team</li>
-            <li>• <strong>Organization:</strong> Shows organization-wide totals for the selected date</li>
+            <li>• <strong>Organization:</strong> Shows organization-wide totals for the selected period</li>
+            <li>• <strong>Daily:</strong> Activity for a specific date</li>
+            <li>• <strong>Monthly:</strong> Current month totals (1st through last day)</li>
+            <li>• <strong>Quarterly:</strong> Current quarter totals (Q1-Q4)</li>
+            <li>• <strong>Yearly:</strong> Current year totals (January 1st through December 31st)</li>
             <li>• All reports include 8 activity categories plus total premium</li>
             <li>• Excel downloads are formatted and ready to use</li>
           </ul>
