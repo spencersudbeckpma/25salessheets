@@ -1,13 +1,12 @@
 #!/usr/bin/env python3
 """
-Backend Testing Script - TEAM REPORTS ENHANCEMENT TESTING
-NEW FUNCTIONALITY: Include Manager's Individual Numbers
-Focus: Test team report enhancement where manager selection includes both individual and team data
-- When user_id is specified, response should include manager's individual numbers + team totals
-- Manager's individual numbers marked as "Manager Name (Individual)"
-- Direct reports' team totals marked as "Manager Name's Team"
-- Test both daily and period reports with same logic
-- Validate Excel downloads include both individual and team data
+Backend Testing Script - FORGOT PASSWORD FUNCTIONALITY TESTING
+NEW FUNCTIONALITY: Comprehensive password reset features for users who forget their passwords
+Focus: Test forgot password and admin reset password endpoints
+- POST /api/auth/admin-reset-password (State Manager Only)
+- POST /api/auth/forgot-password (Public Endpoint)
+- Test security validations, hierarchy access, and password workflows
+- Validate temporary password generation and admin reset capabilities
 """
 
 import requests
