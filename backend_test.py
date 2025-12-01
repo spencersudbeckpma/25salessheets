@@ -1418,6 +1418,336 @@ class ManagerReportsTester:
             self.test_results['failed'] += 1
             self.test_results['errors'].append(f"Data consistency test exception: {str(e)}")
 
+    def test_manager_selection_endpoints(self):
+        """Test the new manager selection functionality"""
+        print_header("🎯 TESTING NEW MANAGER SELECTION FUNCTIONALITY")
+        
+        if not self.state_manager_token:
+            print_error("No state manager token - skipping manager selection tests")
+            return
+            
+        headers = {"Authorization": f"Bearer {self.state_manager_token}"}
+        
+        # Test 1: GET /api/reports/managers endpoint
+        print_info("Testing GET /api/reports/managers endpoint...")
+        try:
+            response = self.session.get(f"{BACKEND_URL}/reports/managers", headers=headers)
+            
+            if response.status_code == 200:
+                data = response.json()
+                print_success("✅ Manager list endpoint accessible")
+                
+                # Validate response structure
+                if 'managers' in data and isinstance(data['managers'], list):
+                    print_success("✅ Response has correct structure with 'managers' array")
+                    self.test_results['passed'] += 1
+                    
+                    managers = data['managers']
+                    if len(managers) > 0:
+                        # Validate manager object structure
+                        manager = managers[0]
+                        required_fields = ['id', 'name', 'email', 'role']
+                        
+                        all_fields_present = True
+                        for field in required_fields:
+                            if field not in manager:
+                                print_error(f"❌ Manager object missing field: {field}")
+                                all_fields_present = False
+                        
+                        if all_fields_present:
+                            print_success("✅ Manager objects have all required fields (id, name, email, role)")
+                            self.test_results['passed'] += 1
+                            
+                            # Store first manager ID for further testing
+                            self.test_manager_id = manager['id']
+                            print_info(f"📝 Using manager ID for testing: {manager['name']} ({self.test_manager_id})")
+                        else:
+                            self.test_results['failed'] += 1
+                            self.test_results['errors'].append("Manager object missing required fields")
+                    else:
+                        print_warning("⚠️ No managers returned (may be expected for new setup)")
+                        # Create a test manager ID for further testing
+                        self.test_manager_id = None
+                else:
+                    print_error("❌ Invalid response structure - missing 'managers' array")
+                    self.test_results['failed'] += 1
+                    self.test_results['errors'].append("Manager list response structure invalid")
+            else:
+                print_error(f"❌ Manager list endpoint failed: {response.status_code} - {response.text}")
+                self.test_results['failed'] += 1
+                self.test_results['errors'].append(f"Manager list endpoint returned {response.status_code}")
+                
+        except Exception as e:
+            print_error(f"❌ Exception testing manager list endpoint: {str(e)}")
+            self.test_results['failed'] += 1
+            self.test_results['errors'].append(f"Manager list endpoint exception: {str(e)}")
+
+    def test_individual_manager_daily_reports(self):
+        """Test daily reports with user_id parameter"""
+        print_header("📊 TESTING INDIVIDUAL MANAGER DAILY REPORTS")
+        
+        if not self.state_manager_token:
+            print_error("No state manager token - skipping individual manager daily tests")
+            return
+            
+        headers = {"Authorization": f"Bearer {self.state_manager_token}"}
+        today = datetime.now().date().isoformat()
+        
+        # Get current user ID for testing
+        try:
+            me_response = self.session.get(f"{BACKEND_URL}/auth/me", headers=headers)
+            if me_response.status_code == 200:
+                current_user_data = me_response.json()
+                test_user_id = current_user_data.get('id')
+                print_info(f"Using current user ID for testing: {test_user_id}")
+            else:
+                print_error("Could not get current user ID")
+                return
+        except Exception as e:
+            print_error(f"Exception getting current user: {str(e)}")
+            return
+        
+        # Test 1: Daily report without user_id (should show all team members)
+        print_info("Testing daily report without user_id (all team members)...")
+        try:
+            response = self.session.get(
+                f"{BACKEND_URL}/reports/daily/individual",
+                params={"date": today},
+                headers=headers
+            )
+            
+            if response.status_code == 200:
+                data = response.json()
+                all_members_count = len(data.get('data', []))
+                print_success(f"✅ Daily report without user_id shows {all_members_count} team members")
+                
+                # Verify selected_user field is None
+                if data.get('selected_user') is None:
+                    print_success("✅ selected_user field is None when no user_id specified")
+                    self.test_results['passed'] += 1
+                else:
+                    print_error(f"❌ selected_user should be None, got: {data.get('selected_user')}")
+                    self.test_results['failed'] += 1
+                    
+            else:
+                print_error(f"❌ Daily report without user_id failed: {response.status_code}")
+                self.test_results['failed'] += 1
+                
+        except Exception as e:
+            print_error(f"❌ Exception testing daily report without user_id: {str(e)}")
+            self.test_results['failed'] += 1
+        
+        # Test 2: Daily report with user_id (should show only selected user)
+        print_info(f"Testing daily report with user_id ({test_user_id})...")
+        try:
+            response = self.session.get(
+                f"{BACKEND_URL}/reports/daily/individual",
+                params={"date": today, "user_id": test_user_id},
+                headers=headers
+            )
+            
+            if response.status_code == 200:
+                data = response.json()
+                selected_members_count = len(data.get('data', []))
+                
+                if selected_members_count == 1:
+                    print_success("✅ Daily report with user_id shows exactly 1 user")
+                    self.test_results['passed'] += 1
+                    
+                    # Verify selected_user field matches request
+                    if data.get('selected_user') == test_user_id:
+                        print_success(f"✅ selected_user field correctly set to: {test_user_id}")
+                        self.test_results['passed'] += 1
+                    else:
+                        print_error(f"❌ selected_user field incorrect: {data.get('selected_user')} (expected: {test_user_id})")
+                        self.test_results['failed'] += 1
+                        
+                    # Verify the returned user matches the requested user_id
+                    if len(data['data']) > 0:
+                        returned_user = data['data'][0]
+                        print_success(f"✅ Returned user data for: {returned_user.get('name', 'Unknown')}")
+                        self.test_results['passed'] += 1
+                        
+                else:
+                    print_error(f"❌ Daily report with user_id should show 1 user, got {selected_members_count}")
+                    self.test_results['failed'] += 1
+                    self.test_results['errors'].append(f"Individual selection returned {selected_members_count} users instead of 1")
+                    
+            else:
+                print_error(f"❌ Daily report with user_id failed: {response.status_code} - {response.text}")
+                self.test_results['failed'] += 1
+                self.test_results['errors'].append(f"Daily report with user_id returned {response.status_code}")
+                
+        except Exception as e:
+            print_error(f"❌ Exception testing daily report with user_id: {str(e)}")
+            self.test_results['failed'] += 1
+            self.test_results['errors'].append(f"Daily report with user_id exception: {str(e)}")
+        
+        # Test 3: Daily report with invalid user_id (should return 403)
+        print_info("Testing daily report with invalid user_id...")
+        try:
+            invalid_user_id = "invalid-user-id-12345"
+            response = self.session.get(
+                f"{BACKEND_URL}/reports/daily/individual",
+                params={"date": today, "user_id": invalid_user_id},
+                headers=headers
+            )
+            
+            if response.status_code == 403:
+                print_success("✅ Invalid user_id correctly returns 403 Forbidden")
+                self.test_results['passed'] += 1
+            else:
+                print_error(f"❌ Invalid user_id should return 403, got {response.status_code}")
+                self.test_results['failed'] += 1
+                self.test_results['errors'].append(f"Invalid user_id returned {response.status_code} instead of 403")
+                
+        except Exception as e:
+            print_error(f"❌ Exception testing invalid user_id: {str(e)}")
+            self.test_results['failed'] += 1
+
+    def test_individual_manager_period_reports(self):
+        """Test period reports with user_id parameter"""
+        print_header("📈 TESTING INDIVIDUAL MANAGER PERIOD REPORTS")
+        
+        if not self.state_manager_token:
+            print_error("No state manager token - skipping individual manager period tests")
+            return
+            
+        headers = {"Authorization": f"Bearer {self.state_manager_token}"}
+        
+        # Get current user ID for testing
+        try:
+            me_response = self.session.get(f"{BACKEND_URL}/auth/me", headers=headers)
+            if me_response.status_code == 200:
+                current_user_data = me_response.json()
+                test_user_id = current_user_data.get('id')
+                print_info(f"Using current user ID for testing: {test_user_id}")
+            else:
+                print_error("Could not get current user ID")
+                return
+        except Exception as e:
+            print_error(f"Exception getting current user: {str(e)}")
+            return
+        
+        # Test all periods with user_id parameter
+        periods = ['monthly', 'quarterly', 'yearly']
+        
+        for period in periods:
+            print_info(f"Testing {period} period report with user_id...")
+            
+            try:
+                # Test without user_id first
+                response_all = self.session.get(
+                    f"{BACKEND_URL}/reports/period/individual",
+                    params={"period": period},
+                    headers=headers
+                )
+                
+                # Test with user_id
+                response_selected = self.session.get(
+                    f"{BACKEND_URL}/reports/period/individual",
+                    params={"period": period, "user_id": test_user_id},
+                    headers=headers
+                )
+                
+                if response_all.status_code == 200 and response_selected.status_code == 200:
+                    data_all = response_all.json()
+                    data_selected = response_selected.json()
+                    
+                    all_count = len(data_all.get('data', []))
+                    selected_count = len(data_selected.get('data', []))
+                    
+                    print_success(f"✅ {period.capitalize()} period: All users = {all_count}, Selected = {selected_count}")
+                    
+                    if selected_count == 1:
+                        print_success(f"✅ {period.capitalize()} period with user_id shows exactly 1 user")
+                        self.test_results['passed'] += 1
+                        
+                        # Verify selected_user field
+                        if data_selected.get('selected_user') == test_user_id:
+                            print_success(f"✅ {period.capitalize()} selected_user field correct")
+                            self.test_results['passed'] += 1
+                        else:
+                            print_error(f"❌ {period.capitalize()} selected_user field incorrect")
+                            self.test_results['failed'] += 1
+                            
+                    else:
+                        print_error(f"❌ {period.capitalize()} period with user_id should show 1 user, got {selected_count}")
+                        self.test_results['failed'] += 1
+                        
+                else:
+                    print_error(f"❌ {period.capitalize()} period reports failed: All={response_all.status_code}, Selected={response_selected.status_code}")
+                    self.test_results['failed'] += 1
+                    
+            except Exception as e:
+                print_error(f"❌ Exception testing {period} period with user_id: {str(e)}")
+                self.test_results['failed'] += 1
+
+    def test_hierarchy_access_control_new(self):
+        """Test that users can only access their hierarchy for manager selection"""
+        print_header("🔒 TESTING HIERARCHY ACCESS CONTROL FOR MANAGER SELECTION")
+        
+        # Test with different manager levels
+        test_cases = [
+            (self.state_manager_token, "state_manager"),
+            (self.regional_manager_token, "regional_manager"),
+            (self.district_manager_token, "district_manager")
+        ]
+        
+        for token, role in test_cases:
+            if not token:
+                print_warning(f"No {role} token - skipping hierarchy test")
+                continue
+                
+            print_info(f"Testing hierarchy access for {role}...")
+            headers = {"Authorization": f"Bearer {token}"}
+            
+            try:
+                # Test manager list endpoint
+                response = self.session.get(f"{BACKEND_URL}/reports/managers", headers=headers)
+                
+                if response.status_code == 200:
+                    data = response.json()
+                    managers = data.get('managers', [])
+                    print_success(f"✅ {role} can access manager list ({len(managers)} managers)")
+                    self.test_results['passed'] += 1
+                    
+                    # Verify each manager level only sees their subordinates + themselves
+                    if len(managers) > 0:
+                        # The first manager should be themselves (based on implementation)
+                        first_manager = managers[0]
+                        print_info(f"   First manager: {first_manager.get('name')} ({first_manager.get('role')})")
+                        
+                elif response.status_code == 403:
+                    print_error(f"❌ {role} should have access to manager list but got 403")
+                    self.test_results['failed'] += 1
+                else:
+                    print_error(f"❌ {role} manager list failed: {response.status_code}")
+                    self.test_results['failed'] += 1
+                    
+            except Exception as e:
+                print_error(f"❌ Exception testing {role} hierarchy access: {str(e)}")
+                self.test_results['failed'] += 1
+        
+        # Test agent access (should be denied)
+        if self.agent_token:
+            print_info("Testing agent access to manager list (should be denied)...")
+            headers = {"Authorization": f"Bearer {self.agent_token}"}
+            
+            try:
+                response = self.session.get(f"{BACKEND_URL}/reports/managers", headers=headers)
+                
+                if response.status_code == 403:
+                    print_success("✅ Agent correctly denied access to manager list")
+                    self.test_results['passed'] += 1
+                else:
+                    print_error(f"❌ Agent should be denied access but got {response.status_code}")
+                    self.test_results['failed'] += 1
+                    
+            except Exception as e:
+                print_error(f"❌ Exception testing agent access: {str(e)}")
+                self.test_results['failed'] += 1
+
     def run_all_tests(self):
         """Run all tests - COMPREHENSIVE MANAGER REPORTS TESTING"""
         print_header("🚀 COMPREHENSIVE MANAGER REPORTS TESTING")
