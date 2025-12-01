@@ -338,6 +338,21 @@ backend:
         agent: "testing"
         comment: "🔐 PASSWORD CHANGE FUNCTIONALITY TESTING COMPLETED: All 22 comprehensive tests passed successfully! CRITICAL VERIFICATION: (1) ✅ VALID PASSWORD CHANGE: Users can successfully change passwords with correct current password and valid new password, old password becomes invalid, new password works for login, user data integrity maintained, (2) ✅ CURRENT PASSWORD VALIDATION: Incorrect current password correctly returns 400 error with 'Current password is incorrect' message, original password remains unchanged, (3) ✅ NEW PASSWORD VALIDATION: Passwords under 6 characters correctly rejected with proper error message, tested empty, 1, 3, and 5 character passwords, (4) ✅ AUTHENTICATION REQUIRED: Endpoint correctly returns 401/403 for requests without Bearer token or with invalid token, (5) ✅ USER ROLES ACCESS: All user roles (agent, district_manager, regional_manager, state_manager) can successfully change passwords, (6) ✅ SECURITY VALIDATIONS: Password properly hashed using bcrypt, old password invalidated after change, new password securely stored and functional. The password change functionality is production-ready with comprehensive security measures and proper validation."
 
+  - task: "Forgot Password Functionality - NEW FUNCTIONALITY"
+    implemented: true
+    working: true
+    file: "/app/backend/server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: "NA"
+        agent: "user"
+        comment: "NEW FUNCTIONALITY REQUEST: Added comprehensive password reset features for users who forget their passwords. Two new endpoints: (1) POST /api/auth/admin-reset-password (State Manager Only) - Body: {'user_id': 'user_id', 'new_password': 'new_pass'} - State Manager can reset passwords for anyone in their hierarchy, validates user is in hierarchy before allowing reset, (2) POST /api/auth/forgot-password (Public Endpoint) - Body: {'email': 'user@email.com'} - Generates temporary password for any user, returns temporary password that can be shared. Security features: hierarchy validation, password length validation (minimum 6 characters), secure bcrypt hashing, temporary password generation (8 characters), proper error handling."
+      - working: true
+        agent: "testing"
+        comment: "🔐 FORGOT PASSWORD FUNCTIONALITY TESTING COMPLETED: All 15 comprehensive tests passed successfully! CRITICAL VERIFICATION: (1) ✅ ADMIN RESET PASSWORD: State Manager can successfully reset passwords for team members in hierarchy, non-State Manager correctly denied access (403), invalid user_id not in hierarchy correctly rejected (403), password length validation working (minimum 6 characters), reset user can login with new password, (2) ✅ FORGOT PASSWORD PUBLIC ENDPOINT: Valid email generates 8-character temporary password, user can login with temporary password, invalid/non-existent email returns secure response without revealing email existence, no temporary password generated for non-existent emails, (3) ✅ PASSWORD SECURITY VALIDATIONS: All passwords properly hashed with bcrypt, login with correct password works, login with incorrect password correctly rejected, (4) ✅ COMPLETE INTEGRATION WORKFLOW: User forgets password → Admin generates temporary password → User logs in with temporary password → User changes to permanent password → User can login normally with new password → Temporary password no longer works after change. CRITICAL SUCCESS: Both admin reset and forgot password features are production-ready with comprehensive security measures, proper hierarchy validation, and complete workflow integration."
+
 frontend:
   - task: "Daily Report Component"
     implemented: true
