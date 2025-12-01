@@ -740,7 +740,16 @@ class ForgotPasswordTester:
         else:
             print_error("❌ SOME TESTS FAILED - FORGOT PASSWORD FUNCTIONALITY NEEDS ATTENTION")
 
-    def test_old_method_placeholder(self):
+if __name__ == "__main__":
+    tester = ForgotPasswordTester()
+    success = tester.run_all_tests()
+    
+    if success:
+        print_success("\n🎉 All Forgot Password functionality tests completed successfully!")
+        sys.exit(0)
+    else:
+        print_error("\n💥 Some Forgot Password functionality tests failed!")
+        sys.exit(1)
         """Test the JSON daily report endpoint"""
         print_header("TESTING DAILY REPORT JSON ENDPOINT")
         
