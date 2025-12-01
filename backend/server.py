@@ -1190,11 +1190,15 @@ async def get_period_report(report_type: str, period: str, current_user: dict = 
         raise HTTPException(status_code=400, detail="Invalid report type. Use 'individual', 'team', or 'organization'")
 
 @api_router.get("/reports/period/excel/{report_type}")
-async def download_period_report_excel(report_type: str, period: str, current_user: dict = Depends(get_current_user)):
+async def download_period_report_excel(report_type: str, period: str, current_user: dict = Depends(get_current_user), user_id: str = None, month: str = None, quarter: str = None, year: str = None):
     """
     Download period report (monthly, quarterly, yearly) as Excel file.
     report_type: 'individual', 'team', or 'organization'
     period: 'monthly', 'quarterly', or 'yearly'
+    user_id: Optional - specific user ID for individual/team reports
+    month: Optional - specific month for monthly reports in YYYY-MM format
+    quarter: Optional - specific quarter for quarterly reports in YYYY-Q1 format
+    year: Optional - specific year for yearly reports in YYYY format
     """
     from openpyxl import Workbook
     from openpyxl.styles import Font, PatternFill, Alignment
@@ -1204,8 +1208,8 @@ async def download_period_report_excel(report_type: str, period: str, current_us
     if current_user['role'] not in ['state_manager', 'regional_manager', 'district_manager']:
         raise HTTPException(status_code=403, detail="Only Managers (State, Regional, District) can download period reports")
     
-    # Get the report data
-    report_json = await get_period_report(report_type, period, current_user)
+    # Get the report data with all parameters
+    report_json = await get_period_report(report_type, period, current_user, user_id, month, quarter, year)
     
     # Create Excel workbook
     wb = Workbook()
