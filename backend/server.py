@@ -620,7 +620,7 @@ async def get_manager_hierarchy_report(manager_id: str, period: str, current_use
             # Parse the selected month (YYYY-MM format)
             try:
                 year_str, month_num = month.split('-')
-                start_date = date(int(year_str), int(month_num), 1)
+                start_date = datetime(int(year_str), int(month_num), 1).date()
                 period_name = f"Month of {start_date.strftime('%B %Y')}"
                 date_filter = {"$gte": start_date.isoformat()}
             except ValueError:
