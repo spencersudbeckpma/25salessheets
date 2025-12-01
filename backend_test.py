@@ -1,14 +1,12 @@
 #!/usr/bin/env python3
 """
-Backend Testing Script - COMPREHENSIVE MANAGER HIERARCHY DRILL-DOWN TESTING
-NEW FUNCTIONALITY: Manager Hierarchy Drill-Down Feature
-Focus: Test new manager hierarchy drill-down endpoint functionality
-- GET /api/reports/manager-hierarchy/{manager_id}?period={period}
-- Access control for different manager levels
-- Manager hierarchy structure validation
-- Period calculations (daily, monthly, quarterly, yearly)
-- Response format verification
-- Data integrity checks
+Backend Testing Script - URGENT TEAM REPORT HIERARCHY BUG FIX TESTING
+CRITICAL BUG FIX: Team Report Hierarchy Issues
+Focus: Test team report hierarchy fixes for user-reported issues
+- Team Report only showing selected manager (Steve Ahlers), not his full team
+- Access control error "Manager not found in your direct reports" when State Manager tries to select District Manager
+- GET /api/reports/period/team?period=monthly&user_id={manager_id} should show manager's team
+- Hierarchy access control should check full hierarchy, not just direct reports
 """
 
 import requests
