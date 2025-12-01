@@ -119,6 +119,7 @@ const AdminCleanup = ({ user }) => {
   };
 
   return (
+    <div>
     <Card className="shadow-lg bg-white" data-testid="admin-cleanup-card">
       <CardHeader>
         <CardTitle className="text-xl text-red-600">🛠️ Admin Tools</CardTitle>
