@@ -138,9 +138,14 @@ const DailyReport = ({ user }) => {
     setLoading(true);
     try {
       const token = localStorage.getItem('token');
+      const params = { date: selectedDate };
+      if ((reportType === 'individual' || reportType === 'team') && selectedManagerId) {
+        params.user_id = selectedManagerId;
+      }
+      
       const response = await axios.get(`${API}/reports/daily/excel/${reportType}`, {
         headers: { Authorization: `Bearer ${token}` },
-        params: { date: selectedDate },
+        params: params,
         responseType: 'blob'
       });
       
