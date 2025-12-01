@@ -1756,8 +1756,8 @@ class ManagerReportsTester:
         """Run all tests - COMPREHENSIVE MANAGER REPORTS TESTING"""
         print_header("🚀 COMPREHENSIVE MANAGER REPORTS TESTING")
         print_info(f"Testing against: {BACKEND_URL}")
-        print_info("🎯 PRIMARY FOCUS: Test new period-based reporting endpoints (Monthly, Quarterly, Yearly)")
-        print_info("🔍 TESTING: All 9 combinations (3 report types × 3 periods) + hierarchical access control")
+        print_info("🎯 PRIMARY FOCUS: Test new individual manager selection functionality")
+        print_info("🔍 TESTING: Manager list endpoint, user_id parameter in reports, hierarchy access control")
         
         # Setup
         if not self.setup_test_users():
