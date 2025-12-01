@@ -164,9 +164,23 @@ const DailyReport = ({ user }) => {
     setLoading(true);
     try {
       const token = localStorage.getItem('token');
+      const params = { period: selectedPeriod };
+      
+      if ((reportType === 'individual' || reportType === 'team') && selectedManagerId) {
+        params.user_id = selectedManagerId;
+      }
+      
+      if (selectedPeriod === 'monthly') {
+        params.month = selectedMonth;
+      } else if (selectedPeriod === 'quarterly') {
+        params.quarter = selectedQuarter;
+      } else if (selectedPeriod === 'yearly') {
+        params.year = selectedYear;
+      }
+      
       const response = await axios.get(`${API}/reports/period/excel/${reportType}`, {
         headers: { Authorization: `Bearer ${token}` },
-        params: { period: selectedPeriod },
+        params: params,
         responseType: 'blob'
       });
       
