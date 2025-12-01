@@ -39,11 +39,13 @@ def print_header(message):
     print(f"{Colors.BOLD}{Colors.BLUE}{message}{Colors.ENDC}")
     print(f"{Colors.BOLD}{Colors.BLUE}{'='*60}{Colors.ENDC}")
 
-class DailyReportTester:
+class ManagerReportsTester:
     def __init__(self):
         self.session = requests.Session()
         self.state_manager_token = None
-        self.non_state_manager_token = None
+        self.regional_manager_token = None
+        self.district_manager_token = None
+        self.agent_token = None
         self.test_results = {
             'passed': 0,
             'failed': 0,
