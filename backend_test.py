@@ -1446,6 +1446,12 @@ class ManagerReportsTester:
         self.test_error_cases()
         self.test_different_dates()
         
+        # NEW: Test manager selection functionality
+        self.test_manager_selection_endpoints()
+        self.test_individual_manager_daily_reports()
+        self.test_individual_manager_period_reports()
+        self.test_hierarchy_access_control()
+        
         # Print summary
         self.print_test_summary()
         
