@@ -87,8 +87,8 @@ class ManagerReportsTester:
             return None
 
     def setup_test_users(self):
-        """Setup test users for testing"""
-        print_header("SETTING UP TEST USERS")
+        """Setup test users for comprehensive manager testing"""
+        print_header("SETTING UP TEST USERS FOR MANAGER REPORTS")
         
         # Try to login with existing state manager first
         try:
@@ -102,7 +102,6 @@ class ManagerReportsTester:
                 print_success(f"Logged in existing state manager: {data['user']['name']}")
             else:
                 print_warning("Could not login existing state manager, trying to register new one")
-                # Register state manager
                 self.state_manager_token = self.register_test_user(
                     "state.manager@test.com",
                     "TestPassword123!",
@@ -111,7 +110,6 @@ class ManagerReportsTester:
                 )
         except Exception as e:
             print_warning(f"Exception logging in existing state manager: {str(e)}")
-            # Register state manager
             self.state_manager_token = self.register_test_user(
                 "state.manager@test.com",
                 "TestPassword123!",
@@ -119,8 +117,24 @@ class ManagerReportsTester:
                 "state_manager"
             )
         
-        # Register non-state manager (agent)
-        self.non_state_manager_token = self.register_test_user(
+        # Register regional manager
+        self.regional_manager_token = self.register_test_user(
+            "regional.manager@test.com", 
+            "TestPassword123!",
+            "Regional Manager Test",
+            "regional_manager"
+        )
+        
+        # Register district manager
+        self.district_manager_token = self.register_test_user(
+            "district.manager@test.com", 
+            "TestPassword123!",
+            "District Manager Test",
+            "district_manager"
+        )
+        
+        # Register agent (should not have access)
+        self.agent_token = self.register_test_user(
             "agent.user@test.com", 
             "TestPassword123!",
             "Agent Test User",
@@ -131,8 +145,14 @@ class ManagerReportsTester:
             print_error("Failed to setup state manager - cannot continue testing")
             return False
             
-        if not self.non_state_manager_token:
-            print_warning("Failed to setup non-state manager - will skip access control tests")
+        if not self.regional_manager_token:
+            print_warning("Failed to setup regional manager - will skip some access control tests")
+            
+        if not self.district_manager_token:
+            print_warning("Failed to setup district manager - will skip some access control tests")
+            
+        if not self.agent_token:
+            print_warning("Failed to setup agent - will skip agent access control tests")
             
         return True
 
