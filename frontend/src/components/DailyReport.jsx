@@ -135,6 +135,7 @@ const DailyReport = ({ user }) => {
 
   const handleTabChange = (tab) => {
     setActiveTab(tab);
+    setSelectedManagerId(''); // Reset manager selection when changing tabs
     setReportData(null);
   };
 
