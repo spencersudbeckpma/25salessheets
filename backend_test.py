@@ -1042,20 +1042,22 @@ class ManagerReportsTester:
             self.test_results['failed'] += 1
             self.test_results['errors'].append(f"Activity matching exception: {str(e)}")
 
-    def test_team_report_hierarchy_bug_fix(self):
-        """🚨 CRITICAL: Test Team Report Hierarchy Bug Fix"""
-        print_header("🚨 CRITICAL TEAM REPORT HIERARCHY BUG FIX TESTING")
+    def test_team_report_enhancement(self):
+        """🎯 NEW FUNCTIONALITY: Test Team Report Enhancement - Individual + Team Data"""
+        print_header("🎯 TEAM REPORTS ENHANCEMENT TESTING: Include Manager's Individual Numbers")
         
         if not self.state_manager_token:
-            print_error("No state manager token - skipping team report hierarchy tests")
+            print_error("No state manager token - skipping team report enhancement tests")
             return
             
         headers = {"Authorization": f"Bearer {self.state_manager_token}"}
         
-        print_info("🎯 TESTING CRITICAL BUG FIXES:")
-        print_info("   1. Team Report should show manager's team, not just the manager")
-        print_info("   2. State Manager should be able to select any manager in hierarchy")
-        print_info("   3. Access control should check full hierarchy, not just direct reports")
+        print_info("🎯 TESTING NEW ENHANCEMENT FUNCTIONALITY:")
+        print_info("   1. Manager selection should include manager's individual numbers")
+        print_info("   2. Manager's individual data marked as 'Manager Name (Individual)'")
+        print_info("   3. Direct reports' team totals marked as 'Manager Name's Team'")
+        print_info("   4. Both daily and period reports should have same logic")
+        print_info("   5. Excel downloads should include both individual and team data")
         
         # Step 1: Use the test hierarchy we created
         print_info("\n📋 STEP 1: Use Test Hierarchy Created in Setup")
