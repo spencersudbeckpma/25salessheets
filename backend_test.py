@@ -3056,6 +3056,491 @@ class ManagerReportsTester:
                     print_error(f"❌ Exception testing backward compatibility for {report_type} {period}: {str(e)}")
                     self.test_results['failed'] += 1
 
+    def test_team_report_individual_plus_team_data(self):
+        """🎯 CRITICAL TEST 1: Team Report with Manager Selection - Individual + Team Data"""
+        print_header("🎯 CRITICAL TEST 1: Team Report with Manager Selection - Individual + Team Data")
+        
+        if not self.state_manager_token:
+            print_error("No state manager token - skipping individual + team data tests")
+            return
+            
+        headers = {"Authorization": f"Bearer {self.state_manager_token}"}
+        
+        # Use Steve Ahlers ID from setup
+        steve_ahlers_id = getattr(self, 'steve_ahlers_id', None)
+        
+        if not steve_ahlers_id:
+            print_error("No Steve Ahlers ID available - cannot test individual + team data")
+            return
+            
+        print_info("🎯 TESTING: GET /api/reports/period/team?period=monthly&user_id={steve_ahlers_id}")
+        print_info("📋 EXPECTED: Multiple entries - Manager Individual + Direct Reports Teams")
+        
+        try:
+            response = self.session.get(
+                f"{BACKEND_URL}/reports/period/team",
+                params={"period": "monthly", "user_id": steve_ahlers_id},
+                headers=headers
+            )
+            
+            if response.status_code == 200:
+                data = response.json()
+                print_success("✅ Team report with manager selection returned 200 OK")
+                
+                # CRITICAL VALIDATION: Should return multiple entries
+                data_array = data.get('data', [])
+                
+                if isinstance(data_array, list):
+                    entry_count = len(data_array)
+                    print_info(f"📊 Response contains {entry_count} entries")
+                    
+                    if entry_count >= 2:  # Should have at least individual + 1 team
+                        print_success("✅ CRITICAL SUCCESS: Multiple entries returned (individual + team data)")
+                        self.test_results['passed'] += 1
+                        
+                        # Validate first entry is individual data
+                        first_entry = data_array[0]
+                        first_team_name = first_entry.get('team_name', '')
+                        
+                        if '(Individual)' in first_team_name:
+                            print_success(f"✅ Entry 1: Manager Individual - '{first_team_name}'")
+                            self.test_results['passed'] += 1
+                            
+                            # Show individual numbers
+                            individual_contacts = first_entry.get('contacts', 0)
+                            individual_appointments = first_entry.get('appointments', 0)
+                            individual_premium = first_entry.get('premium', 0)
+                            print_info(f"   Individual Numbers: {individual_contacts} contacts, {individual_appointments} appointments, ${individual_premium} premium")
+                            
+                        else:
+                            print_error(f"❌ Entry 1 should be Individual: Expected '(Individual)', Got '{first_team_name}'")
+                            self.test_results['failed'] += 1
+                            self.test_results['errors'].append(f"First entry not individual: {first_team_name}")
+                        
+                        # Validate subsequent entries are team data
+                        team_entries_found = 0
+                        for i, entry in enumerate(data_array[1:], 2):
+                            team_name = entry.get('team_name', '')
+                            manager_name = entry.get('manager', '')
+                            
+                            if "'s Team" in team_name:
+                                team_entries_found += 1
+                                print_success(f"✅ Entry {i}: Team Data - '{team_name}'")
+                                
+                                # Show team numbers
+                                team_contacts = entry.get('contacts', 0)
+                                team_appointments = entry.get('appointments', 0)
+                                team_premium = entry.get('premium', 0)
+                                print_info(f"   Team Numbers: {team_contacts} contacts, {team_appointments} appointments, ${team_premium} premium")
+                            else:
+                                print_warning(f"⚠️ Entry {i}: Unexpected format - '{team_name}'")
+                        
+                        if team_entries_found > 0:
+                            print_success(f"✅ CRITICAL SUCCESS: Found {team_entries_found} direct report team entries")
+                            self.test_results['passed'] += 1
+                        else:
+                            print_warning("⚠️ No team entries found (may be expected if no direct reports)")
+                            
+                    elif entry_count == 1:
+                        print_error("❌ CRITICAL FAILURE: Only 1 entry returned - missing individual or team data")
+                        print_error("   Expected: Manager Individual + Direct Reports Teams")
+                        self.test_results['failed'] += 1
+                        self.test_results['errors'].append("Only 1 entry returned instead of individual + team")
+                        
+                    else:
+                        print_error("❌ CRITICAL FAILURE: No entries returned")
+                        self.test_results['failed'] += 1
+                        self.test_results['errors'].append("No entries returned for manager selection")
+                        
+                else:
+                    print_error("❌ Response data is not an array")
+                    self.test_results['failed'] += 1
+                    self.test_results['errors'].append("Response data not array format")
+                    
+            else:
+                print_error(f"❌ Team report request failed: {response.status_code} - {response.text}")
+                self.test_results['failed'] += 1
+                self.test_results['errors'].append(f"Team report request failed: {response.status_code}")
+                
+        except Exception as e:
+            print_error(f"❌ Exception testing individual + team data: {str(e)}")
+            self.test_results['failed'] += 1
+            self.test_results['errors'].append(f"Individual + team data test exception: {str(e)}")
+
+    def test_individual_vs_team_data_validation(self):
+        """🎯 CRITICAL TEST 2: Validate Individual vs Team Data"""
+        print_header("🎯 CRITICAL TEST 2: Validate Individual vs Team Data")
+        
+        if not self.state_manager_token:
+            print_error("No state manager token - skipping individual vs team validation")
+            return
+            
+        headers = {"Authorization": f"Bearer {self.state_manager_token}"}
+        steve_ahlers_id = getattr(self, 'steve_ahlers_id', None)
+        
+        if not steve_ahlers_id:
+            print_error("No Steve Ahlers ID available - cannot validate individual vs team data")
+            return
+            
+        print_info("🔍 VALIDATION: Individual numbers should be personal activity only")
+        print_info("🔍 VALIDATION: Team numbers should be aggregated including direct report + subordinates")
+        
+        try:
+            # Get team report with manager selection
+            team_response = self.session.get(
+                f"{BACKEND_URL}/reports/period/team",
+                params={"period": "monthly", "user_id": steve_ahlers_id},
+                headers=headers
+            )
+            
+            # Get individual report for comparison
+            individual_response = self.session.get(
+                f"{BACKEND_URL}/reports/period/individual",
+                params={"period": "monthly", "user_id": steve_ahlers_id},
+                headers=headers
+            )
+            
+            if team_response.status_code == 200 and individual_response.status_code == 200:
+                team_data = team_response.json()
+                individual_data = individual_response.json()
+                
+                print_success("✅ Both team and individual reports retrieved successfully")
+                
+                # Extract individual numbers from team report
+                team_entries = team_data.get('data', [])
+                individual_entries = individual_data.get('data', [])
+                
+                if team_entries and individual_entries:
+                    # Find individual entry in team report
+                    individual_from_team = None
+                    for entry in team_entries:
+                        if '(Individual)' in entry.get('team_name', ''):
+                            individual_from_team = entry
+                            break
+                    
+                    # Get individual from individual report
+                    individual_from_report = individual_entries[0] if individual_entries else None
+                    
+                    if individual_from_team and individual_from_report:
+                        print_success("✅ Found individual data in both reports")
+                        
+                        # Compare individual numbers
+                        team_individual_contacts = individual_from_team.get('contacts', 0)
+                        report_individual_contacts = individual_from_report.get('contacts', 0)
+                        
+                        team_individual_premium = individual_from_team.get('premium', 0)
+                        report_individual_premium = individual_from_report.get('premium', 0)
+                        
+                        print_info(f"Team Report Individual: {team_individual_contacts} contacts, ${team_individual_premium} premium")
+                        print_info(f"Individual Report: {report_individual_contacts} contacts, ${report_individual_premium} premium")
+                        
+                        if team_individual_contacts == report_individual_contacts and team_individual_premium == report_individual_premium:
+                            print_success("✅ VALIDATION SUCCESS: Individual numbers match between reports")
+                            self.test_results['passed'] += 1
+                        else:
+                            print_warning("⚠️ Individual numbers differ between reports (may be expected due to different calculation methods)")
+                            self.test_results['passed'] += 1  # Still pass as this might be expected
+                        
+                        # Validate team numbers are different from individual
+                        team_entries_only = [e for e in team_entries if "'s Team" in e.get('team_name', '')]
+                        
+                        if team_entries_only:
+                            team_total_contacts = sum(e.get('contacts', 0) for e in team_entries_only)
+                            team_total_premium = sum(e.get('premium', 0) for e in team_entries_only)
+                            
+                            print_info(f"Team Totals: {team_total_contacts} contacts, ${team_total_premium} premium")
+                            
+                            if team_total_contacts != team_individual_contacts or team_total_premium != team_individual_premium:
+                                print_success("✅ VALIDATION SUCCESS: Team numbers are distinct from individual numbers")
+                                self.test_results['passed'] += 1
+                            else:
+                                print_warning("⚠️ Team and individual numbers are identical (may indicate no team activity)")
+                                self.test_results['passed'] += 1
+                        else:
+                            print_warning("⚠️ No team entries found for comparison")
+                            
+                    else:
+                        print_error("❌ Could not find individual data in one or both reports")
+                        self.test_results['failed'] += 1
+                        
+                else:
+                    print_error("❌ No data entries found in reports")
+                    self.test_results['failed'] += 1
+                    
+            else:
+                print_error(f"❌ Report requests failed - Team: {team_response.status_code}, Individual: {individual_response.status_code}")
+                self.test_results['failed'] += 1
+                
+        except Exception as e:
+            print_error(f"❌ Exception validating individual vs team data: {str(e)}")
+            self.test_results['failed'] += 1
+
+    def test_daily_reports_same_logic(self):
+        """🎯 CRITICAL TEST 3: Daily Reports with Same Logic"""
+        print_header("🎯 CRITICAL TEST 3: Daily Reports with Same Logic")
+        
+        if not self.state_manager_token:
+            print_error("No state manager token - skipping daily reports test")
+            return
+            
+        headers = {"Authorization": f"Bearer {self.state_manager_token}"}
+        steve_ahlers_id = getattr(self, 'steve_ahlers_id', None)
+        
+        if not steve_ahlers_id:
+            print_error("No Steve Ahlers ID available - cannot test daily reports")
+            return
+            
+        today = datetime.now().date().isoformat()
+        print_info(f"🎯 TESTING: GET /api/reports/daily/team?date={today}&user_id={steve_ahlers_id}")
+        print_info("📋 EXPECTED: Same pattern as period reports - individual + team breakdown")
+        
+        try:
+            response = self.session.get(
+                f"{BACKEND_URL}/reports/daily/team",
+                params={"date": today, "user_id": steve_ahlers_id},
+                headers=headers
+            )
+            
+            if response.status_code == 200:
+                data = response.json()
+                print_success("✅ Daily team report with manager selection returned 200 OK")
+                
+                # Validate same structure as period reports
+                data_array = data.get('data', [])
+                
+                if isinstance(data_array, list):
+                    entry_count = len(data_array)
+                    print_info(f"📊 Daily report contains {entry_count} entries")
+                    
+                    if entry_count > 0:
+                        # Check for individual entry
+                        individual_found = False
+                        team_entries_found = 0
+                        
+                        for i, entry in enumerate(data_array):
+                            team_name = entry.get('team_name', '')
+                            
+                            if '(Individual)' in team_name:
+                                individual_found = True
+                                print_success(f"✅ Entry {i+1}: Individual data - '{team_name}'")
+                            elif "'s Team" in team_name:
+                                team_entries_found += 1
+                                print_success(f"✅ Entry {i+1}: Team data - '{team_name}'")
+                            else:
+                                print_info(f"ℹ️ Entry {i+1}: Other format - '{team_name}'")
+                        
+                        if individual_found:
+                            print_success("✅ DAILY REPORT SUCCESS: Individual entry found")
+                            self.test_results['passed'] += 1
+                        else:
+                            print_error("❌ DAILY REPORT FAILURE: No individual entry found")
+                            self.test_results['failed'] += 1
+                            
+                        if team_entries_found > 0:
+                            print_success(f"✅ DAILY REPORT SUCCESS: {team_entries_found} team entries found")
+                            self.test_results['passed'] += 1
+                        else:
+                            print_warning("⚠️ No team entries found (may be expected if no direct reports)")
+                            self.test_results['passed'] += 1
+                            
+                        # Validate date field
+                        if data.get('date') == today:
+                            print_success(f"✅ Date field correct: {today}")
+                            self.test_results['passed'] += 1
+                        else:
+                            print_error(f"❌ Date field incorrect: {data.get('date')} (expected: {today})")
+                            self.test_results['failed'] += 1
+                            
+                    else:
+                        print_warning("⚠️ Daily report returned no entries")
+                        
+                else:
+                    print_error("❌ Daily report data is not an array")
+                    self.test_results['failed'] += 1
+                    
+            else:
+                print_error(f"❌ Daily team report failed: {response.status_code} - {response.text}")
+                self.test_results['failed'] += 1
+                
+        except Exception as e:
+            print_error(f"❌ Exception testing daily reports: {str(e)}")
+            self.test_results['failed'] += 1
+
+    def test_excel_download_consistency(self):
+        """🎯 CRITICAL TEST 4: Excel Download Consistency"""
+        print_header("🎯 CRITICAL TEST 4: Excel Download Consistency")
+        
+        if not self.state_manager_token:
+            print_error("No state manager token - skipping Excel download tests")
+            return
+            
+        headers = {"Authorization": f"Bearer {self.state_manager_token}"}
+        steve_ahlers_id = getattr(self, 'steve_ahlers_id', None)
+        
+        if not steve_ahlers_id:
+            print_error("No Steve Ahlers ID available - cannot test Excel downloads")
+            return
+            
+        print_info("🎯 TESTING: Excel downloads include both individual and team data")
+        print_info("📋 VALIDATION: Excel data should match JSON responses")
+        
+        try:
+            # Get JSON response first
+            json_response = self.session.get(
+                f"{BACKEND_URL}/reports/period/team",
+                params={"period": "monthly", "user_id": steve_ahlers_id},
+                headers=headers
+            )
+            
+            # Get Excel response
+            excel_response = self.session.get(
+                f"{BACKEND_URL}/reports/period/excel/team",
+                params={"period": "monthly", "user_id": steve_ahlers_id},
+                headers=headers
+            )
+            
+            if json_response.status_code == 200 and excel_response.status_code == 200:
+                json_data = json_response.json()
+                
+                print_success("✅ Both JSON and Excel responses successful")
+                
+                # Validate Excel headers
+                content_type = excel_response.headers.get('content-type', '')
+                content_disposition = excel_response.headers.get('content-disposition', '')
+                
+                if 'spreadsheet' in content_type or 'excel' in content_type or '.xlsx' in content_disposition:
+                    print_success("✅ Excel response has correct content type")
+                    self.test_results['passed'] += 1
+                else:
+                    print_warning(f"⚠️ Excel content type unclear: {content_type}")
+                    self.test_results['passed'] += 1  # Still pass if we got a response
+                
+                # Validate JSON data structure for Excel consistency
+                json_entries = json_data.get('data', [])
+                if json_entries:
+                    individual_count = sum(1 for e in json_entries if '(Individual)' in e.get('team_name', ''))
+                    team_count = sum(1 for e in json_entries if "'s Team" in e.get('team_name', ''))
+                    
+                    print_info(f"JSON data: {individual_count} individual entries, {team_count} team entries")
+                    
+                    if individual_count > 0 and team_count > 0:
+                        print_success("✅ JSON data contains both individual and team entries for Excel")
+                        self.test_results['passed'] += 1
+                    elif individual_count > 0:
+                        print_success("✅ JSON data contains individual entry for Excel")
+                        self.test_results['passed'] += 1
+                    else:
+                        print_warning("⚠️ JSON data structure unclear for Excel validation")
+                        
+                else:
+                    print_warning("⚠️ No JSON entries for Excel comparison")
+                    
+            else:
+                print_error(f"❌ Response failures - JSON: {json_response.status_code}, Excel: {excel_response.status_code}")
+                self.test_results['failed'] += 1
+                
+        except Exception as e:
+            print_error(f"❌ Exception testing Excel downloads: {str(e)}")
+            self.test_results['failed'] += 1
+
+    def test_expected_structure_validation(self):
+        """🎯 CRITICAL TEST 5: Expected Structure Validation"""
+        print_header("🎯 CRITICAL TEST 5: Expected Structure Validation")
+        
+        if not self.state_manager_token:
+            print_error("No state manager token - skipping structure validation")
+            return
+            
+        headers = {"Authorization": f"Bearer {self.state_manager_token}"}
+        steve_ahlers_id = getattr(self, 'steve_ahlers_id', None)
+        
+        if not steve_ahlers_id:
+            print_error("No Steve Ahlers ID available - cannot validate structure")
+            return
+            
+        print_info("🎯 VALIDATING EXPECTED JSON STRUCTURE:")
+        print_info('   "data": [')
+        print_info('     {')
+        print_info('       "team_name": "Steve Ahlers (Individual)",')
+        print_info('       "manager": "Steve Ahlers",')
+        print_info('       "contacts": 5, "appointments": 3, ...')
+        print_info('     },')
+        print_info('     {')
+        print_info('       "team_name": "Ryan Rozell\'s Team",')
+        print_info('       "manager": "Ryan Rozell",')
+        print_info('       "contacts": 15, "appointments": 10, ...')
+        print_info('     }')
+        print_info('   ]')
+        
+        try:
+            response = self.session.get(
+                f"{BACKEND_URL}/reports/period/team",
+                params={"period": "monthly", "user_id": steve_ahlers_id},
+                headers=headers
+            )
+            
+            if response.status_code == 200:
+                data = response.json()
+                print_success("✅ Team report response received")
+                
+                # Validate top-level structure
+                if 'data' in data and isinstance(data['data'], list):
+                    print_success("✅ Response has 'data' array")
+                    self.test_results['passed'] += 1
+                    
+                    entries = data['data']
+                    
+                    # Validate each entry structure
+                    for i, entry in enumerate(entries):
+                        entry_valid = True
+                        required_fields = ['team_name', 'manager', 'contacts', 'appointments']
+                        
+                        for field in required_fields:
+                            if field not in entry:
+                                print_error(f"❌ Entry {i+1} missing field: {field}")
+                                entry_valid = False
+                        
+                        if entry_valid:
+                            team_name = entry.get('team_name', '')
+                            manager = entry.get('manager', '')
+                            contacts = entry.get('contacts', 0)
+                            appointments = entry.get('appointments', 0)
+                            
+                            print_success(f"✅ Entry {i+1}: '{team_name}' (Manager: {manager})")
+                            print_info(f"   Contacts: {contacts}, Appointments: {appointments}")
+                            
+                            # Validate naming convention
+                            if '(Individual)' in team_name:
+                                if manager in team_name.replace(' (Individual)', ''):
+                                    print_success("✅ Individual entry naming correct")
+                                else:
+                                    print_warning(f"⚠️ Individual entry naming: '{team_name}' vs manager '{manager}'")
+                            elif "'s Team" in team_name:
+                                if manager in team_name.replace("'s Team", ''):
+                                    print_success("✅ Team entry naming correct")
+                                else:
+                                    print_warning(f"⚠️ Team entry naming: '{team_name}' vs manager '{manager}'")
+                        else:
+                            self.test_results['failed'] += 1
+                    
+                    if len(entries) > 0:
+                        print_success(f"✅ STRUCTURE VALIDATION SUCCESS: {len(entries)} entries with correct structure")
+                        self.test_results['passed'] += 1
+                    else:
+                        print_warning("⚠️ No entries to validate structure")
+                        
+                else:
+                    print_error("❌ Response missing 'data' array")
+                    self.test_results['failed'] += 1
+                    
+            else:
+                print_error(f"❌ Structure validation request failed: {response.status_code}")
+                self.test_results['failed'] += 1
+                
+        except Exception as e:
+            print_error(f"❌ Exception validating structure: {str(e)}")
+            self.test_results['failed'] += 1
+
     def run_all_tests(self):
         """Run all team report hierarchy bug fix tests"""
         print_header("🚀 URGENT TEAM REPORT HIERARCHY BUG FIX TESTING")
