@@ -1,12 +1,13 @@
 #!/usr/bin/env python3
 """
-Backend Testing Script - URGENT TEAM REPORT HIERARCHY BUG FIX TESTING
-CRITICAL BUG FIX: Team Report Hierarchy Issues
-Focus: Test team report hierarchy fixes for user-reported issues
-- Team Report only showing selected manager (Steve Ahlers), not his full team
-- Access control error "Manager not found in your direct reports" when State Manager tries to select District Manager
-- GET /api/reports/period/team?period=monthly&user_id={manager_id} should show manager's team
-- Hierarchy access control should check full hierarchy, not just direct reports
+Backend Testing Script - TEAM REPORTS ENHANCEMENT TESTING
+NEW FUNCTIONALITY: Include Manager's Individual Numbers
+Focus: Test team report enhancement where manager selection includes both individual and team data
+- When user_id is specified, response should include manager's individual numbers + team totals
+- Manager's individual numbers marked as "Manager Name (Individual)"
+- Direct reports' team totals marked as "Manager Name's Team"
+- Test both daily and period reports with same logic
+- Validate Excel downloads include both individual and team data
 """
 
 import requests
