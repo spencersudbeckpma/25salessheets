@@ -11,6 +11,7 @@ const API = `${BACKEND_URL}/api`;
 const DailyReport = ({ user }) => {
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
   const [selectedPeriod, setSelectedPeriod] = useState('daily');
+  const [selectedMonth, setSelectedMonth] = useState(new Date().toISOString().slice(0, 7)); // YYYY-MM format
   const [activeTab, setActiveTab] = useState('individual');
   const [selectedManagerId, setSelectedManagerId] = useState('');
   const [availableManagers, setAvailableManagers] = useState([]);
