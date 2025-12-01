@@ -691,7 +691,56 @@ class ForgotPasswordTester:
         else:
             print_warning("⚠️ No temporary token available for workflow testing")
 
-    def test_daily_report_json_endpoint(self):
+    def run_all_tests(self):
+        """Run all forgot password functionality tests"""
+        print_header("🚀 STARTING COMPREHENSIVE FORGOT PASSWORD FUNCTIONALITY TESTING")
+        
+        # Setup test users
+        if not self.setup_test_users():
+            print_error("Failed to setup test users - aborting tests")
+            return False
+        
+        # Run all test suites
+        self.test_admin_reset_password()
+        self.test_forgot_password()
+        self.test_password_security()
+        self.test_integration_workflow()
+        
+        # Print final results
+        self.print_final_results()
+        
+        return self.test_results['failed'] == 0
+
+    def print_final_results(self):
+        """Print comprehensive test results"""
+        print_header("📊 FORGOT PASSWORD FUNCTIONALITY TEST RESULTS")
+        
+        total_tests = self.test_results['passed'] + self.test_results['failed']
+        success_rate = (self.test_results['passed'] / total_tests * 100) if total_tests > 0 else 0
+        
+        print_info(f"Total Tests: {total_tests}")
+        print_success(f"Passed: {self.test_results['passed']}")
+        
+        if self.test_results['failed'] > 0:
+            print_error(f"Failed: {self.test_results['failed']}")
+            print_error("Failed Tests:")
+            for error in self.test_results['errors']:
+                print_error(f"  - {error}")
+        else:
+            print_success("Failed: 0")
+        
+        print_info(f"Success Rate: {success_rate:.1f}%")
+        
+        if self.test_results['failed'] == 0:
+            print_success("🎉 ALL FORGOT PASSWORD FUNCTIONALITY TESTS PASSED!")
+            print_success("✅ Admin reset password working correctly")
+            print_success("✅ Forgot password public endpoint working correctly")
+            print_success("✅ Password security validations working correctly")
+            print_success("✅ Complete integration workflow working correctly")
+        else:
+            print_error("❌ SOME TESTS FAILED - FORGOT PASSWORD FUNCTIONALITY NEEDS ATTENTION")
+
+    def test_old_method_placeholder(self):
         """Test the JSON daily report endpoint"""
         print_header("TESTING DAILY REPORT JSON ENDPOINT")
         
