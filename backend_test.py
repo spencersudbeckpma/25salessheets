@@ -3996,12 +3996,12 @@ class ForgotPasswordTester:
                 print(f"  • {error}")
 
 if __name__ == "__main__":
-    tester = ManagerReportsTester()
+    tester = ForgotPasswordTester()
     success = tester.run_all_tests()
     
     if success:
-        print_success("\n🎉 All Manager Reports API tests completed successfully!")
+        print_success("\n🎉 All Forgot Password functionality tests completed successfully!")
         sys.exit(0)
     else:
-        print_error("\n💥 Some Manager Reports API tests failed!")
+        print_error("\n💥 Some Forgot Password functionality tests failed!")
         sys.exit(1)
