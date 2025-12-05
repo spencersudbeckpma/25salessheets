@@ -156,20 +156,22 @@ const Dashboard = ({ user, setUser }) => {
             <Leaderboard user={user} />
           </TabsContent>
 
+          {['state_manager', 'regional_manager', 'district_manager'].includes(user.role) && (
+            <TabsContent value="newface" data-testid="newface-content" className="mt-4 md:mt-6">
+              <NewFaceTracking user={user} />
+            </TabsContent>
+          )}
+
+          {['state_manager', 'regional_manager', 'district_manager'].includes(user.role) && (
+            <TabsContent value="reports" data-testid="reports-content" className="mt-4 md:mt-6">
+              <Reports user={user} />
+            </TabsContent>
+          )}
+
           {user.role === 'state_manager' && (
-            <>
-              <TabsContent value="newface" data-testid="newface-content" className="mt-4 md:mt-6">
-                <NewFaceTracking user={user} />
-              </TabsContent>
-
-              <TabsContent value="reports" data-testid="reports-content" className="mt-4 md:mt-6">
-                <Reports user={user} />
-              </TabsContent>
-
-              <TabsContent value="admin" data-testid="admin-content" className="mt-4 md:mt-6">
-                <AdminCleanup user={user} />
-              </TabsContent>
-            </>
+            <TabsContent value="admin" data-testid="admin-content" className="mt-4 md:mt-6">
+              <AdminCleanup user={user} />
+            </TabsContent>
           )}
 
           {['state_manager', 'regional_manager', 'district_manager'].includes(user.role) && (
