@@ -94,8 +94,8 @@ class NewFaceCustomerTester:
             return None
 
     def setup_test_users(self):
-        """Setup test users for forgot password functionality testing"""
-        print_header("SETTING UP TEST USERS FOR FORGOT PASSWORD TESTING")
+        """Setup test users for New Face Customer functionality testing"""
+        print_header("SETTING UP TEST USERS FOR NEW FACE CUSTOMER TESTING")
         
         # Try to login with existing state manager first
         try:
@@ -111,9 +111,9 @@ class NewFaceCustomerTester:
             else:
                 print_warning("Could not login existing state manager, trying to register new one")
                 self.state_manager_token = self.register_test_user(
-                    "state.manager.forgot@test.com",
+                    "state.manager.newface@test.com",
                     "TestPassword123!",
-                    "State Manager Forgot Test",
+                    "State Manager NewFace Test",
                     "state_manager"
                 )
                 if self.state_manager_token:
@@ -122,35 +122,49 @@ class NewFaceCustomerTester:
         except Exception as e:
             print_warning(f"Exception logging in existing state manager: {str(e)}")
             self.state_manager_token = self.register_test_user(
-                "state.manager.forgot@test.com",
+                "state.manager.newface@test.com",
                 "TestPassword123!",
-                "State Manager Forgot Test",
+                "State Manager NewFace Test",
                 "state_manager"
             )
             if self.state_manager_token:
                 user_info = self.get_user_info(self.state_manager_token)
                 self.state_manager_id = user_info.get('id') if user_info else None
         
-        # Register District Manager under State Manager for hierarchy testing
+        # Register Regional Manager under State Manager
         if self.state_manager_id:
-            self.district_manager_token = self.register_test_user_with_manager(
-                "district.manager.forgot@test.com", 
+            self.regional_manager_token = self.register_test_user_with_manager(
+                "regional.manager.newface@test.com", 
                 "TestPassword123!",
-                "District Manager Forgot Test",
-                "district_manager",
+                "Regional Manager NewFace Test",
+                "regional_manager",
                 self.state_manager_id
+            )
+            
+            if self.regional_manager_token:
+                user_info = self.get_user_info(self.regional_manager_token)
+                self.regional_manager_id = user_info.get('id') if user_info else None
+        
+        # Register District Manager under Regional Manager
+        if self.regional_manager_id:
+            self.district_manager_token = self.register_test_user_with_manager(
+                "district.manager.newface@test.com", 
+                "TestPassword123!",
+                "District Manager NewFace Test",
+                "district_manager",
+                self.regional_manager_id
             )
             
             if self.district_manager_token:
                 user_info = self.get_user_info(self.district_manager_token)
                 self.district_manager_id = user_info.get('id') if user_info else None
         
-        # Register Agent under District Manager for hierarchy testing
+        # Register Agent under District Manager
         if self.district_manager_id:
             self.agent_token = self.register_test_user_with_manager(
-                "agent.forgot@test.com",
+                "agent.newface@test.com",
                 "TestPassword123!",
-                "Agent Forgot Test",
+                "Agent NewFace Test",
                 "agent",
                 self.district_manager_id
             )
@@ -163,10 +177,11 @@ class NewFaceCustomerTester:
             print_error("Failed to setup state manager - cannot continue testing")
             return False
             
-        print_success("✅ Test hierarchy created for forgot password testing:")
-        print_info("   State Manager (for admin reset)")
-        print_info("   └── District Manager (team member)")
-        print_info("       └── Agent (team member)")
+        print_success("✅ Test hierarchy created for New Face Customer testing:")
+        print_info("   State Manager (should access all team data)")
+        print_info("   └── Regional Manager (should access regional team data)")
+        print_info("       └── District Manager (should access district team data)")
+        print_info("           └── Agent (should be denied access)")
             
         return True
 
