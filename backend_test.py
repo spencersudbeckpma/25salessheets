@@ -402,123 +402,135 @@ class NewFaceCustomerTester:
                 self.test_results['failed'] += 1
                 self.test_results['errors'].append(f"Agent access test exception: {str(e)}")
 
-    def test_forgot_password(self):
-        """Test forgot password functionality (Public endpoint)"""
-        print_header("🔑 TESTING FORGOT PASSWORD FUNCTIONALITY")
+    def test_new_face_customers_create_endpoint(self):
+        """Test POST /api/new-face-customers endpoint"""
+        print_header("📝 TESTING NEW FACE CUSTOMERS CREATE ENDPOINT")
         
-        print_info("🎯 Testing forgot password public endpoint")
-        print_info("   Should generate temporary password for any user")
-        print_info("   Should not reveal if email exists or not")
+        print_info("🎯 Testing POST /api/new-face-customers with different users")
+        print_info("   Should allow all users to create records")
+        print_info("   Should enforce limit of 3 records per user per day")
         
-        # Test 1: Valid email address in system
-        print_info("\n📋 TEST 1: Valid Email Address in System")
-        try:
-            forgot_data = {
-                "email": "district.manager.forgot@test.com"
-            }
-            
-            response = self.session.post(
-                f"{BACKEND_URL}/auth/forgot-password",
-                json=forgot_data
-            )
-            
-            if response.status_code == 200:
-                data = response.json()
-                print_success("✅ Forgot password request successful")
-                print_info(f"   Message: {data.get('message', 'No message')}")
+        today = datetime.now().strftime('%Y-%m-%d')
+        
+        # Test 1: Agent can create New Face Customer records
+        print_info("\n📋 TEST 1: Agent Can Create New Face Customer Records")
+        if self.agent_token:
+            try:
+                headers = {"Authorization": f"Bearer {self.agent_token}"}
                 
-                # Check if temporary password is provided
-                temp_password = data.get('temporary_password')
-                if temp_password:
-                    print_success(f"✅ Temporary password generated: {temp_password}")
-                    print_info(f"   User: {data.get('user_name', 'Unknown')}")
-                    print_info(f"   Instructions: {data.get('instructions', 'No instructions')}")
+                # Create first record
+                customer_data = {
+                    "date": today,
+                    "customer_name": "John Smith",
+                    "county": "Dallas County",
+                    "policy_amount": 50000.00
+                }
+                
+                response = self.session.post(
+                    f"{BACKEND_URL}/new-face-customers",
+                    json=customer_data,
+                    headers=headers
+                )
+                
+                if response.status_code == 200:
+                    data = response.json()
+                    print_success("✅ Agent can create New Face Customer record")
+                    print_info(f"   Message: {data.get('message', 'No message')}")
+                    print_info(f"   Record ID: {data.get('id', 'No ID')}")
                     self.test_results['passed'] += 1
-                    
-                    # Verify temporary password is 8 characters long
-                    if len(temp_password) == 8:
-                        print_success("✅ Temporary password is 8 characters long")
-                        self.test_results['passed'] += 1
-                    else:
-                        print_error(f"❌ Temporary password should be 8 characters, got {len(temp_password)}")
-                        self.test_results['failed'] += 1
-                        self.test_results['errors'].append(f"Temporary password length incorrect: {len(temp_password)}")
-                    
-                    # Verify user can login with temporary password
-                    print_info("Verifying user can login with temporary password...")
-                    login_response = self.session.post(f"{BACKEND_URL}/auth/login", json={
-                        "email": "district.manager.forgot@test.com",
-                        "password": temp_password
-                    })
-                    
-                    if login_response.status_code == 200:
-                        print_success("✅ User can login with temporary password")
-                        self.test_results['passed'] += 1
-                        
-                        # Store the new token for further testing
-                        self.temp_token = login_response.json().get('token')
-                    else:
-                        print_error(f"❌ User cannot login with temporary password: {login_response.status_code}")
-                        self.test_results['failed'] += 1
-                        self.test_results['errors'].append("User cannot login with temporary password")
-                        
+                    self.agent_customer_id = data.get('id')  # Store for delete test
                 else:
-                    print_error("❌ No temporary password in response")
+                    print_error(f"❌ Agent create failed: {response.status_code} - {response.text}")
                     self.test_results['failed'] += 1
-                    self.test_results['errors'].append("No temporary password generated")
+                    self.test_results['errors'].append(f"Agent create failed: {response.status_code}")
                     
-            else:
-                print_error(f"❌ Forgot password failed: {response.status_code} - {response.text}")
+            except Exception as e:
+                print_error(f"❌ Exception in Agent create test: {str(e)}")
                 self.test_results['failed'] += 1
-                self.test_results['errors'].append(f"Forgot password failed: {response.status_code}")
-                
-        except Exception as e:
-            print_error(f"❌ Exception in forgot password test: {str(e)}")
-            self.test_results['failed'] += 1
-            self.test_results['errors'].append(f"Forgot password exception: {str(e)}")
+                self.test_results['errors'].append(f"Agent create test exception: {str(e)}")
         
-        # Test 2: Invalid/non-existent email
-        print_info("\n📋 TEST 2: Invalid/Non-existent Email")
-        try:
-            forgot_data = {
-                "email": "nonexistent.user@test.com"
-            }
-            
-            response = self.session.post(
-                f"{BACKEND_URL}/auth/forgot-password",
-                json=forgot_data
-            )
-            
-            if response.status_code == 200:
-                data = response.json()
-                print_success("✅ Forgot password with invalid email returned 200 (security)")
-                print_info(f"   Message: {data.get('message', 'No message')}")
+        # Test 2: District Manager can create New Face Customer records
+        print_info("\n📋 TEST 2: District Manager Can Create New Face Customer Records")
+        if self.district_manager_token:
+            try:
+                headers = {"Authorization": f"Bearer {self.district_manager_token}"}
                 
-                # Should not reveal if email exists or not
-                if "If the email exists" in data.get('message', ''):
-                    print_success("✅ Response doesn't reveal if email exists (security)")
+                customer_data = {
+                    "date": today,
+                    "customer_name": "Jane Doe",
+                    "county": "Tarrant County",
+                    "policy_amount": 75000.00
+                }
+                
+                response = self.session.post(
+                    f"{BACKEND_URL}/new-face-customers",
+                    json=customer_data,
+                    headers=headers
+                )
+                
+                if response.status_code == 200:
+                    data = response.json()
+                    print_success("✅ District Manager can create New Face Customer record")
+                    print_info(f"   Message: {data.get('message', 'No message')}")
+                    print_info(f"   Record ID: {data.get('id', 'No ID')}")
                     self.test_results['passed'] += 1
+                    self.district_customer_id = data.get('id')  # Store for delete test
                 else:
-                    print_warning("⚠️ Response message may reveal email existence")
-                    
-                # Should not have temporary_password field for non-existent email
-                if 'temporary_password' not in data:
-                    print_success("✅ No temporary password for non-existent email (security)")
-                    self.test_results['passed'] += 1
-                else:
-                    print_error("❌ Temporary password generated for non-existent email")
+                    print_error(f"❌ District Manager create failed: {response.status_code} - {response.text}")
                     self.test_results['failed'] += 1
-                    self.test_results['errors'].append("Temporary password generated for non-existent email")
+                    self.test_results['errors'].append(f"District Manager create failed: {response.status_code}")
                     
-            else:
-                print_error(f"❌ Forgot password with invalid email failed: {response.status_code}")
+            except Exception as e:
+                print_error(f"❌ Exception in District Manager create test: {str(e)}")
                 self.test_results['failed'] += 1
-                self.test_results['errors'].append(f"Invalid email test failed: {response.status_code}")
+                self.test_results['errors'].append(f"District Manager create test exception: {str(e)}")
+        
+        # Test 3: Test daily limit enforcement (3 records per user per day)
+        print_info("\n📋 TEST 3: Daily Limit Enforcement (3 records per user per day)")
+        if self.agent_token:
+            try:
+                headers = {"Authorization": f"Bearer {self.agent_token}"}
                 
-        except Exception as e:
-            print_error(f"❌ Exception in invalid email test: {str(e)}")
-            self.test_results['failed'] += 1
-            self.test_results['errors'].append(f"Invalid email test exception: {str(e)}")
+                # Try to create 3 more records (should succeed for 2, fail on 4th)
+                for i in range(4):
+                    customer_data = {
+                        "date": today,
+                        "customer_name": f"Test Customer {i+2}",
+                        "county": f"Test County {i+2}",
+                        "policy_amount": 25000.00 + (i * 5000)
+                    }
+                    
+                    response = self.session.post(
+                        f"{BACKEND_URL}/new-face-customers",
+                        json=customer_data,
+                        headers=headers
+                    )
+                    
+                    if i < 2:  # Should succeed for records 2 and 3
+                        if response.status_code == 200:
+                            print_success(f"✅ Record {i+2} created successfully")
+                            self.test_results['passed'] += 1
+                        else:
+                            print_error(f"❌ Record {i+2} should succeed, got {response.status_code}")
+                            self.test_results['failed'] += 1
+                    else:  # Should fail on 4th record
+                        if response.status_code == 400:
+                            data = response.json()
+                            if "Maximum 3 new face customers per day" in data.get('detail', ''):
+                                print_success("✅ Daily limit correctly enforced (400)")
+                                print_info("   Limit message: Maximum 3 new face customers per day")
+                                self.test_results['passed'] += 1
+                            else:
+                                print_error(f"❌ Wrong error message: {data.get('detail', 'No detail')}")
+                                self.test_results['failed'] += 1
+                        else:
+                            print_error(f"❌ 4th record should get 400, got {response.status_code}")
+                            self.test_results['failed'] += 1
+                            
+            except Exception as e:
+                print_error(f"❌ Exception in daily limit test: {str(e)}")
+                self.test_results['failed'] += 1
+                self.test_results['errors'].append(f"Daily limit test exception: {str(e)}")
 
     def test_password_security(self):
         """Test password security validations"""
