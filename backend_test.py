@@ -881,7 +881,7 @@ class NewFaceCustomerTester:
 
     def print_final_results(self):
         """Print comprehensive test results"""
-        print_header("📊 FORGOT PASSWORD FUNCTIONALITY TEST RESULTS")
+        print_header("📊 NEW FACE CUSTOMER FUNCTIONALITY TEST RESULTS")
         
         total_tests = self.test_results['passed'] + self.test_results['failed']
         success_rate = (self.test_results['passed'] / total_tests * 100) if total_tests > 0 else 0
@@ -900,13 +900,13 @@ class NewFaceCustomerTester:
         print_info(f"Success Rate: {success_rate:.1f}%")
         
         if self.test_results['failed'] == 0:
-            print_success("🎉 ALL FORGOT PASSWORD FUNCTIONALITY TESTS PASSED!")
-            print_success("✅ Admin reset password working correctly")
-            print_success("✅ Forgot password public endpoint working correctly")
-            print_success("✅ Password security validations working correctly")
-            print_success("✅ Complete integration workflow working correctly")
+            print_success("🎉 ALL NEW FACE CUSTOMER FUNCTIONALITY TESTS PASSED!")
+            print_success("✅ Manager role access levels working correctly")
+            print_success("✅ New Face Customer creation with daily limits working correctly")
+            print_success("✅ Manager and owner delete permissions working correctly")
+            print_success("✅ Team hierarchy scoping working correctly")
         else:
-            print_error("❌ SOME TESTS FAILED - FORGOT PASSWORD FUNCTIONALITY NEEDS ATTENTION")
+            print_error("❌ SOME TESTS FAILED - NEW FACE CUSTOMER FUNCTIONALITY NEEDS ATTENTION")
 
 if __name__ == "__main__":
     tester = ForgotPasswordTester()
