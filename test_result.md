@@ -102,7 +102,7 @@
 # Testing Data - Main Agent and testing sub agent both should log testing data below this section
 #====================================================================================================
 
-user_problem_statement: "CRM Sales Tracker with hierarchical team management. User requested: (A) Daily period should show individual's stats for that specific day, (B) Weekly period should show breakdown of each day within the week for each person plus weekly total, (C) Fix the aggregate rollup calculation at the top showing 0 values despite team members having data."
+user_problem_statement: "New Face Customer Tracking feature with different manager role access levels. User requested testing of hierarchical role system: State Manager > Regional Manager > District Manager > Agent. Updated New Face Customer endpoints to allow Regional and District managers to access this feature (previously only State Managers had access). Need to test role-based access control, team hierarchy scoping, and CRUD operations."
 
 backend:
   - task: "Wednesday Activity Bug Investigation - Backend APIs"
