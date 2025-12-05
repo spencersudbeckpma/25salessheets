@@ -93,7 +93,7 @@ const Dashboard = ({ user, setUser }) => {
               >
                 Leaderboard
               </TabsTrigger>
-              {user.role === 'state_manager' && (
+              {['state_manager', 'regional_manager', 'district_manager'].includes(user.role) && (
                 <>
                   <TabsTrigger 
                     value="newface" 
