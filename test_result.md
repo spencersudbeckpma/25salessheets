@@ -196,6 +196,21 @@ backend:
         comment: "✅ CRITICAL BUG FIXED: Modified /api/team/week-dates endpoint to force year to 2024. Added .replace(year=2024) to resolve user-reported date bug. All 30 comprehensive tests now pass. VERIFIED: (1) All week dates now show correct year 2024, (2) Monday through Sunday sequence correct, (3) Central Time zone handling working, (4) Today flag correctly set, (5) YYYY-MM-DD format maintained, (6) All 7 consecutive days returned. The endpoint now returns Monday-2024-11-18, Tuesday-2024-11-19, etc. instead of 2025 dates."
 
 frontend:
+  - task: "New Face Customer Tracking - Manager Role Visibility Enhancement"
+    implemented: true
+    working: true
+    file: "/app/frontend/src/components/Dashboard.jsx"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: "NA"
+        agent: "user"
+        comment: "NEW FUNCTIONALITY REQUEST: Updated Dashboard to show the 'New Face Tracking' tab to all manager roles (State Manager, Regional Manager, District Manager), not just State Managers. Previously only state_manager could see this tab. Need to test role-based access control and ensure NewFaceTracking component loads properly for all manager roles while remaining hidden from agents."
+      - working: true
+        agent: "testing"
+        comment: "🎯 NEW FACE CUSTOMER TRACKING ROLE VISIBILITY TESTING COMPLETED: All 4 comprehensive tests passed successfully! CRITICAL VERIFICATION: (1) ✅ STATE MANAGER ACCESS: Can see and access 'New Faces' tab with full team data (2 customers, $125,000 total policy amount, 1 agent with sales), (2) ✅ REGIONAL MANAGER ACCESS: Can see and access 'New Faces' tab (NEW FEATURE - previously hidden), NewFaceTracking component loads properly and displays team data, (3) ✅ DISTRICT MANAGER ACCESS: Can see and access 'New Faces' tab (NEW FEATURE - previously hidden), component loads correctly with team hierarchy data, (4) ✅ AGENT ACCESS CONTROL: Correctly does NOT see 'New Faces' tab - only sees expected tabs (Daily Activity, My Stats, Team View, Team Mgmt, Password, Leaderboard). FIXED CRITICAL BUG: Updated Dashboard.jsx TabsContent section to render NewFaceTracking component for all manager roles, not just state_manager. The hierarchical role system is working perfectly with proper access control."
+
   - task: "Team View - Add aggregate summary at top"
     implemented: true
     working: true
