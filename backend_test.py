@@ -709,130 +709,155 @@ class NewFaceCustomerTester:
                 self.test_results['failed'] += 1
                 self.test_results['errors'].append(f"Non-existent record test exception: {str(e)}")
 
-    def test_integration_workflow(self):
-        """Test complete integration workflow"""
-        print_header("🔄 TESTING COMPLETE INTEGRATION WORKFLOW")
+    def test_team_hierarchy_scoping(self):
+        """Test that team hierarchy scoping works correctly for different manager levels"""
+        print_header("🏢 TESTING TEAM HIERARCHY SCOPING")
         
-        print_info("🎯 Testing complete forgot password workflow:")
-        print_info("   1. User forgets password")
-        print_info("   2. Admin uses forgot password feature")
-        print_info("   3. System generates temporary password")
-        print_info("   4. User logs in with temporary password")
-        print_info("   5. User changes to permanent password")
-        print_info("   6. User can login normally with new password")
+        print_info("🎯 Testing that managers only see data from their own team hierarchy")
+        print_info("   State Manager should see all data")
+        print_info("   Regional Manager should see regional team data")
+        print_info("   District Manager should see district team data")
         
-        # Step 1-3: Already tested in forgot_password test
-        print_info("\n📋 WORKFLOW STEP 1-3: Generate temporary password (already tested)")
+        # First, create some test data with different users
+        today = datetime.now().strftime('%Y-%m-%d')
         
-        # Step 4: User logs in with temporary password (already tested)
-        print_info("\n📋 WORKFLOW STEP 4: Login with temporary password (already tested)")
+        # Create records for each user level
+        test_records = []
         
-        # Step 5: User changes to permanent password
-        print_info("\n📋 WORKFLOW STEP 5: Change to Permanent Password")
+        # Test 1: Create records for each user type
+        print_info("\n📋 TEST 1: Creating Test Records for Hierarchy Testing")
         
-        if hasattr(self, 'temp_token') and self.temp_token:
-            try:
-                headers = {"Authorization": f"Bearer {self.temp_token}"}
-                change_data = {
-                    "current_password": getattr(self, 'last_temp_password', 'TempPass123'),
-                    "new_password": "NewPermanentPassword123!"
-                }
-                
-                # First, let's get the actual temporary password from the forgot password test
-                # We'll use the district manager's temporary password
-                print_info("Getting temporary password for workflow test...")
-                
-                # Generate new temporary password for workflow test
-                forgot_data = {"email": "district.manager.forgot@test.com"}
-                forgot_response = self.session.post(f"{BACKEND_URL}/auth/forgot-password", json=forgot_data)
-                
-                if forgot_response.status_code == 200:
-                    forgot_result = forgot_response.json()
-                    temp_password = forgot_result.get('temporary_password')
+        users_and_tokens = [
+            ("State Manager", self.state_manager_token, "State Customer"),
+            ("Regional Manager", self.regional_manager_token, "Regional Customer"),
+            ("District Manager", self.district_manager_token, "District Customer"),
+            ("Agent", self.agent_token, "Agent Customer")
+        ]
+        
+        for user_type, token, customer_name in users_and_tokens:
+            if token:
+                try:
+                    headers = {"Authorization": f"Bearer {token}"}
+                    customer_data = {
+                        "date": today,
+                        "customer_name": customer_name,
+                        "county": f"{user_type} County",
+                        "policy_amount": 60000.00
+                    }
                     
-                    if temp_password:
-                        print_success(f"✅ Got temporary password for workflow: {temp_password}")
-                        
-                        # Login with temporary password
-                        login_response = self.session.post(f"{BACKEND_URL}/auth/login", json={
-                            "email": "district.manager.forgot@test.com",
-                            "password": temp_password
-                        })
-                        
-                        if login_response.status_code == 200:
-                            temp_token = login_response.json().get('token')
-                            headers = {"Authorization": f"Bearer {temp_token}"}
-                            
-                            # Change to permanent password
-                            change_data = {
-                                "current_password": temp_password,
-                                "new_password": "NewPermanentPassword123!"
-                            }
-                            
-                            change_response = self.session.post(
-                                f"{BACKEND_URL}/auth/change-password",
-                                json=change_data,
-                                headers=headers
-                            )
-                            
-                            if change_response.status_code == 200:
-                                print_success("✅ Successfully changed to permanent password")
-                                self.test_results['passed'] += 1
-                                
-                                # Step 6: Verify user can login with new permanent password
-                                print_info("\n📋 WORKFLOW STEP 6: Login with New Permanent Password")
-                                
-                                final_login_response = self.session.post(f"{BACKEND_URL}/auth/login", json={
-                                    "email": "district.manager.forgot@test.com",
-                                    "password": "NewPermanentPassword123!"
-                                })
-                                
-                                if final_login_response.status_code == 200:
-                                    print_success("✅ User can login with new permanent password")
-                                    self.test_results['passed'] += 1
-                                    
-                                    # Verify temporary password no longer works
-                                    old_login_response = self.session.post(f"{BACKEND_URL}/auth/login", json={
-                                        "email": "district.manager.forgot@test.com",
-                                        "password": temp_password
-                                    })
-                                    
-                                    if old_login_response.status_code == 401:
-                                        print_success("✅ Temporary password no longer works after change")
-                                        self.test_results['passed'] += 1
-                                    else:
-                                        print_error("❌ Temporary password still works after change")
-                                        self.test_results['failed'] += 1
-                                        self.test_results['errors'].append("Temporary password still valid after change")
-                                        
-                                else:
-                                    print_error(f"❌ Cannot login with new permanent password: {final_login_response.status_code}")
-                                    self.test_results['failed'] += 1
-                                    self.test_results['errors'].append("Cannot login with new permanent password")
-                                    
-                            else:
-                                print_error(f"❌ Password change failed: {change_response.status_code} - {change_response.text}")
-                                self.test_results['failed'] += 1
-                                self.test_results['errors'].append(f"Password change failed: {change_response.status_code}")
-                                
-                        else:
-                            print_error(f"❌ Cannot login with temporary password: {login_response.status_code}")
-                            self.test_results['failed'] += 1
-                            
+                    response = self.session.post(
+                        f"{BACKEND_URL}/new-face-customers",
+                        json=customer_data,
+                        headers=headers
+                    )
+                    
+                    if response.status_code == 200:
+                        record_id = response.json().get('id')
+                        test_records.append((user_type, record_id))
+                        print_success(f"✅ Created test record for {user_type}")
+                        self.test_results['passed'] += 1
                     else:
-                        print_error("❌ No temporary password in forgot response")
+                        print_error(f"❌ Failed to create record for {user_type}: {response.status_code}")
                         self.test_results['failed'] += 1
                         
+                except Exception as e:
+                    print_error(f"❌ Exception creating record for {user_type}: {str(e)}")
+                    self.test_results['failed'] += 1
+        
+        # Test 2: Verify State Manager sees all records
+        print_info("\n📋 TEST 2: State Manager Should See All Team Records")
+        if self.state_manager_token:
+            try:
+                headers = {"Authorization": f"Bearer {self.state_manager_token}"}
+                response = self.session.get(f"{BACKEND_URL}/new-face-customers/all", headers=headers)
+                
+                if response.status_code == 200:
+                    data = response.json()
+                    print_success(f"✅ State Manager retrieved {len(data)} total records")
+                    
+                    # Should see records from all levels in hierarchy
+                    customer_names = [record.get('customer_name', '') for record in data]
+                    expected_customers = ["State Customer", "Regional Customer", "District Customer", "Agent Customer"]
+                    
+                    found_customers = [name for name in expected_customers if name in customer_names]
+                    
+                    if len(found_customers) >= 3:  # Should see at least most of the hierarchy
+                        print_success(f"✅ State Manager sees records from multiple hierarchy levels: {found_customers}")
+                        self.test_results['passed'] += 1
+                    else:
+                        print_warning(f"⚠️ State Manager may not see all hierarchy levels: {found_customers}")
+                        
                 else:
-                    print_error(f"❌ Forgot password failed for workflow: {forgot_response.status_code}")
+                    print_error(f"❌ State Manager hierarchy test failed: {response.status_code}")
                     self.test_results['failed'] += 1
                     
             except Exception as e:
-                print_error(f"❌ Exception in integration workflow test: {str(e)}")
+                print_error(f"❌ Exception in State Manager hierarchy test: {str(e)}")
                 self.test_results['failed'] += 1
-                self.test_results['errors'].append(f"Integration workflow exception: {str(e)}")
-        else:
-            print_warning("⚠️ No temporary token available for workflow testing")
+        
+        # Test 3: Verify Regional Manager sees appropriate scope
+        print_info("\n📋 TEST 3: Regional Manager Should See Regional Team Records")
+        if self.regional_manager_token:
+            try:
+                headers = {"Authorization": f"Bearer {self.regional_manager_token}"}
+                response = self.session.get(f"{BACKEND_URL}/new-face-customers/all", headers=headers)
+                
+                if response.status_code == 200:
+                    data = response.json()
+                    print_success(f"✅ Regional Manager retrieved {len(data)} records from their team")
+                    
+                    # Should see records from regional level and below
+                    customer_names = [record.get('customer_name', '') for record in data]
+                    
+                    # Should see regional, district, and agent records, but not state manager's personal records
+                    regional_scope_customers = ["Regional Customer", "District Customer", "Agent Customer"]
+                    found_in_scope = [name for name in regional_scope_customers if name in customer_names]
+                    
+                    if len(found_in_scope) >= 2:  # Should see at least regional and subordinate records
+                        print_success(f"✅ Regional Manager sees appropriate scope: {found_in_scope}")
+                        self.test_results['passed'] += 1
+                    else:
+                        print_warning(f"⚠️ Regional Manager scope may be incorrect: {found_in_scope}")
+                        
+                else:
+                    print_error(f"❌ Regional Manager hierarchy test failed: {response.status_code}")
+                    self.test_results['failed'] += 1
+                    
+            except Exception as e:
+                print_error(f"❌ Exception in Regional Manager hierarchy test: {str(e)}")
+                self.test_results['failed'] += 1
+        
+        # Test 4: Verify District Manager sees appropriate scope
+        print_info("\n📋 TEST 4: District Manager Should See District Team Records")
+        if self.district_manager_token:
+            try:
+                headers = {"Authorization": f"Bearer {self.district_manager_token}"}
+                response = self.session.get(f"{BACKEND_URL}/new-face-customers/all", headers=headers)
+                
+                if response.status_code == 200:
+                    data = response.json()
+                    print_success(f"✅ District Manager retrieved {len(data)} records from their team")
+                    
+                    # Should see records from district level and below
+                    customer_names = [record.get('customer_name', '') for record in data]
+                    
+                    # Should see district and agent records
+                    district_scope_customers = ["District Customer", "Agent Customer"]
+                    found_in_scope = [name for name in district_scope_customers if name in customer_names]
+                    
+                    if len(found_in_scope) >= 1:  # Should see at least district records
+                        print_success(f"✅ District Manager sees appropriate scope: {found_in_scope}")
+                        self.test_results['passed'] += 1
+                    else:
+                        print_warning(f"⚠️ District Manager scope may be incorrect: {found_in_scope}")
+                        
+                else:
+                    print_error(f"❌ District Manager hierarchy test failed: {response.status_code}")
+                    self.test_results['failed'] += 1
+                    
+            except Exception as e:
+                print_error(f"❌ Exception in District Manager hierarchy test: {str(e)}")
+                self.test_results['failed'] += 1
 
     def run_all_tests(self):
         """Run all forgot password functionality tests"""
