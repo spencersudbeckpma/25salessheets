@@ -879,7 +879,7 @@ class NewFaceCustomerTester:
         # Print final results
         self.print_final_results()
         
-        return self.test_results['failed'] == 0</invoke>
+        return self.test_results['failed'] == 0
 
     def print_final_results(self):
         """Print comprehensive test results"""
