@@ -274,8 +274,8 @@ async def get_new_face_customers_by_date(date: str, current_user: dict = Depends
 
 @api_router.get("/new-face-customers/all")
 async def get_all_new_face_customers(current_user: dict = Depends(get_current_user)):
-    """Get all new face customers from entire team (State Manager only)"""
-    if current_user['role'] != 'state_manager':
+    """Get all new face customers from entire team (Managers only)"""
+    if current_user['role'] not in ['state_manager', 'regional_manager', 'district_manager']:
         raise HTTPException(status_code=403, detail="Access denied")
     
     # Get all team members recursively
