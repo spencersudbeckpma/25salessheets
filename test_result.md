@@ -438,10 +438,7 @@ backend:
 
 test_plan:
   current_focus:
-    - "New Face Customer All Endpoint - Manager Role Access Testing"
-    - "New Face Customer Create Endpoint - Daily Limit Testing"
-    - "New Face Customer Delete Endpoint - Manager Permissions Testing"
-    - "New Face Customer Team Hierarchy Scoping Testing"
+    - "New Face Customer Tracking - Manager Role Visibility Enhancement"
   stuck_tasks: []
   test_all: false
   test_priority: "high_first"
