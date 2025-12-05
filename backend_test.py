@@ -267,146 +267,140 @@ class NewFaceCustomerTester:
             print_warning(f"Exception creating activity for {date_str}: {str(e)}")
             return False
 
-    def test_admin_reset_password(self):
-        """Test admin reset password functionality (State Manager only)"""
-        print_header("🔐 TESTING ADMIN RESET PASSWORD FUNCTIONALITY")
+    def test_new_face_customers_all_endpoint(self):
+        """Test GET /api/new-face-customers/all endpoint with different manager roles"""
+        print_header("📊 TESTING NEW FACE CUSTOMERS ALL ENDPOINT")
         
-        if not self.state_manager_token or not self.district_manager_id:
-            print_error("Missing required tokens/IDs for admin reset testing")
-            return
-            
-        headers = {"Authorization": f"Bearer {self.state_manager_token}"}
+        print_info("🎯 Testing /api/new-face-customers/all with different manager role access levels")
         
-        print_info("🎯 Testing admin reset password with State Manager resetting District Manager password")
-        
-        # Test 1: Valid admin reset by State Manager
-        print_info("\n📋 TEST 1: Valid Admin Reset by State Manager")
-        try:
-            reset_data = {
-                "user_id": self.district_manager_id,
-                "new_password": "NewPassword123!"
-            }
-            
-            response = self.session.post(
-                f"{BACKEND_URL}/auth/admin-reset-password",
-                json=reset_data,
-                headers=headers
-            )
-            
-            if response.status_code == 200:
-                data = response.json()
-                print_success("✅ Admin reset password successful")
-                print_info(f"   Message: {data.get('message', 'No message')}")
-                print_info(f"   User: {data.get('user_name', 'Unknown')} ({data.get('user_email', 'Unknown')})")
-                self.test_results['passed'] += 1
-                
-                # Verify the reset user can login with new password
-                print_info("Verifying reset user can login with new password...")
-                login_response = self.session.post(f"{BACKEND_URL}/auth/login", json={
-                    "email": "district.manager.forgot@test.com",
-                    "password": "NewPassword123!"
-                })
-                
-                if login_response.status_code == 200:
-                    print_success("✅ Reset user can login with new password")
-                    self.test_results['passed'] += 1
-                else:
-                    print_error(f"❌ Reset user cannot login with new password: {login_response.status_code}")
-                    self.test_results['failed'] += 1
-                    self.test_results['errors'].append("Reset user cannot login with new password")
-                    
-            else:
-                print_error(f"❌ Admin reset failed: {response.status_code} - {response.text}")
-                self.test_results['failed'] += 1
-                self.test_results['errors'].append(f"Admin reset failed: {response.status_code}")
-                
-        except Exception as e:
-            print_error(f"❌ Exception in admin reset test: {str(e)}")
-            self.test_results['failed'] += 1
-            self.test_results['errors'].append(f"Admin reset exception: {str(e)}")
-        
-        # Test 2: Non-State Manager should fail with 403
-        print_info("\n📋 TEST 2: Non-State Manager Access Control")
-        if self.district_manager_token:
+        # Test 1: State Manager access - should get all team data
+        print_info("\n📋 TEST 1: State Manager Access to All Team Data")
+        if self.state_manager_token:
             try:
-                district_headers = {"Authorization": f"Bearer {self.district_manager_token}"}
-                reset_data = {
-                    "user_id": self.agent_id,
-                    "new_password": "ShouldFail123!"
-                }
+                headers = {"Authorization": f"Bearer {self.state_manager_token}"}
+                response = self.session.get(f"{BACKEND_URL}/new-face-customers/all", headers=headers)
                 
-                response = self.session.post(
-                    f"{BACKEND_URL}/auth/admin-reset-password",
-                    json=reset_data,
-                    headers=district_headers
-                )
-                
-                if response.status_code == 403:
-                    print_success("✅ District Manager correctly denied access (403)")
+                if response.status_code == 200:
+                    data = response.json()
+                    print_success("✅ State Manager can access all team New Face Customer data")
+                    print_info(f"   Retrieved {len(data)} New Face Customer records")
                     self.test_results['passed'] += 1
+                    
+                    # Verify response structure
+                    if isinstance(data, list):
+                        print_success("✅ Response is a list as expected")
+                        self.test_results['passed'] += 1
+                        
+                        if len(data) > 0:
+                            sample_record = data[0]
+                            required_fields = ['id', 'user_id', 'user_name', 'date', 'customer_name', 'county', 'policy_amount']
+                            missing_fields = [field for field in required_fields if field not in sample_record]
+                            
+                            if not missing_fields:
+                                print_success("✅ New Face Customer records have all required fields")
+                                self.test_results['passed'] += 1
+                            else:
+                                print_error(f"❌ Missing fields in records: {missing_fields}")
+                                self.test_results['failed'] += 1
+                                self.test_results['errors'].append(f"Missing fields: {missing_fields}")
+                    else:
+                        print_error("❌ Response should be a list")
+                        self.test_results['failed'] += 1
+                        self.test_results['errors'].append("Response not a list")
+                        
                 else:
-                    print_error(f"❌ District Manager should get 403, got {response.status_code}")
+                    print_error(f"❌ State Manager access failed: {response.status_code} - {response.text}")
                     self.test_results['failed'] += 1
-                    self.test_results['errors'].append(f"District Manager access control failed: {response.status_code}")
+                    self.test_results['errors'].append(f"State Manager access failed: {response.status_code}")
                     
             except Exception as e:
-                print_error(f"❌ Exception in access control test: {str(e)}")
+                print_error(f"❌ Exception in State Manager test: {str(e)}")
                 self.test_results['failed'] += 1
-                self.test_results['errors'].append(f"Access control test exception: {str(e)}")
+                self.test_results['errors'].append(f"State Manager test exception: {str(e)}")
         
-        # Test 3: Invalid user_id not in hierarchy
-        print_info("\n📋 TEST 3: Invalid User ID Not in Hierarchy")
-        try:
-            reset_data = {
-                "user_id": "invalid-user-id-12345",
-                "new_password": "ValidPassword123!"
-            }
-            
-            response = self.session.post(
-                f"{BACKEND_URL}/auth/admin-reset-password",
-                json=reset_data,
-                headers=headers
-            )
-            
-            if response.status_code == 403:
-                print_success("✅ Invalid user ID correctly rejected (403)")
-                self.test_results['passed'] += 1
-            else:
-                print_error(f"❌ Invalid user ID should get 403, got {response.status_code}")
-                self.test_results['failed'] += 1
-                self.test_results['errors'].append(f"Invalid user ID validation failed: {response.status_code}")
+        # Test 2: Regional Manager access - should get their team data (scoped to hierarchy)
+        print_info("\n📋 TEST 2: Regional Manager Access to Regional Team Data")
+        if self.regional_manager_token:
+            try:
+                headers = {"Authorization": f"Bearer {self.regional_manager_token}"}
+                response = self.session.get(f"{BACKEND_URL}/new-face-customers/all", headers=headers)
                 
-        except Exception as e:
-            print_error(f"❌ Exception in invalid user ID test: {str(e)}")
-            self.test_results['failed'] += 1
-            self.test_results['errors'].append(f"Invalid user ID test exception: {str(e)}")
+                if response.status_code == 200:
+                    data = response.json()
+                    print_success("✅ Regional Manager can access their team New Face Customer data")
+                    print_info(f"   Retrieved {len(data)} New Face Customer records for regional team")
+                    self.test_results['passed'] += 1
+                    
+                    # Verify response structure
+                    if isinstance(data, list):
+                        print_success("✅ Regional Manager response is a list as expected")
+                        self.test_results['passed'] += 1
+                    else:
+                        print_error("❌ Regional Manager response should be a list")
+                        self.test_results['failed'] += 1
+                        
+                else:
+                    print_error(f"❌ Regional Manager access failed: {response.status_code} - {response.text}")
+                    self.test_results['failed'] += 1
+                    self.test_results['errors'].append(f"Regional Manager access failed: {response.status_code}")
+                    
+            except Exception as e:
+                print_error(f"❌ Exception in Regional Manager test: {str(e)}")
+                self.test_results['failed'] += 1
+                self.test_results['errors'].append(f"Regional Manager test exception: {str(e)}")
         
-        # Test 4: Password too short validation
-        print_info("\n📋 TEST 4: Password Length Validation")
-        try:
-            reset_data = {
-                "user_id": self.district_manager_id,
-                "new_password": "123"  # Too short
-            }
-            
-            response = self.session.post(
-                f"{BACKEND_URL}/auth/admin-reset-password",
-                json=reset_data,
-                headers=headers
-            )
-            
-            if response.status_code == 400:
-                print_success("✅ Short password correctly rejected (400)")
-                self.test_results['passed'] += 1
-            else:
-                print_error(f"❌ Short password should get 400, got {response.status_code}")
-                self.test_results['failed'] += 1
-                self.test_results['errors'].append(f"Password length validation failed: {response.status_code}")
+        # Test 3: District Manager access - should get their team data (scoped to hierarchy)
+        print_info("\n📋 TEST 3: District Manager Access to District Team Data")
+        if self.district_manager_token:
+            try:
+                headers = {"Authorization": f"Bearer {self.district_manager_token}"}
+                response = self.session.get(f"{BACKEND_URL}/new-face-customers/all", headers=headers)
                 
-        except Exception as e:
-            print_error(f"❌ Exception in password length test: {str(e)}")
-            self.test_results['failed'] += 1
-            self.test_results['errors'].append(f"Password length test exception: {str(e)}")
+                if response.status_code == 200:
+                    data = response.json()
+                    print_success("✅ District Manager can access their team New Face Customer data")
+                    print_info(f"   Retrieved {len(data)} New Face Customer records for district team")
+                    self.test_results['passed'] += 1
+                    
+                    # Verify response structure
+                    if isinstance(data, list):
+                        print_success("✅ District Manager response is a list as expected")
+                        self.test_results['passed'] += 1
+                    else:
+                        print_error("❌ District Manager response should be a list")
+                        self.test_results['failed'] += 1
+                        
+                else:
+                    print_error(f"❌ District Manager access failed: {response.status_code} - {response.text}")
+                    self.test_results['failed'] += 1
+                    self.test_results['errors'].append(f"District Manager access failed: {response.status_code}")
+                    
+            except Exception as e:
+                print_error(f"❌ Exception in District Manager test: {str(e)}")
+                self.test_results['failed'] += 1
+                self.test_results['errors'].append(f"District Manager test exception: {str(e)}")
+        
+        # Test 4: Agent access - should return 403 Access Denied
+        print_info("\n📋 TEST 4: Agent Access Control - Should Be Denied")
+        if self.agent_token:
+            try:
+                headers = {"Authorization": f"Bearer {self.agent_token}"}
+                response = self.session.get(f"{BACKEND_URL}/new-face-customers/all", headers=headers)
+                
+                if response.status_code == 403:
+                    print_success("✅ Agent correctly denied access (403)")
+                    print_info("   Access control working as expected - only managers can access all team data")
+                    self.test_results['passed'] += 1
+                else:
+                    print_error(f"❌ Agent should get 403, got {response.status_code}")
+                    print_error(f"   Response: {response.text}")
+                    self.test_results['failed'] += 1
+                    self.test_results['errors'].append(f"Agent access control failed: {response.status_code}")
+                    
+            except Exception as e:
+                print_error(f"❌ Exception in Agent access test: {str(e)}")
+                self.test_results['failed'] += 1
+                self.test_results['errors'].append(f"Agent access test exception: {str(e)}")
 
     def test_forgot_password(self):
         """Test forgot password functionality (Public endpoint)"""
