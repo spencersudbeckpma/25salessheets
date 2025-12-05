@@ -49,6 +49,8 @@ class NewFaceCustomerTester:
         self.session = requests.Session()
         self.state_manager_token = None
         self.state_manager_id = None
+        self.regional_manager_token = None
+        self.regional_manager_id = None
         self.district_manager_token = None
         self.district_manager_id = None
         self.agent_token = None
