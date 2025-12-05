@@ -303,8 +303,8 @@ async def delete_new_face_customer(customer_id: str, current_user: dict = Depend
     if not customer:
         raise HTTPException(status_code=404, detail="Customer not found")
     
-    # Only owner or state manager can delete
-    if customer['user_id'] != current_user['id'] and current_user['role'] != 'state_manager':
+    # Only owner or managers can delete
+    if customer['user_id'] != current_user['id'] and current_user['role'] not in ['state_manager', 'regional_manager', 'district_manager']:
         raise HTTPException(status_code=403, detail="Access denied")
     
     await db.new_face_customers.delete_one({"id": customer_id})
