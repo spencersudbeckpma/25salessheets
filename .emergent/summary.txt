@@ -1,105 +1,177 @@
-<analysis>
-The user's primary language is English. The next agent must respond in English.
+<analysis>An analysis of the conversation and codebase has been completed. Here is the summary to assist the next agent.
 
-The trajectory details the iterative development and enhancement of a full-stack CRM Sales Tracker application. The initial phase involved building the core application with a React frontend and FastAPI backend, including user authentication, hierarchical team structures, activity logging, and leaderboards.
+**original_problem_statement**: The user initially wanted to finalize adding the Sales metric to the Team View. After that, the project expanded significantly to include a series of new features and bug fixes, primarily focused on reporting and user management.
 
-A significant portion of the work involved iterative refinement and complex debugging based on user feedback. Key challenges addressed include:
-1.  **Login and Authentication:** A persistent issue on the user's iPad, caused by aggressive browser autofill, led to a multi-step debugging process. This culminated in implementing a dual username/email login system and a temporary, user-specific One-Tap Login button to bypass the form. The discrepancy between development and production databases further complicated this, requiring a one-time password reset endpoint for the production environment.
-2.  **Data Integrity and Display:** The user reported issues with data rollups and incorrect dates. Investigation revealed this was due to outdated demo data and a critical timezone mismatch between the backend (initially Central, mistakenly changed to UTC) and the frontend (user's local time). The final fix was to standardize the backend on 'US/Central' time.
-3.  **Feature Expansion:** The AI engineer successfully added several major features:
-    *   Detailed daily/weekly breakdowns in the Team View.
-    *   A dedicated Reports section for downloading team performance data as Excel spreadsheets, restricted to State Managers.
-    *   A New Face Customer Tracking system, allowing users to log customer details (Name, County, Policy Amount) after a new sale, with a corresponding report page and downloadable Excel files.
+**PRODUCT REQUIREMENTS**:
+- **Finalize Sales Metric**: Add the Sales metric to all views in the Team View component.
+- **Daily Report**: Implement a daily report feature accessible to State Managers. This evolved into a full-fledged Manager Reporting suite.
+- **Reporting Enhancements**:
+    - Extend reports to include Monthly, Quarterly, and Yearly periods.
+    - Allow selection of previous months, quarters, and years.
+    - Enable managers to select a specific individual manager to view their team's report.
+    - Implement a drill-down feature to view a manager's full team hierarchy.
+    - Include the manager's individual performance numbers in team reports.
+    - Add a TOTALS row to all Excel spreadsheet downloads.
+- **Password Management**:
+    - Create a feature for users to change their own password.
+    - Create a feature for State Managers to reset passwords for users who have forgotten them.
+- **Permission Updates**:
+    - Expand Daily Report access to Regional and District Managers.
+    - Expand New Face Customer Tracking report access to all manager levels (State, Regional, District).
+- **Bug Fixes**:
+    - Address a critical timezone/date bug causing activity data to appear a day behind.
+    - Fix inconsistencies between on-screen reports and their corresponding Excel downloads.
+    - Resolve access control issues preventing State Managers from viewing all subordinate managers' reports.
 
-The most recent work involved adding Sales to the team view and starting to clarify a new request for a daily report. The overall process shows a responsive AI engineer building features, troubleshooting complex bugs, and adapting to user needs.
-</analysis>
+**User's preferred language**: English
 
-<product_requirements>
-The application is a comprehensive CRM Sales Tracker designed for a sales organization with a hierarchical structure (State Manager, Regional Manager, District Manager, Agent).
+**what currently exists?**
+The application is a full-stack CRM Sales Tracker with a React frontend, FastAPI backend, and MongoDB database. It features robust, role-based user authentication and hierarchical team management.
 
-**Core Features Implemented:**
-*   **User Management:** Secure JWT-based authentication supporting both email and username logins. A role-based access control (RBAC) system ensures managers only see data for their own teams.
-*   **Activity Logging:** Users can log 8 daily activity metrics: Contacts, Appointments, Presentations, Referrals, Testimonials, Sales, New Face Sold, and Total Premium. Contacts, Appointments, Presentations, and New Face Sold support decimal inputs.
-*   **Data Visualization:**
-    *   **Team View:** Displays the user's organizational hierarchy with aggregated performance stats. Includes expandable cards for individual team members with daily and weekly breakdowns.
-    *   **Leaderboard:** Shows the top 5 organization-wide performers for Presentations, Referrals, Testimonials, New Face Sold, and Total Premium.
-*   **Reporting & Tracking:**
-    *   **Excel Reports:** A State Manager-exclusive feature to download weekly, monthly, quarterly, and yearly performance reports for the entire organization.
-    *   **New Face Customer Tracking:** A system to log customer details (Name, County, Policy Amount) upon a New Face sale, with a dedicated tracking dashboard and downloadable reports.
+Key functionalities include:
+- **Activity Logging**: Users can log daily sales activities.
+- **Team View**: A hierarchical view of team performance with weekly breakdowns.
+- **Manager Reports**: A comprehensive reporting suite for managers (State, Regional, District) with hierarchical data access. It supports Daily, Monthly, Quarterly, and Yearly time periods, with selectors for historical data. Reports can be viewed for the entire team or filtered for a specific manager. It also includes a drill-down feature to explore a manager's sub-hierarchy.
+- **Excel Exports**: All reports, including totals, are downloadable as formatted Excel files.
+- **New Face Customer Tracking**: A system for logging and reporting on new customer acquisitions, currently accessible to State Managers.
+- **Password Management**: All users can change their own passwords. State Managers have an admin panel to reset passwords for any user in their hierarchy.
 
-The application has undergone significant debugging to resolve timezone discrepancies and production vs. development environment mismatches.
-</product_requirements>
+**Last working item**:
+- **Last item agent was working**: Expanding access for the New Face Customer Tracking report to all manager levels (State, Regional, and District) based on their position in the hierarchy.
+- **Status**: IN PROGRESS
+- **Agent Testing Done**: N
+- **Which testing method agent to use?**: both
+- **User Testing Done**: N
 
-<key_technical_concepts>
-- **Backend:** FastAPI, MongoDB (with Motor), Pydantic, JWT for authentication, bcrypt,  for timezone management (standardized to 'US/Central'),  for Excel generation.
-- **Frontend:** React, Shadcn/UI, Tailwind CSS, Recharts for charts, React Hooks.
-- **Architecture:** Full-stack with separate frontend/backend services. API routes prefixed with . Environment variables manage DB and backend URLs.
-- **Development Process:** Iterative development, extensive debugging, use of temporary helper endpoints/UI for production fixes, and role-based access control (RBAC) for feature visibility.
-</key_technical_concepts>
+**All Pending/In progress Issue list**:
+- **Issue 1**: Grant Regional and District Managers access to the New Face Customer Tracking feature. (P0)
 
-<code_architecture>
-The application follows a standard full-stack architecture with a React frontend communicating with a FastAPI backend, which in turn connects to a MongoDB database.
+**Issues Detail**:
+- **Issue 1: Expand New Face Customer Tracking Access**
+    - **Attempted fixes**: None yet. The agent had just started by viewing .
+    - **Next debug checklist**:
+        1.  In , locate the endpoints related to New Face Customers (e.g., ).
+        2.  Modify the dependency injection for authentication/authorization from being -specific to a more general check that allows , , and  roles. The data returned should be scoped based on the user's hierarchy.
+        3.  In , modify the conditional rendering logic to show the New Face Tracking tab to users with  and  roles, in addition to .
+    - **Why fix this issue and what will be achieved with the fix?**: To fulfill the user's request, allowing all levels of management to track new customers within their own teams, thereby increasing the feature's utility.
+    - **Status**: NOT STARTED
+    - **Is recurring issue?**: N
+    - **Should Test frontend/backend/both after fix?**: Both
+    - **Blocked on other issue**: None
 
-**Directory Structure:**
+**In progress Task List**:
+- **Task 1**: Complete the implementation of expanded access for the New Face Customer Tracking feature. (P0)
+
+**Task Detail**:
+- **Task 1: Expand New Face Customer Tracking Access**
+    - **Where to resume**: The agent should start by editing  to modify the access control on the New Face Customer API endpoints.
+    - **What will be achieved with this?**: All managers will be able to access the New Face Customer reports, with data scoped to their own teams.
+    - **Status**: IN PROGRESS
+    - **Should Test frontend/backend/both after fix?**: Both
+    - **Blocked on something**: No
+
+**Upcoming and Future Tasks**
+- None. All user requests have been addressed or are currently in progress.
+
+**Completed work in this session**
+- **Reporting Suite**:
+    - Implemented a Manager Reports feature with Daily, Monthly, Quarterly, and Yearly views. ()
+    - Added historical data selection via month, quarter, and year pickers.
+    - Implemented a manager selection dropdown for Individual and Team report types.
+    - Created a hierarchy drill-down feature by making manager names clickable.
+- **Report Enhancements**:
+    - Included the selected manager's individual numbers in team reports.
+    - Added TOTALS rows with styling to all Excel downloads.
+- **Password Management**:
+    - Implemented a Change Password feature for all users ().
+    - Implemented an Admin Reset Password feature for State Managers ().
+- **Permission Updates**:
+    - Expanded Manager Reports access from only State Managers to all manager levels.
+- **Bug Fixes**:
+    - Resolved a critical timezone bug causing a day behind data discrepancy in  and reports.
+    - Fixed a bug causing Excel downloads to have different data than on-screen reports.
+    - Corrected an access control bug that prevented State Managers from selecting all their subordinate managers in reports.
+- **Initial Task**:
+    - Finalized adding the Sales metric to the  weekly breakdown.
+
+**Earlier issues found/mentioned but not fixed**
+- None.
+
+**Known issue recurrence from previous fork**
+- **Issue recurrence in previous fork**: Date and timezone discrepancies were a persistent problem throughout the development, requiring multiple fixes. The initial summary mentioned a browser-specific login issue, highlighting a potential for environment-specific bugs.
+- **Recurrence count**: The date issue was fixed at least 3 times in this session.
+- **Status**: RESOLVED (but requires careful testing for any new date-related features).
+
+**Code Architecture**
 
 
-**Key File Summaries:**
+**Key Technical Concepts**
+- **Backend**: FastAPI, MongoDB (with Motor), Pydantic, JWT for authentication, bcrypt,  for timezone management (standardized to 'America/Chicago'),  for Excel generation.
+- **Frontend**: React, Shadcn/UI, Tailwind CSS, Recharts for charts, React Hooks.
+- **Architecture**: Full-stack with separate frontend/backend services. API routes prefixed with . Environment variables manage DB and backend URLs.
+- **Development Process**: Iterative development, extensive debugging, use of helper endpoints/UI for production fixes, and role-based access control (RBAC) for feature visibility.
 
-- ****
-    - **Importance:** This is the core of the application, defining all API endpoints, database models (Pydantic), and business logic.
-    - **Summary of Changes:** This file was heavily modified to:
-        - Add endpoints for Excel reports (), New Face Customer tracking (), and diagnostics.
-        - Fix a critical bug by standardizing all date/time operations to 'US/Central' timezone, removing the incorrect UTC logic.
-        - Update data models to allow  values for Contacts, Appointments, and New Face Sold.
-        - Implement a flexible login endpoint that accepts either a username or an email.
-        - Add temporary endpoints for one-time production fixes, like resetting a user's password.
+**key DB schema**
+- **users**:  (No schema changes, but  is now actively managed).
+- **activities**:  (No schema changes).
+- **new_face_customers**:  (No schema changes).
 
-- ****
-    - **Importance:** Displays the core hierarchical team data, which is a primary feature. It was one of the most frequently edited files.
-    - **Summary of Changes:**
-        - Implemented expandable cards to show detailed daily and weekly breakdowns for individual team members.
-        - UI was redesigned twice based on user feedback, first to a bold theme, then to a more subtle and professional color scheme.
-        - The number of metrics displayed was streamlined to 4 key items, and recently, Sales was being added back.
+**changes in tech stack**
+- None.
 
-- ****
-    - **Importance:** Handles user authentication, which was a major pain point for the user.
-    - **Summary of Changes:**
-        - The login form was updated to disable autocomplete to combat browser issues.
-        - A conditional, user-specific One-Tap Login button was added to provide a workaround for the user's persistent iPad autofill problem. This button is only visible when spencer is typed in the username field.
+**All files of reference**
+- : Heavily modified to add all new API endpoints for the expanded reporting suite and password management features. Contains crucial date logic and access control.
+- : A new, large component that provides the UI for all manager reporting (Daily/Monthly/Quarterly/Yearly), including manager selection and hierarchy drill-down.
+- : Modified multiple times to add new tabs (Password, Manager Reports) and update visibility rules based on user roles.
+- : New component for users to change their password.
+- : Modified to add the admin UI for resetting user passwords.
+- : Modified to fix a critical date bug.
 
-- ****
-    - **Importance:** The main layout component that controls navigation tabs.
-    - **Summary of Changes:** Edited to add new tabs for Reports and New Face Tracking, with logic to ensure they are only visible to users with the  role.
+**Areas that need refactoring**
+- : The reporting logic is becoming monolithic. The functions for daily and period reports (, , and their Excel counterparts) share a lot of logic and could be refactored into smaller, reusable helper functions to reduce code duplication.
+- : This component is very large and handles many states (period, report type, selected user, date ranges, hierarchy view). It could be broken down into smaller, more manageable sub-components (e.g., , , ).
+- : This file was created but its functionality was then merged directly into . The agent should verify if this file is now unused and can be deleted.
 
-- ****
-    - **Importance:** The primary data entry point for all users.
-    - **Summary of Changes:**
-        - Input fields for Contacts, Appointments, and New Face Sold were updated to use  and allow decimal steps.
-        - A new UI section was conditionally added to allow users to input customer details (Name, County, Policy Amount) after logging a New Face Sold.
+**key api endpoints**
+- : Gets JSON data for Monthly, Quarterly, and Yearly reports.
+- : Downloads Excel data for Monthly, Quarterly, and Yearly reports.
+- : Gets the team hierarchy for a specific manager for the drill-down view.
+- : Allows authenticated users to change their own password.
+- : Allows a State Manager to reset a user's password.
+- : Generates a temporary password for a user (used by an admin).
 
-- ** & **
-    - **Importance:** These are entirely new components created to house major new features requested by the user.
-    - **Summary of Changes:** Created from scratch to provide UI for downloading various Excel reports and for viewing/searching the New Face Customer data, respectively.
-</code_architecture>
+**Critical Info for New Agent**
+- **Deployment**: The user is very apprehensive about deployment. Always reassure them that using Replace Deployment on their existing production URL () is safe, will not change the URL, and will preserve their data. The Keep existing database option is key.
+- **Dates & Timezones**: The application's timezone is . All date-related logic is a recurring source of bugs. The application's current year is **2025**. Any new date calculations must be tested thoroughly to prevent day behind issues.
+- **User Roles**: The hierarchy (State Manager > Regional Manager > District Manager > Agent) is central to all access control. New features must respect this hierarchy.
 
-<pending_tasks>
-- **Daily Report:** The user requested to add in a daily report as well to the app. The AI was in the process of clarifying the specific requirements for this new report type when the conversation ended.
-- **Finalize Sales in Team View:** The Sales metric was added to the top-level aggregate summary and the individual member cards, but it still needs to be added to the expanded daily/weekly breakdown views within  to be fully complete.
-</pending_tasks>
+**documents created in this job**
+-  was updated throughout the session to track testing progress.
 
-<current_work>
-Immediately before this summary, the AI engineer was multitasking between two user requests.
+**Last 10 User Messages and any pending user messages**
+1.  **User**: Asks how an agent can change their password.
+2.  **User**: Asks what happens when a user forgets their password.
+3.  **User**: Confirms to test the Admin Reset flow.
+4.  **User**: Asks if they should deploy the application.
+5.  **User**: Asks to change who can see the New Face report.
+6.  **User**: Selects Option A, giving all managers access to the New Face report.
+7.  **Agent**: Acknowledges and starts working on the permission change.
 
-The primary task being coded was adding the Sales metric to the Team View. The AI had successfully edited  to add Sales to the aggregate summary card at the top and was in the process of adding it to the individual team member cards. The last action on this was a successful  on  to add the Sales metric to the main card for each team member. The next logical step, though not explicitly stated, would be to add it to the expanded daily/weekly breakdown views for consistency.
+**Project Health Check:**
+- **Broken**: None.
+- **Mocked**: None.
 
-While working on this, the user made a new request: I would like to add in a daily report as well to the app. The AI's last action was to begin clarifying the requirements for this new daily report feature by asking the user for more details. Therefore, the work state is split: one task is partially complete, and a new, undefined task has just been introduced.
-</current_work>
+**3rd Party Integrations**
+- None were added or modified in this session.
 
-<optional_next_step>
-Complete adding the Sales metric to the expanded daily/weekly breakdown views in  to fully finalize the previous request before starting on the new daily report feature.
-</optional_next_step>
+**Testing status**
+- **Testing agent used after significant changes**: YES
+- **Troubleshoot agent used after agent stuck in loop**: NO
+- **Test files created**: None. Existing testing frameworks and agents were used.
+- **Known regressions**: A date bug was introduced and then fixed during the session (incorrectly forcing the year to 2024). This highlights the fragility of date logic in the app.
 
-<g.direct_quotes>
-User request for the in-progress task: Can I add sales to the team view and Have you added sales to my team view.
-User request for the next pending task: I would like to add in a daily report as well to the app.
-</g.direct_quotes>
+**Credentials to test flow:**
+No explicit credentials provided. Testing relies on the demo data populated in the development database, which includes user roles like , , etc.
+
+**What agent forgot to execute**
+- The agent created a file  but then implemented the functionality within . The agent should check if this file is now orphaned and should be removed for code cleanliness.</analysis>
