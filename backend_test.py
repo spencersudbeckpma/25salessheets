@@ -860,8 +860,8 @@ class NewFaceCustomerTester:
                 self.test_results['failed'] += 1
 
     def run_all_tests(self):
-        """Run all forgot password functionality tests"""
-        print_header("🚀 STARTING COMPREHENSIVE FORGOT PASSWORD FUNCTIONALITY TESTING")
+        """Run all New Face Customer functionality tests"""
+        print_header("🚀 STARTING COMPREHENSIVE NEW FACE CUSTOMER FUNCTIONALITY TESTING")
         
         # Setup test users
         if not self.setup_test_users():
@@ -869,15 +869,15 @@ class NewFaceCustomerTester:
             return False
         
         # Run all test suites
-        self.test_admin_reset_password()
-        self.test_forgot_password()
-        self.test_password_security()
-        self.test_integration_workflow()
+        self.test_new_face_customers_all_endpoint()
+        self.test_new_face_customers_create_endpoint()
+        self.test_new_face_customers_delete_endpoint()
+        self.test_team_hierarchy_scoping()
         
         # Print final results
         self.print_final_results()
         
-        return self.test_results['failed'] == 0
+        return self.test_results['failed'] == 0</invoke>
 
     def print_final_results(self):
         """Print comprehensive test results"""
