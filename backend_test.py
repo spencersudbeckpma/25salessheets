@@ -1,12 +1,13 @@
 #!/usr/bin/env python3
 """
-Backend Testing Script - FORGOT PASSWORD FUNCTIONALITY TESTING
-NEW FUNCTIONALITY: Comprehensive password reset features for users who forget their passwords
-Focus: Test forgot password and admin reset password endpoints
-- POST /api/auth/admin-reset-password (State Manager Only)
-- POST /api/auth/forgot-password (Public Endpoint)
-- Test security validations, hierarchy access, and password workflows
-- Validate temporary password generation and admin reset capabilities
+Backend Testing Script - NEW FACE CUSTOMER TRACKING FUNCTIONALITY TESTING
+NEW FUNCTIONALITY: Test New Face Customer endpoints with different manager role access levels
+Focus: Test hierarchical role system access for New Face Customer tracking
+- GET /api/new-face-customers/all (State, Regional, District Managers)
+- POST /api/new-face-customers (All users with 3 per day limit)
+- DELETE /api/new-face-customers/{customer_id} (Managers + Owner)
+- Test role-based access control and team hierarchy scoping
+- Validate manager access levels and data scoping
 """
 
 import requests
