@@ -909,12 +909,12 @@ class NewFaceCustomerTester:
             print_error("❌ SOME TESTS FAILED - NEW FACE CUSTOMER FUNCTIONALITY NEEDS ATTENTION")
 
 if __name__ == "__main__":
-    tester = ForgotPasswordTester()
+    tester = NewFaceCustomerTester()
     success = tester.run_all_tests()
     
     if success:
-        print_success("\n🎉 All Forgot Password functionality tests completed successfully!")
+        print_success("\n🎉 All New Face Customer functionality tests completed successfully!")
         sys.exit(0)
     else:
-        print_error("\n💥 Some Forgot Password functionality tests failed!")
+        print_error("\n💥 Some New Face Customer functionality tests failed!")
         sys.exit(1)
