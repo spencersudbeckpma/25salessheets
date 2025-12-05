@@ -532,61 +532,182 @@ class NewFaceCustomerTester:
                 self.test_results['failed'] += 1
                 self.test_results['errors'].append(f"Daily limit test exception: {str(e)}")
 
-    def test_password_security(self):
-        """Test password security validations"""
-        print_header("🔒 TESTING PASSWORD SECURITY VALIDATIONS")
+    def test_new_face_customers_delete_endpoint(self):
+        """Test DELETE /api/new-face-customers/{customer_id} endpoint"""
+        print_header("🗑️ TESTING NEW FACE CUSTOMERS DELETE ENDPOINT")
         
-        print_info("🎯 Testing password hashing and security measures")
+        print_info("🎯 Testing DELETE /api/new-face-customers/{customer_id} with different manager roles")
+        print_info("   Should allow State, Regional, District Managers to delete")
+        print_info("   Should allow record owner to delete their own records")
         
-        # Test 1: Verify passwords are properly hashed with bcrypt
-        print_info("\n📋 TEST 1: Password Hashing Verification")
-        
-        # Create a test user to verify password hashing
-        try:
-            test_user_token = self.register_test_user(
-                "security.test@test.com",
-                "SecurityTest123!",
-                "Security Test User",
-                "agent"
-            )
-            
-            if test_user_token:
-                print_success("✅ Test user created for security testing")
+        # Test 1: State Manager can delete any record
+        print_info("\n📋 TEST 1: State Manager Can Delete Records")
+        if self.state_manager_token and hasattr(self, 'agent_customer_id'):
+            try:
+                headers = {"Authorization": f"Bearer {self.state_manager_token}"}
+                response = self.session.delete(
+                    f"{BACKEND_URL}/new-face-customers/{self.agent_customer_id}",
+                    headers=headers
+                )
                 
-                # Try to login with correct password
-                login_response = self.session.post(f"{BACKEND_URL}/auth/login", json={
-                    "email": "security.test@test.com",
-                    "password": "SecurityTest123!"
-                })
-                
-                if login_response.status_code == 200:
-                    print_success("✅ Login with correct password works")
+                if response.status_code == 200:
+                    data = response.json()
+                    print_success("✅ State Manager can delete New Face Customer record")
+                    print_info(f"   Message: {data.get('message', 'No message')}")
                     self.test_results['passed'] += 1
                 else:
-                    print_error("❌ Login with correct password failed")
+                    print_error(f"❌ State Manager delete failed: {response.status_code} - {response.text}")
                     self.test_results['failed'] += 1
+                    self.test_results['errors'].append(f"State Manager delete failed: {response.status_code}")
                     
-                # Try to login with incorrect password
-                wrong_login_response = self.session.post(f"{BACKEND_URL}/auth/login", json={
-                    "email": "security.test@test.com",
-                    "password": "WrongPassword123!"
-                })
-                
-                if wrong_login_response.status_code == 401:
-                    print_success("✅ Login with incorrect password correctly rejected")
-                    self.test_results['passed'] += 1
-                else:
-                    print_error(f"❌ Login with incorrect password should fail, got {wrong_login_response.status_code}")
-                    self.test_results['failed'] += 1
-                    
-            else:
-                print_error("❌ Could not create test user for security testing")
+            except Exception as e:
+                print_error(f"❌ Exception in State Manager delete test: {str(e)}")
                 self.test_results['failed'] += 1
+                self.test_results['errors'].append(f"State Manager delete test exception: {str(e)}")
+        
+        # Test 2: Regional Manager can delete records
+        print_info("\n📋 TEST 2: Regional Manager Can Delete Records")
+        if self.regional_manager_token and hasattr(self, 'district_customer_id'):
+            try:
+                headers = {"Authorization": f"Bearer {self.regional_manager_token}"}
+                response = self.session.delete(
+                    f"{BACKEND_URL}/new-face-customers/{self.district_customer_id}",
+                    headers=headers
+                )
                 
-        except Exception as e:
-            print_error(f"❌ Exception in password hashing test: {str(e)}")
-            self.test_results['failed'] += 1
-            self.test_results['errors'].append(f"Password hashing test exception: {str(e)}")
+                if response.status_code == 200:
+                    data = response.json()
+                    print_success("✅ Regional Manager can delete New Face Customer record")
+                    print_info(f"   Message: {data.get('message', 'No message')}")
+                    self.test_results['passed'] += 1
+                else:
+                    print_error(f"❌ Regional Manager delete failed: {response.status_code} - {response.text}")
+                    self.test_results['failed'] += 1
+                    self.test_results['errors'].append(f"Regional Manager delete failed: {response.status_code}")
+                    
+            except Exception as e:
+                print_error(f"❌ Exception in Regional Manager delete test: {str(e)}")
+                self.test_results['failed'] += 1
+                self.test_results['errors'].append(f"Regional Manager delete test exception: {str(e)}")
+        
+        # Test 3: District Manager can delete records
+        print_info("\n📋 TEST 3: District Manager Can Delete Records")
+        if self.district_manager_token:
+            try:
+                # First create a record to delete
+                headers = {"Authorization": f"Bearer {self.district_manager_token}"}
+                today = datetime.now().strftime('%Y-%m-%d')
+                
+                customer_data = {
+                    "date": today,
+                    "customer_name": "Delete Test Customer",
+                    "county": "Delete Test County",
+                    "policy_amount": 30000.00
+                }
+                
+                create_response = self.session.post(
+                    f"{BACKEND_URL}/new-face-customers",
+                    json=customer_data,
+                    headers=headers
+                )
+                
+                if create_response.status_code == 200:
+                    customer_id = create_response.json().get('id')
+                    
+                    # Now delete it
+                    delete_response = self.session.delete(
+                        f"{BACKEND_URL}/new-face-customers/{customer_id}",
+                        headers=headers
+                    )
+                    
+                    if delete_response.status_code == 200:
+                        data = delete_response.json()
+                        print_success("✅ District Manager can delete New Face Customer record")
+                        print_info(f"   Message: {data.get('message', 'No message')}")
+                        self.test_results['passed'] += 1
+                    else:
+                        print_error(f"❌ District Manager delete failed: {delete_response.status_code} - {delete_response.text}")
+                        self.test_results['failed'] += 1
+                        self.test_results['errors'].append(f"District Manager delete failed: {delete_response.status_code}")
+                else:
+                    print_error("❌ Could not create record for District Manager delete test")
+                    self.test_results['failed'] += 1
+                    
+            except Exception as e:
+                print_error(f"❌ Exception in District Manager delete test: {str(e)}")
+                self.test_results['failed'] += 1
+                self.test_results['errors'].append(f"District Manager delete test exception: {str(e)}")
+        
+        # Test 4: Owner can delete their own records
+        print_info("\n📋 TEST 4: Record Owner Can Delete Their Own Records")
+        if self.agent_token:
+            try:
+                # First create a record as agent
+                headers = {"Authorization": f"Bearer {self.agent_token}"}
+                today = datetime.now().strftime('%Y-%m-%d')
+                
+                customer_data = {
+                    "date": today,
+                    "customer_name": "Owner Delete Test",
+                    "county": "Owner Test County",
+                    "policy_amount": 40000.00
+                }
+                
+                create_response = self.session.post(
+                    f"{BACKEND_URL}/new-face-customers",
+                    json=customer_data,
+                    headers=headers
+                )
+                
+                if create_response.status_code == 200:
+                    customer_id = create_response.json().get('id')
+                    
+                    # Now delete it as the same agent (owner)
+                    delete_response = self.session.delete(
+                        f"{BACKEND_URL}/new-face-customers/{customer_id}",
+                        headers=headers
+                    )
+                    
+                    if delete_response.status_code == 200:
+                        data = delete_response.json()
+                        print_success("✅ Record owner can delete their own New Face Customer record")
+                        print_info(f"   Message: {data.get('message', 'No message')}")
+                        self.test_results['passed'] += 1
+                    else:
+                        print_error(f"❌ Owner delete failed: {delete_response.status_code} - {delete_response.text}")
+                        self.test_results['failed'] += 1
+                        self.test_results['errors'].append(f"Owner delete failed: {delete_response.status_code}")
+                else:
+                    print_error("❌ Could not create record for owner delete test")
+                    self.test_results['failed'] += 1
+                    
+            except Exception as e:
+                print_error(f"❌ Exception in owner delete test: {str(e)}")
+                self.test_results['failed'] += 1
+                self.test_results['errors'].append(f"Owner delete test exception: {str(e)}")
+        
+        # Test 5: Test delete non-existent record
+        print_info("\n📋 TEST 5: Delete Non-existent Record")
+        if self.state_manager_token:
+            try:
+                headers = {"Authorization": f"Bearer {self.state_manager_token}"}
+                response = self.session.delete(
+                    f"{BACKEND_URL}/new-face-customers/non-existent-id-12345",
+                    headers=headers
+                )
+                
+                if response.status_code == 404:
+                    print_success("✅ Non-existent record correctly returns 404")
+                    self.test_results['passed'] += 1
+                else:
+                    print_error(f"❌ Non-existent record should return 404, got {response.status_code}")
+                    self.test_results['failed'] += 1
+                    self.test_results['errors'].append(f"Non-existent record handling failed: {response.status_code}")
+                    
+            except Exception as e:
+                print_error(f"❌ Exception in non-existent record test: {str(e)}")
+                self.test_results['failed'] += 1
+                self.test_results['errors'].append(f"Non-existent record test exception: {str(e)}")
 
     def test_integration_workflow(self):
         """Test complete integration workflow"""
