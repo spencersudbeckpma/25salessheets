@@ -105,7 +105,7 @@
 user_problem_statement: "New Face Customer Tracking feature with different manager role access levels. User requested testing of hierarchical role system: State Manager > Regional Manager > District Manager > Agent. Updated New Face Customer endpoints to allow Regional and District managers to access this feature (previously only State Managers had access). Need to test role-based access control, team hierarchy scoping, and CRUD operations."
 
 backend:
-  - task: "Wednesday Activity Bug Investigation - Backend APIs"
+  - task: "New Face Customer All Endpoint - Manager Role Access Testing"
     implemented: true
     working: true
     file: "/app/backend/server.py"
@@ -115,16 +115,55 @@ backend:
     status_history:
       - working: "NA"
         agent: "user"
-        comment: "CRITICAL BUG REPORT: User reports Wednesday showing zero activity in Team View weekly breakdown when activity exists for today (Wednesday). Need to investigate date verification, activity data check, and date matching."
+        comment: "NEW FUNCTIONALITY REQUEST: Test New Face Customer endpoints with different manager role access levels. Updated GET /api/new-face-customers/all endpoint to allow state_manager, regional_manager, district_manager roles (previously only State Managers had access). Need to verify hierarchical access control and team data scoping."
       - working: true
         agent: "testing"
-        comment: "✅ COMPREHENSIVE INVESTIGATION COMPLETED: All backend APIs working correctly. VERIFIED: (1) Wednesday (2025-11-19) correctly identified as today by GET /api/team/week-dates, (2) Wednesday activity exists in database (20.0 contacts, 10.0 appointments, $3500 premium), (3) GET /api/team/hierarchy/weekly returns correct weekly stats (35.0 contacts, $6000 premium), (4) GET /api/team/hierarchy/daily shows Wednesday activity correctly, (5) All date calculations, timezone handling, and activity matching working properly. CONCLUSION: Backend is NOT the issue. The problem is likely in the frontend Team View component. All 28 backend tests passed successfully."
+        comment: "🎉 NEW FACE CUSTOMER ALL ENDPOINT TESTING COMPLETED: All 8 comprehensive tests passed successfully! CRITICAL VERIFICATION: (1) ✅ STATE MANAGER ACCESS: Can access all team New Face Customer data with proper response structure and required fields (id, user_id, user_name, date, customer_name, county, policy_amount), (2) ✅ REGIONAL MANAGER ACCESS: Can access their regional team data with correct hierarchy scoping, (3) ✅ DISTRICT MANAGER ACCESS: Can access their district team data with appropriate scope limitation, (4) ✅ AGENT ACCESS CONTROL: Correctly denied access with 403 status - only managers can access all team data as expected. The updated role-based access control is working perfectly with proper hierarchical data scoping for each manager level."
+
+  - task: "New Face Customer Create Endpoint - Daily Limit Testing"
+    implemented: true
+    working: true
+    file: "/app/backend/server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: "NA"
+        agent: "user"
+        comment: "NEW FUNCTIONALITY REQUEST: Test POST /api/new-face-customers endpoint for creating new face customer records. Should allow all users to create records but enforce limit of 3 records per user per day. Need to verify creation permissions and daily limit enforcement."
       - working: true
         agent: "testing"
-        comment: "🔍 CRITICAL DATE MISMATCH DEBUG COMPLETED: Conducted comprehensive investigation of user-reported 'data showing a day behind' issue. TESTED: (1) Activity Save Date - Wednesday activity (2025-11-19) correctly saved with exact date string, (2) Weekly Date Calculation - API correctly identifies Wednesday as 2025-11-19 and marks as today, (3) Date String Comparison - Storage and lookup dates match perfectly, (4) Daily Breakdown Placement - Created distinctive Wednesday activity signature (99.0 contacts, $9999 premium) and verified it appears ONLY on Wednesday, NOT on Tuesday. CRITICAL FINDING: Backend date handling is 100% correct. Wednesday activity appears on Wednesday as expected in all API endpoints. CONCLUSION: The 'day behind' issue is definitively NOT in the backend - it must be in the frontend Team View component's display logic or data processing."
+        comment: "✅ NEW FACE CUSTOMER CREATE ENDPOINT TESTING COMPLETED: All 6 comprehensive tests passed successfully! CRITICAL VERIFICATION: (1) ✅ AGENT CREATION: Agents can successfully create New Face Customer records with proper response (message: 'New face customer added', record ID returned), (2) ✅ DISTRICT MANAGER CREATION: District Managers can create records successfully, (3) ✅ DAILY LIMIT ENFORCEMENT: Correctly enforces maximum 3 records per user per day - first 3 records succeed (200), 4th record properly rejected with 400 status and message 'Maximum 3 new face customers per day'. The daily limit validation is working perfectly and all user roles can create records as expected."
+
+  - task: "New Face Customer Delete Endpoint - Manager Permissions Testing"
+    implemented: true
+    working: true
+    file: "/app/backend/server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: "NA"
+        agent: "user"
+        comment: "NEW FUNCTIONALITY REQUEST: Test DELETE /api/new-face-customers/{customer_id} endpoint permissions. Updated to allow all manager roles (state_manager, regional_manager, district_manager) to delete records, plus record owners can delete their own records. Need to verify manager permissions and owner access."
       - working: true
         agent: "testing"
-        comment: "🚨 URGENT DATE CALCULATION BUG FIXED: Identified and resolved critical date calculation issue. ROOT CAUSE: Previous fix forced API to return 2024 dates while system runs in 2025, causing confusion where Wednesday appeared as 2024-11-19 (actually a Tuesday in 2024) instead of correct 2025-11-19 (Wednesday in 2025). USER ISSUE: User expected Wednesday to be 11-19 (correct in 2025) but saw Wednesday as 11-20 due to year mismatch. SOLUTION: Removed year forcing in GET /api/team/week-dates endpoint to use actual system year (2025). VERIFIED: (1) ✅ API now returns correct 2025 dates, (2) ✅ Wednesday correctly shows as 2025-11-19 (actual Wednesday), (3) ✅ Today properly identified as Wednesday 2025-11-19, (4) ✅ Activities appear in correct date slots, (5) ✅ Date consistency between system and API restored. The user's Wednesday date confusion has been completely resolved."
+        comment: "🎯 NEW FACE CUSTOMER DELETE ENDPOINT TESTING COMPLETED: All 5 comprehensive tests passed successfully! CRITICAL VERIFICATION: (1) ✅ STATE MANAGER DELETE: Can delete any New Face Customer record with proper response (message: 'Customer deleted'), (2) ✅ REGIONAL MANAGER DELETE: Can delete records successfully with correct permissions, (3) ✅ DISTRICT MANAGER DELETE: Can create and delete their own records successfully, (4) ✅ RECORD OWNER DELETE: Record owners can delete their own New Face Customer records as expected, (5) ✅ ERROR HANDLING: Non-existent record correctly returns 404 status. All manager roles and record owners have appropriate delete permissions working correctly."
+
+  - task: "New Face Customer Team Hierarchy Scoping Testing"
+    implemented: true
+    working: true
+    file: "/app/backend/server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: "NA"
+        agent: "user"
+        comment: "NEW FUNCTIONALITY REQUEST: Test that team hierarchy scoping works correctly for different manager levels. State Manager should see all data, Regional Manager should see regional team data, District Manager should see district team data. Need to verify recursive team hierarchy logic properly scopes data to each manager's subordinates."
+      - working: true
+        agent: "testing"
+        comment: "🏢 TEAM HIERARCHY SCOPING TESTING COMPLETED: All 6 comprehensive tests passed successfully! CRITICAL VERIFICATION: (1) ✅ TEST DATA CREATION: Successfully created test records for each hierarchy level (State Manager, Regional Manager, District Manager, Agent), (2) ✅ STATE MANAGER SCOPE: Retrieved 6 total records and sees data from all hierarchy levels ['State Customer', 'Regional Customer', 'District Customer', 'Agent Customer'] as expected, (3) ✅ REGIONAL MANAGER SCOPE: Retrieved 5 records from regional team with appropriate scope ['Regional Customer', 'District Customer', 'Agent Customer'] - correctly excludes state manager's personal records, (4) ✅ DISTRICT MANAGER SCOPE: Retrieved 4 records from district team with correct scope ['District Customer', 'Agent Customer'] - properly limited to district level and below. The recursive team hierarchy logic is working perfectly with accurate data scoping for each manager level."
 
   - task: "Team hierarchy API with period-based aggregation"
     implemented: true
