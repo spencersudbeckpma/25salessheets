@@ -291,8 +291,8 @@ const TeamView = ({ user }) => {
       <CardContent className="pt-2">
         {/* Aggregate Summary at Top */}
         {hierarchy && (
-          <div className="mb-6 p-5 bg-gradient-to-br from-slate-50 to-gray-100 rounded-lg border border-slate-300 shadow-md">
-            <h3 className="font-semibold text-lg mb-4 text-slate-700">
+          <div className="mb-6 p-4 bg-gray-50 rounded-lg border border-gray-200">
+            <h3 className="font-semibold text-base mb-3 text-gray-700">
               Team Total ({period.charAt(0).toUpperCase() + period.slice(1)})
             </h3>
             <div className="flex flex-wrap gap-x-8 gap-y-3">
