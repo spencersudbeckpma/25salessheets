@@ -347,10 +347,13 @@ async def generate_newface_report(period: str, current_user: dict = Depends(get_
     else:
         raise HTTPException(status_code=400, detail="Invalid period")
     
-    # Get all team members recursively
+    # Get all team members recursively (exclude archived)
     async def get_all_team_ids(user_id: str):
         ids = [user_id]
-        subordinates = await db.users.find({"manager_id": user_id}, {"_id": 0, "id": 1}).to_list(1000)
+        subordinates = await db.users.find(
+            {"manager_id": user_id, "$or": [{"status": "active"}, {"status": {"$exists": False}}]},
+            {"_id": 0, "id": 1}
+        ).to_list(1000)
         for sub in subordinates:
             ids.extend(await get_all_team_ids(sub['id']))
         return ids
