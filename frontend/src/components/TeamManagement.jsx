@@ -11,6 +11,82 @@ import { UserPlus, Mail, Trash2, Edit2, Save, X } from 'lucide-react';
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
 
+// Reorganize User Card Component
+const ReorganizeUserCard = ({ member, availableManagers, onReassign }) => {
+  const [selectedRole, setSelectedRole] = useState(member.role);
+  const [selectedManager, setSelectedManager] = useState(member.manager_id || '');
+  const [hasChanges, setHasChanges] = useState(false);
+
+  useEffect(() => {
+    const roleChanged = selectedRole !== member.role;
+    const managerChanged = selectedManager !== (member.manager_id || '');
+    setHasChanges(roleChanged || managerChanged);
+  }, [selectedRole, selectedManager, member]);
+
+  const handleSave = () => {
+    onReassign(member.id, selectedRole, selectedManager);
+  };
+
+  const handleReset = () => {
+    setSelectedRole(member.role);
+    setSelectedManager(member.manager_id || '');
+  };
+
+  return (
+    <div className="p-4 bg-white border rounded-lg">
+      <div className="mb-3">
+        <div className="font-semibold text-lg">{member.name}</div>
+        <div className="text-sm text-gray-600">{member.email}</div>
+      </div>
+      
+      <div className="grid grid-cols-2 gap-4 mb-3">
+        <div>
+          <Label className="text-sm font-medium">Role</Label>
+          <select
+            className="w-full p-2 border rounded-md mt-1"
+            value={selectedRole}
+            onChange={(e) => setSelectedRole(e.target.value)}
+          >
+            <option value="agent">Agent</option>
+            <option value="district_manager">District Manager</option>
+            <option value="regional_manager">Regional Manager</option>
+            <option value="state_manager">State Manager</option>
+          </select>
+        </div>
+        
+        <div>
+          <Label className="text-sm font-medium">Manager</Label>
+          <select
+            className="w-full p-2 border rounded-md mt-1"
+            value={selectedManager}
+            onChange={(e) => setSelectedManager(e.target.value)}
+          >
+            <option value="">No Manager</option>
+            {availableManagers.map(manager => (
+              <option key={manager.id} value={manager.id}>
+                {manager.name} ({manager.role.replace('_', ' ')})
+              </option>
+            ))}
+          </select>
+        </div>
+      </div>
+
+      {hasChanges && (
+        <div className="flex gap-2">
+          <Button size="sm" onClick={handleSave}>
+            <Save size={14} className="mr-1" />
+            Save Changes
+          </Button>
+          <Button size="sm" variant="outline" onClick={handleReset}>
+            <X size={14} className="mr-1" />
+            Reset
+          </Button>
+        </div>
+      )}
+    </div>
+  );
+};
+
 const TeamManagement = ({ user }) => {
   // Get today's date in local timezone
   const getLocalDate = () => {
