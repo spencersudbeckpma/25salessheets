@@ -2,8 +2,9 @@ import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { toast } from 'sonner';
 import { Card, CardHeader, CardTitle, CardContent } from './ui/card';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs';
 import { Button } from './ui/button';
-import { TrendingUp, Users, BarChart3 } from 'lucide-react';
+import { TrendingUp, Users, BarChart3, User } from 'lucide-react';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
@@ -14,6 +15,7 @@ const Analytics = ({ user }) => {
   const [individualMemberAverages, setIndividualMemberAverages] = useState(null);
   const [selectedPeriod, setSelectedPeriod] = useState('last_4_weeks');
   const [loading, setLoading] = useState(true);
+  const [activeTab, setActiveTab] = useState('personal');
 
   const isManager = ['state_manager', 'regional_manager', 'district_manager'].includes(user.role);
 
