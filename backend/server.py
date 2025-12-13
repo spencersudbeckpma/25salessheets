@@ -806,10 +806,13 @@ async def get_daily_report(report_type: str, date: str, current_user: dict = Dep
     except ValueError:
         raise HTTPException(status_code=400, detail="Invalid date format. Use YYYY-MM-DD")
     
-    # Helper function to get all subordinates recursively
+    # Helper function to get all subordinates recursively (exclude archived)
     async def get_all_subordinates(user_id: str):
         members = []
-        subordinates = await db.users.find({"manager_id": user_id}, {"_id": 0, "password_hash": 0}).to_list(1000)
+        subordinates = await db.users.find(
+            {"manager_id": user_id, "$or": [{"status": "active"}, {"status": {"$exists": False}}]},
+            {"_id": 0, "password_hash": 0}
+        ).to_list(1000)
         for sub in subordinates:
             members.append(sub)
             sub_members = await get_all_subordinates(sub['id'])
