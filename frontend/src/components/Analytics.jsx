@@ -79,6 +79,18 @@ const Analytics = ({ user }) => {
     }
   };
 
+  const fetchManagerTeamAverages = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await axios.get(`${API}/analytics/manager-team-averages?period=${managerPeriod}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      setManagerTeamAverages(response.data);
+    } catch (error) {
+      toast.error('Failed to fetch manager team averages');
+    }
+  };
+
   const periodLabels = {
     last_4_weeks: '4 Weeks',
     last_8_weeks: '8 Weeks',
