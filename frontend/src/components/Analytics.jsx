@@ -86,20 +86,40 @@ const Analytics = ({ user }) => {
   }
 
   return (
-    <div className="space-y-6">
-      {/* Personal Averages */}
-      <Card className="shadow-lg bg-white">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <TrendingUp className="text-blue-600" size={24} />
-            Your Weekly Averages
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            {personalAverages && Object.entries(personalAverages).map(([period, data]) => (
-              <div key={period} className="p-4 bg-gradient-to-br from-blue-50 to-purple-50 rounded-lg border border-blue-200">
-                <div className="text-sm font-semibold text-gray-700 mb-3">{periodLabels[period]}</div>
+    <Card className="shadow-lg bg-white">
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2 text-xl">
+          <BarChart3 className="text-purple-600" size={24} />
+          Performance Analytics
+        </CardTitle>
+      </CardHeader>
+      <CardContent>
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
+          <TabsList className={`grid w-full ${isManager ? 'grid-cols-3' : 'grid-cols-1'} bg-gray-100 p-1`}>
+            <TabsTrigger value="personal" className="py-2 text-sm">
+              <User size={16} className="mr-2" />
+              My Averages
+            </TabsTrigger>
+            {isManager && (
+              <>
+                <TabsTrigger value="team" className="py-2 text-sm">
+                  <Users size={16} className="mr-2" />
+                  Team Averages
+                </TabsTrigger>
+                <TabsTrigger value="individual" className="py-2 text-sm">
+                  <BarChart3 size={16} className="mr-2" />
+                  Member Performance
+                </TabsTrigger>
+              </>
+            )}
+          </TabsList>
+
+          {/* Personal Averages Tab */}
+          <TabsContent value="personal" className="space-y-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+              {personalAverages && Object.entries(personalAverages).map(([period, data]) => (
+                <div key={period} className="p-4 bg-white rounded-lg border-2 border-gray-200 hover:border-blue-300 transition-colors">
+                  <div className="text-sm font-semibold text-gray-700 mb-3">{periodLabels[period]}</div>
                 <div className="space-y-2">
                   <div className="flex justify-between text-sm">
                     <span className="text-gray-600">Presentations:</span>
