@@ -163,12 +163,14 @@ const TeamManagement = ({ user }) => {
   const fetchAvailableManagers = async () => {
     try {
       const token = localStorage.getItem('token');
-      const response = await axios.get(`${API}/auth/available-managers`, {
+      const response = await axios.get(`${API}/reports/managers`, {
         headers: { Authorization: `Bearer ${token}` }
       });
-      setAvailableManagers(response.data);
+      // The endpoint returns { managers: [...] }, extract the array
+      setAvailableManagers(response.data.managers || []);
     } catch (error) {
       toast.error('Failed to fetch managers');
+      console.error('Manager fetch error:', error);
     }
   };
 
