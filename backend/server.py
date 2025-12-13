@@ -1730,8 +1730,11 @@ async def diagnostic(current_user: dict = Depends(get_current_user)):
     my_activities = await db.activities.find({"user_id": current_user['id']}, {"_id": 0}).to_list(100)
     my_today = [a for a in my_activities if a.get('date') == today]
     
-    # Get my subordinates
-    subordinates = await db.users.find({"manager_id": current_user['id']}, {"_id": 0, "name": 1, "id": 1}).to_list(100)
+    # Get my subordinates (exclude archived)
+    subordinates = await db.users.find(
+        {"manager_id": current_user['id'], "$or": [{"status": "active"}, {"status": {"$exists": False}}]},
+        {"_id": 0, "name": 1, "id": 1}
+    ).to_list(100)
     
     return {
         "database": os.getenv('DB_NAME', 'unknown'),
