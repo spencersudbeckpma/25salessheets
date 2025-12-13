@@ -757,10 +757,13 @@ async def get_available_managers(current_user: dict = Depends(get_current_user))
     if current_user['role'] not in ['state_manager', 'regional_manager', 'district_manager']:
         raise HTTPException(status_code=403, detail="Only Managers can access manager list")
     
-    # Helper function to get all subordinates recursively
+    # Helper function to get all subordinates recursively (exclude archived)
     async def get_all_subordinates(user_id: str):
         members = []
-        subordinates = await db.users.find({"manager_id": user_id}, {"_id": 0, "password_hash": 0}).to_list(1000)
+        subordinates = await db.users.find(
+            {"manager_id": user_id, "$or": [{"status": "active"}, {"status": {"$exists": False}}]},
+            {"_id": 0, "password_hash": 0}
+        ).to_list(1000)
         for sub in subordinates:
             members.append(sub)
             sub_members = await get_all_subordinates(sub['id'])
