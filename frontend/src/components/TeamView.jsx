@@ -161,22 +161,22 @@ const TeamView = ({ user }) => {
                   <div className="text-xs text-gray-500 truncate">{node.email}</div>
                 </div>
               </div>
-              <div className="mt-4 grid grid-cols-2 md:grid-cols-4 gap-3 text-sm">
-                <div className="bg-purple-50 p-3 rounded-lg border border-purple-200" data-testid={`member-presentations-${node.id}`}>
-                  <div className="text-xs text-slate-600 mb-1">Presentations</div>
-                  <div className="font-bold text-xl text-slate-800">{node.stats.presentations}</div>
+              <div className="mt-3 flex flex-wrap gap-x-8 gap-y-2 text-sm">
+                <div data-testid={`member-presentations-${node.id}`}>
+                  <span className="text-gray-600">Presentations</span>
+                  <span className="ml-2 font-semibold text-gray-900">{node.stats.presentations}</span>
                 </div>
-                <div className="bg-green-50 p-3 rounded-lg border border-green-200" data-testid={`member-appointments-${node.id}`}>
-                  <div className="text-xs text-slate-600 mb-1">Appointments</div>
-                  <div className="font-bold text-xl text-slate-800">{node.stats.appointments}</div>
+                <div data-testid={`member-appointments-${node.id}`}>
+                  <span className="text-gray-600">Appointments</span>
+                  <span className="ml-2 font-semibold text-gray-900">{node.stats.appointments}</span>
                 </div>
-                <div className="bg-red-50 p-3 rounded-lg border border-red-200" data-testid={`member-sales-${node.id}`}>
-                  <div className="text-xs text-slate-600 mb-1">Sales</div>
-                  <div className="font-bold text-xl text-slate-800">{node.stats.sales}</div>
+                <div data-testid={`member-sales-${node.id}`}>
+                  <span className="text-gray-600">Sales</span>
+                  <span className="ml-2 font-semibold text-gray-900">{node.stats.sales}</span>
                 </div>
-                <div className="bg-emerald-50 p-3 rounded-lg border border-emerald-200" data-testid={`member-premium-${node.id}`}>
-                  <div className="text-xs text-slate-600 mb-1">Premium</div>
-                  <div className="font-bold text-xl text-slate-800">${node.stats.premium.toFixed(2)}</div>
+                <div data-testid={`member-premium-${node.id}`}>
+                  <span className="text-gray-600">Premium</span>
+                  <span className="ml-2 font-semibold text-gray-900">${node.stats.premium.toFixed(2)}</span>
                 </div>
               </div>
               
