@@ -3038,6 +3038,13 @@ async def get_manager_team_averages(current_user: dict = Depends(get_current_use
                 "premium": 0
             }
         
+        # Check if this manager has subordinate managers
+        has_subordinates = await db.users.count_documents({
+            "manager_id": manager['id'],
+            "role": {"$in": ["state_manager", "regional_manager", "district_manager"]},
+            "$or": [{"status": "active"}, {"status": {"$exists": False}}]
+        })
+        
         manager_results.append({
             "id": manager['id'],
             "name": manager['name'],
@@ -3045,7 +3052,8 @@ async def get_manager_team_averages(current_user: dict = Depends(get_current_use
             "role": manager['role'],
             "team_size": team_size,
             "averages": averages_per_member,
-            "totals": totals
+            "totals": totals,
+            "has_subordinate_managers": has_subordinates > 0
         })
     
     return {
