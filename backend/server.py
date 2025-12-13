@@ -882,8 +882,11 @@ async def get_daily_report(report_type: str, date: str, current_user: dict = Dep
         }
     
     elif report_type == "team":
-        # Get direct reports and their teams
-        direct_reports = await db.users.find({"manager_id": current_user['id']}, {"_id": 0, "password_hash": 0}).to_list(1000)
+        # Get direct reports and their teams (exclude archived)
+        direct_reports = await db.users.find(
+            {"manager_id": current_user['id'], "$or": [{"status": "active"}, {"status": {"$exists": False}}]},
+            {"_id": 0, "password_hash": 0}
+        ).to_list(1000)
         
         # If user_id specified, show that manager's team (not filter direct reports)
         if user_id:
@@ -1147,8 +1150,11 @@ async def get_period_report(report_type: str, period: str, current_user: dict = 
         }
     
     elif report_type == "team":
-        # Get direct reports and their teams
-        direct_reports = await db.users.find({"manager_id": current_user['id']}, {"_id": 0, "password_hash": 0}).to_list(1000)
+        # Get direct reports and their teams (exclude archived)
+        direct_reports = await db.users.find(
+            {"manager_id": current_user['id'], "$or": [{"status": "active"}, {"status": {"$exists": False}}]},
+            {"_id": 0, "password_hash": 0}
+        ).to_list(1000)
         
         # If user_id specified, show that manager's team (not filter direct reports)
         if user_id:
