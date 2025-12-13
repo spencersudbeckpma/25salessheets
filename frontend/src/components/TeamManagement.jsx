@@ -60,6 +60,42 @@ const TeamManagement = ({ user }) => {
     }
   };
 
+  const fetchActiveUsers = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await axios.get(`${API}/users/active/list`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      setActiveUsers(response.data);
+    } catch (error) {
+      toast.error('Failed to fetch active users');
+    }
+  };
+
+  const fetchArchivedUsers = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await axios.get(`${API}/users/archived/list`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      setArchivedUsers(response.data);
+    } catch (error) {
+      toast.error('Failed to fetch archived users');
+    }
+  };
+
+  const fetchAvailableManagers = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await axios.get(`${API}/auth/available-managers`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      setAvailableManagers(response.data);
+    } catch (error) {
+      toast.error('Failed to fetch managers');
+    }
+  };
+
   const handleCreateInvite = async () => {
     if (!newInvite.name || !newInvite.email || !newInvite.role) {
       toast.error('Please fill all fields');
