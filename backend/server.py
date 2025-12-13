@@ -1816,6 +1816,10 @@ async def login(login_data: UserLogin):
     if not user:
         raise HTTPException(status_code=401, detail="Invalid credentials")
     
+    # Check if user is archived
+    if user.get('status') == 'archived':
+        raise HTTPException(status_code=403, detail="Account is archived. Please contact your administrator.")
+    
     if not verify_password(login_data.password, user['password_hash']):
         raise HTTPException(status_code=401, detail="Invalid credentials")
     
