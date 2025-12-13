@@ -92,6 +92,39 @@ const StatsView = ({ user }) => {
 
   return (
     <div className="space-y-6">
+      {/* Quick Weekly Averages Summary */}
+      {quickAverages && quickAverages.last_4_weeks && (
+        <Card className="shadow-lg bg-gradient-to-br from-blue-600 to-purple-600 text-white">
+          <CardContent className="pt-6">
+            <div className="flex items-center gap-2 mb-4">
+              <TrendingUp size={20} />
+              <h3 className="font-semibold">Your Weekly Average (Last 4 Weeks)</h3>
+            </div>
+            <div className="flex flex-wrap gap-x-8 gap-y-2">
+              <div>
+                <span className="text-blue-100">Presentations:</span>
+                <span className="ml-2 font-bold text-lg">{quickAverages.last_4_weeks.averages.presentations}/wk</span>
+              </div>
+              <div>
+                <span className="text-blue-100">Appointments:</span>
+                <span className="ml-2 font-bold text-lg">{quickAverages.last_4_weeks.averages.appointments}/wk</span>
+              </div>
+              <div>
+                <span className="text-blue-100">Sales:</span>
+                <span className="ml-2 font-bold text-lg">{quickAverages.last_4_weeks.averages.sales}/wk</span>
+              </div>
+              <div>
+                <span className="text-blue-100">Premium:</span>
+                <span className="ml-2 font-bold text-lg">${quickAverages.last_4_weeks.averages.premium}/wk</span>
+              </div>
+            </div>
+            <div className="mt-3 text-sm text-blue-100">
+              View detailed analytics in the 📊 Analytics tab →
+            </div>
+          </CardContent>
+        </Card>
+      )}
+      
       <Card className="shadow-lg bg-white" data-testid="stats-view-card">
         <CardHeader className="pb-4">
           <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-4">
