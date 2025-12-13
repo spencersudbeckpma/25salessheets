@@ -220,6 +220,123 @@ const Analytics = ({ user }) => {
             </TabsContent>
           )}
 
+          {/* Manager Averages Tab (Managers Only) */}
+          {isManager && (
+            <TabsContent value="managers" className="space-y-4">
+              <div className="bg-orange-50 p-4 rounded-lg border border-orange-200 mb-4 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+                <div>
+                  <h3 className="font-semibold text-sm text-gray-700 mb-1">Manager Team Performance</h3>
+                  <p className="text-xs text-gray-600">Compare how each manager's team is performing (average per member per week)</p>
+                </div>
+                <div className="flex gap-2">
+                  {Object.keys(periodLabels).map(period => (
+                    <Button
+                      key={period}
+                      size="sm"
+                      variant={managerPeriod === period ? 'default' : 'outline'}
+                      onClick={() => setManagerPeriod(period)}
+                      className="text-xs"
+                    >
+                      {periodLabels[period]}
+                    </Button>
+                  ))}
+                </div>
+              </div>
+
+              {managerTeamAverages && (
+                <div className="space-y-3">
+                  {managerTeamAverages.managers.length === 0 ? (
+                    <div className="text-center py-8 text-gray-500">
+                      No direct report managers found. This view shows your Regional Managers, District Managers, etc.
+                    </div>
+                  ) : (
+                    <>
+                      {/* Summary Stats */}
+                      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
+                        <div className="p-3 bg-gray-50 rounded-lg border">
+                          <div className="text-xs text-gray-500 mb-1">Total Managers</div>
+                          <div className="text-2xl font-bold">{managerTeamAverages.managers.length}</div>
+                        </div>
+                        <div className="p-3 bg-blue-50 rounded-lg border border-blue-200">
+                          <div className="text-xs text-gray-500 mb-1">Total Team Size</div>
+                          <div className="text-2xl font-bold">
+                            {managerTeamAverages.managers.reduce((sum, m) => sum + m.team_size, 0)}
+                          </div>
+                        </div>
+                        <div className="p-3 bg-green-50 rounded-lg border border-green-200">
+                          <div className="text-xs text-gray-500 mb-1">Avg Sales/Team</div>
+                          <div className="text-2xl font-bold">
+                            {(managerTeamAverages.managers.reduce((sum, m) => sum + m.averages.sales, 0) / managerTeamAverages.managers.length).toFixed(1)}
+                          </div>
+                        </div>
+                        <div className="p-3 bg-emerald-50 rounded-lg border border-emerald-200">
+                          <div className="text-xs text-gray-500 mb-1">Avg Premium/Team</div>
+                          <div className="text-2xl font-bold">
+                            ${(managerTeamAverages.managers.reduce((sum, m) => sum + m.averages.premium, 0) / managerTeamAverages.managers.length).toFixed(0)}
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Manager List */}
+                      <div className="space-y-2">
+                        {managerTeamAverages.managers
+                          .sort((a, b) => b.averages.premium - a.averages.premium)
+                          .map((manager, index) => (
+                            <div 
+                              key={manager.id} 
+                              className={`p-4 rounded-lg border-2 ${
+                                index < 3 
+                                  ? 'bg-gradient-to-r from-blue-50 to-indigo-50 border-blue-300' 
+                                  : 'bg-white border-gray-200'
+                              }`}
+                            >
+                              <div className="flex flex-col md:flex-row md:items-center gap-3">
+                                <div className="flex items-center gap-3 flex-1 min-w-0">
+                                  <div className="flex-shrink-0 w-8 text-center">
+                                    {index < 3 ? (
+                                      <span className="text-xl">
+                                        {index === 0 ? '🥇' : index === 1 ? '🥈' : '🥉'}
+                                      </span>
+                                    ) : (
+                                      <span className="text-sm font-semibold text-gray-400">#{index + 1}</span>
+                                    )}
+                                  </div>
+                                  <div className="flex-1 min-w-0">
+                                    <div className="font-semibold truncate">{manager.name}</div>
+                                    <div className="text-xs text-gray-500">
+                                      {manager.role.replace('_', ' ').toUpperCase()} • Team Size: {manager.team_size}
+                                    </div>
+                                  </div>
+                                </div>
+                                <div className="flex flex-wrap gap-x-6 gap-y-2 text-sm">
+                                  <div>
+                                    <span className="text-gray-600">Presentations:</span>
+                                    <span className="ml-1 font-semibold">{manager.averages.presentations}/wk</span>
+                                  </div>
+                                  <div>
+                                    <span className="text-gray-600">Appointments:</span>
+                                    <span className="ml-1 font-semibold">{manager.averages.appointments}/wk</span>
+                                  </div>
+                                  <div>
+                                    <span className="text-gray-600">Sales:</span>
+                                    <span className="ml-1 font-semibold">{manager.averages.sales}/wk</span>
+                                  </div>
+                                  <div>
+                                    <span className="text-gray-600">Premium:</span>
+                                    <span className="ml-1 font-semibold text-green-600">${manager.averages.premium}/wk</span>
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                          ))}
+                      </div>
+                    </>
+                  )}
+                </div>
+              )}
+            </TabsContent>
+          )}
+
           {/* Individual Member Performance Tab (Managers Only) */}
           {isManager && (
             <TabsContent value="individual" className="space-y-4">
