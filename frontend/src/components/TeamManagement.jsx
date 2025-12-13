@@ -444,6 +444,122 @@ const TeamManagement = ({ user }) => {
               </>
             )}
           </TabsContent>
+
+
+          <TabsContent value="reorganize" className="space-y-6" data-testid="reorganize-content">
+            <div className="bg-purple-50 p-6 rounded-lg border border-purple-200">
+              <h3 className="font-semibold text-lg mb-4">Reorganize Team</h3>
+              <p className="text-sm text-gray-600 mb-4">
+                Change team members' roles or reassign them to different managers. All historical data will be preserved.
+              </p>
+              <Button onClick={() => { fetchActiveUsers(); fetchAvailableManagers(); }} className="mb-4">
+                Load Active Users
+              </Button>
+            </div>
+
+            <div className="space-y-4">
+              {activeUsers.map(member => (
+                <ReorganizeUserCard 
+                  key={member.id}
+                  member={member}
+                  availableManagers={availableManagers.filter(m => m.id !== member.id)}
+                  onReassign={handleReassignUser}
+                />
+              ))}
+            </div>
+          </TabsContent>
+
+          <TabsContent value="archive" className="space-y-6" data-testid="archive-content">
+            <div className="bg-yellow-50 p-6 rounded-lg border border-yellow-200">
+              <h3 className="font-semibold text-lg mb-4">Archive Users</h3>
+              <p className="text-sm text-gray-600 mb-4">
+                Archive users who have left the organization. Their data will be preserved and still count in reports, but they won't be able to log in or appear in the active team hierarchy.
+              </p>
+              <div className="flex gap-4">
+                <Button onClick={fetchActiveUsers}>Load Active Users</Button>
+                <Button onClick={fetchArchivedUsers} variant="outline">View Archived Users</Button>
+              </div>
+            </div>
+
+            {activeUsers.length > 0 && (
+              <div>
+                <h4 className="font-semibold text-base mb-3">Active Users</h4>
+                <div className="space-y-3">
+                  {activeUsers.map(member => (
+                    <div key={member.id} className="p-4 bg-white border rounded-lg flex justify-between items-center">
+                      <div>
+                        <div className="font-semibold">{member.name}</div>
+                        <div className="text-sm text-gray-600">{member.email}</div>
+                        <div className="text-xs text-gray-500">{member.role.replace('_', ' ').toUpperCase()}</div>
+                      </div>
+                      <Button
+                        variant="destructive"
+                        size="sm"
+                        onClick={() => handleArchiveUser(member.id)}
+                      >
+                        Archive
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {archivedUsers.length > 0 && (
+              <div>
+                <h4 className="font-semibold text-base mb-3">Archived Users</h4>
+                <div className="space-y-3">
+                  {archivedUsers.map(member => (
+                    <div key={member.id} className="p-4 bg-gray-100 border rounded-lg">
+                      <div className="flex justify-between items-start mb-3">
+                        <div>
+                          <div className="font-semibold">{member.name}</div>
+                          <div className="text-sm text-gray-600">{member.email}</div>
+                          <div className="text-xs text-gray-500">{member.role.replace('_', ' ').toUpperCase()}</div>
+                          {member.archived_at && (
+                            <div className="text-xs text-gray-500 mt-1">
+                              Archived: {new Date(member.archived_at).toLocaleDateString()}
+                            </div>
+                          )}
+                        </div>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleUnarchiveUser(member.id)}
+                        >
+                          Unarchive
+                        </Button>
+                      </div>
+                      {member.total_stats && (
+                        <div className="mt-3 pt-3 border-t border-gray-300">
+                          <div className="text-xs text-gray-600 mb-2">Total Historical Performance:</div>
+                          <div className="flex flex-wrap gap-x-6 gap-y-1 text-sm">
+                            <div>
+                              <span className="text-gray-600">Presentations:</span>
+                              <span className="ml-1 font-semibold">{member.total_stats.presentations}</span>
+                            </div>
+                            <div>
+                              <span className="text-gray-600">Appointments:</span>
+                              <span className="ml-1 font-semibold">{member.total_stats.appointments}</span>
+                            </div>
+                            <div>
+                              <span className="text-gray-600">Sales:</span>
+                              <span className="ml-1 font-semibold">{member.total_stats.sales}</span>
+                            </div>
+                            <div>
+                              <span className="text-gray-600">Premium:</span>
+                              <span className="ml-1 font-semibold">${member.total_stats.premium.toFixed(2)}</span>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </TabsContent>
+
         </Tabs>
       </CardContent>
     </Card>
