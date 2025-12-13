@@ -15,7 +15,6 @@ const Analytics = ({ user }) => {
   const [individualMemberAverages, setIndividualMemberAverages] = useState(null);
   const [selectedPeriod, setSelectedPeriod] = useState('last_4_weeks');
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState('personal');
 
   const isManager = ['state_manager', 'regional_manager', 'district_manager'].includes(user.role);
 
@@ -23,6 +22,7 @@ const Analytics = ({ user }) => {
     fetchPersonalAverages();
     if (isManager) {
       fetchTeamAverages();
+      fetchIndividualMemberAverages();
     }
   }, []);
 
@@ -71,10 +71,10 @@ const Analytics = ({ user }) => {
   };
 
   const periodLabels = {
-    last_4_weeks: 'Last 4 Weeks',
-    last_8_weeks: 'Last 8 Weeks',
-    last_12_weeks: 'Last 12 Weeks',
-    ytd: 'Year to Date'
+    last_4_weeks: '4 Weeks',
+    last_8_weeks: '8 Weeks',
+    last_12_weeks: '12 Weeks',
+    ytd: 'YTD'
   };
 
   if (loading) {
@@ -94,7 +94,7 @@ const Analytics = ({ user }) => {
         </CardTitle>
       </CardHeader>
       <CardContent>
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
+        <Tabs defaultValue="personal" className="space-y-6">
           <TabsList className={`grid w-full ${isManager ? 'grid-cols-3' : 'grid-cols-1'} bg-gray-100 p-1`}>
             <TabsTrigger value="personal" className="py-2 text-sm">
               <User size={16} className="mr-2" />
@@ -104,156 +104,208 @@ const Analytics = ({ user }) => {
               <>
                 <TabsTrigger value="team" className="py-2 text-sm">
                   <Users size={16} className="mr-2" />
-                  Team Averages
+                  Team Overview
                 </TabsTrigger>
                 <TabsTrigger value="individual" className="py-2 text-sm">
                   <BarChart3 size={16} className="mr-2" />
-                  Member Performance
+                  Team Members
                 </TabsTrigger>
               </>
             )}
           </TabsList>
 
           {/* Personal Averages Tab */}
-          <TabsContent value="personal" className="space-y-6">
+          <TabsContent value="personal" className="space-y-4">
+            <div className="bg-blue-50 p-4 rounded-lg border border-blue-200 mb-4">
+              <h3 className="font-semibold text-sm text-gray-700 mb-2">Your Weekly Averages</h3>
+              <p className="text-xs text-gray-600">Average performance per week across different time periods</p>
+            </div>
+            
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
               {personalAverages && Object.entries(personalAverages).map(([period, data]) => (
-                <div key={period} className="p-4 bg-white rounded-lg border-2 border-gray-200 hover:border-blue-300 transition-colors">
-                  <div className="text-sm font-semibold text-gray-700 mb-3">{periodLabels[period]}</div>
-                <div className="space-y-2">
-                  <div className="flex justify-between text-sm">
-                    <span className="text-gray-600">Presentations:</span>
-                    <span className="font-bold">{data.averages.presentations}/wk</span>
-                  </div>
-                  <div className="flex justify-between text-sm">
-                    <span className="text-gray-600">Appointments:</span>
-                    <span className="font-bold">{data.averages.appointments}/wk</span>
-                  </div>
-                  <div className="flex justify-between text-sm">
-                    <span className="text-gray-600">Sales:</span>
-                    <span className="font-bold">{data.averages.sales}/wk</span>
-                  </div>
-                  <div className="flex justify-between text-sm">
-                    <span className="text-gray-600">Premium:</span>
-                    <span className="font-bold">${data.averages.premium}/wk</span>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Team Averages (Managers Only) */}
-      {isManager && teamAverages && (
-        <Card className="shadow-lg bg-white">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Users className="text-green-600" size={24} />
-              Team Averages (Per Member, Per Week)
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-              {Object.entries(teamAverages).map(([period, data]) => (
-                <div key={period} className="p-4 bg-gradient-to-br from-green-50 to-emerald-50 rounded-lg border border-green-200">
-                  <div className="text-sm font-semibold text-gray-700 mb-2">{periodLabels[period]}</div>
-                  <div className="text-xs text-gray-500 mb-3">Team Size: {data.team_size}</div>
+                <div key={period} className="p-4 bg-white rounded-lg border-2 border-gray-200">
+                  <div className="text-xs font-semibold text-gray-500 uppercase mb-3">{periodLabels[period]}</div>
                   <div className="space-y-2">
-                    <div className="flex justify-between text-sm">
-                      <span className="text-gray-600">Presentations:</span>
-                      <span className="font-bold">{data.team_averages_per_member.presentations}/wk</span>
+                    <div className="flex justify-between items-center">
+                      <span className="text-sm text-gray-600">Presentations</span>
+                      <span className="font-bold text-lg">{data.averages.presentations}</span>
                     </div>
-                    <div className="flex justify-between text-sm">
-                      <span className="text-gray-600">Appointments:</span>
-                      <span className="font-bold">{data.team_averages_per_member.appointments}/wk</span>
+                    <div className="flex justify-between items-center">
+                      <span className="text-sm text-gray-600">Appointments</span>
+                      <span className="font-bold text-lg">{data.averages.appointments}</span>
                     </div>
-                    <div className="flex justify-between text-sm">
-                      <span className="text-gray-600">Sales:</span>
-                      <span className="font-bold">{data.team_averages_per_member.sales}/wk</span>
+                    <div className="flex justify-between items-center">
+                      <span className="text-sm text-gray-600">Sales</span>
+                      <span className="font-bold text-lg">{data.averages.sales}</span>
                     </div>
-                    <div className="flex justify-between text-sm">
-                      <span className="text-gray-600">Premium:</span>
-                      <span className="font-bold">${data.team_averages_per_member.premium}/wk</span>
+                    <div className="flex justify-between items-center border-t pt-2 mt-2">
+                      <span className="text-sm text-gray-600">Premium</span>
+                      <span className="font-bold text-lg text-green-600">${data.averages.premium}</span>
                     </div>
                   </div>
                 </div>
               ))}
             </div>
-          </CardContent>
-        </Card>
-      )}
+          </TabsContent>
 
-      {/* Individual Member Performance (Managers Only) */}
-      {isManager && individualMemberAverages && (
-        <Card className="shadow-lg bg-white">
-          <CardHeader>
-            <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-              <CardTitle className="flex items-center gap-2">
-                <BarChart3 className="text-purple-600" size={24} />
-                Individual Team Member Averages
-              </CardTitle>
-              <div className="flex gap-2">
-                {Object.keys(periodLabels).map(period => (
-                  <Button
-                    key={period}
-                    size="sm"
-                    variant={selectedPeriod === period ? 'default' : 'outline'}
-                    onClick={() => setSelectedPeriod(period)}
-                    className="text-xs"
-                  >
-                    {periodLabels[period]}
-                  </Button>
-                ))}
+          {/* Team Averages Tab (Managers Only) */}
+          {isManager && (
+            <TabsContent value="team" className="space-y-4">
+              <div className="bg-green-50 p-4 rounded-lg border border-green-200 mb-4">
+                <h3 className="font-semibold text-sm text-gray-700 mb-2">Team Performance Overview</h3>
+                <p className="text-xs text-gray-600">Average performance per team member per week</p>
               </div>
-            </div>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-3">
-              {individualMemberAverages.members.length === 0 ? (
-                <div className="text-center py-8 text-gray-500">No team members found</div>
-              ) : (
-                individualMemberAverages.members
-                  .sort((a, b) => b.averages.premium - a.averages.premium)
-                  .map((member, index) => (
-                    <div key={member.id} className={`p-4 rounded-lg border ${index < 3 ? 'bg-yellow-50 border-yellow-300' : 'bg-gray-50 border-gray-200'}`}>
-                      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
-                        <div className="flex-1">
-                          <div className="flex items-center gap-2">
-                            {index < 3 && <span className="text-lg">🏆</span>}
-                            <div>
-                              <div className="font-semibold">{member.name}</div>
-                              <div className="text-xs text-gray-600">{member.role.replace('_', ' ').toUpperCase()}</div>
-                            </div>
-                          </div>
+
+              {teamAverages && (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                  {Object.entries(teamAverages).map(([period, data]) => (
+                    <div key={period} className="p-4 bg-white rounded-lg border-2 border-green-200">
+                      <div className="flex justify-between items-center mb-2">
+                        <div className="text-xs font-semibold text-gray-500 uppercase">{periodLabels[period]}</div>
+                        <div className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded">
+                          {data.team_size} members
                         </div>
-                        <div className="flex flex-wrap gap-x-6 gap-y-2 text-sm">
-                          <div>
-                            <span className="text-gray-600">Presentations:</span>
-                            <span className="ml-1 font-semibold">{member.averages.presentations}/wk</span>
-                          </div>
-                          <div>
-                            <span className="text-gray-600">Appointments:</span>
-                            <span className="ml-1 font-semibold">{member.averages.appointments}/wk</span>
-                          </div>
-                          <div>
-                            <span className="text-gray-600">Sales:</span>
-                            <span className="ml-1 font-semibold">{member.averages.sales}/wk</span>
-                          </div>
-                          <div>
-                            <span className="text-gray-600">Premium:</span>
-                            <span className="ml-1 font-semibold">${member.averages.premium}/wk</span>
-                          </div>
+                      </div>
+                      <div className="space-y-2">
+                        <div className="flex justify-between items-center">
+                          <span className="text-sm text-gray-600">Presentations</span>
+                          <span className="font-bold text-lg">{data.team_averages_per_member.presentations}</span>
+                        </div>
+                        <div className="flex justify-between items-center">
+                          <span className="text-sm text-gray-600">Appointments</span>
+                          <span className="font-bold text-lg">{data.team_averages_per_member.appointments}</span>
+                        </div>
+                        <div className="flex justify-between items-center">
+                          <span className="text-sm text-gray-600">Sales</span>
+                          <span className="font-bold text-lg">{data.team_averages_per_member.sales}</span>
+                        </div>
+                        <div className="flex justify-between items-center border-t pt-2 mt-2">
+                          <span className="text-sm text-gray-600">Premium</span>
+                          <span className="font-bold text-lg text-green-600">${data.team_averages_per_member.premium}</span>
                         </div>
                       </div>
                     </div>
-                  ))
+                  ))}
+                </div>
               )}
-            </div>
-          </CardContent>
-        </Card>
-      )}
-    </div>
+            </TabsContent>
+          )}
+
+          {/* Individual Member Performance Tab (Managers Only) */}
+          {isManager && (
+            <TabsContent value="individual" className="space-y-4">
+              <div className="bg-purple-50 p-4 rounded-lg border border-purple-200 mb-4 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+                <div>
+                  <h3 className="font-semibold text-sm text-gray-700 mb-1">Individual Team Member Performance</h3>
+                  <p className="text-xs text-gray-600">Weekly averages for each team member</p>
+                </div>
+                <div className="flex gap-2">
+                  {Object.keys(periodLabels).map(period => (
+                    <Button
+                      key={period}
+                      size="sm"
+                      variant={selectedPeriod === period ? 'default' : 'outline'}
+                      onClick={() => setSelectedPeriod(period)}
+                      className="text-xs"
+                    >
+                      {periodLabels[period]}
+                    </Button>
+                  ))}
+                </div>
+              </div>
+
+              {individualMemberAverages && (
+                <div className="space-y-3">
+                  {individualMemberAverages.members.length === 0 ? (
+                    <div className="text-center py-8 text-gray-500">No team members found</div>
+                  ) : (
+                    <>
+                      {/* Summary Stats */}
+                      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
+                        <div className="p-3 bg-gray-50 rounded-lg border">
+                          <div className="text-xs text-gray-500 mb-1">Total Members</div>
+                          <div className="text-2xl font-bold">{individualMemberAverages.members.length}</div>
+                        </div>
+                        <div className="p-3 bg-blue-50 rounded-lg border border-blue-200">
+                          <div className="text-xs text-gray-500 mb-1">Avg Presentations</div>
+                          <div className="text-2xl font-bold">
+                            {(individualMemberAverages.members.reduce((sum, m) => sum + m.averages.presentations, 0) / individualMemberAverages.members.length).toFixed(1)}
+                          </div>
+                        </div>
+                        <div className="p-3 bg-green-50 rounded-lg border border-green-200">
+                          <div className="text-xs text-gray-500 mb-1">Avg Sales</div>
+                          <div className="text-2xl font-bold">
+                            {(individualMemberAverages.members.reduce((sum, m) => sum + m.averages.sales, 0) / individualMemberAverages.members.length).toFixed(1)}
+                          </div>
+                        </div>
+                        <div className="p-3 bg-emerald-50 rounded-lg border border-emerald-200">
+                          <div className="text-xs text-gray-500 mb-1">Avg Premium</div>
+                          <div className="text-2xl font-bold">
+                            ${(individualMemberAverages.members.reduce((sum, m) => sum + m.averages.premium, 0) / individualMemberAverages.members.length).toFixed(0)}
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Member List */}
+                      <div className="space-y-2">
+                        {individualMemberAverages.members
+                          .sort((a, b) => b.averages.premium - a.averages.premium)
+                          .map((member, index) => (
+                            <div 
+                              key={member.id} 
+                              className={`p-4 rounded-lg border-2 ${
+                                index < 3 
+                                  ? 'bg-gradient-to-r from-yellow-50 to-orange-50 border-yellow-300' 
+                                  : 'bg-white border-gray-200'
+                              }`}
+                            >
+                              <div className="flex flex-col md:flex-row md:items-center gap-3">
+                                <div className="flex items-center gap-3 flex-1 min-w-0">
+                                  <div className="flex-shrink-0 w-8 text-center">
+                                    {index < 3 ? (
+                                      <span className="text-xl">
+                                        {index === 0 ? '🥇' : index === 1 ? '🥈' : '🥉'}
+                                      </span>
+                                    ) : (
+                                      <span className="text-sm font-semibold text-gray-400">#{index + 1}</span>
+                                    )}
+                                  </div>
+                                  <div className="flex-1 min-w-0">
+                                    <div className="font-semibold truncate">{member.name}</div>
+                                    <div className="text-xs text-gray-500">{member.role.replace('_', ' ').toUpperCase()}</div>
+                                  </div>
+                                </div>
+                                <div className="flex flex-wrap gap-x-6 gap-y-2 text-sm">
+                                  <div>
+                                    <span className="text-gray-600">Presentations:</span>
+                                    <span className="ml-1 font-semibold">{member.averages.presentations}/wk</span>
+                                  </div>
+                                  <div>
+                                    <span className="text-gray-600">Appointments:</span>
+                                    <span className="ml-1 font-semibold">{member.averages.appointments}/wk</span>
+                                  </div>
+                                  <div>
+                                    <span className="text-gray-600">Sales:</span>
+                                    <span className="ml-1 font-semibold">{member.averages.sales}/wk</span>
+                                  </div>
+                                  <div>
+                                    <span className="text-gray-600">Premium:</span>
+                                    <span className="ml-1 font-semibold text-green-600">${member.averages.premium}/wk</span>
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                          ))}
+                      </div>
+                    </>
+                  )}
+                </div>
+              )}
+            </TabsContent>
+          )}
+        </Tabs>
+      </CardContent>
+    </Card>
   );
 };
 
