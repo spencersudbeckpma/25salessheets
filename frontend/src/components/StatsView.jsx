@@ -16,10 +16,12 @@ const StatsView = ({ user }) => {
   const [stats, setStats] = useState(null);
   const [activities, setActivities] = useState([]);
   const [editingActivity, setEditingActivity] = useState(null);
+  const [quickAverages, setQuickAverages] = useState(null);
 
   useEffect(() => {
     fetchStats();
     fetchActivities();
+    fetchQuickAverages();
   }, [period]);
 
   const fetchStats = async () => {
