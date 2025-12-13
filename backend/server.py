@@ -2921,6 +2921,106 @@ async def get_individual_member_averages(current_user: dict = Depends(get_curren
         "last_4_weeks": today - timedelta(weeks=4),
         "last_8_weeks": today - timedelta(weeks=8),
         "last_12_weeks": today - timedelta(weeks=12),
+
+
+@api_router.get("/analytics/manager-team-averages")
+async def get_manager_team_averages(current_user: dict = Depends(get_current_user), period: str = "last_4_weeks"):
+    """Get average performance for each direct report manager's team"""
+    if current_user['role'] not in ['state_manager', 'regional_manager', 'district_manager']:
+        raise HTTPException(status_code=403, detail="Only managers can access this")
+    
+    from datetime import timedelta
+    
+    central_tz = pytz_timezone('America/Chicago')
+    today = datetime.now(central_tz).date()
+    
+    # Calculate date range
+    period_map = {
+        "last_4_weeks": today - timedelta(weeks=4),
+        "last_8_weeks": today - timedelta(weeks=8),
+        "last_12_weeks": today - timedelta(weeks=12),
+        "ytd": today.replace(month=1, day=1)
+    }
+    
+    start_date = period_map.get(period, today - timedelta(weeks=4))
+    days_in_period = (today - start_date).days
+    weeks_in_period = max(days_in_period / 7, 1)
+    
+    # Get direct report managers (only managers, not agents)
+    direct_managers = await db.users.find(
+        {
+            "manager_id": current_user['id'],
+            "role": {"$in": ["state_manager", "regional_manager", "district_manager"]},
+            "$or": [{"status": "active"}, {"status": {"$exists": False}}]
+        },
+        {"_id": 0, "id": 1, "name": 1, "email": 1, "role": 1}
+    ).to_list(1000)
+    
+    # For each manager, calculate their team's averages
+    async def get_team_ids(manager_id: str):
+        ids = []
+        subordinates = await db.users.find(
+            {"manager_id": manager_id, "$or": [{"status": "active"}, {"status": {"$exists": False}}]},
+            {"_id": 0, "id": 1}
+        ).to_list(1000)
+        for sub in subordinates:
+            ids.append(sub['id'])
+            ids.extend(await get_team_ids(sub['id']))
+        return ids
+    
+    manager_results = []
+    
+    for manager in direct_managers:
+        # Get all team member IDs under this manager
+        team_ids = await get_team_ids(manager['id'])
+        team_size = len(team_ids)
+        
+        # Get activities for this manager's entire team
+        activities = await db.activities.find({
+            "user_id": {"$in": team_ids},
+            "date": {"$gte": start_date.isoformat()}
+        }, {"_id": 0}).to_list(100000)
+        
+        # Calculate totals
+        totals = {
+            "presentations": sum(a.get('presentations', 0) for a in activities),
+            "appointments": sum(a.get('appointments', 0) for a in activities),
+            "sales": sum(a.get('sales', 0) for a in activities),
+            "premium": sum(a.get('premium', 0) for a in activities)
+        }
+        
+        # Calculate averages per member per week
+        if team_size > 0:
+            averages_per_member = {
+                "presentations": round(totals["presentations"] / weeks_in_period / team_size, 1),
+                "appointments": round(totals["appointments"] / weeks_in_period / team_size, 1),
+                "sales": round(totals["sales"] / weeks_in_period / team_size, 1),
+                "premium": round(totals["premium"] / weeks_in_period / team_size, 2)
+            }
+        else:
+            averages_per_member = {
+                "presentations": 0,
+                "appointments": 0,
+                "sales": 0,
+                "premium": 0
+            }
+        
+        manager_results.append({
+            "id": manager['id'],
+            "name": manager['name'],
+            "email": manager['email'],
+            "role": manager['role'],
+            "team_size": team_size,
+            "averages": averages_per_member,
+            "totals": totals
+        })
+    
+    return {
+        "period": period,
+        "weeks": round(weeks_in_period, 1),
+        "managers": manager_results
+    }
+
         "ytd": today.replace(month=1, day=1)
     }
     
