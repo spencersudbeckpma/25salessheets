@@ -346,11 +346,15 @@ const TeamManagement = ({ user }) => {
       </CardHeader>
       <CardContent className="pt-2">
         <Tabs defaultValue="invite" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-4 bg-gray-100 p-1">
-            <TabsTrigger value="invite" data-testid="invite-tab" className="py-2">Create Invites</TabsTrigger>
-            <TabsTrigger value="edit" data-testid="edit-data-tab" className="py-2">Edit Team Data</TabsTrigger>
-            <TabsTrigger value="reorganize" data-testid="reorganize-tab" className="py-2">Reorganize Team</TabsTrigger>
-            <TabsTrigger value="archive" data-testid="archive-tab" className="py-2">Archive Users</TabsTrigger>
+          <TabsList className={`grid w-full ${user.role === 'state_manager' ? 'grid-cols-4' : 'grid-cols-2'} bg-gray-100 p-1`}>
+            <TabsTrigger value="invite" data-testid="invite-tab" className="py-2 text-xs md:text-sm">Create Invites</TabsTrigger>
+            <TabsTrigger value="edit" data-testid="edit-data-tab" className="py-2 text-xs md:text-sm">Edit Team Data</TabsTrigger>
+            {user.role === 'state_manager' && (
+              <>
+                <TabsTrigger value="reorganize" data-testid="reorganize-tab" className="py-2 text-xs md:text-sm">Reorganize</TabsTrigger>
+                <TabsTrigger value="archive" data-testid="archive-tab" className="py-2 text-xs md:text-sm">Archive</TabsTrigger>
+              </>
+            )}
           </TabsList>
 
           <TabsContent value="invite" className="space-y-6" data-testid="invite-content">
