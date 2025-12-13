@@ -25,6 +25,7 @@ const Analytics = ({ user }) => {
     if (isManager) {
       fetchTeamAverages();
       fetchIndividualMemberAverages();
+      fetchManagerTeamAverages();
     }
   }, []);
 
@@ -33,6 +34,12 @@ const Analytics = ({ user }) => {
       fetchIndividualMemberAverages();
     }
   }, [selectedPeriod]);
+
+  useEffect(() => {
+    if (isManager) {
+      fetchManagerTeamAverages();
+    }
+  }, [managerPeriod]);
 
   const fetchPersonalAverages = async () => {
     try {
