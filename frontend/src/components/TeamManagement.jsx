@@ -526,6 +526,7 @@ const TeamManagement = ({ user }) => {
           </TabsContent>
 
 
+          {user.role === 'state_manager' && (
           <TabsContent value="reorganize" className="space-y-6" data-testid="reorganize-content">
             <div className="bg-purple-50 p-6 rounded-lg border border-purple-200">
               <h3 className="font-semibold text-lg mb-4">Reorganize Team</h3>
