@@ -17,6 +17,8 @@ const Analytics = ({ user }) => {
   const [selectedPeriod, setSelectedPeriod] = useState('last_4_weeks');
   const [managerPeriod, setManagerPeriod] = useState('last_4_weeks');
   const [loading, setLoading] = useState(true);
+  const [expandedManagers, setExpandedManagers] = useState(new Set());
+  const [subordinateData, setSubordinateData] = useState({});
 
   const isManager = ['state_manager', 'regional_manager', 'district_manager'].includes(user.role);
 
