@@ -289,33 +289,6 @@ const TeamView = ({ user }) => {
         </p>
       </CardHeader>
       <CardContent className="pt-2">
-        {/* Aggregate Summary at Top */}
-        {hierarchy && (
-          <div className="mb-6 p-4 bg-gray-50 rounded-lg border border-gray-200">
-            <h3 className="font-semibold text-base mb-3 text-gray-700">
-              Team Total ({period.charAt(0).toUpperCase() + period.slice(1)})
-            </h3>
-            <div className="flex flex-wrap gap-x-8 gap-y-3">
-              <div>
-                <div className="text-sm text-gray-600">Presentations</div>
-                <div className="font-bold text-3xl text-gray-900">{hierarchy.stats.presentations}</div>
-              </div>
-              <div>
-                <div className="text-sm text-gray-600">Appointments</div>
-                <div className="font-bold text-3xl text-gray-900">{hierarchy.stats.appointments}</div>
-              </div>
-              <div>
-                <div className="text-sm text-gray-600">Sales</div>
-                <div className="font-bold text-3xl text-gray-900">{hierarchy.stats.sales}</div>
-              </div>
-              <div>
-                <div className="text-sm text-gray-600">Premium</div>
-                <div className="font-bold text-3xl text-gray-900">${hierarchy.stats.premium.toFixed(2)}</div>
-              </div>
-            </div>
-          </div>
-        )}
-        
         <div className="max-h-[600px] overflow-y-auto pr-2">
           {hierarchy ? renderNode(hierarchy) : <div className="text-center py-8 text-gray-500">No team data available</div>}
         </div>
