@@ -116,20 +116,28 @@ const Analytics = ({ user }) => {
       </CardHeader>
       <CardContent>
         <Tabs defaultValue="personal" className="space-y-6">
-          <TabsList className={`grid w-full ${isManager ? 'grid-cols-3' : 'grid-cols-1'} bg-gray-100 p-1`}>
-            <TabsTrigger value="personal" className="py-2 text-sm">
-              <User size={16} className="mr-2" />
-              My Averages
+          <TabsList className={`grid w-full ${isManager ? 'grid-cols-4' : 'grid-cols-1'} bg-gray-100 p-1`}>
+            <TabsTrigger value="personal" className="py-2 text-xs md:text-sm">
+              <User size={16} className="mr-1 md:mr-2" />
+              <span className="hidden md:inline">My Averages</span>
+              <span className="md:hidden">Me</span>
             </TabsTrigger>
             {isManager && (
               <>
-                <TabsTrigger value="team" className="py-2 text-sm">
-                  <Users size={16} className="mr-2" />
-                  Team Overview
+                <TabsTrigger value="team" className="py-2 text-xs md:text-sm">
+                  <Users size={16} className="mr-1 md:mr-2" />
+                  <span className="hidden md:inline">Team Overview</span>
+                  <span className="md:hidden">Team</span>
                 </TabsTrigger>
-                <TabsTrigger value="individual" className="py-2 text-sm">
-                  <BarChart3 size={16} className="mr-2" />
-                  Team Members
+                <TabsTrigger value="managers" className="py-2 text-xs md:text-sm">
+                  <TrendingUp size={16} className="mr-1 md:mr-2" />
+                  <span className="hidden md:inline">Manager Averages</span>
+                  <span className="md:hidden">Managers</span>
+                </TabsTrigger>
+                <TabsTrigger value="individual" className="py-2 text-xs md:text-sm">
+                  <BarChart3 size={16} className="mr-1 md:mr-2" />
+                  <span className="hidden md:inline">Team Members</span>
+                  <span className="md:hidden">Members</span>
                 </TabsTrigger>
               </>
             )}
