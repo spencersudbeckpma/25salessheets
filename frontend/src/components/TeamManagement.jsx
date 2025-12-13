@@ -549,7 +549,9 @@ const TeamManagement = ({ user }) => {
               ))}
             </div>
           </TabsContent>
+          )}
 
+          {user.role === 'state_manager' && (
           <TabsContent value="archive" className="space-y-6" data-testid="archive-content">
             <div className="bg-yellow-50 p-6 rounded-lg border border-yellow-200">
               <h3 className="font-semibold text-lg mb-4">Archive Users</h3>
