@@ -93,6 +93,35 @@ const Analytics = ({ user }) => {
     }
   };
 
+  const fetchSubordinateManagers = async (managerId) => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await axios.get(`${API}/analytics/manager-subordinates?manager_id=${managerId}&period=${managerPeriod}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      setSubordinateData(prev => ({
+        ...prev,
+        [managerId]: response.data.managers
+      }));
+    } catch (error) {
+      toast.error('Failed to fetch subordinate managers');
+    }
+  };
+
+  const toggleManagerExpansion = async (managerId) => {
+    const newExpanded = new Set(expandedManagers);
+    if (newExpanded.has(managerId)) {
+      newExpanded.delete(managerId);
+    } else {
+      newExpanded.add(managerId);
+      // Fetch subordinates if not already loaded
+      if (!subordinateData[managerId]) {
+        await fetchSubordinateManagers(managerId);
+      }
+    }
+    setExpandedManagers(newExpanded);
+  };
+
   const periodLabels = {
     last_4_weeks: '4 Weeks',
     last_8_weeks: '8 Weeks',
