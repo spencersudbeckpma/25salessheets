@@ -901,8 +901,11 @@ async def get_daily_report(report_type: str, date: str, current_user: dict = Dep
             if not target_manager:
                 raise HTTPException(status_code=403, detail="Manager not found in your hierarchy")
             
-            # Get the target manager's team (their direct reports)
-            target_direct_reports = await db.users.find({"manager_id": user_id}, {"_id": 0, "password_hash": 0}).to_list(1000)
+            # Get the target manager's team (their direct reports, exclude archived)
+            target_direct_reports = await db.users.find(
+                {"manager_id": user_id, "$or": [{"status": "active"}, {"status": {"$exists": False}}]},
+                {"_id": 0, "password_hash": 0}
+            ).to_list(1000)
             direct_reports = target_direct_reports  # Show the selected manager's direct reports
         
         report_data = []
@@ -1163,8 +1166,11 @@ async def get_period_report(report_type: str, period: str, current_user: dict = 
             if not target_manager:
                 raise HTTPException(status_code=403, detail="Manager not found in your hierarchy")
             
-            # Get the target manager's team (their direct reports)
-            target_direct_reports = await db.users.find({"manager_id": user_id}, {"_id": 0, "password_hash": 0}).to_list(1000)
+            # Get the target manager's team (their direct reports, exclude archived)
+            target_direct_reports = await db.users.find(
+                {"manager_id": user_id, "$or": [{"status": "active"}, {"status": {"$exists": False}}]},
+                {"_id": 0, "password_hash": 0}
+            ).to_list(1000)
             direct_reports = target_direct_reports  # Show the selected manager's direct reports
         
         report_data = []
