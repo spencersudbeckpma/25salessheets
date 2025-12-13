@@ -148,6 +148,10 @@ const Dashboard = ({ user, setUser }) => {
             <StatsView user={user} />
           </TabsContent>
 
+          <TabsContent value="analytics" data-testid="analytics-content" className="mt-4 md:mt-6">
+            <Analytics user={user} />
+          </TabsContent>
+
           <TabsContent value="team" data-testid="team-content" className="mt-4 md:mt-6">
             <TeamView user={user} />
           </TabsContent>
