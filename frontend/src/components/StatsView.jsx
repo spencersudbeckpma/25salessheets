@@ -48,6 +48,18 @@ const StatsView = ({ user }) => {
     }
   };
 
+  const fetchQuickAverages = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await axios.get(`${API}/analytics/personal-averages`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      setQuickAverages(response.data);
+    } catch (error) {
+      // Silent fail - this is just a nice-to-have
+    }
+  };
+
   const handleEdit = (activity) => {
     setEditingActivity({ ...activity });
   };
