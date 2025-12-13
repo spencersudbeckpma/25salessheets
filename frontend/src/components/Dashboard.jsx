@@ -67,6 +67,13 @@ const Dashboard = ({ user, setUser }) => {
                 My Stats
               </TabsTrigger>
               <TabsTrigger 
+                value="analytics" 
+                data-testid="analytics-tab" 
+                className="py-2.5 px-3 text-xs md:text-sm whitespace-nowrap flex-shrink-0"
+              >
+                📊 Analytics
+              </TabsTrigger>
+              <TabsTrigger 
                 value="team" 
                 data-testid="team-tab" 
                 className="py-2.5 px-3 text-xs md:text-sm whitespace-nowrap flex-shrink-0"
