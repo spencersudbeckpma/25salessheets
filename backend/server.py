@@ -3067,6 +3067,24 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+
+
+# Health check endpoint (not under /api prefix for Kubernetes)
+@app.get("/health")
+async def health_check():
+    """Health check endpoint for Kubernetes/deployment systems"""
+    try:
+        # Quick ping to MongoDB to verify connection
+        await db.command('ping')
+        return {
+            "status": "healthy",
+            "service": "crm-sales-tracker-backend",
+            "database": "connected"
+        }
+    except Exception as e:
+        logger.error(f"Health check failed: {str(e)}")
+        raise HTTPException(status_code=503, detail="Service unavailable")
+
 # Configure logging
 logging.basicConfig(
     level=logging.INFO,
