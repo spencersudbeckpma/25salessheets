@@ -2726,6 +2726,213 @@ async def get_active_users_for_reassignment(current_user: dict = Depends(get_cur
     
     return users
 
+
+
+# ============================================
+# Weekly Averages & Analytics Endpoints
+# ============================================
+
+@api_router.get("/analytics/personal-averages")
+async def get_personal_averages(current_user: dict = Depends(get_current_user)):
+    """Get personal weekly averages for different time periods"""
+    from datetime import timedelta
+    
+    central_tz = pytz_timezone('America/Chicago')
+    today = datetime.now(central_tz).date()
+    
+    # Calculate date ranges
+    periods = {
+        "last_4_weeks": today - timedelta(weeks=4),
+        "last_8_weeks": today - timedelta(weeks=8),
+        "last_12_weeks": today - timedelta(weeks=12),
+        "ytd": today.replace(month=1, day=1)
+    }
+    
+    result = {}
+    
+    for period_name, start_date in periods.items():
+        # Get activities for this period
+        activities = await db.activities.find({
+            "user_id": current_user['id'],
+            "date": {"$gte": start_date.isoformat()}
+        }, {"_id": 0}).to_list(10000)
+        
+        # Calculate totals
+        totals = {
+            "presentations": sum(a.get('presentations', 0) for a in activities),
+            "appointments": sum(a.get('appointments', 0) for a in activities),
+            "sales": sum(a.get('sales', 0) for a in activities),
+            "premium": sum(a.get('premium', 0) for a in activities)
+        }
+        
+        # Calculate weeks in period
+        days_in_period = (today - start_date).days
+        weeks_in_period = max(days_in_period / 7, 1)
+        
+        # Calculate averages
+        averages = {
+            "presentations": round(totals["presentations"] / weeks_in_period, 1),
+            "appointments": round(totals["appointments"] / weeks_in_period, 1),
+            "sales": round(totals["sales"] / weeks_in_period, 1),
+            "premium": round(totals["premium"] / weeks_in_period, 2)
+        }
+        
+        result[period_name] = {
+            "averages": averages,
+            "totals": totals,
+            "weeks": round(weeks_in_period, 1)
+        }
+    
+    return result
+
+@api_router.get("/analytics/team-averages")
+async def get_team_averages(current_user: dict = Depends(get_current_user)):
+    """Get team averages for managers"""
+    if current_user['role'] not in ['state_manager', 'regional_manager', 'district_manager']:
+        raise HTTPException(status_code=403, detail="Only managers can access team analytics")
+    
+    from datetime import timedelta
+    
+    central_tz = pytz_timezone('America/Chicago')
+    today = datetime.now(central_tz).date()
+    
+    # Get all subordinates
+    async def get_all_subordinates(user_id: str):
+        ids = []
+        subordinates = await db.users.find(
+            {"manager_id": user_id, "$or": [{"status": "active"}, {"status": {"$exists": False}}]},
+            {"_id": 0, "id": 1}
+        ).to_list(1000)
+        for sub in subordinates:
+            ids.append(sub['id'])
+            ids.extend(await get_all_subordinates(sub['id']))
+        return ids
+    
+    team_ids = await get_all_subordinates(current_user['id'])
+    
+    # Calculate for each period
+    periods = {
+        "last_4_weeks": today - timedelta(weeks=4),
+        "last_8_weeks": today - timedelta(weeks=8),
+        "last_12_weeks": today - timedelta(weeks=12),
+        "ytd": today.replace(month=1, day=1)
+    }
+    
+    result = {}
+    
+    for period_name, start_date in periods.items():
+        # Get activities for entire team
+        activities = await db.activities.find({
+            "user_id": {"$in": team_ids},
+            "date": {"$gte": start_date.isoformat()}
+        }, {"_id": 0}).to_list(100000)
+        
+        # Calculate team totals
+        team_totals = {
+            "presentations": sum(a.get('presentations', 0) for a in activities),
+            "appointments": sum(a.get('appointments', 0) for a in activities),
+            "sales": sum(a.get('sales', 0) for a in activities),
+            "premium": sum(a.get('premium', 0) for a in activities)
+        }
+        
+        days_in_period = (today - start_date).days
+        weeks_in_period = max(days_in_period / 7, 1)
+        
+        # Calculate team averages (per team member per week)
+        team_member_count = len(team_ids) if team_ids else 1
+        
+        team_avg_per_member = {
+            "presentations": round(team_totals["presentations"] / weeks_in_period / team_member_count, 1),
+            "appointments": round(team_totals["appointments"] / weeks_in_period / team_member_count, 1),
+            "sales": round(team_totals["sales"] / weeks_in_period / team_member_count, 1),
+            "premium": round(team_totals["premium"] / weeks_in_period / team_member_count, 2)
+        }
+        
+        result[period_name] = {
+            "team_averages_per_member": team_avg_per_member,
+            "team_totals": team_totals,
+            "team_size": team_member_count,
+            "weeks": round(weeks_in_period, 1)
+        }
+    
+    return result
+
+@api_router.get("/analytics/individual-member-averages")
+async def get_individual_member_averages(current_user: dict = Depends(get_current_user), period: str = "last_4_weeks"):
+    """Get individual averages for each team member"""
+    if current_user['role'] not in ['state_manager', 'regional_manager', 'district_manager']:
+        raise HTTPException(status_code=403, detail="Only managers can access this")
+    
+    from datetime import timedelta
+    
+    central_tz = pytz_timezone('America/Chicago')
+    today = datetime.now(central_tz).date()
+    
+    # Calculate date range
+    period_map = {
+        "last_4_weeks": today - timedelta(weeks=4),
+        "last_8_weeks": today - timedelta(weeks=8),
+        "last_12_weeks": today - timedelta(weeks=12),
+        "ytd": today.replace(month=1, day=1)
+    }
+    
+    start_date = period_map.get(period, today - timedelta(weeks=4))
+    
+    # Get all subordinates
+    async def get_all_subordinates_with_info(user_id: str):
+        result = []
+        subordinates = await db.users.find(
+            {"manager_id": user_id, "$or": [{"status": "active"}, {"status": {"$exists": False}}]},
+            {"_id": 0, "id": 1, "name": 1, "email": 1, "role": 1}
+        ).to_list(1000)
+        for sub in subordinates:
+            result.append(sub)
+            result.extend(await get_all_subordinates_with_info(sub['id']))
+        return result
+    
+    team_members = await get_all_subordinates_with_info(current_user['id'])
+    
+    # Calculate averages for each member
+    days_in_period = (today - start_date).days
+    weeks_in_period = max(days_in_period / 7, 1)
+    
+    member_averages = []
+    
+    for member in team_members:
+        activities = await db.activities.find({
+            "user_id": member['id'],
+            "date": {"$gte": start_date.isoformat()}
+        }, {"_id": 0}).to_list(10000)
+        
+        totals = {
+            "presentations": sum(a.get('presentations', 0) for a in activities),
+            "appointments": sum(a.get('appointments', 0) for a in activities),
+            "sales": sum(a.get('sales', 0) for a in activities),
+            "premium": sum(a.get('premium', 0) for a in activities)
+        }
+        
+        averages = {
+            "presentations": round(totals["presentations"] / weeks_in_period, 1),
+            "appointments": round(totals["appointments"] / weeks_in_period, 1),
+            "sales": round(totals["sales"] / weeks_in_period, 1),
+            "premium": round(totals["premium"] / weeks_in_period, 2)
+        }
+        
+        member_averages.append({
+            "id": member['id'],
+            "name": member['name'],
+            "email": member['email'],
+            "role": member['role'],
+            "averages": averages,
+            "totals": totals
+        })
+    
+    return {
+        "period": period,
+        "weeks": round(weeks_in_period, 1),
+        "members": member_averages
+    }
+
 # Include the router in the main app
 app.include_router(api_router)
 
