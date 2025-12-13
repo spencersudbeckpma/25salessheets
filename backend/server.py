@@ -2587,6 +2587,138 @@ async def get_leaderboard(period: str, current_user: dict = Depends(get_current_
     
     return leaderboard
 
+
+# ============================================
+# Team Reorganization & Archiving Endpoints
+# ============================================
+
+class UserReassignment(BaseModel):
+    role: Optional[str] = None
+    manager_id: Optional[str] = None
+
+@api_router.put("/users/{user_id}/reassign")
+async def reassign_user(user_id: str, reassignment: UserReassignment, current_user: dict = Depends(get_current_user)):
+    """Reassign a user's role and/or manager (for promotions/transfers)"""
+    # Only managers can reassign
+    if current_user['role'] not in ['state_manager', 'regional_manager', 'district_manager']:
+        raise HTTPException(status_code=403, detail="Only managers can reassign team members")
+    
+    user = await db.users.find_one({"id": user_id}, {"_id": 0})
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    # Build update dict
+    update_data = {}
+    if reassignment.role is not None:
+        # Validate role
+        valid_roles = ['agent', 'district_manager', 'regional_manager', 'state_manager']
+        if reassignment.role not in valid_roles:
+            raise HTTPException(status_code=400, detail="Invalid role")
+        update_data['role'] = reassignment.role
+    
+    if reassignment.manager_id is not None:
+        # Validate manager exists
+        if reassignment.manager_id != "":
+            manager = await db.users.find_one({"id": reassignment.manager_id}, {"_id": 0})
+            if not manager:
+                raise HTTPException(status_code=404, detail="Manager not found")
+        update_data['manager_id'] = reassignment.manager_id if reassignment.manager_id != "" else None
+    
+    if not update_data:
+        raise HTTPException(status_code=400, detail="No changes provided")
+    
+    # Update user
+    await db.users.update_one({"id": user_id}, {"$set": update_data})
+    
+    return {"message": "User reassigned successfully", "updates": update_data}
+
+@api_router.put("/users/{user_id}/archive")
+async def archive_user(user_id: str, current_user: dict = Depends(get_current_user)):
+    """Archive a user (when they quit) - preserves all data but removes from active hierarchy"""
+    # Only state managers can archive
+    if current_user['role'] != 'state_manager':
+        raise HTTPException(status_code=403, detail="Only state managers can archive users")
+    
+    user = await db.users.find_one({"id": user_id}, {"_id": 0})
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    if user.get('status') == 'archived':
+        raise HTTPException(status_code=400, detail="User is already archived")
+    
+    # Check if user has subordinates
+    subordinates = await db.users.find({"manager_id": user_id, "status": {"$ne": "archived"}}, {"_id": 0}).to_list(1000)
+    subordinate_count = len(subordinates)
+    
+    # Archive the user (keep all historical data)
+    await db.users.update_one({"id": user_id}, {"$set": {"status": "archived", "archived_at": datetime.now(timezone.utc).isoformat()}})
+    
+    return {
+        "message": "User archived successfully",
+        "subordinates_count": subordinate_count,
+        "warning": f"This user has {subordinate_count} subordinate(s) who need to be reassigned" if subordinate_count > 0 else None
+    }
+
+@api_router.put("/users/{user_id}/unarchive")
+async def unarchive_user(user_id: str, current_user: dict = Depends(get_current_user)):
+    """Unarchive a user (restore to active)"""
+    if current_user['role'] != 'state_manager':
+        raise HTTPException(status_code=403, detail="Only state managers can unarchive users")
+    
+    user = await db.users.find_one({"id": user_id}, {"_id": 0})
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    if user.get('status') != 'archived':
+        raise HTTPException(status_code=400, detail="User is not archived")
+    
+    await db.users.update_one({"id": user_id}, {"$set": {"status": "active"}, "$unset": {"archived_at": ""}})
+    
+    return {"message": "User unarchived successfully"}
+
+@api_router.get("/users/archived/list")
+async def get_archived_users(current_user: dict = Depends(get_current_user)):
+    """Get list of all archived users"""
+    if current_user['role'] != 'state_manager':
+        raise HTTPException(status_code=403, detail="Only state managers can view archived users")
+    
+    archived = await db.users.find({"status": "archived"}, {"_id": 0, "password_hash": 0}).sort("archived_at", -1).to_list(1000)
+    
+    # Get activity stats for each archived user
+    for user in archived:
+        activities = await db.activities.find({"user_id": user['id']}, {"_id": 0}).to_list(10000)
+        total_stats = {
+            "presentations": sum(a.get('presentations', 0) for a in activities),
+            "appointments": sum(a.get('appointments', 0) for a in activities),
+            "sales": sum(a.get('sales', 0) for a in activities),
+            "premium": sum(a.get('premium', 0) for a in activities)
+        }
+        user['total_stats'] = total_stats
+    
+    return archived
+
+@api_router.get("/users/active/list")
+async def get_active_users_for_reassignment(current_user: dict = Depends(get_current_user)):
+    """Get all active users for team reorganization"""
+    if current_user['role'] not in ['state_manager', 'regional_manager', 'district_manager']:
+        raise HTTPException(status_code=403, detail="Only managers can access this")
+    
+    # Get all active users (or users without status field - default to active)
+    users = await db.users.find(
+        {"$or": [{"status": "active"}, {"status": {"$exists": False}}]},
+        {"_id": 0, "password_hash": 0}
+    ).to_list(1000)
+    
+    # Add manager name to each user
+    for user in users:
+        if user.get('manager_id'):
+            manager = await db.users.find_one({"id": user['manager_id']}, {"_id": 0, "name": 1})
+            user['manager_name'] = manager['name'] if manager else "Unknown"
+        else:
+            user['manager_name'] = "None"
+    
+    return users
+
 # Include the router in the main app
 app.include_router(api_router)
 
