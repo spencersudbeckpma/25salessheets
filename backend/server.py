@@ -2692,8 +2692,11 @@ async def archive_user(user_id: str, current_user: dict = Depends(get_current_us
     if user.get('status') == 'archived':
         raise HTTPException(status_code=400, detail="User is already archived")
     
-    # Check if user has subordinates
-    subordinates = await db.users.find({"manager_id": user_id, "status": {"$ne": "archived"}}, {"_id": 0}).to_list(1000)
+    # Check if user has subordinates (exclude archived)
+    subordinates = await db.users.find(
+        {"manager_id": user_id, "$or": [{"status": "active"}, {"status": {"$exists": False}}]},
+        {"_id": 0}
+    ).to_list(1000)
     subordinate_count = len(subordinates)
     
     # Archive the user (keep all historical data)
