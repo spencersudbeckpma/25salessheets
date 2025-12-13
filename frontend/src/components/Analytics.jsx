@@ -308,57 +308,20 @@ const Analytics = ({ user }) => {
                         </div>
                       </div>
 
-                      {/* Manager List */}
+                      {/* Hierarchical Manager List */}
                       <div className="space-y-2">
                         {managerTeamAverages.managers
                           .sort((a, b) => b.averages.premium - a.averages.premium)
                           .map((manager, index) => (
-                            <div 
-                              key={manager.id} 
-                              className={`p-4 rounded-lg border-2 ${
-                                index < 3 
-                                  ? 'bg-gradient-to-r from-blue-50 to-indigo-50 border-blue-300' 
-                                  : 'bg-white border-gray-200'
-                              }`}
-                            >
-                              <div className="flex flex-col md:flex-row md:items-center gap-3">
-                                <div className="flex items-center gap-3 flex-1 min-w-0">
-                                  <div className="flex-shrink-0 w-8 text-center">
-                                    {index < 3 ? (
-                                      <span className="text-xl">
-                                        {index === 0 ? '🥇' : index === 1 ? '🥈' : '🥉'}
-                                      </span>
-                                    ) : (
-                                      <span className="text-sm font-semibold text-gray-400">#{index + 1}</span>
-                                    )}
-                                  </div>
-                                  <div className="flex-1 min-w-0">
-                                    <div className="font-semibold truncate">{manager.name}</div>
-                                    <div className="text-xs text-gray-500">
-                                      {manager.role.replace('_', ' ').toUpperCase()} • Team Size: {manager.team_size}
-                                    </div>
-                                  </div>
-                                </div>
-                                <div className="flex flex-wrap gap-x-6 gap-y-2 text-sm">
-                                  <div>
-                                    <span className="text-gray-600">Presentations:</span>
-                                    <span className="ml-1 font-semibold">{manager.averages.presentations}/wk</span>
-                                  </div>
-                                  <div>
-                                    <span className="text-gray-600">Appointments:</span>
-                                    <span className="ml-1 font-semibold">{manager.averages.appointments}/wk</span>
-                                  </div>
-                                  <div>
-                                    <span className="text-gray-600">Sales:</span>
-                                    <span className="ml-1 font-semibold">{manager.averages.sales}/wk</span>
-                                  </div>
-                                  <div>
-                                    <span className="text-gray-600">Premium:</span>
-                                    <span className="ml-1 font-semibold text-green-600">${manager.averages.premium}/wk</span>
-                                  </div>
-                                </div>
-                              </div>
-                            </div>
+                            <ManagerHierarchyCard
+                              key={manager.id}
+                              manager={manager}
+                              index={index}
+                              level={0}
+                              expanded={expandedManagers.has(manager.id)}
+                              subordinates={subordinateData[manager.id]}
+                              onToggle={toggleManagerExpansion}
+                            />
                           ))}
                       </div>
                     </>
