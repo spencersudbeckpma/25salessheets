@@ -13,7 +13,9 @@ const Analytics = ({ user }) => {
   const [personalAverages, setPersonalAverages] = useState(null);
   const [teamAverages, setTeamAverages] = useState(null);
   const [individualMemberAverages, setIndividualMemberAverages] = useState(null);
+  const [managerTeamAverages, setManagerTeamAverages] = useState(null);
   const [selectedPeriod, setSelectedPeriod] = useState('last_4_weeks');
+  const [managerPeriod, setManagerPeriod] = useState('last_4_weeks');
   const [loading, setLoading] = useState(true);
 
   const isManager = ['state_manager', 'regional_manager', 'district_manager'].includes(user.role);
