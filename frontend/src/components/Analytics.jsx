@@ -4,10 +4,104 @@ import { toast } from 'sonner';
 import { Card, CardHeader, CardTitle, CardContent } from './ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs';
 import { Button } from './ui/button';
-import { TrendingUp, Users, BarChart3, User } from 'lucide-react';
+import { TrendingUp, Users, BarChart3, User, ChevronRight, ChevronDown } from 'lucide-react';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
+
+// Hierarchical Manager Card Component
+const ManagerHierarchyCard = ({ manager, index, level, expanded, subordinates, onToggle }) => {
+  const hasSubordinates = manager.has_subordinate_managers;
+  const indentClass = level > 0 ? `ml-${level * 8}` : '';
+  
+  return (
+    <div className={indentClass}>
+      <div 
+        className={`p-4 rounded-lg border-2 ${
+          level === 0 && index < 3 
+            ? 'bg-gradient-to-r from-blue-50 to-indigo-50 border-blue-300' 
+            : level > 0 && index < 3
+            ? 'bg-gradient-to-r from-green-50 to-teal-50 border-green-300'
+            : 'bg-white border-gray-200'
+        }`}
+        style={{ marginLeft: level > 0 ? `${level * 2}rem` : '0' }}
+      >
+        <div className="flex flex-col md:flex-row md:items-center gap-3">
+          <div className="flex items-center gap-3 flex-1 min-w-0">
+            {/* Expand/Collapse Button */}
+            {hasSubordinates && (
+              <button
+                onClick={() => onToggle(manager.id)}
+                className="flex-shrink-0 p-1 hover:bg-gray-200 rounded"
+              >
+                {expanded ? <ChevronDown size={20} /> : <ChevronRight size={20} />}
+              </button>
+            )}
+            {!hasSubordinates && <div className="w-7"></div>}
+            
+            {/* Rank Badge */}
+            <div className="flex-shrink-0 w-8 text-center">
+              {level === 0 && index < 3 ? (
+                <span className="text-xl">
+                  {index === 0 ? '🥇' : index === 1 ? '🥈' : '🥉'}
+                </span>
+              ) : (
+                <span className="text-sm font-semibold text-gray-400">#{index + 1}</span>
+              )}
+            </div>
+            
+            {/* Manager Info */}
+            <div className="flex-1 min-w-0">
+              <div className="font-semibold truncate">{manager.name}</div>
+              <div className="text-xs text-gray-500">
+                {manager.role.replace('_', ' ').toUpperCase()} • Team Size: {manager.team_size}
+              </div>
+            </div>
+          </div>
+          
+          {/* Metrics */}
+          <div className="flex flex-wrap gap-x-6 gap-y-2 text-sm">
+            <div>
+              <span className="text-gray-600">Presentations:</span>
+              <span className="ml-1 font-semibold">{manager.averages.presentations}/wk</span>
+            </div>
+            <div>
+              <span className="text-gray-600">Appointments:</span>
+              <span className="ml-1 font-semibold">{manager.averages.appointments}/wk</span>
+            </div>
+            <div>
+              <span className="text-gray-600">Sales:</span>
+              <span className="ml-1 font-semibold">{manager.averages.sales}/wk</span>
+            </div>
+            <div>
+              <span className="text-gray-600">Premium:</span>
+              <span className="ml-1 font-semibold text-green-600">${manager.averages.premium}/wk</span>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      {/* Subordinate Managers (Expanded) */}
+      {expanded && subordinates && subordinates.length > 0 && (
+        <div className="mt-2 space-y-2">
+          {subordinates
+            .sort((a, b) => b.averages.premium - a.averages.premium)
+            .map((sub, subIndex) => (
+              <ManagerHierarchyCard
+                key={sub.id}
+                manager={sub}
+                index={subIndex}
+                level={level + 1}
+                expanded={false}
+                subordinates={null}
+                onToggle={onToggle}
+              />
+            ))}
+        </div>
+      )}
+    </div>
+  );
+};
 
 const Analytics = ({ user }) => {
   const [personalAverages, setPersonalAverages] = useState(null);
