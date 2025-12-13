@@ -2227,8 +2227,11 @@ async def get_team_hierarchy(period: str, current_user: dict = Depends(get_curre
         
         print(f"DEBUG own_stats: Contacts={own_stats['contacts']}, Appointments={own_stats['appointments']}, Premium={own_stats['premium']}")
         
-        # Get subordinates and build their hierarchies
-        subordinates = await db.users.find({"manager_id": user_id}, {"_id": 0}).to_list(1000)
+        # Get subordinates and build their hierarchies (exclude archived users)
+        subordinates = await db.users.find(
+            {"manager_id": user_id, "$or": [{"status": "active"}, {"status": {"$exists": False}}]},
+            {"_id": 0}
+        ).to_list(1000)
         children = []
         
         # Initialize rolled up stats with own stats
