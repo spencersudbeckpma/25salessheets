@@ -135,8 +135,8 @@ const TeamView = ({ user }) => {
     return (
       <div key={node.id} className="mb-3">
         <div
-          className={`p-5 bg-gradient-to-br from-white to-gray-50 rounded-lg shadow-sm border hover:shadow-md transition-all cursor-pointer ${
-            isSelected ? 'ring-2 ring-blue-500 border-blue-500' : ''
+          className={`p-4 bg-white rounded-lg border border-gray-200 hover:border-gray-300 transition-all cursor-pointer ${
+            isSelected ? 'border-blue-400' : ''
           }`}
           style={{ marginLeft: `${level * 24}px` }}
           data-testid={`team-member-${node.id}`}
