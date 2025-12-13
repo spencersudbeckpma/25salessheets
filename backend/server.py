@@ -167,9 +167,12 @@ async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(s
     return user
 
 async def get_all_subordinates(user_id: str) -> List[str]:
-    """Get all subordinates recursively"""
+    """Get all subordinates recursively (exclude archived)"""
     subordinates = [user_id]
-    direct_reports = await db.users.find({"manager_id": user_id}, {"_id": 0}).to_list(1000)
+    direct_reports = await db.users.find(
+        {"manager_id": user_id, "$or": [{"status": "active"}, {"status": {"$exists": False}}]},
+        {"_id": 0}
+    ).to_list(1000)
     for report in direct_reports:
         sub_list = await get_all_subordinates(report['id'])
         subordinates.extend(sub_list)
