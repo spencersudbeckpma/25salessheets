@@ -2832,6 +2832,7 @@ async def get_team_averages(current_user: dict = Depends(get_current_user)):
         return ids
     
     team_ids = await get_all_subordinates(current_user['id'])
+    team_ids.append(current_user['id'])  # Include manager's own numbers
     
     # Calculate for each period
     periods = {
