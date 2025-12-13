@@ -27,6 +27,9 @@ const TeamManagement = ({ user }) => {
   const [editMember, setEditMember] = useState(null);
   const [editActivity, setEditActivity] = useState(null);
   const [selectedDate, setSelectedDate] = useState(getLocalDate());
+  const [activeUsers, setActiveUsers] = useState([]);
+  const [archivedUsers, setArchivedUsers] = useState([]);
+  const [availableManagers, setAvailableManagers] = useState([]);
 
   useEffect(() => {
     fetchInvites();
