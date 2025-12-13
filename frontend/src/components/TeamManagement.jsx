@@ -642,6 +642,7 @@ const TeamManagement = ({ user }) => {
               </div>
             )}
           </TabsContent>
+          )}
 
         </Tabs>
       </CardContent>
