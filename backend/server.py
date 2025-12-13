@@ -484,7 +484,10 @@ async def generate_excel_report(period: str, current_user: dict = Depends(get_cu
             # Convert to dict to ensure it's serializable
             user = dict(user_doc)
             members.append(user)
-            subordinates = await db.users.find({"manager_id": user_id}, {"_id": 0, "password_hash": 0}).to_list(1000)
+            subordinates = await db.users.find(
+                {"manager_id": user_id, "$or": [{"status": "active"}, {"status": {"$exists": False}}]},
+                {"_id": 0, "password_hash": 0}
+            ).to_list(1000)
             for sub in subordinates:
                 sub_members = await get_all_team_members(sub['id'])
                 members.extend(sub_members)
