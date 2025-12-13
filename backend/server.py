@@ -3004,8 +3004,9 @@ async def get_manager_team_averages(current_user: dict = Depends(get_current_use
     manager_results = []
     
     for manager in direct_managers:
-        # Get all team member IDs under this manager
+        # Get all team member IDs under this manager (including the manager themselves)
         team_ids = await get_team_ids(manager['id'])
+        team_ids.append(manager['id'])  # Include manager's own numbers
         team_size = len(team_ids)
         
         # Get activities for this manager's entire team
