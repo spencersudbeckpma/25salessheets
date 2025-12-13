@@ -590,7 +590,10 @@ async def get_manager_hierarchy_report(manager_id: str, period: str, current_use
     # Verify the requested manager is in current user's hierarchy
     async def get_all_subordinates(user_id: str):
         members = []
-        subordinates = await db.users.find({"manager_id": user_id}, {"_id": 0, "password_hash": 0}).to_list(1000)
+        subordinates = await db.users.find(
+            {"manager_id": user_id, "$or": [{"status": "active"}, {"status": {"$exists": False}}]},
+            {"_id": 0, "password_hash": 0}
+        ).to_list(1000)
         for sub in subordinates:
             members.append(sub)
             sub_members = await get_all_subordinates(sub['id'])
