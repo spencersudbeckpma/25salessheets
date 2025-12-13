@@ -2896,7 +2896,65 @@ async def get_individual_member_averages(current_user: dict = Depends(get_curren
         "last_4_weeks": today - timedelta(weeks=4),
         "last_8_weeks": today - timedelta(weeks=8),
         "last_12_weeks": today - timedelta(weeks=12),
-
+        "ytd": today.replace(month=1, day=1)
+    }
+    
+    start_date = period_map.get(period, today - timedelta(weeks=4))
+    
+    # Get all subordinates
+    async def get_all_subordinates_with_info(user_id: str):
+        result = []
+        subordinates = await db.users.find(
+            {"manager_id": user_id, "$or": [{"status": "active"}, {"status": {"$exists": False}}]},
+            {"_id": 0, "id": 1, "name": 1, "email": 1, "role": 1}
+        ).to_list(1000)
+        for sub in subordinates:
+            result.append(sub)
+            result.extend(await get_all_subordinates_with_info(sub['id']))
+        return result
+    
+    team_members = await get_all_subordinates_with_info(current_user['id'])
+    
+    # Calculate averages for each member
+    days_in_period = (today - start_date).days
+    weeks_in_period = max(days_in_period / 7, 1)
+    
+    member_averages = []
+    
+    for member in team_members:
+        activities = await db.activities.find({
+            "user_id": member['id'],
+            "date": {"$gte": start_date.isoformat()}
+        }, {"_id": 0}).to_list(10000)
+        
+        totals = {
+            "presentations": sum(a.get('presentations', 0) for a in activities),
+            "appointments": sum(a.get('appointments', 0) for a in activities),
+            "sales": sum(a.get('sales', 0) for a in activities),
+            "premium": sum(a.get('premium', 0) for a in activities)
+        }
+        
+        averages = {
+            "presentations": round(totals["presentations"] / weeks_in_period, 1),
+            "appointments": round(totals["appointments"] / weeks_in_period, 1),
+            "sales": round(totals["sales"] / weeks_in_period, 1),
+            "premium": round(totals["premium"] / weeks_in_period, 2)
+        }
+        
+        member_averages.append({
+            "id": member['id'],
+            "name": member['name'],
+            "email": member['email'],
+            "role": member['role'],
+            "averages": averages,
+            "totals": totals
+        })
+    
+    return {
+        "period": period,
+        "weeks": round(weeks_in_period, 1),
+        "members": member_averages
+    }
 
 @api_router.get("/analytics/manager-team-averages")
 async def get_manager_team_averages(current_user: dict = Depends(get_current_user), period: str = "last_4_weeks"):
