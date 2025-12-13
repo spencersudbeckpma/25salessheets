@@ -219,22 +219,22 @@ const TeamView = ({ user }) => {
                     <div className={`font-semibold text-sm mb-3 ${activity.dayName === 'Total' ? 'text-emerald-700' : 'text-slate-700'}`}>
                       {activity.dayName ? `${activity.dayName} ${activity.dayName !== 'Total' ? '- ' + activity.date : ''}` : activity.date}
                     </div>
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm">
-                      <div className="flex flex-col">
-                        <span className="text-xs text-slate-500">Presentations</span>
-                        <span className={`font-bold text-lg ${activity.dayName === 'Total' ? 'text-emerald-700' : 'text-slate-800'}`}>{activity.presentations}</span>
+                    <div className="flex flex-wrap gap-x-6 gap-y-2 text-sm">
+                      <div>
+                        <span className="text-gray-600">Presentations</span>
+                        <span className={`ml-2 font-semibold ${activity.dayName === 'Total' ? 'text-emerald-700' : 'text-gray-900'}`}>{activity.presentations}</span>
                       </div>
-                      <div className="flex flex-col">
-                        <span className="text-xs text-slate-500">Appointments</span>
-                        <span className={`font-bold text-lg ${activity.dayName === 'Total' ? 'text-emerald-700' : 'text-slate-800'}`}>{activity.appointments}</span>
+                      <div>
+                        <span className="text-gray-600">Appointments</span>
+                        <span className={`ml-2 font-semibold ${activity.dayName === 'Total' ? 'text-emerald-700' : 'text-gray-900'}`}>{activity.appointments}</span>
                       </div>
-                      <div className="flex flex-col">
-                        <span className="text-xs text-slate-500">Sales</span>
-                        <span className={`font-bold text-lg ${activity.dayName === 'Total' ? 'text-emerald-700' : 'text-slate-800'}`}>{activity.sales}</span>
+                      <div>
+                        <span className="text-gray-600">Sales</span>
+                        <span className={`ml-2 font-semibold ${activity.dayName === 'Total' ? 'text-emerald-700' : 'text-gray-900'}`}>{activity.sales}</span>
                       </div>
-                      <div className="flex flex-col">
-                        <span className="text-xs text-slate-500">Premium</span>
-                        <span className={`font-bold text-lg ${activity.dayName === 'Total' ? 'text-emerald-700' : 'text-slate-800'}`}>${typeof activity.premium === 'number' ? activity.premium.toFixed(2) : activity.premium}</span>
+                      <div>
+                        <span className="text-gray-600">Premium</span>
+                        <span className={`ml-2 font-semibold ${activity.dayName === 'Total' ? 'text-emerald-700' : 'text-gray-900'}`}>${typeof activity.premium === 'number' ? activity.premium.toFixed(2) : activity.premium}</span>
                       </div>
                     </div>
                   </div>
