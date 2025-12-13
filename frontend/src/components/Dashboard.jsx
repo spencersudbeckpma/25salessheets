@@ -67,32 +67,11 @@ const Dashboard = ({ user, setUser }) => {
                 My Stats
               </TabsTrigger>
               <TabsTrigger 
-                value="analytics" 
-                data-testid="analytics-tab" 
-                className="py-2.5 px-3 text-xs md:text-sm whitespace-nowrap flex-shrink-0"
-              >
-                📊 Analytics
-              </TabsTrigger>
-              <TabsTrigger 
                 value="team" 
                 data-testid="team-tab" 
                 className="py-2.5 px-3 text-xs md:text-sm whitespace-nowrap flex-shrink-0"
               >
                 Team View
-              </TabsTrigger>
-              <TabsTrigger 
-                value="manage" 
-                data-testid="manage-tab" 
-                className="py-2.5 px-3 text-xs md:text-sm whitespace-nowrap flex-shrink-0"
-              >
-                Team Mgmt
-              </TabsTrigger>
-              <TabsTrigger 
-                value="change-password" 
-                data-testid="change-password-tab" 
-                className="py-2.5 px-3 text-xs md:text-sm whitespace-nowrap flex-shrink-0"
-              >
-                🔐 Password
               </TabsTrigger>
               <TabsTrigger 
                 value="leaderboard" 
@@ -101,8 +80,29 @@ const Dashboard = ({ user, setUser }) => {
               >
                 Leaderboard
               </TabsTrigger>
+              <TabsTrigger 
+                value="analytics" 
+                data-testid="analytics-tab" 
+                className="py-2.5 px-3 text-xs md:text-sm whitespace-nowrap flex-shrink-0"
+              >
+                📊 Analytics
+              </TabsTrigger>
               {['state_manager', 'regional_manager', 'district_manager'].includes(user.role) && (
                 <>
+                  <TabsTrigger 
+                    value="reports" 
+                    data-testid="reports-tab" 
+                    className="py-2.5 px-3 text-xs md:text-sm whitespace-nowrap flex-shrink-0"
+                  >
+                    📊 Reports
+                  </TabsTrigger>
+                  <TabsTrigger 
+                    value="daily-report" 
+                    data-testid="daily-report-tab" 
+                    className="py-2.5 px-3 text-xs md:text-sm whitespace-nowrap flex-shrink-0"
+                  >
+                    📊 Manager Reports
+                  </TabsTrigger>
                   <TabsTrigger 
                     value="newface" 
                     data-testid="newface-tab" 
@@ -111,23 +111,21 @@ const Dashboard = ({ user, setUser }) => {
                     🎯 New Faces
                   </TabsTrigger>
                   <TabsTrigger 
-                    value="reports" 
-                    data-testid="reports-tab" 
+                    value="manage" 
+                    data-testid="manage-tab" 
                     className="py-2.5 px-3 text-xs md:text-sm whitespace-nowrap flex-shrink-0"
                   >
-                    📊 Reports
+                    Team Mgmt
                   </TabsTrigger>
                 </>
               )}
-              {['state_manager', 'regional_manager', 'district_manager'].includes(user.role) && (
-                <TabsTrigger 
-                  value="daily-report" 
-                  data-testid="daily-report-tab" 
-                  className="py-2.5 px-3 text-xs md:text-sm whitespace-nowrap flex-shrink-0"
-                >
-                  📊 Manager Reports
-                </TabsTrigger>
-              )}
+              <TabsTrigger 
+                value="change-password" 
+                data-testid="change-password-tab" 
+                className="py-2.5 px-3 text-xs md:text-sm whitespace-nowrap flex-shrink-0"
+              >
+                🔐 Password
+              </TabsTrigger>
               {user.role === 'state_manager' && (
                 <TabsTrigger 
                   value="admin" 
