@@ -1815,31 +1815,6 @@ async def populate_todays_activities(current_user: dict = Depends(get_current_us
         "total_users": len(all_users)
     }
 
-@api_router.post("/auth/reset-spencer-password")
-async def reset_spencer_password():
-    """One-time endpoint to reset Spencer's password in production"""
-    import bcrypt
-    
-    email = "spencer.sudbeck@pmagent.net"
-    new_password = "Bizlink25"
-    
-    # Hash the new password
-    password_hash = bcrypt.hashpw(new_password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
-    
-    # Update the user's password and add username
-    result = await db.users.update_one(
-        {"email": email},
-        {"$set": {
-            "password_hash": password_hash,
-            "username": "spencer.sudbeck"
-        }}
-    )
-    
-    if result.modified_count > 0:
-        return {"message": "Password reset successful", "email": email}
-    else:
-        raise HTTPException(status_code=404, detail="User not found or no changes made")
-
 @api_router.post("/auth/login")
 async def login(login_data: UserLogin):
     # Try to find user by email first, then by username
