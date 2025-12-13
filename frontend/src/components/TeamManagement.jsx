@@ -126,6 +126,59 @@ const TeamManagement = ({ user }) => {
     } catch (error) {
       toast.error('Failed to delete invite');
     }
+
+  };
+
+  const handleReassignUser = async (userId, role, managerId) => {
+    try {
+      const token = localStorage.getItem('token');
+      await axios.put(`${API}/users/${userId}/reassign`, 
+        { role, manager_id: managerId },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      toast.success('User reassigned successfully');
+      fetchActiveUsers();
+    } catch (error) {
+      toast.error(error.response?.data?.detail || 'Failed to reassign user');
+    }
+  };
+
+  const handleArchiveUser = async (userId) => {
+    if (!window.confirm('Are you sure you want to archive this user? They will no longer be able to log in, but their data will be preserved.')) {
+      return;
+    }
+
+    try {
+      const token = localStorage.getItem('token');
+      const response = await axios.put(`${API}/users/${userId}/archive`, {}, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      
+      if (response.data.subordinates_count > 0) {
+        toast.warning(response.data.warning);
+      } else {
+        toast.success('User archived successfully');
+      }
+      
+      fetchActiveUsers();
+      fetchArchivedUsers();
+    } catch (error) {
+      toast.error(error.response?.data?.detail || 'Failed to archive user');
+    }
+  };
+
+  const handleUnarchiveUser = async (userId) => {
+    try {
+      const token = localStorage.getItem('token');
+      await axios.put(`${API}/users/${userId}/unarchive`, {}, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      toast.success('User unarchived successfully');
+      fetchActiveUsers();
+      fetchArchivedUsers();
+    } catch (error) {
+      toast.error(error.response?.data?.detail || 'Failed to unarchive user');
+    }
   };
 
   const handleSelectMember = async (memberId) => {
