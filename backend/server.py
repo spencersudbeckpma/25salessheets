@@ -2190,7 +2190,10 @@ async def get_my_stats(period: str, current_user: dict = Depends(get_current_use
 # Team Routes
 @api_router.get("/team/members")
 async def get_team_members(current_user: dict = Depends(get_current_user)):
-    members = await db.users.find({"manager_id": current_user['id']}, {"_id": 0, "password_hash": 0}).to_list(1000)
+    members = await db.users.find(
+        {"manager_id": current_user['id'], "$or": [{"status": "active"}, {"status": {"$exists": False}}]},
+        {"_id": 0, "password_hash": 0}
+    ).to_list(1000)
     return members
 
 @api_router.get("/team/week-dates")
