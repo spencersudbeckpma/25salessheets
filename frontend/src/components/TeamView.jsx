@@ -162,6 +162,10 @@ const TeamView = ({ user }) => {
                 </div>
               </div>
               <div className="mt-3 flex flex-wrap gap-x-8 gap-y-2 text-sm">
+                <div data-testid={`member-contacts-${node.id}`}>
+                  <span className="text-gray-600">Contacts</span>
+                  <span className="ml-2 font-semibold text-gray-900">{node.stats.contacts}</span>
+                </div>
                 <div data-testid={`member-presentations-${node.id}`}>
                   <span className="text-gray-600">Presentations</span>
                   <span className="ml-2 font-semibold text-gray-900">{node.stats.presentations}</span>
