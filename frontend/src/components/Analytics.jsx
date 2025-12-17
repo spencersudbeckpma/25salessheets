@@ -12,10 +12,9 @@ const API = `${BACKEND_URL}/api`;
 // Hierarchical Manager Card Component
 const ManagerHierarchyCard = ({ manager, index, level, expanded, subordinates, onToggle }) => {
   const hasSubordinates = manager.has_subordinate_managers;
-  const indentClass = level > 0 ? `ml-${level * 8}` : '';
   
   return (
-    <div className={indentClass}>
+    <div style={{ marginLeft: level > 0 ? `${level * 2}rem` : '0' }}>
       <div 
         className={`p-4 rounded-lg border-2 ${
           level === 0 && index < 3 
@@ -24,7 +23,6 @@ const ManagerHierarchyCard = ({ manager, index, level, expanded, subordinates, o
             ? 'bg-gradient-to-r from-green-50 to-teal-50 border-green-300'
             : 'bg-white border-gray-200'
         }`}
-        style={{ marginLeft: level > 0 ? `${level * 2}rem` : '0' }}
       >
         <div className="flex flex-col md:flex-row md:items-center gap-3">
           <div className="flex items-center gap-3 flex-1 min-w-0">
