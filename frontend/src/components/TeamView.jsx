@@ -225,6 +225,10 @@ const TeamView = ({ user }) => {
                     </div>
                     <div className="flex flex-wrap gap-x-6 gap-y-2 text-sm">
                       <div>
+                        <span className="text-gray-600">Contacts</span>
+                        <span className={`ml-2 font-semibold ${activity.dayName === 'Total' ? 'text-emerald-700' : 'text-gray-900'}`}>{activity.contacts}</span>
+                      </div>
+                      <div>
                         <span className="text-gray-600">Presentations</span>
                         <span className={`ml-2 font-semibold ${activity.dayName === 'Total' ? 'text-emerald-700' : 'text-gray-900'}`}>{activity.presentations}</span>
                       </div>
