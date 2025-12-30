@@ -3470,11 +3470,6 @@ async def get_team_members_goals(current_user: dict = Depends(get_current_user))
         "members": members_progress
     }
 
-        "weeks": round(weeks_in_period, 1),
-        "managers": manager_results
-    }
-
-
 # Include the router in the main app
 app.include_router(api_router)
 
