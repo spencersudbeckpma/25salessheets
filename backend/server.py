@@ -3168,6 +3168,306 @@ async def get_manager_subordinate_averages(manager_id: str, period: str, current
     
     return {
         "period": period,
+
+
+# ============================================
+# Goal Progress & Pace Calculator Endpoints
+# ============================================
+
+class GoalSettings(BaseModel):
+    goal_premium: float
+    stretch_goal_premium: float
+
+class TeamGoalSettings(BaseModel):
+    goal_premium: float
+    stretch_goal_premium: float
+
+@api_router.post("/goals/individual")
+async def set_individual_goals(goals: GoalSettings, current_user: dict = Depends(get_current_user)):
+    """Set individual premium goals for the year"""
+    goal_data = {
+        "user_id": current_user['id'],
+        "year": datetime.now(pytz_timezone('America/Chicago')).year,
+        "goal_premium": goals.goal_premium,
+        "stretch_goal_premium": goals.stretch_goal_premium,
+        "updated_at": datetime.now(timezone.utc).isoformat()
+    }
+    
+    # Upsert goal (update if exists, insert if not)
+    await db.goals.update_one(
+        {"user_id": current_user['id'], "year": goal_data["year"]},
+        {"$set": goal_data},
+        upsert=True
+    )
+    
+    return {"message": "Goals updated successfully", "goals": goal_data}
+
+@api_router.get("/goals/individual/progress")
+async def get_individual_goal_progress(current_user: dict = Depends(get_current_user)):
+    """Get individual goal progress and pace calculations"""
+    central_tz = pytz_timezone('America/Chicago')
+    today = datetime.now(central_tz).date()
+    current_year = today.year
+    
+    # Get goals for current year
+    goal = await db.goals.find_one(
+        {"user_id": current_user['id'], "year": current_year},
+        {"_id": 0}
+    )
+    
+    if not goal:
+        return {
+            "has_goals": False,
+            "message": "No goals set for this year"
+        }
+    
+    # Get YTD premium
+    year_start = today.replace(month=1, day=1)
+    activities = await db.activities.find({
+        "user_id": current_user['id'],
+        "date": {"$gte": year_start.isoformat()}
+    }, {"_id": 0}).to_list(10000)
+    
+    ytd_premium = sum(a.get('premium', 0) for a in activities)
+    
+    # Calculate weeks elapsed and remaining
+    days_elapsed = (today - year_start).days
+    weeks_elapsed = days_elapsed / 7
+    total_weeks_in_year = 52
+    weeks_remaining = total_weeks_in_year - weeks_elapsed
+    
+    # Goal calculations
+    goal_premium = goal['goal_premium']
+    stretch_goal_premium = goal['stretch_goal_premium']
+    
+    # Expected at this point (pro-rated based on weeks elapsed)
+    expected_goal = (goal_premium / total_weeks_in_year) * weeks_elapsed
+    expected_stretch = (stretch_goal_premium / total_weeks_in_year) * weeks_elapsed
+    
+    # Calculate progress
+    goal_progress = {
+        "current": ytd_premium,
+        "goal": goal_premium,
+        "expected": expected_goal,
+        "percentage": round((ytd_premium / goal_premium * 100), 1) if goal_premium > 0 else 0,
+        "ahead_behind": ytd_premium - expected_goal,
+        "on_pace": ytd_premium >= expected_goal,
+        "weekly_needed": round((goal_premium - ytd_premium) / weeks_remaining, 2) if weeks_remaining > 0 else 0
+    }
+    
+    stretch_progress = {
+        "current": ytd_premium,
+        "goal": stretch_goal_premium,
+        "expected": expected_stretch,
+        "percentage": round((ytd_premium / stretch_goal_premium * 100), 1) if stretch_goal_premium > 0 else 0,
+        "ahead_behind": ytd_premium - expected_stretch,
+        "on_pace": ytd_premium >= expected_stretch,
+        "weekly_needed": round((stretch_goal_premium - ytd_premium) / weeks_remaining, 2) if weeks_remaining > 0 else 0
+    }
+    
+    return {
+        "has_goals": True,
+        "year": current_year,
+        "weeks_elapsed": round(weeks_elapsed, 1),
+        "weeks_remaining": round(weeks_remaining, 1),
+        "goal": goal_progress,
+        "stretch_goal": stretch_progress
+    }
+
+@api_router.post("/goals/team")
+async def set_team_goals(goals: TeamGoalSettings, current_user: dict = Depends(get_current_user)):
+    """Set team premium goals (managers only)"""
+    if current_user['role'] not in ['state_manager', 'regional_manager', 'district_manager']:
+        raise HTTPException(status_code=403, detail="Only managers can set team goals")
+    
+    goal_data = {
+        "user_id": current_user['id'],
+        "year": datetime.now(pytz_timezone('America/Chicago')).year,
+        "goal_premium": goals.goal_premium,
+        "stretch_goal_premium": goals.stretch_goal_premium,
+        "is_team_goal": True,
+        "updated_at": datetime.now(timezone.utc).isoformat()
+    }
+    
+    await db.team_goals.update_one(
+        {"user_id": current_user['id'], "year": goal_data["year"]},
+        {"$set": goal_data},
+        upsert=True
+    )
+    
+    return {"message": "Team goals updated successfully", "goals": goal_data}
+
+@api_router.get("/goals/team/progress")
+async def get_team_goal_progress(current_user: dict = Depends(get_current_user)):
+    """Get team goal progress (managers only)"""
+    if current_user['role'] not in ['state_manager', 'regional_manager', 'district_manager']:
+        raise HTTPException(status_code=403, detail="Only managers can view team goals")
+    
+    central_tz = pytz_timezone('America/Chicago')
+    today = datetime.now(central_tz).date()
+    current_year = today.year
+    
+    # Get team goals
+    team_goal = await db.team_goals.find_one(
+        {"user_id": current_user['id'], "year": current_year},
+        {"_id": 0}
+    )
+    
+    if not team_goal:
+        return {
+            "has_goals": False,
+            "message": "No team goals set for this year"
+        }
+    
+    # Get all subordinates
+    async def get_all_subordinates(user_id: str):
+        ids = []
+        subordinates = await db.users.find(
+            {"manager_id": user_id, "$or": [{"status": "active"}, {"status": {"$exists": False}}]},
+            {"_id": 0, "id": 1}
+        ).to_list(1000)
+        for sub in subordinates:
+            ids.append(sub['id'])
+            ids.extend(await get_all_subordinates(sub['id']))
+        return ids
+    
+    team_ids = await get_all_subordinates(current_user['id'])
+    team_ids.append(current_user['id'])  # Include manager
+    
+    # Get YTD premium for entire team
+    year_start = today.replace(month=1, day=1)
+    activities = await db.activities.find({
+        "user_id": {"$in": team_ids},
+        "date": {"$gte": year_start.isoformat()}
+    }, {"_id": 0}).to_list(100000)
+    
+    ytd_premium = sum(a.get('premium', 0) for a in activities)
+    
+    # Calculate weeks
+    days_elapsed = (today - year_start).days
+    weeks_elapsed = days_elapsed / 7
+    total_weeks_in_year = 52
+    weeks_remaining = total_weeks_in_year - weeks_elapsed
+    
+    # Goal calculations
+    goal_premium = team_goal['goal_premium']
+    stretch_goal_premium = team_goal['stretch_goal_premium']
+    
+    expected_goal = (goal_premium / total_weeks_in_year) * weeks_elapsed
+    expected_stretch = (stretch_goal_premium / total_weeks_in_year) * weeks_elapsed
+    
+    goal_progress = {
+        "current": ytd_premium,
+        "goal": goal_premium,
+        "expected": expected_goal,
+        "percentage": round((ytd_premium / goal_premium * 100), 1) if goal_premium > 0 else 0,
+        "ahead_behind": ytd_premium - expected_goal,
+        "on_pace": ytd_premium >= expected_goal,
+        "weekly_needed": round((goal_premium - ytd_premium) / weeks_remaining, 2) if weeks_remaining > 0 else 0
+    }
+    
+    stretch_progress = {
+        "current": ytd_premium,
+        "goal": stretch_goal_premium,
+        "expected": expected_stretch,
+        "percentage": round((ytd_premium / stretch_goal_premium * 100), 1) if stretch_goal_premium > 0 else 0,
+        "ahead_behind": ytd_premium - expected_stretch,
+        "on_pace": ytd_premium >= expected_stretch,
+        "weekly_needed": round((stretch_goal_premium - ytd_premium) / weeks_remaining, 2) if weeks_remaining > 0 else 0
+    }
+    
+    return {
+        "has_goals": True,
+        "year": current_year,
+        "team_size": len(team_ids),
+        "weeks_elapsed": round(weeks_elapsed, 1),
+        "weeks_remaining": round(weeks_remaining, 1),
+        "goal": goal_progress,
+        "stretch_goal": stretch_progress
+    }
+
+@api_router.get("/goals/team/members")
+async def get_team_members_goals(current_user: dict = Depends(get_current_user)):
+    """Get all team members' individual goals and progress (managers only)"""
+    if current_user['role'] not in ['state_manager', 'regional_manager', 'district_manager']:
+        raise HTTPException(status_code=403, detail="Only managers can view team member goals")
+    
+    central_tz = pytz_timezone('America/Chicago')
+    today = datetime.now(central_tz).date()
+    current_year = today.year
+    year_start = today.replace(month=1, day=1)
+    
+    # Get all subordinates
+    async def get_all_subordinates_with_info(user_id: str):
+        result = []
+        subordinates = await db.users.find(
+            {"manager_id": user_id, "$or": [{"status": "active"}, {"status": {"$exists": False}}]},
+            {"_id": 0, "id": 1, "name": 1, "email": 1, "role": 1}
+        ).to_list(1000)
+        for sub in subordinates:
+            result.append(sub)
+            result.extend(await get_all_subordinates_with_info(sub['id']))
+        return result
+    
+    team_members = await get_all_subordinates_with_info(current_user['id'])
+    
+    # Calculate weeks
+    days_elapsed = (today - year_start).days
+    weeks_elapsed = days_elapsed / 7
+    total_weeks_in_year = 52
+    weeks_remaining = total_weeks_in_year - weeks_elapsed
+    
+    members_progress = []
+    
+    for member in team_members:
+        # Get member's goals
+        goal = await db.goals.find_one(
+            {"user_id": member['id'], "year": current_year},
+            {"_id": 0}
+        )
+        
+        # Get YTD premium
+        activities = await db.activities.find({
+            "user_id": member['id'],
+            "date": {"$gte": year_start.isoformat()}
+        }, {"_id": 0}).to_list(10000)
+        
+        ytd_premium = sum(a.get('premium', 0) for a in activities)
+        
+        if goal:
+            goal_premium = goal['goal_premium']
+            stretch_goal_premium = goal['stretch_goal_premium']
+            expected_goal = (goal_premium / total_weeks_in_year) * weeks_elapsed
+            
+            members_progress.append({
+                "id": member['id'],
+                "name": member['name'],
+                "email": member['email'],
+                "role": member['role'],
+                "has_goals": True,
+                "ytd_premium": ytd_premium,
+                "goal_premium": goal_premium,
+                "stretch_goal_premium": stretch_goal_premium,
+                "percentage": round((ytd_premium / goal_premium * 100), 1) if goal_premium > 0 else 0,
+                "on_pace": ytd_premium >= expected_goal,
+                "ahead_behind": ytd_premium - expected_goal
+            })
+        else:
+            members_progress.append({
+                "id": member['id'],
+                "name": member['name'],
+                "email": member['email'],
+                "role": member['role'],
+                "has_goals": False,
+                "ytd_premium": ytd_premium
+            })
+    
+    return {
+        "year": current_year,
+        "weeks_elapsed": round(weeks_elapsed, 1),
+        "members": members_progress
+    }
+
         "weeks": round(weeks_in_period, 1),
         "managers": manager_results
     }
