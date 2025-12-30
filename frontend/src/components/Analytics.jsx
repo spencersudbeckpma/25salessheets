@@ -240,11 +240,16 @@ const Analytics = ({ user }) => {
       </CardHeader>
       <CardContent>
         <Tabs defaultValue="personal" className="space-y-6">
-          <TabsList className={`grid w-full ${isManager ? 'grid-cols-4' : 'grid-cols-1'} bg-gray-100 p-1`}>
+          <TabsList className={`grid w-full ${isManager ? 'grid-cols-5' : 'grid-cols-2'} bg-gray-100 p-1`}>
             <TabsTrigger value="personal" className="py-2 text-xs md:text-sm">
               <User size={16} className="mr-1 md:mr-2" />
               <span className="hidden md:inline">My Averages</span>
               <span className="md:hidden">Me</span>
+            </TabsTrigger>
+            <TabsTrigger value="goals" className="py-2 text-xs md:text-sm">
+              <Target size={16} className="mr-1 md:mr-2" />
+              <span className="hidden md:inline">Goal Progress</span>
+              <span className="md:hidden">Goals</span>
             </TabsTrigger>
             {isManager && (
               <>
