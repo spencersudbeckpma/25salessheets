@@ -306,6 +306,11 @@ const Analytics = ({ user }) => {
             </div>
           </TabsContent>
 
+          {/* Goal Progress Tab */}
+          <TabsContent value="goals">
+            <GoalProgress user={user} />
+          </TabsContent>
+
           {/* Team Averages Tab (Managers Only) */}
           {isManager && (
             <TabsContent value="team" className="space-y-4">
