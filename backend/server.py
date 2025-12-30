@@ -3168,7 +3168,9 @@ async def get_manager_subordinate_averages(manager_id: str, period: str, current
     
     return {
         "period": period,
-
+        "weeks": round(weeks_in_period, 1),
+        "managers": manager_results
+    }
 
 # ============================================
 # Goal Progress & Pace Calculator Endpoints
