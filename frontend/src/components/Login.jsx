@@ -71,12 +71,19 @@ const Login = ({ setUser }) => {
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 p-4">
       <Card className="w-full max-w-md shadow-lg" data-testid="login-card">
-        <CardHeader className="space-y-1">
+        <CardHeader className="space-y-3">
+          <div className="flex justify-center mb-2">
+            <img 
+              src="/team-sudbeck-logo.jpg" 
+              alt="Team Sudbeck Logo" 
+              className="h-24 w-auto object-contain"
+            />
+          </div>
           <CardTitle className="text-2xl font-bold text-center" data-testid="login-title">
             {isLogin ? 'Welcome Back' : 'Create Account'}
           </CardTitle>
           <CardDescription className="text-center" data-testid="login-description">
-            {isLogin ? 'Login to your CRM Sales Tracker account' : 'Register for CRM Sales Tracker'}
+            {isLogin ? 'Login to Team Sudbeck Sales Tracker' : 'Register for Team Sudbeck Sales Tracker'}
           </CardDescription>
         </CardHeader>
         <CardContent>
