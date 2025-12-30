@@ -28,13 +28,20 @@ const Dashboard = ({ user, setUser }) => {
       <div className="container mx-auto px-2 md:px-4 py-4 md:py-6 max-w-7xl">
         {/* Header */}
         <div className="bg-white rounded-lg shadow-md p-4 md:p-6 mb-4 md:mb-6 flex flex-col md:flex-row justify-between md:items-center gap-3">
-          <div className="flex-1 min-w-0">
-            <h1 className="text-xl md:text-2xl font-bold text-gray-800 truncate" data-testid="dashboard-title">
-              CRM Sales Tracker
-            </h1>
-            <p className="text-xs md:text-sm text-gray-600 mt-1 truncate" data-testid="user-info">
-              {user.name} | {user.role.replace('_', ' ').toUpperCase()}
-            </p>
+          <div className="flex items-center gap-4 flex-1 min-w-0">
+            <img 
+              src="/team-sudbeck-logo.jpg" 
+              alt="Team Sudbeck Logo" 
+              className="h-12 md:h-16 w-auto object-contain flex-shrink-0"
+            />
+            <div className="flex-1 min-w-0">
+              <h1 className="text-lg md:text-2xl font-bold text-gray-800 truncate" data-testid="dashboard-title">
+                Team Sudbeck Sales Tracker
+              </h1>
+              <p className="text-xs md:text-sm text-gray-600 mt-1 truncate" data-testid="user-info">
+                {user.name} | {user.role.replace('_', ' ').toUpperCase()}
+              </p>
+            </div>
           </div>
           <Button
             variant="outline"
