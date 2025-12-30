@@ -174,19 +174,13 @@ const Dashboard = ({ user, setUser }) => {
 
           {['state_manager', 'regional_manager', 'district_manager'].includes(user.role) && (
             <TabsContent value="reports" data-testid="reports-content" className="mt-4 md:mt-6">
-              <Reports user={user} />
+              <DailyReport user={user} />
             </TabsContent>
           )}
 
           {user.role === 'state_manager' && (
             <TabsContent value="admin" data-testid="admin-content" className="mt-4 md:mt-6">
               <AdminCleanup user={user} />
-            </TabsContent>
-          )}
-
-          {['state_manager', 'regional_manager', 'district_manager'].includes(user.role) && (
-            <TabsContent value="daily-report" data-testid="daily-report-content" className="mt-4 md:mt-6">
-              <DailyReport user={user} />
             </TabsContent>
           )}
         </Tabs>
