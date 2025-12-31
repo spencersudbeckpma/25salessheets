@@ -175,6 +175,32 @@ const TeamManagement = ({ user }) => {
     }
   };
 
+
+
+  const handleCreateUser = async () => {
+    if (!newUser.name || !newUser.email || !newUser.password || !newUser.role) {
+      toast.error('Please fill all required fields');
+      return;
+    }
+
+    if (newUser.password.length < 6) {
+      toast.error('Password must be at least 6 characters');
+      return;
+    }
+
+    try {
+      const token = localStorage.getItem('token');
+      await axios.post(`${API}/auth/create-user`, newUser, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      toast.success(`User ${newUser.name} created successfully!`);
+      setNewUser({ name: '', email: '', password: '', role: '', manager_id: '' });
+      fetchTeamMembers();
+    } catch (error) {
+      toast.error(error.response?.data?.detail || 'Failed to create user');
+    }
+  };
+
   const handleCreateInvite = async () => {
     if (!newInvite.name || !newInvite.email || !newInvite.role) {
       toast.error('Please fill all fields');
