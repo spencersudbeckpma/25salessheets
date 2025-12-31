@@ -2672,6 +2672,89 @@ async def get_leaderboard(period: str, current_user: dict = Depends(get_current_
 
 
 # ============================================
+# ============================================
+# PMA Bonus PDF Management Endpoints
+# ============================================
+
+@api_router.get("/pma-bonuses")
+async def get_pma_bonuses(current_user: dict = Depends(get_current_user)):
+    """Get all PMA bonus PDFs"""
+    bonuses = await db.pma_bonuses.find({}, {"_id": 0, "file_data": 0}).sort("uploaded_at", -1).to_list(100)
+    return bonuses
+
+@api_router.post("/pma-bonuses")
+async def upload_pma_bonus(
+    file: UploadFile = File(...),
+    current_user: dict = Depends(get_current_user)
+):
+    """Upload a PMA bonus PDF (State Manager only)"""
+    if current_user['role'] != 'state_manager':
+        raise HTTPException(status_code=403, detail="Only State Managers can upload bonus PDFs")
+    
+    # Validate file type
+    if not file.filename.lower().endswith('.pdf'):
+        raise HTTPException(status_code=400, detail="Only PDF files are allowed")
+    
+    # Read file content
+    file_content = await file.read()
+    
+    # Check file size (max 10MB)
+    if len(file_content) > 10 * 1024 * 1024:
+        raise HTTPException(status_code=400, detail="File size must be less than 10MB")
+    
+    # Store as base64
+    file_base64 = base64.b64encode(file_content).decode('utf-8')
+    
+    bonus_doc = {
+        "id": str(uuid.uuid4()),
+        "filename": file.filename,
+        "file_data": file_base64,
+        "file_size": len(file_content),
+        "uploaded_by": current_user['id'],
+        "uploaded_by_name": current_user['name'],
+        "uploaded_at": datetime.now(timezone.utc).isoformat()
+    }
+    
+    await db.pma_bonuses.insert_one(bonus_doc)
+    
+    return {
+        "message": "PDF uploaded successfully",
+        "id": bonus_doc['id'],
+        "filename": bonus_doc['filename']
+    }
+
+@api_router.get("/pma-bonuses/{bonus_id}/download")
+async def download_pma_bonus(bonus_id: str, current_user: dict = Depends(get_current_user)):
+    """Download a PMA bonus PDF"""
+    bonus = await db.pma_bonuses.find_one({"id": bonus_id}, {"_id": 0})
+    if not bonus:
+        raise HTTPException(status_code=404, detail="Bonus PDF not found")
+    
+    # Decode base64 to bytes
+    file_content = base64.b64decode(bonus['file_data'])
+    
+    return Response(
+        content=file_content,
+        media_type="application/pdf",
+        headers={
+            "Content-Disposition": f"attachment; filename={bonus['filename']}"
+        }
+    )
+
+@api_router.delete("/pma-bonuses/{bonus_id}")
+async def delete_pma_bonus(bonus_id: str, current_user: dict = Depends(get_current_user)):
+    """Delete a PMA bonus PDF (State Manager only)"""
+    if current_user['role'] != 'state_manager':
+        raise HTTPException(status_code=403, detail="Only State Managers can delete bonus PDFs")
+    
+    result = await db.pma_bonuses.delete_one({"id": bonus_id})
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Bonus PDF not found")
+    
+    return {"message": "PDF deleted successfully"}
+
+
+# ============================================
 # Team Reorganization & Archiving Endpoints
 # ============================================
 
