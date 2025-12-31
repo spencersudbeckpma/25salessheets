@@ -8,7 +8,7 @@ import { Label } from './ui/label';
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
 
-const NewFaceTracking = ({ user }) => {
+const NewFaceTracking = ({ user, embedded = false }) => {
   const [customers, setCustomers] = useState([]);
   const [loading, setLoading] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
