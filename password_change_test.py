@@ -46,7 +46,7 @@ import sys
 import os
 
 # Configuration
-BACKEND_URL = "https://team-view-pro.preview.emergentagent.com/api"
+BACKEND_URL = "https://team-dashboard-75.preview.emergentagent.com/api"
 
 class Colors:
     GREEN = '\033[92m'
