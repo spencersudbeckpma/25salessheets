@@ -647,6 +647,59 @@ const TeamManagement = ({ user }) => {
 
 
           {user.role === 'state_manager' && (
+          <TabsContent value="all-users" className="space-y-6" data-testid="all-users-content">
+            <div className="bg-blue-50 p-6 rounded-lg border border-blue-200">
+              <h3 className="font-semibold text-lg mb-4">All Active Users</h3>
+              <p className="text-sm text-gray-600 mb-4">
+                View all active users in the organization with their usernames and roles.
+              </p>
+              <Button onClick={fetchActiveUsers} className="mb-4">
+                Load All Users
+              </Button>
+            </div>
+
+            {activeUsers.length > 0 && (
+              <div className="overflow-x-auto">
+                <table className="w-full border-collapse">
+                  <thead>
+                    <tr className="bg-gray-100">
+                      <th className="border p-3 text-left font-semibold">#</th>
+                      <th className="border p-3 text-left font-semibold">Name</th>
+                      <th className="border p-3 text-left font-semibold">Username/Email</th>
+                      <th className="border p-3 text-left font-semibold">Role</th>
+                      <th className="border p-3 text-left font-semibold">Manager</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {activeUsers.map((member, index) => (
+                      <tr key={member.id} className="hover:bg-gray-50">
+                        <td className="border p-3">{index + 1}</td>
+                        <td className="border p-3 font-medium">{member.name}</td>
+                        <td className="border p-3 text-blue-600">{member.email}</td>
+                        <td className="border p-3">
+                          <span className={`px-2 py-1 rounded text-xs font-medium ${
+                            member.role === 'state_manager' ? 'bg-purple-100 text-purple-800' :
+                            member.role === 'regional_manager' ? 'bg-blue-100 text-blue-800' :
+                            member.role === 'district_manager' ? 'bg-green-100 text-green-800' :
+                            'bg-gray-100 text-gray-800'
+                          }`}>
+                            {member.role.replace('_', ' ').toUpperCase()}
+                          </span>
+                        </td>
+                        <td className="border p-3 text-gray-600">{member.manager_name || '-'}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+                <div className="mt-4 text-sm text-gray-500">
+                  Total: {activeUsers.length} active users
+                </div>
+              </div>
+            )}
+          </TabsContent>
+          )}
+
+          {user.role === 'state_manager' && (
           <TabsContent value="reorganize" className="space-y-6" data-testid="reorganize-content">
             <div className="bg-purple-50 p-6 rounded-lg border border-purple-200">
               <h3 className="font-semibold text-lg mb-4">Reorganize Team</h3>
