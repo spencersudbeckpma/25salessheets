@@ -56,18 +56,18 @@ const Dashboard = ({ user, setUser }) => {
         {/* Main Content */}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4 md:space-y-6">
           <div className="overflow-x-auto -mx-2 px-2">
-            <TabsList className={`inline-flex w-full md:grid md:w-full ${['state_manager', 'regional_manager', 'district_manager'].includes(user.role) ? 'md:grid-cols-8' : 'md:grid-cols-6'} gap-1 md:gap-2 bg-slate-800 border border-slate-700 rounded-lg shadow-xl p-1.5 md:p-2 h-auto min-w-max md:min-w-0`} data-testid="dashboard-tabs">
+            <TabsList className={`inline-flex w-full md:grid md:w-full ${['state_manager', 'regional_manager', 'district_manager'].includes(user.role) ? 'md:grid-cols-8' : 'md:grid-cols-6'} gap-1 md:gap-2 bg-white rounded-2xl shadow-lg border border-gray-100 p-1.5 md:p-2 h-auto min-w-max md:min-w-0`} data-testid="dashboard-tabs">
               <TabsTrigger 
                 value="activity" 
                 data-testid="activity-tab" 
-                className="py-2.5 px-3 text-xs md:text-sm whitespace-nowrap flex-shrink-0 text-slate-400 data-[state=active]:bg-cyan-600 data-[state=active]:text-white"
+                className="py-2.5 px-3 text-xs md:text-sm whitespace-nowrap flex-shrink-0 rounded-xl text-gray-600 data-[state=active]:bg-gradient-to-r data-[state=active]:from-violet-500 data-[state=active]:to-purple-600 data-[state=active]:text-white data-[state=active]:shadow-md"
               >
                 Daily Activity
               </TabsTrigger>
               <TabsTrigger 
                 value="stats" 
                 data-testid="stats-tab" 
-                className="py-2.5 px-3 text-xs md:text-sm whitespace-nowrap flex-shrink-0 text-slate-400 data-[state=active]:bg-cyan-600 data-[state=active]:text-white"
+                className="py-2.5 px-3 text-xs md:text-sm whitespace-nowrap flex-shrink-0 rounded-xl text-gray-600 data-[state=active]:bg-gradient-to-r data-[state=active]:from-violet-500 data-[state=active]:to-purple-600 data-[state=active]:text-white data-[state=active]:shadow-md"
               >
                 My Stats
               </TabsTrigger>
