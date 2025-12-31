@@ -403,8 +403,23 @@ const PMADocuSphere = ({ user }) => {
 
               {/* Folder Tree - Scrollable with better mobile height */}
               <div className="max-h-[50vh] lg:max-h-96 overflow-y-auto overflow-x-hidden">
-                {folders.length === 0 ? (
-                  <div className="text-xs text-slate-400 p-2">Loading folders...</div>
+                {foldersLoading ? (
+                  <div className="text-xs text-slate-400 p-2 flex items-center gap-2">
+                    <div className="animate-spin h-3 w-3 border-2 border-slate-300 border-t-amber-500 rounded-full"></div>
+                    Loading folders...
+                  </div>
+                ) : foldersError ? (
+                  <div className="text-xs text-red-500 p-2">
+                    <p>{foldersError}</p>
+                    <button 
+                      onClick={fetchFolders}
+                      className="mt-2 text-amber-600 hover:text-amber-700 underline"
+                    >
+                      Try again
+                    </button>
+                  </div>
+                ) : folders.length === 0 ? (
+                  <div className="text-xs text-slate-400 p-2">No folders yet</div>
                 ) : (
                   buildFolderTree(null).map(folder => renderFolder(folder))
                 )}
