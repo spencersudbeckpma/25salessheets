@@ -231,7 +231,7 @@ const ActivityInput = ({ user }) => {
                 type="number"
                 min="0"
                 step={
-                  cat.key === 'premium' ? '0.01' : 
+                  (cat.key === 'premium' || cat.key === 'bankers_premium') ? '0.01' : 
                   (cat.key === 'presentations' || cat.key === 'contacts' || cat.key === 'appointments' || cat.key === 'new_face_sold') ? '0.5' : 
                   '1'
                 }
