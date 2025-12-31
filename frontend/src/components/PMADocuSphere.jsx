@@ -390,7 +390,11 @@ const PMADocuSphere = ({ user }) => {
 
               {/* Folder Tree */}
               <div className="max-h-96 overflow-y-auto">
-                {buildFolderTree(null).map(folder => renderFolder(folder))}
+                {folders.length === 0 ? (
+                  <div className="text-xs text-slate-400 p-2">Loading folders...</div>
+                ) : (
+                  buildFolderTree(null).map(folder => renderFolder(folder))
+                )}
               </div>
 
               {/* Add Folder Button (State Manager only) */}
