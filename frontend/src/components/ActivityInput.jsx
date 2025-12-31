@@ -110,8 +110,10 @@ const ActivityInput = ({ user }) => {
         presentations: parseFloat(activity.presentations) || 0,
         referrals: parseInt(activity.referrals) || 0,
         testimonials: parseInt(activity.testimonials) || 0,
+        apps: parseInt(activity.apps) || 0,
         sales: parseInt(activity.sales) || 0,
         new_face_sold: parseFloat(activity.new_face_sold) || 0,
+        bankers_premium: parseFloat(activity.bankers_premium) || 0,
         premium: parseFloat(activity.premium) || 0
       };
       
