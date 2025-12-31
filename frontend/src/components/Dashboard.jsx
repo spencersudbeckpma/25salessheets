@@ -6,7 +6,6 @@ import TeamView from './TeamView';
 import TeamManagement from './TeamManagement';
 import Leaderboard from './Leaderboard';
 import AdminCleanup from './AdminCleanup';
-import Reports from './Reports';
 import NewFaceTracking from './NewFaceTracking';
 import DailyReport from './DailyReport';
 import ChangePassword from './ChangePassword';
