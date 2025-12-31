@@ -1872,7 +1872,7 @@ async def create_user_directly(user_data: UserCreate, current_user: dict = Depen
     password_hash = bcrypt.hashpw(user_data.password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
     
     # Create user
-    user_id = str(uuid4())
+    user_id = str(uuid.uuid4())
     new_user = {
         "id": user_id,
         "name": user_data.name,
