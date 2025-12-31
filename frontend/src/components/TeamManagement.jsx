@@ -88,6 +88,362 @@ const ReorganizeUserCard = ({ member, availableManagers, onReassign }) => {
   );
 };
 
+// Change Password Section Component
+const ChangePasswordSection = ({ user }) => {
+  const [formData, setFormData] = useState({
+    currentPassword: '',
+    newPassword: '',
+    confirmPassword: ''
+  });
+  const [showPasswords, setShowPasswords] = useState({
+    current: false,
+    new: false,
+    confirm: false
+  });
+  const [loading, setLoading] = useState(false);
+
+  const handleInputChange = (e) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({ ...prev, [name]: value }));
+  };
+
+  const togglePasswordVisibility = (field) => {
+    setShowPasswords(prev => ({ ...prev, [field]: !prev[field] }));
+  };
+
+  const validateForm = () => {
+    if (!formData.currentPassword) {
+      toast.error('Current password is required');
+      return false;
+    }
+    if (!formData.newPassword) {
+      toast.error('New password is required');
+      return false;
+    }
+    if (formData.newPassword.length < 6) {
+      toast.error('New password must be at least 6 characters long');
+      return false;
+    }
+    if (formData.newPassword !== formData.confirmPassword) {
+      toast.error('New passwords do not match');
+      return false;
+    }
+    if (formData.currentPassword === formData.newPassword) {
+      toast.error('New password must be different from current password');
+      return false;
+    }
+    return true;
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    if (!validateForm()) return;
+    
+    setLoading(true);
+    try {
+      const token = localStorage.getItem('token');
+      await axios.post(`${API}/auth/change-password`, {
+        current_password: formData.currentPassword,
+        new_password: formData.newPassword
+      }, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      
+      toast.success('Password changed successfully!');
+      setFormData({ currentPassword: '', newPassword: '', confirmPassword: '' });
+    } catch (error) {
+      toast.error(error.response?.data?.detail || 'Failed to change password');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="max-w-md mx-auto">
+      <div className="bg-blue-50 p-6 rounded-lg border border-blue-200 mb-6">
+        <h3 className="font-semibold text-lg mb-2 flex items-center gap-2">
+          <Shield size={20} className="text-blue-600" />
+          Change Your Password
+        </h3>
+        <p className="text-sm text-gray-600">
+          Update your password to keep your account secure
+        </p>
+      </div>
+
+      <form onSubmit={handleSubmit} className="space-y-5">
+        <div>
+          <Label className="text-sm font-semibold">Current Password</Label>
+          <div className="relative mt-1">
+            <input
+              type={showPasswords.current ? "text" : "password"}
+              name="currentPassword"
+              value={formData.currentPassword}
+              onChange={handleInputChange}
+              className="w-full px-4 py-2 pr-10 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+              placeholder="Enter current password"
+              required
+            />
+            <button
+              type="button"
+              onClick={() => togglePasswordVisibility('current')}
+              className="absolute right-3 top-2.5 text-gray-500 hover:text-gray-700"
+            >
+              {showPasswords.current ? <EyeOff size={18} /> : <Eye size={18} />}
+            </button>
+          </div>
+        </div>
+
+        <div>
+          <Label className="text-sm font-semibold">New Password</Label>
+          <div className="relative mt-1">
+            <input
+              type={showPasswords.new ? "text" : "password"}
+              name="newPassword"
+              value={formData.newPassword}
+              onChange={handleInputChange}
+              className="w-full px-4 py-2 pr-10 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+              placeholder="Enter new password"
+              required
+              minLength={6}
+            />
+            <button
+              type="button"
+              onClick={() => togglePasswordVisibility('new')}
+              className="absolute right-3 top-2.5 text-gray-500 hover:text-gray-700"
+            >
+              {showPasswords.new ? <EyeOff size={18} /> : <Eye size={18} />}
+            </button>
+          </div>
+          <p className="text-xs text-gray-500 mt-1">Must be at least 6 characters</p>
+        </div>
+
+        <div>
+          <Label className="text-sm font-semibold">Confirm New Password</Label>
+          <div className="relative mt-1">
+            <input
+              type={showPasswords.confirm ? "text" : "password"}
+              name="confirmPassword"
+              value={formData.confirmPassword}
+              onChange={handleInputChange}
+              className="w-full px-4 py-2 pr-10 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+              placeholder="Confirm new password"
+              required
+            />
+            <button
+              type="button"
+              onClick={() => togglePasswordVisibility('confirm')}
+              className="absolute right-3 top-2.5 text-gray-500 hover:text-gray-700"
+            >
+              {showPasswords.confirm ? <EyeOff size={18} /> : <Eye size={18} />}
+            </button>
+          </div>
+        </div>
+
+        <Button type="submit" disabled={loading} className="w-full bg-blue-600 hover:bg-blue-700 text-white">
+          <Lock size={18} className="mr-2" />
+          {loading ? 'Changing Password...' : 'Change Password'}
+        </Button>
+      </form>
+
+      <div className="mt-4 text-center text-sm text-gray-600">
+        Changing password for: <strong>{user.name}</strong>
+      </div>
+    </div>
+  );
+};
+
+// Admin Section Component
+const AdminSection = ({ user }) => {
+  const [searchName, setSearchName] = useState('');
+  const [foundUsers, setFoundUsers] = useState([]);
+  const [selectedUser, setSelectedUser] = useState(null);
+  const [activities, setActivities] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [diagnosticInfo, setDiagnosticInfo] = useState(null);
+
+  const runDiagnostic = async () => {
+    setLoading(true);
+    try {
+      const token = localStorage.getItem('token');
+      const response = await axios.get(`${API}/admin/diagnostic`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      setDiagnosticInfo(response.data);
+      toast.success('Diagnostic complete');
+    } catch (error) {
+      toast.error('Diagnostic failed');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const searchUsers = async () => {
+    setLoading(true);
+    try {
+      const token = localStorage.getItem('token');
+      const response = await axios.get(`${API}/users/team-members`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      const filtered = response.data.filter(u => 
+        u.name.toLowerCase().includes(searchName.toLowerCase())
+      );
+      setFoundUsers(filtered);
+      toast.success(`Found ${filtered.length} user(s)`);
+    } catch (error) {
+      toast.error('Failed to search users');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const viewUserActivities = async (userId) => {
+    setLoading(true);
+    try {
+      const token = localStorage.getItem('token');
+      const response = await axios.get(`${API}/users/${userId}/activities`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      setActivities(response.data);
+      setSelectedUser(userId);
+    } catch (error) {
+      toast.error('Failed to fetch activities');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const deleteAllActivities = async (userId, userName) => {
+    if (!window.confirm(`⚠️ DELETE ALL activities for ${userName}?\n\nThis cannot be undone!`)) return;
+
+    setLoading(true);
+    try {
+      const token = localStorage.getItem('token');
+      const response = await axios.delete(`${API}/debug/delete-all-user-activities/${userId}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      toast.success(response.data.message);
+      setActivities([]);
+      setSelectedUser(null);
+      searchUsers();
+    } catch (error) {
+      toast.error('Failed to delete activities');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const populateTodaysActivities = async () => {
+    if (!window.confirm('Add sample activities for TODAY for all users?')) return;
+    
+    setLoading(true);
+    try {
+      const token = localStorage.getItem('token');
+      const response = await axios.post(`${API}/admin/populate-todays-activities`, {}, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      toast.success(response.data.message);
+    } catch (error) {
+      toast.error('Failed to populate activities');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="space-y-6">
+      {/* Quick Actions */}
+      <div className="bg-purple-50 p-6 rounded-lg border border-purple-200">
+        <h3 className="font-semibold text-lg mb-3 flex items-center gap-2">
+          <Settings size={20} />
+          Admin Tools
+        </h3>
+        <div className="flex flex-wrap gap-3">
+          <Button onClick={runDiagnostic} disabled={loading} variant="outline">
+            🔍 Run Diagnostic
+          </Button>
+          <Button onClick={populateTodaysActivities} disabled={loading} variant="outline">
+            📊 Populate Today's Activities
+          </Button>
+        </div>
+      </div>
+
+      {/* Diagnostic Results */}
+      {diagnosticInfo && (
+        <div className="p-4 bg-green-50 border border-green-300 rounded-lg">
+          <h3 className="font-semibold mb-3">📋 Diagnostic Results</h3>
+          <div className="space-y-1 text-sm">
+            <div><strong>Database:</strong> {diagnosticInfo.database}</div>
+            <div><strong>Today:</strong> {diagnosticInfo.today}</div>
+            <div><strong>Total Users:</strong> {diagnosticInfo.counts.total_users}</div>
+            <div><strong>Total Activities:</strong> {diagnosticInfo.counts.total_activities}</div>
+            <div className={diagnosticInfo.counts.activities_for_today > 0 ? 'text-green-700' : 'text-red-700'}>
+              <strong>Activities Today:</strong> {diagnosticInfo.counts.activities_for_today}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Search Section */}
+      <div className="bg-gray-50 p-6 rounded-lg border">
+        <h3 className="font-semibold mb-3">Search Users</h3>
+        <div className="flex gap-2">
+          <Input
+            placeholder="Enter name"
+            value={searchName}
+            onChange={(e) => setSearchName(e.target.value)}
+            onKeyPress={(e) => e.key === 'Enter' && searchUsers()}
+          />
+          <Button onClick={searchUsers} disabled={loading || !searchName}>Search</Button>
+        </div>
+      </div>
+
+      {/* Found Users */}
+      {foundUsers.length > 0 && (
+        <div className="space-y-3">
+          <h3 className="font-semibold">Found Users:</h3>
+          {foundUsers.map(u => (
+            <div key={u.id} className="p-4 border rounded-lg bg-white flex justify-between items-center">
+              <div>
+                <div className="font-semibold">{u.name}</div>
+                <div className="text-sm text-gray-600">{u.email}</div>
+              </div>
+              <div className="flex gap-2">
+                <Button size="sm" variant="outline" onClick={() => viewUserActivities(u.id)}>
+                  View Activities
+                </Button>
+                <Button size="sm" variant="destructive" onClick={() => deleteAllActivities(u.id, u.name)}>
+                  Delete All Data
+                </Button>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Activities List */}
+      {selectedUser && activities.length > 0 && (
+        <div className="space-y-3 max-h-64 overflow-y-auto">
+          <h3 className="font-semibold">Activities ({activities.length}):</h3>
+          {activities.slice(0, 10).map(act => (
+            <div key={act.id} className="p-3 border rounded bg-white text-sm">
+              <div className="font-semibold">{act.date}</div>
+              <div className="grid grid-cols-2 gap-2 mt-1 text-xs">
+                <div>Contacts: {act.contacts}</div>
+                <div>Premium: ${act.premium}</div>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Password Management for Team */}
+      <div className="mt-6">
+        <PasswordManagement user={user} />
+      </div>
+    </div>
+  );
+};
+
 const TeamManagement = ({ user }) => {
   // Get today's date in local timezone
   const getLocalDate = () => {
