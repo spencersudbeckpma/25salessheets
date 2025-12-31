@@ -20,23 +20,23 @@ const Dashboard = ({ user, setUser }) => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-slate-50 to-blue-50 pb-8">
+    <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-teal-50 to-cyan-50 pb-8">
       <div className="container mx-auto px-2 md:px-4 py-4 md:py-6 max-w-7xl">
         {/* Header */}
-        <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-4 md:p-6 mb-4 md:mb-6 flex flex-col md:flex-row justify-between md:items-center gap-3">
+        <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-lg border border-emerald-100 p-4 md:p-6 mb-4 md:mb-6 flex flex-col md:flex-row justify-between md:items-center gap-3">
           <div className="flex items-center gap-4 flex-1 min-w-0">
-            <div className="bg-blue-600 p-2.5 rounded-xl shadow-md">
+            <div className="bg-gradient-to-br from-emerald-500 to-teal-600 p-2.5 rounded-2xl shadow-lg">
               <img 
                 src="/team-sudbeck-logo.jpg" 
                 alt="Team Sudbeck Logo" 
-                className="h-10 md:h-12 w-auto object-contain flex-shrink-0 rounded-lg"
+                className="h-10 md:h-12 w-auto object-contain flex-shrink-0 rounded-xl"
               />
             </div>
             <div className="flex-1 min-w-0">
-              <h1 className="text-lg md:text-2xl font-bold text-slate-800 truncate" data-testid="dashboard-title">
+              <h1 className="text-lg md:text-2xl font-bold text-emerald-900 truncate" data-testid="dashboard-title">
                 Team Sudbeck Sales Tracker
               </h1>
-              <p className="text-xs md:text-sm text-slate-500 mt-1 truncate" data-testid="user-info">
+              <p className="text-xs md:text-sm text-emerald-600 mt-1 truncate" data-testid="user-info">
                 {user.name} • {user.role.replace('_', ' ').toUpperCase()}
               </p>
             </div>
@@ -45,7 +45,7 @@ const Dashboard = ({ user, setUser }) => {
             variant="outline"
             onClick={handleLogout}
             data-testid="logout-btn"
-            className="flex items-center gap-2 w-full md:w-auto justify-center border-slate-300 text-slate-600 hover:bg-slate-50"
+            className="flex items-center gap-2 w-full md:w-auto justify-center border-emerald-300 text-emerald-700 hover:bg-emerald-50"
             size="sm"
           >
             <LogOut size={16} />
