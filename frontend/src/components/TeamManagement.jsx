@@ -436,7 +436,7 @@ const TeamManagement = ({ user }) => {
                     className="w-full p-2 border rounded-md mt-1"
                   >
                     <option value="">Select Role</option>
-                    {getAvailableRoles().map(role => (
+                    {getRoleOptions().map(role => (
                       <option key={role} value={role}>{role.replace('_', ' ').toUpperCase()}</option>
                     ))}
                   </select>
