@@ -73,8 +73,10 @@ const ActivityInput = ({ user }) => {
           presentations: dayActivity.presentations,
           referrals: dayActivity.referrals,
           testimonials: dayActivity.testimonials,
+          apps: dayActivity.apps || 0,
           sales: dayActivity.sales,
           new_face_sold: dayActivity.new_face_sold,
+          bankers_premium: dayActivity.bankers_premium || 0,
           premium: dayActivity.premium
         });
       } else {
@@ -84,8 +86,10 @@ const ActivityInput = ({ user }) => {
           presentations: 0,
           referrals: 0,
           testimonials: 0,
+          apps: 0,
           sales: 0,
           new_face_sold: 0,
+          bankers_premium: 0,
           premium: 0
         });
       }
