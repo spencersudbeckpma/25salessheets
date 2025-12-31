@@ -27,16 +27,25 @@ const PMADocuSphere = ({ user }) => {
   const [newFolderParent, setNewFolderParent] = useState(null);
 
   useEffect(() => {
-    fetchFolders();
-    fetchDocuments();
+    // Small delay to ensure auth token is available
+    const timer = setTimeout(() => {
+      fetchFolders();
+      fetchDocuments();
+    }, 100);
+    return () => clearTimeout(timer);
   }, []);
 
-  const fetchFolders = async () => {
+  const fetchFolders = async (retryCount = 0) => {
     setFoldersLoading(true);
     setFoldersError(null);
     try {
       const token = localStorage.getItem('token');
       if (!token) {
+        // Retry once after a short delay if token not found
+        if (retryCount < 2) {
+          setTimeout(() => fetchFolders(retryCount + 1), 500);
+          return;
+        }
         setFoldersError('Not authenticated');
         setFoldersLoading(false);
         return;
@@ -47,8 +56,13 @@ const PMADocuSphere = ({ user }) => {
       setFolders(response.data || []);
     } catch (error) {
       console.error('Failed to fetch folders:', error);
+      // Auto-retry once on failure
+      if (retryCount < 1) {
+        setTimeout(() => fetchFolders(retryCount + 1), 1000);
+        return;
+      }
       setFoldersError(error.response?.data?.detail || error.message || 'Failed to load folders');
-      toast.error('Failed to load folders. Please refresh the page.');
+      toast.error('Failed to load folders. Tap "Try again" to retry.');
     } finally {
       setFoldersLoading(false);
     }
