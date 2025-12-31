@@ -97,42 +97,73 @@ const PMADocuSphere = ({ user }) => {
     }
   };
 
-  const handleFileUpload = async (event) => {
-    const file = event.target.files[0];
-    if (!file) return;
+  const [uploadProgress, setUploadProgress] = useState({ current: 0, total: 0 });
 
-    if (!file.name.toLowerCase().endsWith('.pdf')) {
+  const handleFileUpload = async (event) => {
+    const files = Array.from(event.target.files);
+    if (!files.length) return;
+
+    // Filter only PDFs
+    const pdfFiles = files.filter(f => f.name.toLowerCase().endsWith('.pdf'));
+    if (pdfFiles.length === 0) {
       toast.error('Only PDF files are allowed');
       return;
     }
 
-    if (file.size > 15 * 1024 * 1024) {
-      toast.error('File size must be less than 15MB');
+    // Check file sizes
+    const oversizedFiles = pdfFiles.filter(f => f.size > 15 * 1024 * 1024);
+    if (oversizedFiles.length > 0) {
+      toast.error(`${oversizedFiles.length} file(s) exceed 15MB limit and will be skipped`);
+    }
+
+    const validFiles = pdfFiles.filter(f => f.size <= 15 * 1024 * 1024);
+    if (validFiles.length === 0) {
+      toast.error('No valid files to upload');
       return;
     }
 
     setUploading(true);
-    const formData = new FormData();
-    formData.append('file', file);
-    if (selectedFolder) {
-      formData.append('folder_id', selectedFolder);
+    setUploadProgress({ current: 0, total: validFiles.length });
+
+    const token = localStorage.getItem('token');
+    let successCount = 0;
+    let failCount = 0;
+
+    for (let i = 0; i < validFiles.length; i++) {
+      const file = validFiles[i];
+      setUploadProgress({ current: i + 1, total: validFiles.length });
+
+      const formData = new FormData();
+      formData.append('file', file);
+      if (selectedFolder) {
+        formData.append('folder_id', selectedFolder);
+      }
+
+      try {
+        await axios.post(`${API}/docusphere/documents`, formData, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'multipart/form-data'
+          }
+        });
+        successCount++;
+      } catch (error) {
+        console.error(`Failed to upload ${file.name}:`, error);
+        failCount++;
+      }
     }
 
-    try {
-      const token = localStorage.getItem('token');
-      await axios.post(`${API}/docusphere/documents`, formData, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-          'Content-Type': 'multipart/form-data'
-        }
-      });
-      toast.success('Document uploaded!');
+    if (successCount > 0) {
+      toast.success(`${successCount} document(s) uploaded successfully!`);
       fetchDocuments();
-    } catch (error) {
-      toast.error(error.response?.data?.detail || 'Failed to upload document');
-    } finally {
-      setUploading(false);
-      event.target.value = '';
+    }
+    if (failCount > 0) {
+      toast.error(`${failCount} document(s) failed to upload`);
+    }
+
+    setUploading(false);
+    setUploadProgress({ current: 0, total: 0 });
+    event.target.value = '';
     }
   };
 
