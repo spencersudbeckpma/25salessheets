@@ -8,7 +8,7 @@ import { FileDown, Calendar, Users, Building, TrendingUp, Clock, BarChart3, Line
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
 
-const DailyReport = ({ user }) => {
+const DailyReport = ({ user, embedded = false }) => {
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
   const [selectedPeriod, setSelectedPeriod] = useState('daily');
   const [selectedMonth, setSelectedMonth] = useState(new Date().toISOString().slice(0, 7)); // YYYY-MM format
