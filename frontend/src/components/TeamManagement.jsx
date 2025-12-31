@@ -395,6 +395,10 @@ const TeamManagement = ({ user }) => {
                   <TabsTrigger value="archive" data-testid="archive-tab" className="py-2 px-3 text-xs md:text-sm whitespace-nowrap flex-shrink-0">Archive</TabsTrigger>
                 </>
               )}
+              <TabsTrigger value="password" data-testid="password-tab" className="py-2 px-3 text-xs md:text-sm whitespace-nowrap flex-shrink-0">🔐 Password</TabsTrigger>
+              {user.role === 'state_manager' && (
+                <TabsTrigger value="admin" data-testid="admin-tab" className="py-2 px-3 text-xs md:text-sm whitespace-nowrap flex-shrink-0">⚙️ Admin</TabsTrigger>
+              )}
             </TabsList>
           </div>
 
