@@ -1848,6 +1848,54 @@ async def login(login_data: UserLogin):
             "role": user['role'],
             "manager_id": user.get('manager_id')
         }
+
+
+class UserCreate(BaseModel):
+    name: str
+    email: str
+    password: str
+    role: str
+    manager_id: Optional[str] = None
+
+@api_router.post("/auth/create-user")
+async def create_user_directly(user_data: UserCreate, current_user: dict = Depends(get_current_user)):
+    """Create a new user directly with password (managers only)"""
+    if current_user['role'] not in ['state_manager', 'regional_manager', 'district_manager']:
+        raise HTTPException(status_code=403, detail="Only managers can create users")
+    
+    # Check if email already exists
+    existing_user = await db.users.find_one({"email": user_data.email}, {"_id": 0})
+    if existing_user:
+        raise HTTPException(status_code=400, detail="Email already registered")
+    
+    # Hash the password
+    password_hash = bcrypt.hashpw(user_data.password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
+    
+    # Create user
+    user_id = str(uuid4())
+    new_user = {
+        "id": user_id,
+        "name": user_data.name,
+        "email": user_data.email,
+        "password_hash": password_hash,
+        "role": user_data.role,
+        "manager_id": user_data.manager_id if user_data.manager_id else None,
+        "status": "active",
+        "created_at": datetime.now(timezone.utc).isoformat()
+    }
+    
+    await db.users.insert_one(new_user)
+    
+    return {
+        "message": "User created successfully",
+        "user": {
+            "id": user_id,
+            "name": user_data.name,
+            "email": user_data.email,
+            "role": user_data.role
+        }
+    }
+
     }
 
 @api_router.get("/auth/me")
