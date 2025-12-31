@@ -782,6 +782,26 @@ const DailyReport = ({ user, embedded = false }) => {
             <li>• Excel downloads are formatted and ready to use</li>
           </ul>
         </div>
+    </>
+  );
+
+  if (embedded) {
+    return content;
+  }
+
+  return (
+    <Card className="shadow-lg bg-white">
+      <CardHeader>
+        <CardTitle className="text-2xl flex items-center gap-2">
+          <Clock className="text-blue-600" />
+          Manager Reports
+        </CardTitle>
+        <p className="text-sm text-gray-600 mt-2">
+          View and download comprehensive activity reports for your team hierarchy across different time periods
+        </p>
+      </CardHeader>
+      <CardContent>
+        {content}
       </CardContent>
     </Card>
   );
