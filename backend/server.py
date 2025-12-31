@@ -1848,7 +1848,7 @@ async def login(login_data: UserLogin):
             "role": user['role'],
             "manager_id": user.get('manager_id')
         }
-
+    }
 
 class UserCreate(BaseModel):
     name: str
