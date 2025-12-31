@@ -2096,8 +2096,10 @@ async def update_activity(date: str, activity_data: ActivityCreate, current_user
             presentations=data_dict['presentations'],
             referrals=data_dict['referrals'],
             testimonials=data_dict['testimonials'],
+            apps=data_dict.get('apps', 0),
             sales=data_dict['sales'],
             new_face_sold=data_dict['new_face_sold'],
+            bankers_premium=data_dict.get('bankers_premium', 0.0),
             premium=data_dict['premium'],
             edited_by=current_user['id'],
             edited_at=datetime.now(timezone.utc)
