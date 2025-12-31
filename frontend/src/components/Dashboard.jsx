@@ -147,14 +147,8 @@ const Dashboard = ({ user, setUser }) => {
           </TabsContent>
 
           {['state_manager', 'regional_manager', 'district_manager'].includes(user.role) && (
-            <TabsContent value="newface" data-testid="newface-content" className="mt-4 md:mt-6">
-              <NewFaceTracking user={user} />
-            </TabsContent>
-          )}
-
-          {['state_manager', 'regional_manager', 'district_manager'].includes(user.role) && (
             <TabsContent value="reports" data-testid="reports-content" className="mt-4 md:mt-6">
-              <DailyReport user={user} />
+              <Reports user={user} />
             </TabsContent>
           )}
         </Tabs>
