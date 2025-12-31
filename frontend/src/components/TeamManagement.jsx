@@ -824,6 +824,18 @@ const TeamManagement = ({ user }) => {
           </TabsContent>
           )}
 
+          {/* Password Change Tab - Available to all users */}
+          <TabsContent value="password" className="space-y-6" data-testid="password-content">
+            <ChangePasswordSection user={user} />
+          </TabsContent>
+
+          {/* Admin Tab - State Manager Only */}
+          {user.role === 'state_manager' && (
+          <TabsContent value="admin" className="space-y-6" data-testid="admin-content">
+            <AdminSection user={user} />
+          </TabsContent>
+          )}
+
         </Tabs>
       </CardContent>
     </Card>
