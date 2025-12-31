@@ -100,6 +100,7 @@ const TeamManagement = ({ user }) => {
   const [invites, setInvites] = useState([]);
   const [teamMembers, setTeamMembers] = useState([]);
   const [newInvite, setNewInvite] = useState({ name: '', email: '', role: '' });
+  const [newUser, setNewUser] = useState({ name: '', email: '', password: '', role: '', manager_id: '' });
   const [editMember, setEditMember] = useState(null);
   const [editActivity, setEditActivity] = useState(null);
   const [selectedDate, setSelectedDate] = useState(getLocalDate());
