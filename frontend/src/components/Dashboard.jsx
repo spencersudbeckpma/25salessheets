@@ -74,28 +74,28 @@ const Dashboard = ({ user, setUser }) => {
               <TabsTrigger 
                 value="team" 
                 data-testid="team-tab" 
-                className="py-2.5 px-3 text-xs md:text-sm whitespace-nowrap flex-shrink-0"
+                className="py-2.5 px-3 text-xs md:text-sm whitespace-nowrap flex-shrink-0 rounded-lg text-slate-600 data-[state=active]:bg-slate-800 data-[state=active]:text-amber-400 data-[state=active]:shadow-md"
               >
                 Team View
               </TabsTrigger>
               <TabsTrigger 
                 value="pma-bonuses" 
                 data-testid="pma-bonuses-tab" 
-                className="py-2.5 px-3 text-xs md:text-sm whitespace-nowrap flex-shrink-0"
+                className="py-2.5 px-3 text-xs md:text-sm whitespace-nowrap flex-shrink-0 rounded-lg text-slate-600 data-[state=active]:bg-slate-800 data-[state=active]:text-amber-400 data-[state=active]:shadow-md"
               >
                 📄 PMA Bonuses
               </TabsTrigger>
               <TabsTrigger 
                 value="leaderboard" 
                 data-testid="leaderboard-tab" 
-                className="py-2.5 px-3 text-xs md:text-sm whitespace-nowrap flex-shrink-0"
+                className="py-2.5 px-3 text-xs md:text-sm whitespace-nowrap flex-shrink-0 rounded-lg text-slate-600 data-[state=active]:bg-slate-800 data-[state=active]:text-amber-400 data-[state=active]:shadow-md"
               >
                 Leaderboard
               </TabsTrigger>
               <TabsTrigger 
                 value="analytics" 
                 data-testid="analytics-tab" 
-                className="py-2.5 px-3 text-xs md:text-sm whitespace-nowrap flex-shrink-0"
+                className="py-2.5 px-3 text-xs md:text-sm whitespace-nowrap flex-shrink-0 rounded-lg text-slate-600 data-[state=active]:bg-slate-800 data-[state=active]:text-amber-400 data-[state=active]:shadow-md"
               >
                 📊 Analytics
               </TabsTrigger>
@@ -104,14 +104,14 @@ const Dashboard = ({ user, setUser }) => {
                   <TabsTrigger 
                     value="reports" 
                     data-testid="reports-tab" 
-                    className="py-2.5 px-3 text-xs md:text-sm whitespace-nowrap flex-shrink-0"
+                    className="py-2.5 px-3 text-xs md:text-sm whitespace-nowrap flex-shrink-0 rounded-lg text-slate-600 data-[state=active]:bg-slate-800 data-[state=active]:text-amber-400 data-[state=active]:shadow-md"
                   >
                     📊 Reports
                   </TabsTrigger>
                   <TabsTrigger 
                     value="manage" 
                     data-testid="manage-tab" 
-                    className="py-2.5 px-3 text-xs md:text-sm whitespace-nowrap flex-shrink-0"
+                    className="py-2.5 px-3 text-xs md:text-sm whitespace-nowrap flex-shrink-0 rounded-lg text-slate-600 data-[state=active]:bg-slate-800 data-[state=active]:text-amber-400 data-[state=active]:shadow-md"
                   >
                     Team Mgmt
                   </TabsTrigger>
