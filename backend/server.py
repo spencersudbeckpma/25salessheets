@@ -2735,7 +2735,7 @@ async def get_docusphere_documents(current_user: dict = Depends(get_current_user
 @api_router.post("/docusphere/documents")
 async def upload_docusphere_document(
     file: UploadFile = File(...),
-    folder_id: str = None,
+    folder_id: str = Form(None),
     current_user: dict = Depends(get_current_user)
 ):
     """Upload a document (State Manager only)"""
