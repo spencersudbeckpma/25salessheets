@@ -16,6 +16,8 @@ const PMADocuSphere = ({ user }) => {
   const [folders, setFolders] = useState([]);
   const [documents, setDocuments] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [foldersLoading, setFoldersLoading] = useState(true);
+  const [foldersError, setFoldersError] = useState(null);
   const [expandedFolders, setExpandedFolders] = useState(new Set(['root']));
   const [selectedFolder, setSelectedFolder] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
@@ -30,14 +32,25 @@ const PMADocuSphere = ({ user }) => {
   }, []);
 
   const fetchFolders = async () => {
+    setFoldersLoading(true);
+    setFoldersError(null);
     try {
       const token = localStorage.getItem('token');
+      if (!token) {
+        setFoldersError('Not authenticated');
+        setFoldersLoading(false);
+        return;
+      }
       const response = await axios.get(`${API}/docusphere/folders`, {
         headers: { Authorization: `Bearer ${token}` }
       });
-      setFolders(response.data);
+      setFolders(response.data || []);
     } catch (error) {
       console.error('Failed to fetch folders:', error);
+      setFoldersError(error.response?.data?.detail || error.message || 'Failed to load folders');
+      toast.error('Failed to load folders. Please refresh the page.');
+    } finally {
+      setFoldersLoading(false);
     }
   };
 
