@@ -81,8 +81,10 @@ class Activity(BaseModel):
     presentations: float = 0.0
     referrals: int = 0
     testimonials: int = 0
+    apps: int = 0
     sales: int = 0
     new_face_sold: float = 0.0
+    bankers_premium: float = 0.0
     premium: float = 0.0
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     edited_by: Optional[str] = None
@@ -95,8 +97,10 @@ class ActivityCreate(BaseModel):
     presentations: float = 0.0
     referrals: int = 0
     testimonials: int = 0
+    apps: int = 0
     sales: int = 0
     new_face_sold: float = 0.0
+    bankers_premium: float = 0.0
     premium: float = 0.0
 
 class NewFaceCustomer(BaseModel):
