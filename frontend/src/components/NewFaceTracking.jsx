@@ -139,6 +139,25 @@ const NewFaceTracking = ({ user, embedded = false }) => {
             ))}
           </div>
         )}
+    </>
+  );
+
+  if (embedded) {
+    return content;
+  }
+
+  return (
+    <Card className="shadow-lg bg-white">
+      <CardHeader>
+        <CardTitle className="text-2xl flex items-center gap-2">
+          🎯 New Face Customer Tracking
+        </CardTitle>
+        <p className="text-sm text-gray-600 mt-2">
+          All new face customers sold by your team
+        </p>
+      </CardHeader>
+      <CardContent>
+        {content}
       </CardContent>
     </Card>
   );
