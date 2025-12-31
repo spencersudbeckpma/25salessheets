@@ -27,8 +27,10 @@ const ActivityInput = ({ user }) => {
     presentations: 0,
     referrals: 0,
     testimonials: 0,
+    apps: 0,
     sales: 0,
     new_face_sold: 0,
+    bankers_premium: 0,
     premium: 0
   });
   const [loading, setLoading] = useState(false);
