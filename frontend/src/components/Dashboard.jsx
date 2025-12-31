@@ -25,13 +25,11 @@ const Dashboard = ({ user, setUser }) => {
         {/* Header */}
         <div className="bg-gradient-to-r from-slate-800 to-slate-900 rounded-xl shadow-xl p-4 md:p-6 mb-4 md:mb-6 flex flex-col md:flex-row justify-between md:items-center gap-3">
           <div className="flex items-center gap-4 flex-1 min-w-0">
-            <div className="bg-white p-2.5 rounded-xl shadow-lg">
-              <img 
-                src="/team-sudbeck-logo.jpg" 
-                alt="Team Sudbeck Logo" 
-                className="h-10 md:h-12 w-auto object-contain flex-shrink-0 rounded-lg"
-              />
-            </div>
+            <img 
+              src="/team-sudbeck-logo.jpg" 
+              alt="Team Sudbeck Logo" 
+              className="h-12 md:h-14 w-auto object-contain flex-shrink-0 rounded-lg"
+            />
             <div className="flex-1 min-w-0">
               <h1 className="text-lg md:text-2xl font-bold text-white truncate" data-testid="dashboard-title">
                 Team Sudbeck Sales Tracker
