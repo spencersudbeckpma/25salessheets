@@ -305,8 +305,10 @@ const TeamManagement = ({ user }) => {
           presentations: activity.presentations,
           referrals: activity.referrals,
           testimonials: activity.testimonials,
+          apps: activity.apps || 0,
           sales: activity.sales,
           new_face_sold: activity.new_face_sold,
+          bankers_premium: activity.bankers_premium || 0,
           premium: activity.premium
         });
       } else {
@@ -316,8 +318,10 @@ const TeamManagement = ({ user }) => {
           presentations: 0,
           referrals: 0,
           testimonials: 0,
+          apps: 0,
           sales: 0,
           new_face_sold: 0,
+          bankers_premium: 0,
           premium: 0
         });
       }
@@ -337,8 +341,10 @@ const TeamManagement = ({ user }) => {
         presentations: parseFloat(editActivity.presentations) || 0,
         referrals: parseInt(editActivity.referrals) || 0,
         testimonials: parseInt(editActivity.testimonials) || 0,
+        apps: parseInt(editActivity.apps) || 0,
         sales: parseInt(editActivity.sales) || 0,
         new_face_sold: parseFloat(editActivity.new_face_sold) || 0,
+        bankers_premium: parseFloat(editActivity.bankers_premium) || 0,
         premium: parseFloat(editActivity.premium) || 0
       };
       
