@@ -449,17 +449,74 @@ const PMADocuSphere = ({ user }) => {
                   <input
                     type="file"
                     accept=".pdf"
+                    multiple
                     onChange={handleFileUpload}
                     disabled={uploading}
                     className="hidden"
                   />
                   <div className="flex items-center gap-2 bg-slate-800 hover:bg-slate-700 text-amber-400 py-2 px-4 rounded-lg cursor-pointer transition-colors text-sm font-medium">
                     <Upload size={16} />
-                    {uploading ? 'Uploading...' : 'Upload PDF'}
+                    {uploading 
+                      ? `Uploading ${uploadProgress.current}/${uploadProgress.total}...` 
+                      : 'Upload PDFs'}
                   </div>
                 </label>
               )}
             </div>
+
+            {/* Drag & Drop Zone (State Manager only) */}
+            {user.role === 'state_manager' && (
+              <div
+                className="border-2 border-dashed border-slate-300 rounded-xl p-6 mb-4 text-center hover:border-amber-500 hover:bg-amber-50/50 transition-colors cursor-pointer"
+                onDragOver={(e) => {
+                  e.preventDefault();
+                  e.currentTarget.classList.add('border-amber-500', 'bg-amber-50');
+                }}
+                onDragLeave={(e) => {
+                  e.preventDefault();
+                  e.currentTarget.classList.remove('border-amber-500', 'bg-amber-50');
+                }}
+                onDrop={(e) => {
+                  e.preventDefault();
+                  e.currentTarget.classList.remove('border-amber-500', 'bg-amber-50');
+                  const files = e.dataTransfer.files;
+                  if (files.length > 0) {
+                    const event = { target: { files, value: '' } };
+                    handleFileUpload(event);
+                  }
+                }}
+                onClick={() => document.getElementById('bulk-upload-input').click()}
+              >
+                <input
+                  id="bulk-upload-input"
+                  type="file"
+                  accept=".pdf"
+                  multiple
+                  onChange={handleFileUpload}
+                  disabled={uploading}
+                  className="hidden"
+                />
+                <Upload size={32} className="mx-auto mb-2 text-slate-400" />
+                <p className="text-sm text-slate-600 font-medium">
+                  {uploading 
+                    ? `Uploading ${uploadProgress.current} of ${uploadProgress.total} files...` 
+                    : 'Drag & drop multiple PDFs here, or click to select'}
+                </p>
+                <p className="text-xs text-slate-400 mt-1">
+                  {selectedFolder 
+                    ? `Files will be added to: ${folders.find(f => f.id === selectedFolder)?.name || 'Selected folder'}`
+                    : 'Select a folder first, or files will go to root'}
+                </p>
+                {uploading && (
+                  <div className="mt-3 w-full bg-slate-200 rounded-full h-2">
+                    <div 
+                      className="bg-amber-500 h-2 rounded-full transition-all duration-300"
+                      style={{ width: `${(uploadProgress.current / uploadProgress.total) * 100}%` }}
+                    />
+                  </div>
+                )}
+              </div>
+            )}
 
             {/* Documents Grid */}
             {loading ? (
@@ -471,7 +528,7 @@ const PMADocuSphere = ({ user }) => {
                   {searchTerm ? 'No documents found' : 'No documents in this folder'}
                 </p>
                 {user.role === 'state_manager' && !searchTerm && (
-                  <p className="text-sm text-slate-400 mt-2">Upload a PDF to get started</p>
+                  <p className="text-sm text-slate-400 mt-2">Drag & drop PDFs above or click to upload</p>
                 )}
               </div>
             ) : (
