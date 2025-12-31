@@ -190,8 +190,10 @@ const ActivityInput = ({ user }) => {
     { key: 'presentations', label: 'Presentations', icon: '📊' },
     { key: 'referrals', label: 'Referrals', icon: '🤝' },
     { key: 'testimonials', label: 'Testimonials', icon: '⭐' },
+    { key: 'apps', label: 'Apps', icon: '📱' },
     { key: 'sales', label: 'Sales', icon: '💰' },
     { key: 'new_face_sold', label: 'New Face Sold', icon: '🎯' },
+    { key: 'bankers_premium', label: 'Bankers Premium ($)', icon: '🏦' },
     { key: 'premium', label: 'Total Premium ($)', icon: '💵' }
   ];
 
