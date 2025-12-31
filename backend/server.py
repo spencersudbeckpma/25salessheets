@@ -2673,6 +2673,129 @@ async def get_leaderboard(period: str, current_user: dict = Depends(get_current_
 
 # ============================================
 # ============================================
+# PMA DocuSphere - Document Library Endpoints
+# ============================================
+
+@api_router.get("/docusphere/folders")
+async def get_docusphere_folders(current_user: dict = Depends(get_current_user)):
+    """Get all folders"""
+    folders = await db.docusphere_folders.find({}, {"_id": 0}).sort("name", 1).to_list(500)
+    return folders
+
+@api_router.post("/docusphere/folders")
+async def create_docusphere_folder(
+    folder_data: dict,
+    current_user: dict = Depends(get_current_user)
+):
+    """Create a new folder (State Manager only)"""
+    if current_user['role'] != 'state_manager':
+        raise HTTPException(status_code=403, detail="Only State Managers can create folders")
+    
+    folder = {
+        "id": str(uuid.uuid4()),
+        "name": folder_data.get('name'),
+        "parent_id": folder_data.get('parent_id'),
+        "created_by": current_user['id'],
+        "created_at": datetime.now(timezone.utc).isoformat()
+    }
+    
+    await db.docusphere_folders.insert_one(folder)
+    return {"message": "Folder created", "id": folder['id']}
+
+@api_router.delete("/docusphere/folders/{folder_id}")
+async def delete_docusphere_folder(folder_id: str, current_user: dict = Depends(get_current_user)):
+    """Delete a folder and all its contents (State Manager only)"""
+    if current_user['role'] != 'state_manager':
+        raise HTTPException(status_code=403, detail="Only State Managers can delete folders")
+    
+    # Get all subfolders recursively
+    async def get_subfolder_ids(parent_id):
+        ids = [parent_id]
+        subfolders = await db.docusphere_folders.find({"parent_id": parent_id}, {"id": 1}).to_list(100)
+        for sf in subfolders:
+            ids.extend(await get_subfolder_ids(sf['id']))
+        return ids
+    
+    folder_ids = await get_subfolder_ids(folder_id)
+    
+    # Delete all documents in these folders
+    await db.docusphere_documents.delete_many({"folder_id": {"$in": folder_ids}})
+    
+    # Delete all folders
+    await db.docusphere_folders.delete_many({"id": {"$in": folder_ids}})
+    
+    return {"message": "Folder and contents deleted"}
+
+@api_router.get("/docusphere/documents")
+async def get_docusphere_documents(current_user: dict = Depends(get_current_user)):
+    """Get all documents (without file data)"""
+    documents = await db.docusphere_documents.find({}, {"_id": 0, "file_data": 0}).sort("filename", 1).to_list(1000)
+    return documents
+
+@api_router.post("/docusphere/documents")
+async def upload_docusphere_document(
+    file: UploadFile = File(...),
+    folder_id: str = None,
+    current_user: dict = Depends(get_current_user)
+):
+    """Upload a document (State Manager only)"""
+    if current_user['role'] != 'state_manager':
+        raise HTTPException(status_code=403, detail="Only State Managers can upload documents")
+    
+    if not file.filename.lower().endswith('.pdf'):
+        raise HTTPException(status_code=400, detail="Only PDF files are allowed")
+    
+    file_content = await file.read()
+    
+    if len(file_content) > 15 * 1024 * 1024:
+        raise HTTPException(status_code=400, detail="File size must be less than 15MB")
+    
+    file_base64 = base64.b64encode(file_content).decode('utf-8')
+    
+    document = {
+        "id": str(uuid.uuid4()),
+        "filename": file.filename,
+        "file_data": file_base64,
+        "file_size": len(file_content),
+        "folder_id": folder_id,
+        "uploaded_by": current_user['id'],
+        "uploaded_by_name": current_user['name'],
+        "uploaded_at": datetime.now(timezone.utc).isoformat()
+    }
+    
+    await db.docusphere_documents.insert_one(document)
+    
+    return {"message": "Document uploaded", "id": document['id'], "filename": document['filename']}
+
+@api_router.get("/docusphere/documents/{doc_id}/download")
+async def download_docusphere_document(doc_id: str, current_user: dict = Depends(get_current_user)):
+    """Download a document"""
+    document = await db.docusphere_documents.find_one({"id": doc_id}, {"_id": 0})
+    if not document:
+        raise HTTPException(status_code=404, detail="Document not found")
+    
+    file_content = base64.b64decode(document['file_data'])
+    
+    return Response(
+        content=file_content,
+        media_type="application/pdf",
+        headers={"Content-Disposition": f"inline; filename={document['filename']}"}
+    )
+
+@api_router.delete("/docusphere/documents/{doc_id}")
+async def delete_docusphere_document(doc_id: str, current_user: dict = Depends(get_current_user)):
+    """Delete a document (State Manager only)"""
+    if current_user['role'] != 'state_manager':
+        raise HTTPException(status_code=403, detail="Only State Managers can delete documents")
+    
+    result = await db.docusphere_documents.delete_one({"id": doc_id})
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Document not found")
+    
+    return {"message": "Document deleted"}
+
+
+# ============================================
 # PMA Bonus PDF Management Endpoints
 # ============================================
 
