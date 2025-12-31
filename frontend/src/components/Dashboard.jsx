@@ -77,6 +77,13 @@ const Dashboard = ({ user, setUser }) => {
                 Team View
               </TabsTrigger>
               <TabsTrigger 
+                value="pma-bonuses" 
+                data-testid="pma-bonuses-tab" 
+                className="py-2.5 px-3 text-xs md:text-sm whitespace-nowrap flex-shrink-0"
+              >
+                📄 PMA Bonuses
+              </TabsTrigger>
+              <TabsTrigger 
                 value="leaderboard" 
                 data-testid="leaderboard-tab" 
                 className="py-2.5 px-3 text-xs md:text-sm whitespace-nowrap flex-shrink-0"
@@ -89,13 +96,6 @@ const Dashboard = ({ user, setUser }) => {
                 className="py-2.5 px-3 text-xs md:text-sm whitespace-nowrap flex-shrink-0"
               >
                 📊 Analytics
-              </TabsTrigger>
-              <TabsTrigger 
-                value="pma-bonuses" 
-                data-testid="pma-bonuses-tab" 
-                className="py-2.5 px-3 text-xs md:text-sm whitespace-nowrap flex-shrink-0"
-              >
-                📄 PMA Bonuses
               </TabsTrigger>
               {['state_manager', 'regional_manager', 'district_manager'].includes(user.role) && (
                 <>
