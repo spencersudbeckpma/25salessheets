@@ -20,21 +20,21 @@ const Dashboard = ({ user, setUser }) => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 pb-8">
+    <div className="min-h-screen bg-slate-900 pb-8">
       <div className="container mx-auto px-2 md:px-4 py-4 md:py-6 max-w-7xl">
         {/* Header */}
-        <div className="bg-white rounded-lg shadow-md p-4 md:p-6 mb-4 md:mb-6 flex flex-col md:flex-row justify-between md:items-center gap-3">
+        <div className="bg-slate-800 border border-slate-700 rounded-lg shadow-xl p-4 md:p-6 mb-4 md:mb-6 flex flex-col md:flex-row justify-between md:items-center gap-3">
           <div className="flex items-center gap-4 flex-1 min-w-0">
             <img 
               src="/team-sudbeck-logo.jpg" 
               alt="Team Sudbeck Logo" 
-              className="h-12 md:h-16 w-auto object-contain flex-shrink-0"
+              className="h-12 md:h-16 w-auto object-contain flex-shrink-0 rounded-lg"
             />
             <div className="flex-1 min-w-0">
-              <h1 className="text-lg md:text-2xl font-bold text-gray-800 truncate" data-testid="dashboard-title">
+              <h1 className="text-lg md:text-2xl font-bold text-white truncate" data-testid="dashboard-title">
                 Team Sudbeck Sales Tracker
               </h1>
-              <p className="text-xs md:text-sm text-gray-600 mt-1 truncate" data-testid="user-info">
+              <p className="text-xs md:text-sm text-slate-400 mt-1 truncate" data-testid="user-info">
                 {user.name} | {user.role.replace('_', ' ').toUpperCase()}
               </p>
             </div>
@@ -43,7 +43,7 @@ const Dashboard = ({ user, setUser }) => {
             variant="outline"
             onClick={handleLogout}
             data-testid="logout-btn"
-            className="flex items-center gap-2 w-full md:w-auto justify-center"
+            className="flex items-center gap-2 w-full md:w-auto justify-center border-slate-600 text-slate-300 hover:bg-slate-700 hover:text-white"
             size="sm"
           >
             <LogOut size={16} />
