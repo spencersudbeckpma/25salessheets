@@ -438,10 +438,27 @@ backend:
 
 test_plan:
   current_focus:
-    - "New Face Customer Tracking - Manager Role Visibility Enhancement"
+    - "Team Management - Create User Tab Bug Fix"
+    - "Full Regression Test - All Core Features"
   stuck_tasks: []
-  test_all: false
+  test_all: true
   test_priority: "high_first"
+
+frontend:
+  - task: "Team Management - Create User Tab Bug Fix"
+    implemented: true
+    working: true
+    file: "/app/frontend/src/components/TeamManagement.jsx"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: false
+        agent: "user"
+        comment: "Runtime error when clicking Team Management tab - page crashes completely."
+      - working: true
+        agent: "main"
+        comment: "FIXED: Found typo bug on line 439 - getAvailableRoles() was called but function is named getRoleOptions(). Changed to getRoleOptions(). Also removed unused Reports.jsx import from Dashboard.jsx and deleted the obsolete Reports.jsx file."
 
   - task: "Team View - Streamlined to 4 key metrics with improved color scheme"
     implemented: true
