@@ -142,6 +142,10 @@ const Dashboard = ({ user, setUser }) => {
             <PMABonuses user={user} />
           </TabsContent>
 
+          <TabsContent value="docusphere" data-testid="docusphere-content" className="mt-4 md:mt-6">
+            <PMADocuSphere user={user} />
+          </TabsContent>
+
           <TabsContent value="team" data-testid="team-content" className="mt-4 md:mt-6">
             <TeamView user={user} />
           </TabsContent>
