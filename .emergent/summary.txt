@@ -1,176 +1,151 @@
 <analysis>An analysis of the conversation and codebase has been completed. Here is the summary to assist the next agent.
 
-**original_problem_statement**: The user's goal was to build a comprehensive team management and sales tracking application. This session focused on adding significant new features, redesigning UI components, and fixing numerous bugs and deployment issues.
-
-**PRODUCT REQUIREMENTS**:
-- **Team Reorganization & Offboarding**: Build features to allow a State Manager to change a user's role or manager, and to archive users who leave the company while preserving their historical data for yearly totals.
-- **UI/UX Enhancements**:
-    - Simplify the  to display a specific set of metrics (, , , , ) and remove a cluttered boxy design.
-    - Reorganize the main dashboard tabs into a user-specified order.
-    - Rebrand the application to Team Sudbeck Sales Tracker and add a provided logo to the login page and dashboard header.
-    - Merge the two redundant report tabs (Reports and Manager Reports) into a single, comprehensive Reports tab.
-- **Analytics & Goal Setting**:
-    - Create a new Analytics section with weekly average statistics for individuals and teams.
-    - The analytics should include a Manager Averages view to compare the performance of subordinate teams. This view must be hierarchical and expandable.
-    - All team average calculations must include the manager's own performance numbers.
-    - Implement a Pace Calculator / Goal Progress feature for users to set Premium Goal and Stretch Goal targets and track their progress toward them.
-- **User Management**: Add a feature for State Managers to directly create a new user and set their password from the Team Management tab.
-- **Bug & Deployment Fixes**: Resolve any runtime errors, backend crashes, or deployment-blocking issues that arise.
+**original_problem_statement**: The user wanted to continue development on a sales tracking application. The work in this session involved fixing a critical runtime bug, adding several new features, and performing a major UI/UX overhaul. The key new features included enhancing user creation permissions, adding new fields to activity tracking, creating an All Users list, implementing a full document management system (PMA DocuSphere) with folder structures and bulk PDF uploads, and completely redesigning the application's theme and tab layout for a cleaner, more professional look.
 
 **User's preferred language**: English
 
 **what currently exists?**
-The application is a full-stack sales CRM named Team Sudbeck Sales Tracker with a React frontend, FastAPI backend, and MongoDB database. It has been rebranded with a custom logo.
-
-Core functionalities include:
-- **Role-Based Access Control**: Strict permissions for , , , and  roles.
-- **Team Management**: State Managers can create users directly, send invites, edit user data, reorganize team structures (reassign managers), and archive users. Archived users are excluded from active views but their data is preserved for reporting.
-- **Analytics Suite**: A multi-tab dashboard showing:
-    - **My Averages**: Personal weekly performance averages.
-    - **Team Overview**: Aggregate performance for the user's entire downline.
-    - **Manager Averages**: A hierarchical, expandable view to compare the performance of subordinate managers' teams.
-    - **Team Members**: A ranked list of all individual team members.
-    - **Goal Progress**: A pace calculator where users can set and track yearly premium goals.
-- **Team View**: A hierarchical view of team members showing weekly breakdowns for key metrics: Contacts, Presentations, Appointments, Sales, and Premium.
-- **Reporting**: A unified, comprehensive Reports tab for managers.
-- **Authentication**: Secure login and password management features.
+The Team Sudbeck Sales Tracker is a full-stack application (React, FastAPI, MongoDB) with a new Navy/Gold Executive theme.
+- **Core Features**: Role-based access, team management, analytics, goal setting, and reporting.
+- **UI/UX**: The main dashboard has been reorganized by consolidating the Password, Admin, and New Faces functionalities into sub-tabs within Team Management and Reports, respectively, creating a cleaner top-level navigation.
+- **Document Management**: A new, full-featured PMA DocuSphere tab exists. It supports creating nested folder structures, bulk PDF uploads via drag-and-drop, and managing documents (view, download, delete). Backend endpoints and database collections (, ) are in place.
 
 **Last working item**:
-- **Last item agent was working**: Debugging a frontend runtime error that occurs immediately when a user clicks on the Team Management tab.
+- **Last item agent was working**: Creating the correct folder structure for the PMA DocuSphere feature. The agent had incorrectly guessed the folder names, deleted them after user feedback, and was about to create the correct structure based on a new screenshot provided by the user.
 - **Status**: IN PROGRESS
 - **Agent Testing Done**: N
-- **Which testing method agent to use?**: Troubleshoot agent, followed by Frontend testing agent. The first step should be to use the troubleshoot agent to analyze the browser console logs to pinpoint the exact error in the React component.
+- **Which testing method agent to use?**: manual testing by curl/ python -c to create folders, then screenshot tool to verify.
 - **User Testing Done**: N
 
 **All Pending/In progress Issue list**:
-- **Issue 1**: Runtime error on Team Management tab. (P0)
+- **Issue 1**: Incorrect folder names in PMA DocuSphere. (P0)
 
 **Issues Detail**:
-- **Issue 1: Runtime error on Team Management tab**
-    - **Attempted fixes**: The agent checked supervisor logs and saw that both frontend and backend services were running. Frontend logs only showed deprecation warnings, offering no specific clues. The agent correctly deduced the issue is likely a code error within the  component, probably related to the recently added Create User feature.
+- **Issue 1: Incorrect folder names in PMA DocuSphere**
+    - **Attempted fixes**: The agent initially populated the DocuSphere with an incorrect set of folders. After the user pointed this out, the agent successfully ran a script to delete all existing folders from the database, leaving a clean slate.
     - **Next debug checklist**:
-        1.  Use the  to get a precise analysis of the browser console error.
-        2.  Inspect . The error is likely caused by an undefined state variable, an incorrect function call, or a missing dependency in a  hook related to the Create User functionality.
-        3.  Specifically check the implementation of the ,  state and the  function and where they are being called or passed as props.
-    - **Why fix this issue and what will be achieved with the fix?**: This is a critical bug. The Team Management tab is completely inaccessible, blocking all user management functions (invites, user creation, reorganization, archiving). Fixing it will restore core administrative capabilities.
+        1.  Analyze the user-provided screenshot ( artifact from the previous turn) to get the exact list of required folder and sub-folder names.
+        2.  Use the  endpoint in a script to programmatically create the entire folder tree, including nested sub-folders.
+        3.  Take a screenshot of the PMA DocuSphere tab to confirm that the new, correct folder structure is visible in the UI sidebar.
+    - **Why fix this issue and what will be achieved with the fix?**: This is the last step required to make the DocuSphere feature fully operational. It will unblock the user from being able to bulk-upload their 235+ PDF documents into the correct categories.
     - **Status**: IN PROGRESS
-    - **Is recurring issue?**: Y (This is the third frontend runtime error in this session, often occurring after adding a new feature to a component.)
+    - **Is recurring issue?**: N
     - **Should Test frontend/backend/both after fix?**: Frontend
     - **Blocked on other issue**: None
 
 **In progress Task List**:
-- None. Resolving the P0 issue is the only current task.
+- **Task 1**: Create the correct folder structure for PMA DocuSphere. (P0)
+
+**Task Detail**:
+- **Task 1: Create the correct folder structure for PMA DocuSphere**
+    - **Where to resume**: The agent has acknowledged the user's latest screenshot containing the correct folder names. The next action is to extract those names and execute the creation script.
+    - **What will be achieved with this?**: The DocuSphere feature will be complete and ready for the user to migrate their documents.
+    - **Status**: IN PROGRESS
+    - **Should Test frontend/backend/both after fix?**: Frontend
+    - **Blocked on something**: None.
 
 **Upcoming and Future Tasks**
-- There are no outstanding feature requests from the user. After the current bug is fixed, the next step should be a full regression test of all recently added features, especially Team Management and Analytics, before considering the project phase complete.
+- **Upcoming Tasks**:
+    - After creating the folder structure, the agent should monitor and assist the user with the bulk upload of their ~235 PDFs, in case any issues arise. (P1)
+- **Future Tasks**:
+    - Perform a full regression test on the PMA DocuSphere feature, including folder creation/deletion, document upload/search/delete, and nested folder navigation.
 
 **Completed work in this session**
-- **Team Management Features**:
-    - Implemented team reorganization (role/manager changes) and user archiving. Restricted features to State Managers. ()
-    - Added a Create User tab for direct agent creation with a password. (, )
-- **Analytics & Goal Setting**:
-    - Created a comprehensive Analytics tab with views for personal, team, and manager averages. (, )
-    - Implemented an expandable hierarchical view for manager analytics.
-    - Built a Goal Progress pace calculator for tracking premium goals. (, , )
-- **UI & UX Redesign**:
-    - Rebranded the app to Team Sudbeck Sales Tracker with a new logo. (, , )
-    - Reordered dashboard tabs as per user request. ()
-    - Simplified the  UI and re-introduced the Contacts metric. ()
-    - Merged two report tabs into a single, streamlined Reports tab. ()
-- **Backend Logic**:
-    - Updated all team average calculations to include the manager's own performance data. ()
-    - Updated numerous endpoints to correctly filter out  users.
-- **Critical Bug & Deployment Fixes**:
-    - Resolved multiple deployment-blocking issues, including removing hardcoded credentials, fixing the  file, and adding a  endpoint.
-    - Fixed several critical backend  and  issues that were crashing the server.
-    - Fixed two separate frontend runtime errors: one on the Login page and one in Team View related to dynamic Tailwind classes.
+- **Bug Fixes**:
+    - Resolved a critical frontend runtime error on the  page.
+    - Fixed a backend  related to  usage in .
+    - Fixed a mobile-specific rendering bug where DocuSphere folders were not visible.
+- **Feature Development**:
+    - **PMA DocuSphere**: Built a complete document management system as a new main tab, featuring nested folders, bulk drag-and-drop PDF uploads, and file management.
+    - **User Creation**: Enhanced the Create User feature to allow State Managers to create users of any role.
+    - **Activity Tracking**: Added Apps and Bankers Premium fields to the daily activity input form and backend.
+- **UI/UX Overhaul**:
+    - **Theme**: Implemented a new Navy/Gold Executive visual theme across the application.
+    - **Tab Consolidation**:
+        - Merged Password and Admin features into sub-tabs within Team Management.
+        - Merged the New Faces feature into a sub-tab within Reports.
+    - **Layout Fixes**: Made the  tab list horizontally scrollable to fix mobile view issues.
+- **Code Cleanup**: Deleted the unused  file from a previous refactor.
 
 **Earlier issues found/mentioned but not fixed**
-- The agent successfully merged the functionality of the Reports and Manager Reports tabs into one. However, the component file for the now-unused tab () was not deleted, which could lead to code bloat. This should be cleaned up.
+- **Code Refactoring**: The , , and  files are extremely large and difficult to maintain. The handoff summary recommended breaking them down into smaller, more focused modules/components. This was not addressed and the files have grown even larger.
 
 **Known issue recurrence from previous fork**
-- **Issue recurrence in this fork**: Syntax errors and runtime errors. The agent repeatedly introduced  or  in  after adding new endpoints, causing the backend to fail on startup. Similarly, frontend runtime errors appeared in , , and now  after modifications.
-- **Recurrence count**: At least 3 backend crashes and 3 frontend runtime errors were fixed in this session.
-- **Status**: RECURRING. The next agent must be extremely careful with Python syntax and React state management.
+- **Issue recurrence in this fork**: Syntax and runtime errors after code modifications. The agent introduced and fixed a frontend syntax error in  and a backend  in , confirming the code's fragility.
+- **Recurrence count**: 2
+- **Status**: RECURRING. The next agent must be diligent with syntax checks and testing after edits.
 
 **Code Architecture**
 
 
 **Key Technical Concepts**
-- **Backend**: FastAPI, MongoDB (Motor), Pydantic, JWT, bcrypt. Heavy use of aggregation pipelines in MongoDB for complex analytics.
-- **Frontend**: React, Shadcn/UI, Tailwind CSS, Recharts. State management with  and .
-- **Architecture**: Full-stack, role-based access control (RBAC), hierarchical data structures.
-- **Key Patterns**: Recursive React components () for displaying tree-like data. Conditional rendering based on user roles ().
+- **File Management**: Using FastAPI's  to handle multiple simultaneous file uploads. Files are stored on the filesystem (), with metadata (path, folder relationships) managed in MongoDB.
+- **Hierarchical Data**: A folder tree structure is implemented using  self-references in the  collection. The frontend uses a recursive function to render the nested view.
+- **UI Refactoring**: Improved user experience by consolidating multiple main tabs into context-aware sub-tabs, simplifying the primary navigation bar.
+- **Theming**: Applied a global visual theme using Tailwind CSS utility classes in the main  component.
 
 **key DB schema**
-- **users**: 
-- **activities**: 
-- **new_face_customers**: 
+- **activities**: Added  and .
+- **pma_bonuses**: 
+- **docusphere_folders**: 
+- **docusphere_documents**: 
 
 **changes in tech stack**
-- None.
+- Added  to  to support file uploads in FastAPI.
 
 **All files of reference**
-- : Heavily modified. Contains all business logic, including new endpoints for analytics, user reorganization, archiving, and goal setting. **This file is fragile and prone to syntax errors.**
-- : Heavily modified. Contains UI logic for creating invites, creating users, editing data, reorganizing, and archiving. **This file is currently broken.**
-- : New, complex component for displaying all analytics and goal progress.
-- : Modified to handle tab reordering and merging.
-- : Modified to remove hardcoded credentials and fix a runtime error.
-- : UI and logic modified to meet user's design requirements.
+- : Contains all new backend logic for DocuSphere (folders, documents) and updates to activity tracking.
+- : New, complex component managing the entire document library UI, including the folder tree, document grid, and bulk upload functionality.
+- : Central file for the UI overhaul. Contains the new theme, updated tab structure, and integration of all main components.
+- : Modified to absorb the Password and Admin components as sub-tabs.
+- : New wrapper component that combines  and  into sub-tabs.
 
 **Areas that need refactoring**:
-- : This file is now over 3500 lines long and is becoming unmanageable. The logic for Authentication, Reporting, Analytics, and User Management should be broken into separate router files in a  directory.
-- : This component handles at least five distinct functionalities. It should be broken down, with each tab's content becoming a separate sub-component to simplify state management and improve readability.
-- : This is another large component whose tabs (, , etc.) could be extracted into their own components.
+- ****: This monolithic file is now over 4000 lines and urgently needs to be broken down into separate router files (e.g., , , ).
+- ****: This large component should be broken into smaller, reusable parts like , , and .
+- ****: Has become a container for too many distinct features and should be refactored to use child components for each of its sub-tabs.
 
 **key api endpoints**
-- : (POST) Creates a new user directly.
-- : (PUT) Changes a user's role or manager.
-- : (PUT) Sets a user's status to 'archived'.
-- : (GET) Fetches personal weekly stats.
-- : (GET) Fetches aggregate stats for a manager's downline.
-- : (GET) Fetches stats for a manager's direct subordinate managers.
-- : (GET) Fetches subordinate manager data for the hierarchy view.
-- : (GET/POST) Manages user goals.
-- : (GET) A simple health check endpoint for deployment monitoring.
+-  (GET, POST, DELETE): Manages the folder hierarchy.
+-  (POST): Handles bulk PDF uploads.
+-  (GET, DELETE): Manages individual documents.
 
 **Critical Info for New Agent**
-- **Code Fragility**: Be extremely cautious when editing . It is very large and prone to syntax/indentation errors that crash the entire backend. Run a syntax check () after every edit. Frontend components like  are also complex; use the  immediately if a runtime error appears.
-- **State Manager Role**: The  is the super-admin. Critical features like user creation, archiving, and reorganization are restricted to this role. Ensure this access control pattern is maintained.
-- **Data Integrity**: The user offboarding process relies on setting  on the user object. All data-fetching endpoints (for reports, team views, logins, etc.) have been updated to filter for  or an equivalent check. Any new endpoint that fetches lists of users must include this filter to avoid showing archived users.
+- **Immediate Priority**: The user is waiting for the correct folder structure to be created in the PMA DocuSphere tab. This is the highest priority task. Use the latest user-provided screenshot to get the folder names right.
+- **Code Health**: Be aware that  and several frontend components are very large and fragile. Refactoring should be proposed to the user after the current feature is complete to improve long-term maintainability.
+- **UI Consolidation Pattern**: The user has positively received the consolidation of main tabs into sub-tabs. Keep this pattern in mind for future UI/UX requests.
 
 **documents and test reports created in this job**
 - None.
 
 **Last 10 User Messages and any pending HUMAN messages**
-1.  **User**: Confirms the Pace Calculator/Goal Progress feature is working as expected after a bug fix.
-2.  **User**: Asks about what happens when the year changes. (Agent explained data resets are based on the current year).
-3.  **User**: Confirms the year-end data handling is acceptable.
-4.  **User**: Requests to rebrand the app to Team Sudbeck Sales Tracker and provides a logo. (Agent completed this).
-5.  **User**: Points out that the Reports and Manager Reports tabs are redundant.
-6.  **User**: Confirms they want to merge the two report tabs into one. (Agent completed this).
-7.  **User**: Requests a feature to create a new agent directly from Team Management. (Agent implemented this).
-8.  **User**: Reports being unable to log into the preview. (Agent fixed a backend syntax error).
-9.  **User**: Reports a runtime error when clicking the Team Management tab. (This is the current, unresolved issue).
+1. : Requests to merge another app (a document library) into the current one.
+2. : Confirms the app is for housing PDFs and provides details.
+3. : I would like this to have its own tab if possible called PMA docusphere - **DONE**.
+4. : Can you look into a way to upload all the files someway... (Request for bulk upload) - **DONE**.
+5. : I don’t see any of the folders (Reporting a UI bug) - **DONE**, bug was fixed.
+6. :  - **DONE**, bug was fixed.
+7. : These aren’t the folders that I had in the other application at least not the names (Reporting incorrect folder names) - **IN PROGRESS**.
+8. :  - This is the key input for the current task.
+9. : Acknowledges the screenshot and is ready to create the correct folders.
+10. : (No further messages, waiting for the agent to act on the screenshot).
 
 **Project Health Check:**
-- **Broken**:
-    - The Team Management page () is completely broken and causes a site-wide runtime error when clicked.
+- **Broken**: No part of the application is broken. The PMA DocuSphere feature is simply incomplete pending the creation of the correct folder structure.
 - **Mocked**: None.
 
 **3rd Party Integrations**
 - None.
 
 **Testing status**
-- **Testing agent used after significant changes**: YES, but not after the most recent Create User feature was added.
-- **Troubleshoot agent used after agent stuck in loop**: YES, was used successfully multiple times to diagnose frontend and deployment issues.
+- **Testing agent used after significant changes**: YES, a full regression test was successfully run earlier in the session.
+- **Troubleshoot agent used after agent stuck in loop**: NO
 - **Test files created**: None.
-- **Known regressions**: The Create User feature implementation broke the Team Management tab.
+- **Known regressions**: None.
 
 **Credentials to test flow:**
-To test all features, log in as the State Manager:
 - **Email**: 
 - **Password**: 
 
 **What agent forgot to execute**
-- After merging the two report tabs, the agent did not delete the now-unnecessary  file. This should be cleaned up to avoid code rot.</analysis>
+- The agent has not addressed the need to refactor the increasingly large and unmanageable files (, , ), which was noted as a risk in the previous handoff and is now more critical.</analysis>
