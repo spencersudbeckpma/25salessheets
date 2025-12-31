@@ -387,6 +387,88 @@ const TeamManagement = ({ user }) => {
             )}
           </TabsList>
 
+          <TabsContent value="create" className="space-y-6" data-testid="create-content">
+            <div className="bg-green-50 p-6 rounded-lg border border-green-200">
+              <h3 className="font-semibold text-lg mb-4 flex items-center gap-2">
+                <UserPlus size={20} />
+                Create New User Directly
+              </h3>
+              <p className="text-sm text-gray-600 mb-4">
+                Create a new team member and set their password. They can login immediately.
+              </p>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <Label className="text-sm font-medium">Name</Label>
+                  <Input
+                    placeholder="John Doe"
+                    value={newUser.name}
+                    onChange={(e) => setNewUser({...newUser, name: e.target.value})}
+                    className="mt-1"
+                  />
+                </div>
+                <div>
+                  <Label className="text-sm font-medium">Email</Label>
+                  <Input
+                    type="email"
+                    placeholder="john.doe@example.com"
+                    value={newUser.email}
+                    onChange={(e) => setNewUser({...newUser, email: e.target.value})}
+                    className="mt-1"
+                  />
+                </div>
+                <div>
+                  <Label className="text-sm font-medium">Password</Label>
+                  <Input
+                    type="text"
+                    placeholder="Set initial password (min 6 characters)"
+                    value={newUser.password}
+                    onChange={(e) => setNewUser({...newUser, password: e.target.value})}
+                    className="mt-1"
+                  />
+                  <p className="text-xs text-gray-500 mt-1">User can change this later</p>
+                </div>
+                <div>
+                  <Label className="text-sm font-medium">Role</Label>
+                  <select
+                    value={newUser.role}
+                    onChange={(e) => setNewUser({...newUser, role: e.target.value})}
+                    className="w-full p-2 border rounded-md mt-1"
+                  >
+                    <option value="">Select Role</option>
+                    {getAvailableRoles().map(role => (
+                      <option key={role} value={role}>{role.replace('_', ' ').toUpperCase()}</option>
+                    ))}
+                  </select>
+                </div>
+                <div className="md:col-span-2">
+                  <Label className="text-sm font-medium">Manager (Optional)</Label>
+                  <select
+                    value={newUser.manager_id}
+                    onChange={(e) => setNewUser({...newUser, manager_id: e.target.value})}
+                    className="w-full p-2 border rounded-md mt-1"
+                    onClick={() => availableManagers.length === 0 && fetchAvailableManagers()}
+                  >
+                    <option value="">No Manager (Top Level)</option>
+                    {availableManagers.map(manager => (
+                      <option key={manager.id} value={manager.id}>
+                        {manager.name} ({manager.role.replace('_', ' ')})
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              <Button 
+                onClick={handleCreateUser}
+                className="mt-4 bg-green-600 hover:bg-green-700"
+              >
+                <UserPlus size={16} className="mr-2" />
+                Create User
+              </Button>
+            </div>
+          </TabsContent>
+
           <TabsContent value="invite" className="space-y-6" data-testid="invite-content">
             <div className="bg-blue-50 p-6 rounded-lg border border-blue-200">
               <h3 className="font-semibold text-lg mb-4 flex items-center gap-2">
