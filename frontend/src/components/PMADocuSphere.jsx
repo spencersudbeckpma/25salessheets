@@ -358,7 +358,7 @@ const PMADocuSphere = ({ user }) => {
       <CardContent className="pt-2">
         <div className="flex flex-col lg:flex-row gap-4">
           {/* Sidebar - Folders */}
-          <div className="lg:w-72 flex-shrink-0">
+          <div className="w-full lg:w-72 flex-shrink-0">
             <div className="bg-slate-50 rounded-xl border border-slate-200 p-3">
               {/* Search */}
               <div className="relative mb-3">
@@ -383,13 +383,13 @@ const PMADocuSphere = ({ user }) => {
               >
                 <Folder size={18} className={selectedFolder === null && !searchTerm ? 'text-amber-400' : 'text-slate-600'} />
                 <span className="flex-1 text-sm font-medium">All Documents</span>
-                <span className={`text-xs px-1.5 py-0.5 rounded ${selectedFolder === null && !searchTerm ? 'bg-amber-500 text-slate-900' : 'bg-slate-200 text-slate-600'}`}>
+                <span className={`text-xs px-1.5 py-0.5 rounded ${selectedFolder === null && !searchTerm ? 'bg-amber-500 text-slate-900' : 'bg-amber-500/20 text-slate-600'}`}>
                   {documents.length}
                 </span>
               </div>
 
-              {/* Folder Tree */}
-              <div className="max-h-96 overflow-y-auto">
+              {/* Folder Tree - Scrollable with better mobile height */}
+              <div className="max-h-[50vh] lg:max-h-96 overflow-y-auto overflow-x-hidden">
                 {folders.length === 0 ? (
                   <div className="text-xs text-slate-400 p-2">Loading folders...</div>
                 ) : (
