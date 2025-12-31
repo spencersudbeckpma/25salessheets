@@ -1896,8 +1896,6 @@ async def create_user_directly(user_data: UserCreate, current_user: dict = Depen
         }
     }
 
-    }
-
 @api_router.get("/auth/me")
 async def get_me(current_user: dict = Depends(get_current_user)):
     return {
