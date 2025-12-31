@@ -250,7 +250,13 @@ const PMADocuSphere = ({ user }) => {
   // Build folder tree structure
   const buildFolderTree = (parentId = null) => {
     return folders
-      .filter(f => f.parent_id === parentId)
+      .filter(f => {
+        // Handle both null and undefined parent_id
+        if (parentId === null) {
+          return f.parent_id === null || f.parent_id === undefined || f.parent_id === '';
+        }
+        return f.parent_id === parentId;
+      })
       .sort((a, b) => a.name.localeCompare(b.name));
   };
 
