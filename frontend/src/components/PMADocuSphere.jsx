@@ -164,7 +164,6 @@ const PMADocuSphere = ({ user }) => {
     setUploading(false);
     setUploadProgress({ current: 0, total: 0 });
     event.target.value = '';
-    }
   };
 
   const handleDeleteDocument = async (docId, filename) => {
