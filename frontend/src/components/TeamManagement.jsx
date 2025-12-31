@@ -382,18 +382,20 @@ const TeamManagement = ({ user }) => {
       </CardHeader>
       <CardContent className="pt-2">
         <Tabs defaultValue="invite" className="space-y-6">
-          <TabsList className={`grid w-full ${user.role === 'state_manager' ? 'grid-cols-6' : 'grid-cols-3'} bg-gray-100 p-1`}>
-            <TabsTrigger value="create" data-testid="create-tab" className="py-2 text-xs md:text-sm">Create User</TabsTrigger>
-            <TabsTrigger value="invite" data-testid="invite-tab" className="py-2 text-xs md:text-sm">Create Invites</TabsTrigger>
-            <TabsTrigger value="edit" data-testid="edit-data-tab" className="py-2 text-xs md:text-sm">Edit Team Data</TabsTrigger>
-            {user.role === 'state_manager' && (
-              <>
-                <TabsTrigger value="all-users" data-testid="all-users-tab" className="py-2 text-xs md:text-sm">All Users</TabsTrigger>
-                <TabsTrigger value="reorganize" data-testid="reorganize-tab" className="py-2 text-xs md:text-sm">Reorganize</TabsTrigger>
-                <TabsTrigger value="archive" data-testid="archive-tab" className="py-2 text-xs md:text-sm">Archive</TabsTrigger>
-              </>
-            )}
-          </TabsList>
+          <div className="overflow-x-auto -mx-2 px-2">
+            <TabsList className="inline-flex min-w-full md:w-full bg-gray-100 p-1 gap-1">
+              <TabsTrigger value="create" data-testid="create-tab" className="py-2 px-3 text-xs md:text-sm whitespace-nowrap flex-shrink-0">Create User</TabsTrigger>
+              <TabsTrigger value="invite" data-testid="invite-tab" className="py-2 px-3 text-xs md:text-sm whitespace-nowrap flex-shrink-0">Invites</TabsTrigger>
+              <TabsTrigger value="edit" data-testid="edit-data-tab" className="py-2 px-3 text-xs md:text-sm whitespace-nowrap flex-shrink-0">Edit Data</TabsTrigger>
+              {user.role === 'state_manager' && (
+                <>
+                  <TabsTrigger value="all-users" data-testid="all-users-tab" className="py-2 px-3 text-xs md:text-sm whitespace-nowrap flex-shrink-0">All Users</TabsTrigger>
+                  <TabsTrigger value="reorganize" data-testid="reorganize-tab" className="py-2 px-3 text-xs md:text-sm whitespace-nowrap flex-shrink-0">Reorganize</TabsTrigger>
+                  <TabsTrigger value="archive" data-testid="archive-tab" className="py-2 px-3 text-xs md:text-sm whitespace-nowrap flex-shrink-0">Archive</TabsTrigger>
+                </>
+              )}
+            </TabsList>
+          </div>
 
           <TabsContent value="create" className="space-y-6" data-testid="create-content">
             <div className="bg-green-50 p-6 rounded-lg border border-green-200">
