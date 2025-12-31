@@ -54,34 +54,25 @@ const NewFaceTracking = ({ user, embedded = false }) => {
     return acc;
   }, {});
 
-  return (
-    <Card className="shadow-lg bg-white">
-      <CardHeader>
-        <CardTitle className="text-2xl flex items-center gap-2">
-          🎯 New Face Customer Tracking
-        </CardTitle>
-        <p className="text-sm text-gray-600 mt-2">
-          All new face customers sold by your team
-        </p>
-      </CardHeader>
-      <CardContent>
-        {/* Filters */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-          <div>
-            <Label>Search (Customer, County, or Agent)</Label>
-            <Input
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              placeholder="Search..."
-            />
-          </div>
-          <div>
-            <Label>Filter by Date</Label>
-            <Input
-              type="date"
-              value={filterDate}
-              onChange={(e) => setFilterDate(e.target.value)}
-            />
+  const content = (
+    <>
+      {/* Filters */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+        <div>
+          <Label>Search (Customer, County, or Agent)</Label>
+          <Input
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            placeholder="Search..."
+          />
+        </div>
+        <div>
+          <Label>Filter by Date</Label>
+          <Input
+            type="date"
+            value={filterDate}
+            onChange={(e) => setFilterDate(e.target.value)}
+          />
           </div>
         </div>
 
