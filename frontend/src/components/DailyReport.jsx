@@ -540,24 +540,14 @@ const DailyReport = ({ user, embedded = false }) => {
     { id: 'yearly', label: 'Yearly', icon: TrendingUp, color: 'orange', description: 'Current year totals' }
   ];
 
-  return (
-    <Card className="shadow-lg bg-white">
-      <CardHeader>
-        <CardTitle className="text-2xl flex items-center gap-2">
-          <Clock className="text-blue-600" />
-          Manager Reports
-        </CardTitle>
-        <p className="text-sm text-gray-600 mt-2">
-          View and download comprehensive activity reports for your team hierarchy across different time periods
-        </p>
-      </CardHeader>
-      <CardContent>
-        {/* Period Selection */}
-        <div className="mb-6 p-4 bg-gradient-to-r from-slate-50 to-gray-100 rounded-lg border border-slate-300">
-          <label className="block text-sm font-semibold text-gray-700 mb-3">
-            Select Time Period
-          </label>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+  const content = (
+    <>
+      {/* Period Selection */}
+      <div className="mb-6 p-4 bg-gradient-to-r from-slate-50 to-gray-100 rounded-lg border border-slate-300">
+        <label className="block text-sm font-semibold text-gray-700 mb-3">
+          Select Time Period
+        </label>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
             {periods.map((period) => {
               const Icon = period.icon;
               return (
