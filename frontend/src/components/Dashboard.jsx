@@ -157,6 +157,10 @@ const Dashboard = ({ user, setUser }) => {
             <Analytics user={user} />
           </TabsContent>
 
+          <TabsContent value="pma-bonuses" data-testid="pma-bonuses-content" className="mt-4 md:mt-6">
+            <PMABonuses user={user} />
+          </TabsContent>
+
           <TabsContent value="team" data-testid="team-content" className="mt-4 md:mt-6">
             <TeamView user={user} />
           </TabsContent>
