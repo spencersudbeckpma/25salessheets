@@ -359,9 +359,10 @@ const TeamManagement = ({ user }) => {
   };
 
   const getRoleOptions = () => {
+    // State Manager can create any role below them
     const roleHierarchy = {
-      state_manager: ['regional_manager'],
-      regional_manager: ['district_manager'],
+      state_manager: ['regional_manager', 'district_manager', 'agent'],
+      regional_manager: ['district_manager', 'agent'],
       district_manager: ['agent'],
       agent: []
     };
