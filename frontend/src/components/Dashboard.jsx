@@ -169,12 +169,6 @@ const Dashboard = ({ user, setUser }) => {
               <DailyReport user={user} />
             </TabsContent>
           )}
-
-          {user.role === 'state_manager' && (
-            <TabsContent value="admin" data-testid="admin-content" className="mt-4 md:mt-6">
-              <AdminCleanup user={user} />
-            </TabsContent>
-          )}
         </Tabs>
       </div>
     </div>
