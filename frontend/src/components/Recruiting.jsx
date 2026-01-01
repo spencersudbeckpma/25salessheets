@@ -23,9 +23,12 @@ const Recruiting = ({ user }) => {
 
   const [formData, setFormData] = useState({
     name: '',
+    phone: '',
+    email: '',
     source: '',
     state: '',
-    rm_dm: '',
+    rm: '',
+    dm: '',
     text_email: false,
     vertafore: false,
     study_materials: false,
@@ -84,9 +87,12 @@ const Recruiting = ({ user }) => {
   const handleEdit = (recruit) => {
     setFormData({
       name: recruit.name || '',
+      phone: recruit.phone || '',
+      email: recruit.email || '',
       source: recruit.source || '',
       state: recruit.state || '',
-      rm_dm: recruit.rm_dm || '',
+      rm: recruit.rm || '',
+      dm: recruit.dm || '',
       text_email: recruit.text_email || false,
       vertafore: recruit.vertafore || false,
       study_materials: recruit.study_materials || false,
@@ -143,9 +149,12 @@ const Recruiting = ({ user }) => {
   const resetForm = () => {
     setFormData({
       name: '',
+      phone: '',
+      email: '',
       source: '',
       state: '',
-      rm_dm: '',
+      rm: '',
+      dm: '',
       text_email: false,
       vertafore: false,
       study_materials: false,
@@ -160,12 +169,15 @@ const Recruiting = ({ user }) => {
   };
 
   const exportToCSV = () => {
-    const headers = ['Name', 'Where Came From', 'State', 'RM/DM', 'Text+Email', 'Vertafore', 'Study Materials', 'Fingerprint', 'Testing Date', 'Pass/Fail', 'NPA License', 'Comments'];
+    const headers = ['Name', 'Phone', 'Email', 'Where Came From', 'State', 'RM', 'DM', 'Text+Email', 'Vertafore', 'Study Materials', 'Fingerprint', 'Testing Date', 'Pass/Fail', 'NPA License', 'Comments'];
     const rows = filteredRecruits.map(r => [
       r.name,
+      r.phone,
+      r.email,
       r.source,
       r.state,
-      r.rm_dm,
+      r.rm,
+      r.dm,
       r.text_email ? 'Yes' : 'No',
       r.vertafore ? 'Yes' : 'No',
       r.study_materials ? 'Yes' : 'No',
@@ -188,6 +200,8 @@ const Recruiting = ({ user }) => {
   const filteredRecruits = recruits.filter(r => {
     const matchesSearch = r.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
                           r.source?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                          r.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                          r.phone?.toLowerCase().includes(searchTerm.toLowerCase()) ||
                           r.comments?.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesState = filterState === 'all' || r.state === filterState;
     const matchesStatus = filterStatus === 'all' || 
@@ -301,6 +315,25 @@ const Recruiting = ({ user }) => {
                   </div>
 
                   <div>
+                    <label className="block text-sm font-medium mb-1">Phone</label>
+                    <Input
+                      value={formData.phone}
+                      onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                      placeholder="Phone number"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium mb-1">Email</label>
+                    <Input
+                      type="email"
+                      value={formData.email}
+                      onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                      placeholder="Email address"
+                    />
+                  </div>
+
+                  <div>
                     <label className="block text-sm font-medium mb-1">Where Came From</label>
                     <Input
                       value={formData.source}
@@ -324,11 +357,20 @@ const Recruiting = ({ user }) => {
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium mb-1">RM/DM</label>
+                    <label className="block text-sm font-medium mb-1">RM (Regional Manager)</label>
                     <Input
-                      value={formData.rm_dm}
-                      onChange={(e) => setFormData({ ...formData, rm_dm: e.target.value })}
-                      placeholder="Regional/District Manager"
+                      value={formData.rm}
+                      onChange={(e) => setFormData({ ...formData, rm: e.target.value })}
+                      placeholder="Regional Manager"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium mb-1">DM (District Manager)</label>
+                    <Input
+                      value={formData.dm}
+                      onChange={(e) => setFormData({ ...formData, dm: e.target.value })}
+                      placeholder="District Manager"
                     />
                   </div>
 
@@ -392,6 +434,20 @@ const Recruiting = ({ user }) => {
                   <Button type="button" variant="outline" onClick={resetForm}>
                     Cancel
                   </Button>
+                  {editingId && (
+                    <Button 
+                      type="button" 
+                      variant="outline" 
+                      className="text-red-600 border-red-300 hover:bg-red-50"
+                      onClick={() => {
+                        handleDelete(editingId);
+                        resetForm();
+                      }}
+                    >
+                      <Trash2 size={16} className="mr-1" />
+                      Delete
+                    </Button>
+                  )}
                   <Button type="submit" className="bg-slate-800 hover:bg-slate-700 text-amber-400">
                     <Save size={16} className="mr-1" />
                     {editingId ? 'Update' : 'Add'} Recruit
@@ -441,9 +497,12 @@ const Recruiting = ({ user }) => {
             <thead className="bg-slate-800 text-white">
               <tr>
                 <th className="px-3 py-3 text-left font-medium">Name</th>
+                <th className="px-3 py-3 text-left font-medium hidden md:table-cell">Phone</th>
+                <th className="px-3 py-3 text-left font-medium hidden md:table-cell">Email</th>
                 <th className="px-3 py-3 text-left font-medium hidden sm:table-cell">Source</th>
                 <th className="px-3 py-3 text-left font-medium">State</th>
-                <th className="px-3 py-3 text-left font-medium hidden md:table-cell">RM/DM</th>
+                <th className="px-3 py-3 text-left font-medium hidden lg:table-cell">RM</th>
+                <th className="px-3 py-3 text-left font-medium hidden lg:table-cell">DM</th>
                 <th className="px-3 py-3 text-center font-medium" title="Text + Email">T+E</th>
                 <th className="px-3 py-3 text-center font-medium" title="Vertafore">VF</th>
                 <th className="px-3 py-3 text-center font-medium" title="Study Materials">SM</th>
@@ -451,20 +510,19 @@ const Recruiting = ({ user }) => {
                 <th className="px-3 py-3 text-center font-medium hidden sm:table-cell">Test Date</th>
                 <th className="px-3 py-3 text-center font-medium">P/F</th>
                 <th className="px-3 py-3 text-center font-medium" title="NPA License">NPA</th>
-                <th className="px-3 py-3 text-left font-medium hidden lg:table-cell">Comments</th>
-                <th className="px-3 py-3 text-center font-medium">Actions</th>
+                <th className="px-3 py-3 text-left font-medium hidden xl:table-cell">Comments</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-200">
               {loading ? (
                 <tr>
-                  <td colSpan="13" className="px-3 py-8 text-center text-slate-400">
+                  <td colSpan="15" className="px-3 py-8 text-center text-slate-400">
                     Loading recruits...
                   </td>
                 </tr>
               ) : filteredRecruits.length === 0 ? (
                 <tr>
-                  <td colSpan="13" className="px-3 py-8 text-center text-slate-400">
+                  <td colSpan="15" className="px-3 py-8 text-center text-slate-400">
                     {searchTerm || filterState !== 'all' || filterStatus !== 'all'
                       ? 'No recruits match your filters'
                       : 'No recruits yet. Click "Add Recruit" to get started.'}
@@ -472,37 +530,45 @@ const Recruiting = ({ user }) => {
                 </tr>
               ) : (
                 filteredRecruits.map((recruit) => (
-                  <tr key={recruit.id} className="hover:bg-slate-50">
+                  <tr 
+                    key={recruit.id} 
+                    className="hover:bg-slate-50 cursor-pointer"
+                    onClick={() => handleEdit(recruit)}
+                    title="Click to edit"
+                  >
                     <td className="px-3 py-3 font-medium text-slate-800">{recruit.name}</td>
+                    <td className="px-3 py-3 text-slate-600 hidden md:table-cell">{recruit.phone || '-'}</td>
+                    <td className="px-3 py-3 text-slate-600 hidden md:table-cell text-xs">{recruit.email || '-'}</td>
                     <td className="px-3 py-3 text-slate-600 hidden sm:table-cell">{recruit.source || '-'}</td>
                     <td className="px-3 py-3">
                       <span className="px-2 py-0.5 bg-slate-100 rounded text-xs font-medium">
                         {recruit.state || '-'}
                       </span>
                     </td>
-                    <td className="px-3 py-3 text-slate-600 hidden md:table-cell">{recruit.rm_dm || '-'}</td>
-                    <td className="px-3 py-3 text-center">
+                    <td className="px-3 py-3 text-slate-600 hidden lg:table-cell">{recruit.rm || '-'}</td>
+                    <td className="px-3 py-3 text-slate-600 hidden lg:table-cell">{recruit.dm || '-'}</td>
+                    <td className="px-3 py-3 text-center" onClick={(e) => e.stopPropagation()}>
                       <CheckBox
                         checked={recruit.text_email}
                         onClick={() => toggleField(recruit, 'text_email')}
                         label="Text + Email"
                       />
                     </td>
-                    <td className="px-3 py-3 text-center">
+                    <td className="px-3 py-3 text-center" onClick={(e) => e.stopPropagation()}>
                       <CheckBox
                         checked={recruit.vertafore}
                         onClick={() => toggleField(recruit, 'vertafore')}
                         label="Vertafore"
                       />
                     </td>
-                    <td className="px-3 py-3 text-center">
+                    <td className="px-3 py-3 text-center" onClick={(e) => e.stopPropagation()}>
                       <CheckBox
                         checked={recruit.study_materials}
                         onClick={() => toggleField(recruit, 'study_materials')}
                         label="Study Materials"
                       />
                     </td>
-                    <td className="px-3 py-3 text-center">
+                    <td className="px-3 py-3 text-center" onClick={(e) => e.stopPropagation()}>
                       <CheckBox
                         checked={recruit.fingerprint}
                         onClick={() => toggleField(recruit, 'fingerprint')}
@@ -512,39 +578,21 @@ const Recruiting = ({ user }) => {
                     <td className="px-3 py-3 text-center text-xs text-slate-600 hidden sm:table-cell">
                       {recruit.testing_date || '-'}
                     </td>
-                    <td className="px-3 py-3 text-center">
+                    <td className="px-3 py-3 text-center" onClick={(e) => e.stopPropagation()}>
                       <PassFailBadge 
                         value={recruit.pass_fail} 
                         onSelect={(val) => updatePassFail(recruit, val)}
                       />
                     </td>
-                    <td className="px-3 py-3 text-center">
+                    <td className="px-3 py-3 text-center" onClick={(e) => e.stopPropagation()}>
                       <CheckBox
                         checked={recruit.npa_license}
                         onClick={() => toggleField(recruit, 'npa_license')}
                         label="NPA License"
                       />
                     </td>
-                    <td className="px-3 py-3 text-slate-600 hidden lg:table-cell max-w-[200px] truncate" title={recruit.comments}>
+                    <td className="px-3 py-3 text-slate-600 hidden xl:table-cell max-w-[150px] truncate" title={recruit.comments}>
                       {recruit.comments || '-'}
-                    </td>
-                    <td className="px-3 py-3">
-                      <div className="flex justify-center gap-1">
-                        <button
-                          onClick={() => handleEdit(recruit)}
-                          className="p-1.5 text-slate-500 hover:text-amber-600 hover:bg-amber-50 rounded"
-                          title="Edit"
-                        >
-                          <Edit2 size={16} />
-                        </button>
-                        <button
-                          onClick={() => handleDelete(recruit.id)}
-                          className="p-1.5 text-slate-500 hover:text-red-600 hover:bg-red-50 rounded"
-                          title="Delete"
-                        >
-                          <Trash2 size={16} />
-                        </button>
-                      </div>
                     </td>
                   </tr>
                 ))
