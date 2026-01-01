@@ -5,8 +5,8 @@ import { Card, CardHeader, CardTitle, CardContent } from './ui/card';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { 
-  Users, Plus, Trash2, Edit2, Save, X, Search, 
-  CheckCircle, Circle, Download
+  Users, Plus, Trash2, Save, X, Search, 
+  CheckCircle, Circle, Download, UserCheck, UserX, Clock
 } from 'lucide-react';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
@@ -19,7 +19,7 @@ const Recruiting = ({ user }) => {
   const [editingId, setEditingId] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterState, setFilterState] = useState('all');
-  const [filterStatus, setFilterStatus] = useState('all');
+  const [activeSection, setActiveSection] = useState('active'); // 'active', 'completed', 'did_not_complete'
 
   const [formData, setFormData] = useState({
     name: '',
@@ -36,7 +36,8 @@ const Recruiting = ({ user }) => {
     testing_date: '',
     pass_fail: '',
     npa_license: false,
-    comments: ''
+    comments: '',
+    pipeline_status: 'active'
   });
 
   useEffect(() => {
@@ -100,7 +101,8 @@ const Recruiting = ({ user }) => {
       testing_date: recruit.testing_date || '',
       pass_fail: recruit.pass_fail || '',
       npa_license: recruit.npa_license || false,
-      comments: recruit.comments || ''
+      comments: recruit.comments || '',
+      pipeline_status: recruit.pipeline_status || 'active'
     });
     setEditingId(recruit.id);
     setShowAddForm(true);
@@ -146,6 +148,20 @@ const Recruiting = ({ user }) => {
     }
   };
 
+  const moveToStatus = async (recruit, newStatus) => {
+    try {
+      const token = localStorage.getItem('token');
+      const updatedData = { ...recruit, pipeline_status: newStatus };
+      await axios.put(`${API}/recruiting/${recruit.id}`, updatedData, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      toast.success(`Moved to ${newStatus === 'completed' ? 'Completed' : newStatus === 'did_not_complete' ? 'Did Not Complete' : 'Active Pipeline'}`);
+      fetchRecruits();
+    } catch (error) {
+      toast.error('Failed to move recruit');
+    }
+  };
+
   const resetForm = () => {
     setFormData({
       name: '',
@@ -162,15 +178,17 @@ const Recruiting = ({ user }) => {
       testing_date: '',
       pass_fail: '',
       npa_license: false,
-      comments: ''
+      comments: '',
+      pipeline_status: 'active'
     });
     setEditingId(null);
     setShowAddForm(false);
   };
 
   const exportToCSV = () => {
-    const headers = ['Name', 'Phone', 'Email', 'Where Came From', 'State', 'RM', 'DM', 'Text+Email', 'Vertafore', 'Study Materials', 'Fingerprint', 'Testing Date', 'Pass/Fail', 'NPA License', 'Comments'];
-    const rows = filteredRecruits.map(r => [
+    const headers = ['Pipeline Status', 'Name', 'Phone', 'Email', 'Where Came From', 'State', 'RM', 'DM', 'Text+Email', 'Vertafore', 'Study Materials', 'Fingerprint', 'Testing Date', 'Pass/Fail', 'NPA License', 'Comments'];
+    const rows = recruits.map(r => [
+      r.pipeline_status || 'active',
       r.name,
       r.phone,
       r.email,
@@ -197,19 +215,24 @@ const Recruiting = ({ user }) => {
     a.click();
   };
 
-  const filteredRecruits = recruits.filter(r => {
-    const matchesSearch = r.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                          r.source?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                          r.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                          r.phone?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                          r.comments?.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesState = filterState === 'all' || r.state === filterState;
-    const matchesStatus = filterStatus === 'all' || 
-                          (filterStatus === 'pass' && r.pass_fail === 'Pass') ||
-                          (filterStatus === 'fail' && r.pass_fail === 'Fail') ||
-                          (filterStatus === 'pending' && (!r.pass_fail || r.pass_fail === ''));
-    return matchesSearch && matchesState && matchesStatus;
-  });
+  // Filter recruits by section and search
+  const getFilteredRecruits = (status) => {
+    return recruits.filter(r => {
+      const pipelineStatus = r.pipeline_status || 'active';
+      const matchesStatus = pipelineStatus === status;
+      const matchesSearch = r.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                            r.source?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                            r.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                            r.phone?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                            r.comments?.toLowerCase().includes(searchTerm.toLowerCase());
+      const matchesState = filterState === 'all' || r.state === filterState;
+      return matchesStatus && matchesSearch && matchesState;
+    });
+  };
+
+  const activeRecruits = getFilteredRecruits('active');
+  const completedRecruits = getFilteredRecruits('completed');
+  const didNotCompleteRecruits = getFilteredRecruits('did_not_complete');
 
   const CheckBox = ({ checked, onClick, label }) => (
     <button
@@ -244,6 +267,143 @@ const Recruiting = ({ user }) => {
       </select>
     );
   };
+
+  const RecruitTable = ({ recruits: tableRecruits, showMoveButtons = false, currentStatus }) => (
+    <div className="overflow-x-auto border rounded-xl">
+      <table className="w-full text-sm">
+        <thead className="bg-slate-800 text-white">
+          <tr>
+            <th className="px-3 py-3 text-left font-medium">Name</th>
+            <th className="px-3 py-3 text-left font-medium hidden md:table-cell">Phone</th>
+            <th className="px-3 py-3 text-left font-medium hidden md:table-cell">Email</th>
+            <th className="px-3 py-3 text-left font-medium hidden sm:table-cell">Source</th>
+            <th className="px-3 py-3 text-left font-medium">State</th>
+            <th className="px-3 py-3 text-left font-medium hidden lg:table-cell">RM</th>
+            <th className="px-3 py-3 text-left font-medium hidden lg:table-cell">DM</th>
+            <th className="px-3 py-3 text-center font-medium" title="Text + Email">T+E</th>
+            <th className="px-3 py-3 text-center font-medium" title="Vertafore">VF</th>
+            <th className="px-3 py-3 text-center font-medium" title="Study Materials">SM</th>
+            <th className="px-3 py-3 text-center font-medium" title="Fingerprint">FP</th>
+            <th className="px-3 py-3 text-center font-medium hidden sm:table-cell">Test Date</th>
+            <th className="px-3 py-3 text-center font-medium">P/F</th>
+            <th className="px-3 py-3 text-center font-medium" title="NPA License">NPA</th>
+            <th className="px-3 py-3 text-left font-medium hidden xl:table-cell">Comments</th>
+            {showMoveButtons && <th className="px-3 py-3 text-center font-medium">Move</th>}
+          </tr>
+        </thead>
+        <tbody className="divide-y divide-slate-200">
+          {tableRecruits.length === 0 ? (
+            <tr>
+              <td colSpan={showMoveButtons ? 16 : 15} className="px-3 py-8 text-center text-slate-400">
+                No recruits in this section
+              </td>
+            </tr>
+          ) : (
+            tableRecruits.map((recruit) => (
+              <tr 
+                key={recruit.id} 
+                className="hover:bg-slate-50 cursor-pointer"
+                onClick={() => handleEdit(recruit)}
+                title="Click to edit"
+              >
+                <td className="px-3 py-3 font-medium text-slate-800">{recruit.name}</td>
+                <td className="px-3 py-3 text-slate-600 hidden md:table-cell">{recruit.phone || '-'}</td>
+                <td className="px-3 py-3 text-slate-600 hidden md:table-cell text-xs">{recruit.email || '-'}</td>
+                <td className="px-3 py-3 text-slate-600 hidden sm:table-cell">{recruit.source || '-'}</td>
+                <td className="px-3 py-3">
+                  <span className="px-2 py-0.5 bg-slate-100 rounded text-xs font-medium">
+                    {recruit.state || '-'}
+                  </span>
+                </td>
+                <td className="px-3 py-3 text-slate-600 hidden lg:table-cell">{recruit.rm || '-'}</td>
+                <td className="px-3 py-3 text-slate-600 hidden lg:table-cell">{recruit.dm || '-'}</td>
+                <td className="px-3 py-3 text-center" onClick={(e) => e.stopPropagation()}>
+                  <CheckBox
+                    checked={recruit.text_email}
+                    onClick={() => toggleField(recruit, 'text_email')}
+                    label="Text + Email"
+                  />
+                </td>
+                <td className="px-3 py-3 text-center" onClick={(e) => e.stopPropagation()}>
+                  <CheckBox
+                    checked={recruit.vertafore}
+                    onClick={() => toggleField(recruit, 'vertafore')}
+                    label="Vertafore"
+                  />
+                </td>
+                <td className="px-3 py-3 text-center" onClick={(e) => e.stopPropagation()}>
+                  <CheckBox
+                    checked={recruit.study_materials}
+                    onClick={() => toggleField(recruit, 'study_materials')}
+                    label="Study Materials"
+                  />
+                </td>
+                <td className="px-3 py-3 text-center" onClick={(e) => e.stopPropagation()}>
+                  <CheckBox
+                    checked={recruit.fingerprint}
+                    onClick={() => toggleField(recruit, 'fingerprint')}
+                    label="Fingerprint"
+                  />
+                </td>
+                <td className="px-3 py-3 text-center text-xs text-slate-600 hidden sm:table-cell">
+                  {recruit.testing_date || '-'}
+                </td>
+                <td className="px-3 py-3 text-center" onClick={(e) => e.stopPropagation()}>
+                  <PassFailBadge 
+                    value={recruit.pass_fail} 
+                    onSelect={(val) => updatePassFail(recruit, val)}
+                  />
+                </td>
+                <td className="px-3 py-3 text-center" onClick={(e) => e.stopPropagation()}>
+                  <CheckBox
+                    checked={recruit.npa_license}
+                    onClick={() => toggleField(recruit, 'npa_license')}
+                    label="NPA License"
+                  />
+                </td>
+                <td className="px-3 py-3 text-slate-600 hidden xl:table-cell max-w-[150px] truncate" title={recruit.comments}>
+                  {recruit.comments || '-'}
+                </td>
+                {showMoveButtons && (
+                  <td className="px-3 py-3 text-center" onClick={(e) => e.stopPropagation()}>
+                    <div className="flex justify-center gap-1">
+                      {currentStatus !== 'completed' && (
+                        <button
+                          onClick={() => moveToStatus(recruit, 'completed')}
+                          className="p-1.5 text-green-600 hover:bg-green-50 rounded"
+                          title="Mark as Completed"
+                        >
+                          <UserCheck size={16} />
+                        </button>
+                      )}
+                      {currentStatus !== 'did_not_complete' && (
+                        <button
+                          onClick={() => moveToStatus(recruit, 'did_not_complete')}
+                          className="p-1.5 text-red-600 hover:bg-red-50 rounded"
+                          title="Mark as Did Not Complete"
+                        >
+                          <UserX size={16} />
+                        </button>
+                      )}
+                      {currentStatus !== 'active' && (
+                        <button
+                          onClick={() => moveToStatus(recruit, 'active')}
+                          className="p-1.5 text-amber-600 hover:bg-amber-50 rounded"
+                          title="Move back to Active Pipeline"
+                        >
+                          <Clock size={16} />
+                        </button>
+                      )}
+                    </div>
+                  </td>
+                )}
+              </tr>
+            ))
+          )}
+        </tbody>
+      </table>
+    </div>
+  );
 
   if (user.role !== 'state_manager') {
     return (
@@ -312,6 +472,19 @@ const Recruiting = ({ user }) => {
                       placeholder="Recruit name"
                       required
                     />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium mb-1">Pipeline Status</label>
+                    <select
+                      value={formData.pipeline_status}
+                      onChange={(e) => setFormData({ ...formData, pipeline_status: e.target.value })}
+                      className="w-full border rounded-lg p-2 text-sm"
+                    >
+                      <option value="active">Active Pipeline</option>
+                      <option value="completed">Completed</option>
+                      <option value="did_not_complete">Did Not Complete</option>
+                    </select>
                   </div>
 
                   <div>
@@ -479,130 +652,76 @@ const Recruiting = ({ user }) => {
             <option value="ND">North Dakota</option>
             <option value="SD">South Dakota</option>
           </select>
-          <select
-            value={filterStatus}
-            onChange={(e) => setFilterStatus(e.target.value)}
-            className="border rounded-lg px-3 h-9 text-sm"
+        </div>
+
+        {/* Section Tabs */}
+        <div className="flex gap-2 mb-4 border-b pb-2 overflow-x-auto">
+          <button
+            onClick={() => setActiveSection('active')}
+            className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-colors ${
+              activeSection === 'active' 
+                ? 'bg-amber-500 text-white' 
+                : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+            }`}
           >
-            <option value="all">All Status</option>
-            <option value="pass">Passed</option>
-            <option value="fail">Failed</option>
-            <option value="pending">Pending</option>
-          </select>
+            <Clock size={16} />
+            Active Pipeline ({activeRecruits.length})
+          </button>
+          <button
+            onClick={() => setActiveSection('completed')}
+            className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-colors ${
+              activeSection === 'completed' 
+                ? 'bg-green-500 text-white' 
+                : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+            }`}
+          >
+            <UserCheck size={16} />
+            Completed ({completedRecruits.length})
+          </button>
+          <button
+            onClick={() => setActiveSection('did_not_complete')}
+            className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-colors ${
+              activeSection === 'did_not_complete' 
+                ? 'bg-red-500 text-white' 
+                : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+            }`}
+          >
+            <UserX size={16} />
+            Did Not Complete ({didNotCompleteRecruits.length})
+          </button>
         </div>
 
-        {/* Table */}
-        <div className="overflow-x-auto border rounded-xl">
-          <table className="w-full text-sm">
-            <thead className="bg-slate-800 text-white">
-              <tr>
-                <th className="px-3 py-3 text-left font-medium">Name</th>
-                <th className="px-3 py-3 text-left font-medium hidden md:table-cell">Phone</th>
-                <th className="px-3 py-3 text-left font-medium hidden md:table-cell">Email</th>
-                <th className="px-3 py-3 text-left font-medium hidden sm:table-cell">Source</th>
-                <th className="px-3 py-3 text-left font-medium">State</th>
-                <th className="px-3 py-3 text-left font-medium hidden lg:table-cell">RM</th>
-                <th className="px-3 py-3 text-left font-medium hidden lg:table-cell">DM</th>
-                <th className="px-3 py-3 text-center font-medium" title="Text + Email">T+E</th>
-                <th className="px-3 py-3 text-center font-medium" title="Vertafore">VF</th>
-                <th className="px-3 py-3 text-center font-medium" title="Study Materials">SM</th>
-                <th className="px-3 py-3 text-center font-medium" title="Fingerprint">FP</th>
-                <th className="px-3 py-3 text-center font-medium hidden sm:table-cell">Test Date</th>
-                <th className="px-3 py-3 text-center font-medium">P/F</th>
-                <th className="px-3 py-3 text-center font-medium" title="NPA License">NPA</th>
-                <th className="px-3 py-3 text-left font-medium hidden xl:table-cell">Comments</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-200">
-              {loading ? (
-                <tr>
-                  <td colSpan="15" className="px-3 py-8 text-center text-slate-400">
-                    Loading recruits...
-                  </td>
-                </tr>
-              ) : filteredRecruits.length === 0 ? (
-                <tr>
-                  <td colSpan="15" className="px-3 py-8 text-center text-slate-400">
-                    {searchTerm || filterState !== 'all' || filterStatus !== 'all'
-                      ? 'No recruits match your filters'
-                      : 'No recruits yet. Click "Add Recruit" to get started.'}
-                  </td>
-                </tr>
-              ) : (
-                filteredRecruits.map((recruit) => (
-                  <tr 
-                    key={recruit.id} 
-                    className="hover:bg-slate-50 cursor-pointer"
-                    onClick={() => handleEdit(recruit)}
-                    title="Click to edit"
-                  >
-                    <td className="px-3 py-3 font-medium text-slate-800">{recruit.name}</td>
-                    <td className="px-3 py-3 text-slate-600 hidden md:table-cell">{recruit.phone || '-'}</td>
-                    <td className="px-3 py-3 text-slate-600 hidden md:table-cell text-xs">{recruit.email || '-'}</td>
-                    <td className="px-3 py-3 text-slate-600 hidden sm:table-cell">{recruit.source || '-'}</td>
-                    <td className="px-3 py-3">
-                      <span className="px-2 py-0.5 bg-slate-100 rounded text-xs font-medium">
-                        {recruit.state || '-'}
-                      </span>
-                    </td>
-                    <td className="px-3 py-3 text-slate-600 hidden lg:table-cell">{recruit.rm || '-'}</td>
-                    <td className="px-3 py-3 text-slate-600 hidden lg:table-cell">{recruit.dm || '-'}</td>
-                    <td className="px-3 py-3 text-center" onClick={(e) => e.stopPropagation()}>
-                      <CheckBox
-                        checked={recruit.text_email}
-                        onClick={() => toggleField(recruit, 'text_email')}
-                        label="Text + Email"
-                      />
-                    </td>
-                    <td className="px-3 py-3 text-center" onClick={(e) => e.stopPropagation()}>
-                      <CheckBox
-                        checked={recruit.vertafore}
-                        onClick={() => toggleField(recruit, 'vertafore')}
-                        label="Vertafore"
-                      />
-                    </td>
-                    <td className="px-3 py-3 text-center" onClick={(e) => e.stopPropagation()}>
-                      <CheckBox
-                        checked={recruit.study_materials}
-                        onClick={() => toggleField(recruit, 'study_materials')}
-                        label="Study Materials"
-                      />
-                    </td>
-                    <td className="px-3 py-3 text-center" onClick={(e) => e.stopPropagation()}>
-                      <CheckBox
-                        checked={recruit.fingerprint}
-                        onClick={() => toggleField(recruit, 'fingerprint')}
-                        label="Fingerprint"
-                      />
-                    </td>
-                    <td className="px-3 py-3 text-center text-xs text-slate-600 hidden sm:table-cell">
-                      {recruit.testing_date || '-'}
-                    </td>
-                    <td className="px-3 py-3 text-center" onClick={(e) => e.stopPropagation()}>
-                      <PassFailBadge 
-                        value={recruit.pass_fail} 
-                        onSelect={(val) => updatePassFail(recruit, val)}
-                      />
-                    </td>
-                    <td className="px-3 py-3 text-center" onClick={(e) => e.stopPropagation()}>
-                      <CheckBox
-                        checked={recruit.npa_license}
-                        onClick={() => toggleField(recruit, 'npa_license')}
-                        label="NPA License"
-                      />
-                    </td>
-                    <td className="px-3 py-3 text-slate-600 hidden xl:table-cell max-w-[150px] truncate" title={recruit.comments}>
-                      {recruit.comments || '-'}
-                    </td>
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
-        </div>
+        {/* Active Section Content */}
+        {loading ? (
+          <div className="text-center py-8 text-slate-400">Loading recruits...</div>
+        ) : (
+          <>
+            {activeSection === 'active' && (
+              <RecruitTable 
+                recruits={activeRecruits} 
+                showMoveButtons={true}
+                currentStatus="active"
+              />
+            )}
+            {activeSection === 'completed' && (
+              <RecruitTable 
+                recruits={completedRecruits} 
+                showMoveButtons={true}
+                currentStatus="completed"
+              />
+            )}
+            {activeSection === 'did_not_complete' && (
+              <RecruitTable 
+                recruits={didNotCompleteRecruits} 
+                showMoveButtons={true}
+                currentStatus="did_not_complete"
+              />
+            )}
+          </>
+        )}
 
-        {/* Summary Stats */}
-        {filteredRecruits.length > 0 && (
+        {/* Summary Stats - Only show for active pipeline */}
+        {activeSection === 'active' && activeRecruits.length > 0 && (
           <div className="mt-4 grid grid-cols-2 sm:grid-cols-6 gap-3">
             {[
               { label: 'Text + Email', key: 'text_email' },
@@ -613,12 +732,12 @@ const Recruiting = ({ user }) => {
               { label: 'NPA License', key: 'npa_license' }
             ].map(({ label, key, isPassFail }) => {
               const count = isPassFail 
-                ? filteredRecruits.filter(r => r.pass_fail === 'Pass').length
-                : filteredRecruits.filter(r => r[key]).length;
-              const percentage = Math.round((count / filteredRecruits.length) * 100);
+                ? activeRecruits.filter(r => r.pass_fail === 'Pass').length
+                : activeRecruits.filter(r => r[key]).length;
+              const percentage = Math.round((count / activeRecruits.length) * 100);
               return (
                 <div key={key} className="bg-slate-50 rounded-lg p-3 text-center">
-                  <div className="text-lg font-bold text-slate-800">{count}/{filteredRecruits.length}</div>
+                  <div className="text-lg font-bold text-slate-800">{count}/{activeRecruits.length}</div>
                   <div className="text-xs text-slate-500">{label}</div>
                   <div className="mt-1 h-1 bg-slate-200 rounded-full overflow-hidden">
                     <div 
