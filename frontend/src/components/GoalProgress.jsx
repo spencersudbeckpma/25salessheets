@@ -86,10 +86,19 @@ const GoalProgress = ({ user }) => {
   const handleSaveIndividualGoals = async () => {
     try {
       const token = localStorage.getItem('token');
+      // Remove commas from input before parsing
+      const goalValue = parseFloat(String(individualGoals.goal_premium).replace(/,/g, ''));
+      const stretchValue = parseFloat(String(individualGoals.stretch_goal_premium).replace(/,/g, ''));
+      
+      if (isNaN(goalValue) || isNaN(stretchValue) || goalValue <= 0 || stretchValue <= 0) {
+        toast.error('Please enter valid goal amounts');
+        return;
+      }
+      
       await axios.post(`${API}/goals/individual`, 
         {
-          goal_premium: parseFloat(individualGoals.goal_premium),
-          stretch_goal_premium: parseFloat(individualGoals.stretch_goal_premium)
+          goal_premium: goalValue,
+          stretch_goal_premium: stretchValue
         },
         { headers: { Authorization: `Bearer ${token}` } }
       );
@@ -104,10 +113,19 @@ const GoalProgress = ({ user }) => {
   const handleSaveTeamGoals = async () => {
     try {
       const token = localStorage.getItem('token');
+      // Remove commas from input before parsing
+      const goalValue = parseFloat(String(teamGoals.goal_premium).replace(/,/g, ''));
+      const stretchValue = parseFloat(String(teamGoals.stretch_goal_premium).replace(/,/g, ''));
+      
+      if (isNaN(goalValue) || isNaN(stretchValue) || goalValue <= 0 || stretchValue <= 0) {
+        toast.error('Please enter valid goal amounts');
+        return;
+      }
+      
       await axios.post(`${API}/goals/team`,
         {
-          goal_premium: parseFloat(teamGoals.goal_premium),
-          stretch_goal_premium: parseFloat(teamGoals.stretch_goal_premium)
+          goal_premium: goalValue,
+          stretch_goal_premium: stretchValue
         },
         { headers: { Authorization: `Bearer ${token}` } }
       );
