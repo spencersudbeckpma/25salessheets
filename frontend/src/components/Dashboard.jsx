@@ -183,7 +183,7 @@ const Dashboard = ({ user, setUser }) => {
             </TabsContent>
           )}
 
-          {user.role === 'state_manager' && (
+          {['state_manager', 'regional_manager'].includes(user.role) && (
             <TabsContent value="recruiting" data-testid="recruiting-content" className="mt-4 md:mt-6">
               <Recruiting user={user} />
             </TabsContent>
