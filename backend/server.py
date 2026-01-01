@@ -2897,10 +2897,15 @@ async def delete_recruit(recruit_id: str, current_user: dict = Depends(get_curre
     if current_user['role'] not in ['state_manager', 'regional_manager']:
         raise HTTPException(status_code=403, detail="Only State Managers and Regional Managers can manage recruiting")
     
-    result = await db.recruits.delete_one({"id": recruit_id})
-    if result.deleted_count == 0:
+    existing = await db.recruits.find_one({"id": recruit_id})
+    if not existing:
         raise HTTPException(status_code=404, detail="Recruit not found")
     
+    # Regional Managers can only delete their own recruits
+    if current_user['role'] == 'regional_manager' and existing.get('rm_id') != current_user['id']:
+        raise HTTPException(status_code=403, detail="You can only delete your own recruits")
+    
+    await db.recruits.delete_one({"id": recruit_id})
     return {"message": "Recruit deleted"}
 
 
