@@ -2810,9 +2810,16 @@ async def get_recruits(current_user: dict = Depends(get_current_user)):
 
 @api_router.post("/recruiting")
 async def create_recruit(recruit_data: dict, current_user: dict = Depends(get_current_user)):
-    """Create a new recruit (State Manager only)"""
-    if current_user['role'] != 'state_manager':
-        raise HTTPException(status_code=403, detail="Only State Managers can manage recruiting")
+    """Create a new recruit (State Manager or Regional Manager)"""
+    if current_user['role'] not in ['state_manager', 'regional_manager']:
+        raise HTTPException(status_code=403, detail="Only State Managers and Regional Managers can manage recruiting")
+    
+    # If Regional Manager is creating, auto-assign to themselves
+    rm_id = recruit_data.get('rm_id', '')
+    rm_name = recruit_data.get('rm', '')
+    if current_user['role'] == 'regional_manager':
+        rm_id = current_user['id']
+        rm_name = current_user['name']
     
     recruit = {
         "id": str(uuid.uuid4()),
@@ -2821,7 +2828,8 @@ async def create_recruit(recruit_data: dict, current_user: dict = Depends(get_cu
         "email": recruit_data.get('email', ''),
         "source": recruit_data.get('source', ''),
         "state": recruit_data.get('state', ''),
-        "rm": recruit_data.get('rm', ''),
+        "rm": rm_name,
+        "rm_id": rm_id,
         "dm": recruit_data.get('dm', ''),
         "text_email": recruit_data.get('text_email', False),
         "vertafore": recruit_data.get('vertafore', False),
@@ -2842,13 +2850,17 @@ async def create_recruit(recruit_data: dict, current_user: dict = Depends(get_cu
 
 @api_router.put("/recruiting/{recruit_id}")
 async def update_recruit(recruit_id: str, recruit_data: dict, current_user: dict = Depends(get_current_user)):
-    """Update a recruit (State Manager only)"""
-    if current_user['role'] != 'state_manager':
-        raise HTTPException(status_code=403, detail="Only State Managers can manage recruiting")
+    """Update a recruit (State Manager or Regional Manager for their own recruits)"""
+    if current_user['role'] not in ['state_manager', 'regional_manager']:
+        raise HTTPException(status_code=403, detail="Only State Managers and Regional Managers can manage recruiting")
     
     existing = await db.recruits.find_one({"id": recruit_id})
     if not existing:
         raise HTTPException(status_code=404, detail="Recruit not found")
+    
+    # Regional Managers can only edit their own recruits
+    if current_user['role'] == 'regional_manager' and existing.get('rm_id') != current_user['id']:
+        raise HTTPException(status_code=403, detail="You can only edit your own recruits")
     
     update_data = {
         "name": recruit_data.get('name', existing.get('name')),
@@ -2857,6 +2869,7 @@ async def update_recruit(recruit_id: str, recruit_data: dict, current_user: dict
         "source": recruit_data.get('source', existing.get('source')),
         "state": recruit_data.get('state', existing.get('state')),
         "rm": recruit_data.get('rm', existing.get('rm')),
+        "rm_id": recruit_data.get('rm_id', existing.get('rm_id')),
         "dm": recruit_data.get('dm', existing.get('dm')),
         "text_email": recruit_data.get('text_email', existing.get('text_email')),
         "vertafore": recruit_data.get('vertafore', existing.get('vertafore')),
@@ -2875,9 +2888,9 @@ async def update_recruit(recruit_id: str, recruit_data: dict, current_user: dict
 
 @api_router.delete("/recruiting/{recruit_id}")
 async def delete_recruit(recruit_id: str, current_user: dict = Depends(get_current_user)):
-    """Delete a recruit (State Manager only)"""
-    if current_user['role'] != 'state_manager':
-        raise HTTPException(status_code=403, detail="Only State Managers can manage recruiting")
+    """Delete a recruit (State Manager or Regional Manager for their own recruits)"""
+    if current_user['role'] not in ['state_manager', 'regional_manager']:
+        raise HTTPException(status_code=403, detail="Only State Managers and Regional Managers can manage recruiting")
     
     result = await db.recruits.delete_one({"id": recruit_id})
     if result.deleted_count == 0:
