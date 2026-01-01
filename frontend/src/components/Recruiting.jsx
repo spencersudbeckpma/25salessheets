@@ -6,7 +6,7 @@ import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { 
   Users, Plus, Trash2, Edit2, Save, X, Search, 
-  CheckCircle, Circle, ChevronDown, Download
+  CheckCircle, Circle, Download
 } from 'lucide-react';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
@@ -18,14 +18,10 @@ const Recruiting = ({ user }) => {
   const [showAddForm, setShowAddForm] = useState(false);
   const [editingId, setEditingId] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
-  const [filterYear, setFilterYear] = useState('all');
   const [filterState, setFilterState] = useState('all');
-
-  const currentYear = new Date().getFullYear();
-  const years = Array.from({ length: 10 }, (_, i) => currentYear - i);
+  const [filterStatus, setFilterStatus] = useState('all');
 
   const [formData, setFormData] = useState({
-    year: currentYear.toString(),
     name: '',
     source: '',
     state: '',
@@ -34,7 +30,9 @@ const Recruiting = ({ user }) => {
     vertafore: false,
     study_materials: false,
     fingerprint: false,
-    pass_test: false,
+    testing_date: '',
+    pass_fail: '',
+    npa_license: false,
     comments: ''
   });
 
@@ -85,7 +83,6 @@ const Recruiting = ({ user }) => {
 
   const handleEdit = (recruit) => {
     setFormData({
-      year: recruit.year || currentYear.toString(),
       name: recruit.name || '',
       source: recruit.source || '',
       state: recruit.state || '',
@@ -94,7 +91,9 @@ const Recruiting = ({ user }) => {
       vertafore: recruit.vertafore || false,
       study_materials: recruit.study_materials || false,
       fingerprint: recruit.fingerprint || false,
-      pass_test: recruit.pass_test || false,
+      testing_date: recruit.testing_date || '',
+      pass_fail: recruit.pass_fail || '',
+      npa_license: recruit.npa_license || false,
       comments: recruit.comments || ''
     });
     setEditingId(recruit.id);
@@ -128,9 +127,21 @@ const Recruiting = ({ user }) => {
     }
   };
 
+  const updatePassFail = async (recruit, value) => {
+    try {
+      const token = localStorage.getItem('token');
+      const updatedData = { ...recruit, pass_fail: value };
+      await axios.put(`${API}/recruiting/${recruit.id}`, updatedData, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      fetchRecruits();
+    } catch (error) {
+      toast.error('Failed to update');
+    }
+  };
+
   const resetForm = () => {
     setFormData({
-      year: currentYear.toString(),
       name: '',
       source: '',
       state: '',
@@ -139,7 +150,9 @@ const Recruiting = ({ user }) => {
       vertafore: false,
       study_materials: false,
       fingerprint: false,
-      pass_test: false,
+      testing_date: '',
+      pass_fail: '',
+      npa_license: false,
       comments: ''
     });
     setEditingId(null);
@@ -147,9 +160,8 @@ const Recruiting = ({ user }) => {
   };
 
   const exportToCSV = () => {
-    const headers = ['Year', 'Name', 'Where Came From', 'State', 'RM/DM', 'Text+Email', 'Vertafore', 'Study Materials', 'Fingerprint', 'Pass Test', 'Comments'];
+    const headers = ['Name', 'Where Came From', 'State', 'RM/DM', 'Text+Email', 'Vertafore', 'Study Materials', 'Fingerprint', 'Testing Date', 'Pass/Fail', 'NPA License', 'Comments'];
     const rows = filteredRecruits.map(r => [
-      r.year,
       r.name,
       r.source,
       r.state,
@@ -158,7 +170,9 @@ const Recruiting = ({ user }) => {
       r.vertafore ? 'Yes' : 'No',
       r.study_materials ? 'Yes' : 'No',
       r.fingerprint ? 'Yes' : 'No',
-      r.pass_test ? 'Yes' : 'No',
+      r.testing_date || '',
+      r.pass_fail || '',
+      r.npa_license ? 'Yes' : 'No',
       r.comments
     ]);
     
@@ -175,9 +189,12 @@ const Recruiting = ({ user }) => {
     const matchesSearch = r.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
                           r.source?.toLowerCase().includes(searchTerm.toLowerCase()) ||
                           r.comments?.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesYear = filterYear === 'all' || r.year === filterYear;
     const matchesState = filterState === 'all' || r.state === filterState;
-    return matchesSearch && matchesYear && matchesState;
+    const matchesStatus = filterStatus === 'all' || 
+                          (filterStatus === 'pass' && r.pass_fail === 'Pass') ||
+                          (filterStatus === 'fail' && r.pass_fail === 'Fail') ||
+                          (filterStatus === 'pending' && (!r.pass_fail || r.pass_fail === ''));
+    return matchesSearch && matchesState && matchesStatus;
   });
 
   const CheckBox = ({ checked, onClick, label }) => (
@@ -193,6 +210,26 @@ const Recruiting = ({ user }) => {
       {checked ? <CheckCircle size={18} /> : <Circle size={18} />}
     </button>
   );
+
+  const PassFailBadge = ({ value, onSelect }) => {
+    const colors = {
+      'Pass': 'bg-green-500 text-white',
+      'Fail': 'bg-red-500 text-white',
+      '': 'bg-slate-200 text-slate-500'
+    };
+    
+    return (
+      <select
+        value={value || ''}
+        onChange={(e) => onSelect(e.target.value)}
+        className={`text-xs font-medium px-2 py-1 rounded-lg border-0 cursor-pointer ${colors[value] || colors['']}`}
+      >
+        <option value="">-</option>
+        <option value="Pass">Pass</option>
+        <option value="Fail">Fail</option>
+      </select>
+    );
+  };
 
   if (user.role !== 'state_manager') {
     return (
@@ -254,19 +291,6 @@ const Recruiting = ({ user }) => {
               <form onSubmit={handleSubmit} className="space-y-4">
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-sm font-medium mb-1">Year</label>
-                    <select
-                      value={formData.year}
-                      onChange={(e) => setFormData({ ...formData, year: e.target.value })}
-                      className="w-full border rounded-lg p-2 text-sm"
-                    >
-                      {years.map(y => (
-                        <option key={y} value={y}>{y}</option>
-                      ))}
-                    </select>
-                  </div>
-
-                  <div>
                     <label className="block text-sm font-medium mb-1">Name *</label>
                     <Input
                       value={formData.name}
@@ -307,6 +331,28 @@ const Recruiting = ({ user }) => {
                       placeholder="Regional/District Manager"
                     />
                   </div>
+
+                  <div>
+                    <label className="block text-sm font-medium mb-1">Testing Date</label>
+                    <Input
+                      type="date"
+                      value={formData.testing_date}
+                      onChange={(e) => setFormData({ ...formData, testing_date: e.target.value })}
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium mb-1">Pass / Fail</label>
+                    <select
+                      value={formData.pass_fail}
+                      onChange={(e) => setFormData({ ...formData, pass_fail: e.target.value })}
+                      className="w-full border rounded-lg p-2 text-sm"
+                    >
+                      <option value="">Not Yet</option>
+                      <option value="Pass">Pass</option>
+                      <option value="Fail">Fail</option>
+                    </select>
+                  </div>
                 </div>
 
                 <div className="border-t pt-4">
@@ -317,7 +363,7 @@ const Recruiting = ({ user }) => {
                       { key: 'vertafore', label: 'Vertafore' },
                       { key: 'study_materials', label: 'Study Materials' },
                       { key: 'fingerprint', label: 'Fingerprint' },
-                      { key: 'pass_test', label: 'Pass Test' }
+                      { key: 'npa_license', label: 'NPA License' }
                     ].map(({ key, label }) => (
                       <label key={key} className="flex items-center gap-2 cursor-pointer">
                         <input
@@ -368,16 +414,6 @@ const Recruiting = ({ user }) => {
             />
           </div>
           <select
-            value={filterYear}
-            onChange={(e) => setFilterYear(e.target.value)}
-            className="border rounded-lg px-3 h-9 text-sm"
-          >
-            <option value="all">All Years</option>
-            {years.map(y => (
-              <option key={y} value={y.toString()}>{y}</option>
-            ))}
-          </select>
-          <select
             value={filterState}
             onChange={(e) => setFilterState(e.target.value)}
             className="border rounded-lg px-3 h-9 text-sm"
@@ -387,6 +423,16 @@ const Recruiting = ({ user }) => {
             <option value="ND">North Dakota</option>
             <option value="SD">South Dakota</option>
           </select>
+          <select
+            value={filterStatus}
+            onChange={(e) => setFilterStatus(e.target.value)}
+            className="border rounded-lg px-3 h-9 text-sm"
+          >
+            <option value="all">All Status</option>
+            <option value="pass">Passed</option>
+            <option value="fail">Failed</option>
+            <option value="pending">Pending</option>
+          </select>
         </div>
 
         {/* Table */}
@@ -394,7 +440,6 @@ const Recruiting = ({ user }) => {
           <table className="w-full text-sm">
             <thead className="bg-slate-800 text-white">
               <tr>
-                <th className="px-3 py-3 text-left font-medium">Year</th>
                 <th className="px-3 py-3 text-left font-medium">Name</th>
                 <th className="px-3 py-3 text-left font-medium hidden sm:table-cell">Source</th>
                 <th className="px-3 py-3 text-left font-medium">State</th>
@@ -403,7 +448,9 @@ const Recruiting = ({ user }) => {
                 <th className="px-3 py-3 text-center font-medium" title="Vertafore">VF</th>
                 <th className="px-3 py-3 text-center font-medium" title="Study Materials">SM</th>
                 <th className="px-3 py-3 text-center font-medium" title="Fingerprint">FP</th>
-                <th className="px-3 py-3 text-center font-medium" title="Pass Test">PT</th>
+                <th className="px-3 py-3 text-center font-medium hidden sm:table-cell">Test Date</th>
+                <th className="px-3 py-3 text-center font-medium">P/F</th>
+                <th className="px-3 py-3 text-center font-medium" title="NPA License">NPA</th>
                 <th className="px-3 py-3 text-left font-medium hidden lg:table-cell">Comments</th>
                 <th className="px-3 py-3 text-center font-medium">Actions</th>
               </tr>
@@ -411,14 +458,14 @@ const Recruiting = ({ user }) => {
             <tbody className="divide-y divide-slate-200">
               {loading ? (
                 <tr>
-                  <td colSpan="12" className="px-3 py-8 text-center text-slate-400">
+                  <td colSpan="13" className="px-3 py-8 text-center text-slate-400">
                     Loading recruits...
                   </td>
                 </tr>
               ) : filteredRecruits.length === 0 ? (
                 <tr>
-                  <td colSpan="12" className="px-3 py-8 text-center text-slate-400">
-                    {searchTerm || filterYear !== 'all' || filterState !== 'all' 
+                  <td colSpan="13" className="px-3 py-8 text-center text-slate-400">
+                    {searchTerm || filterState !== 'all' || filterStatus !== 'all'
                       ? 'No recruits match your filters'
                       : 'No recruits yet. Click "Add Recruit" to get started.'}
                   </td>
@@ -426,7 +473,6 @@ const Recruiting = ({ user }) => {
               ) : (
                 filteredRecruits.map((recruit) => (
                   <tr key={recruit.id} className="hover:bg-slate-50">
-                    <td className="px-3 py-3 text-slate-600">{recruit.year}</td>
                     <td className="px-3 py-3 font-medium text-slate-800">{recruit.name}</td>
                     <td className="px-3 py-3 text-slate-600 hidden sm:table-cell">{recruit.source || '-'}</td>
                     <td className="px-3 py-3">
@@ -463,11 +509,20 @@ const Recruiting = ({ user }) => {
                         label="Fingerprint"
                       />
                     </td>
+                    <td className="px-3 py-3 text-center text-xs text-slate-600 hidden sm:table-cell">
+                      {recruit.testing_date || '-'}
+                    </td>
+                    <td className="px-3 py-3 text-center">
+                      <PassFailBadge 
+                        value={recruit.pass_fail} 
+                        onSelect={(val) => updatePassFail(recruit, val)}
+                      />
+                    </td>
                     <td className="px-3 py-3 text-center">
                       <CheckBox
-                        checked={recruit.pass_test}
-                        onClick={() => toggleField(recruit, 'pass_test')}
-                        label="Pass Test"
+                        checked={recruit.npa_license}
+                        onClick={() => toggleField(recruit, 'npa_license')}
+                        label="NPA License"
                       />
                     </td>
                     <td className="px-3 py-3 text-slate-600 hidden lg:table-cell max-w-[200px] truncate" title={recruit.comments}>
@@ -500,15 +555,18 @@ const Recruiting = ({ user }) => {
 
         {/* Summary Stats */}
         {filteredRecruits.length > 0 && (
-          <div className="mt-4 grid grid-cols-2 sm:grid-cols-5 gap-3">
+          <div className="mt-4 grid grid-cols-2 sm:grid-cols-6 gap-3">
             {[
               { label: 'Text + Email', key: 'text_email' },
               { label: 'Vertafore', key: 'vertafore' },
               { label: 'Study Materials', key: 'study_materials' },
               { label: 'Fingerprint', key: 'fingerprint' },
-              { label: 'Passed Test', key: 'pass_test' }
-            ].map(({ label, key }) => {
-              const count = filteredRecruits.filter(r => r[key]).length;
+              { label: 'Passed Test', key: 'pass_fail', isPassFail: true },
+              { label: 'NPA License', key: 'npa_license' }
+            ].map(({ label, key, isPassFail }) => {
+              const count = isPassFail 
+                ? filteredRecruits.filter(r => r.pass_fail === 'Pass').length
+                : filteredRecruits.filter(r => r[key]).length;
               const percentage = Math.round((count / filteredRecruits.length) * 100);
               return (
                 <div key={key} className="bg-slate-50 rounded-lg p-3 text-center">
