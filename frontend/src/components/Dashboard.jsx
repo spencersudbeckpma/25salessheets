@@ -133,6 +133,15 @@ const Dashboard = ({ user, setUser }) => {
                   👥 Recruiting
                 </TabsTrigger>
               )}
+              {user.role === 'regional_manager' && (
+                <TabsTrigger 
+                  value="recruiting" 
+                  data-testid="recruiting-tab" 
+                  className="py-2.5 px-3 text-xs md:text-sm whitespace-nowrap flex-shrink-0 rounded-lg text-slate-600 data-[state=active]:bg-slate-800 data-[state=active]:text-amber-400 data-[state=active]:shadow-md"
+                >
+                  👥 My Recruiting
+                </TabsTrigger>
+              )}
             </TabsList>
           </div>
 
