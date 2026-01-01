@@ -6,7 +6,7 @@ import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { 
   Users, Plus, Trash2, Save, X, Search, 
-  CheckCircle, Circle, Download, UserCheck, UserX, Clock
+  CheckCircle, Circle, Download, UserCheck, UserX, Clock, ChevronDown
 } from 'lucide-react';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
@@ -19,7 +19,9 @@ const Recruiting = ({ user }) => {
   const [editingId, setEditingId] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterState, setFilterState] = useState('all');
-  const [activeSection, setActiveSection] = useState('active'); // 'active', 'completed', 'did_not_complete'
+  const [activeSection, setActiveSection] = useState('active');
+  const [selectedRM, setSelectedRM] = useState('all'); // For filtering by Regional Manager
+  const [regionalManagers, setRegionalManagers] = useState([]);
 
   const [formData, setFormData] = useState({
     name: '',
@@ -28,6 +30,7 @@ const Recruiting = ({ user }) => {
     source: '',
     state: '',
     rm: '',
+    rm_id: '', // Store the RM's user ID for filtering
     dm: '',
     text_email: false,
     vertafore: false,
@@ -42,6 +45,7 @@ const Recruiting = ({ user }) => {
 
   useEffect(() => {
     fetchRecruits();
+    fetchRegionalManagers();
   }, []);
 
   const fetchRecruits = async () => {
@@ -55,6 +59,20 @@ const Recruiting = ({ user }) => {
       toast.error('Failed to fetch recruits');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchRegionalManagers = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await axios.get(`${API}/team/members`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      // Filter to only get regional managers
+      const rms = response.data.filter(m => m.role === 'regional_manager');
+      setRegionalManagers(rms);
+    } catch (error) {
+      console.error('Failed to fetch regional managers');
     }
   };
 
@@ -93,6 +111,7 @@ const Recruiting = ({ user }) => {
       source: recruit.source || '',
       state: recruit.state || '',
       rm: recruit.rm || '',
+      rm_id: recruit.rm_id || '',
       dm: recruit.dm || '',
       text_email: recruit.text_email || false,
       vertafore: recruit.vertafore || false,
@@ -162,6 +181,15 @@ const Recruiting = ({ user }) => {
     }
   };
 
+  const handleRMSelect = (rmId) => {
+    const selectedManager = regionalManagers.find(rm => rm.id === rmId);
+    setFormData({
+      ...formData,
+      rm_id: rmId,
+      rm: selectedManager ? selectedManager.name : ''
+    });
+  };
+
   const resetForm = () => {
     setFormData({
       name: '',
@@ -170,6 +198,7 @@ const Recruiting = ({ user }) => {
       source: '',
       state: '',
       rm: '',
+      rm_id: '',
       dm: '',
       text_email: false,
       vertafore: false,
@@ -187,7 +216,8 @@ const Recruiting = ({ user }) => {
 
   const exportToCSV = () => {
     const headers = ['Pipeline Status', 'Name', 'Phone', 'Email', 'Where Came From', 'State', 'RM', 'DM', 'Text+Email', 'Vertafore', 'Study Materials', 'Fingerprint', 'Testing Date', 'Pass/Fail', 'NPA License', 'Comments'];
-    const rows = recruits.map(r => [
+    const exportData = selectedRM === 'all' ? recruits : recruits.filter(r => r.rm_id === selectedRM);
+    const rows = exportData.map(r => [
       r.pipeline_status || 'active',
       r.name,
       r.phone,
@@ -211,11 +241,11 @@ const Recruiting = ({ user }) => {
     const url = window.URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `recruiting_pipeline_${new Date().toISOString().split('T')[0]}.csv`;
+    a.download = `recruiting_pipeline_${selectedRM === 'all' ? 'all' : regionalManagers.find(rm => rm.id === selectedRM)?.name || 'filtered'}_${new Date().toISOString().split('T')[0]}.csv`;
     a.click();
   };
 
-  // Filter recruits by section and search
+  // Filter recruits by section, search, and Regional Manager
   const getFilteredRecruits = (status) => {
     return recruits.filter(r => {
       const pipelineStatus = r.pipeline_status || 'active';
@@ -226,13 +256,32 @@ const Recruiting = ({ user }) => {
                             r.phone?.toLowerCase().includes(searchTerm.toLowerCase()) ||
                             r.comments?.toLowerCase().includes(searchTerm.toLowerCase());
       const matchesState = filterState === 'all' || r.state === filterState;
-      return matchesStatus && matchesSearch && matchesState;
+      
+      // Filter by Regional Manager
+      // State Manager sees all or filtered by selected RM
+      // Regional Manager only sees their own recruits
+      let matchesRM = true;
+      if (user.role === 'regional_manager') {
+        matchesRM = r.rm_id === user.id;
+      } else if (selectedRM !== 'all') {
+        matchesRM = r.rm_id === selectedRM;
+      }
+      
+      return matchesStatus && matchesSearch && matchesState && matchesRM;
     });
   };
 
   const activeRecruits = getFilteredRecruits('active');
   const completedRecruits = getFilteredRecruits('completed');
   const didNotCompleteRecruits = getFilteredRecruits('did_not_complete');
+
+  // Count recruits per RM for the tabs
+  const getCountForRM = (rmId) => {
+    if (rmId === 'all') {
+      return recruits.length;
+    }
+    return recruits.filter(r => r.rm_id === rmId).length;
+  };
 
   const CheckBox = ({ checked, onClick, label }) => (
     <button
@@ -405,7 +454,8 @@ const Recruiting = ({ user }) => {
     </div>
   );
 
-  if (user.role !== 'state_manager') {
+  // Check if user has access (State Manager or Regional Manager)
+  if (!['state_manager', 'regional_manager'].includes(user.role)) {
     return (
       <Card className="shadow-lg">
         <CardContent className="p-8 text-center text-slate-500">
@@ -422,6 +472,9 @@ const Recruiting = ({ user }) => {
           <CardTitle className="flex items-center gap-2 text-xl">
             <Users className="text-amber-600" size={24} />
             Recruiting Pipeline
+            {user.role === 'regional_manager' && (
+              <span className="text-sm font-normal text-slate-500 ml-2">({user.name})</span>
+            )}
           </CardTitle>
           <div className="flex gap-2">
             <Button
@@ -444,7 +497,7 @@ const Recruiting = ({ user }) => {
           </div>
         </div>
         <p className="text-sm text-slate-500 mt-1">
-          Track your recruiting pipeline • {recruits.length} total recruits
+          Track your recruiting pipeline • {selectedRM === 'all' || user.role === 'regional_manager' ? recruits.filter(r => user.role === 'regional_manager' ? r.rm_id === user.id : true).length : recruits.filter(r => r.rm_id === selectedRM).length} recruits
         </p>
       </CardHeader>
 
@@ -529,14 +582,23 @@ const Recruiting = ({ user }) => {
                     </select>
                   </div>
 
-                  <div>
-                    <label className="block text-sm font-medium mb-1">RM (Regional Manager)</label>
-                    <Input
-                      value={formData.rm}
-                      onChange={(e) => setFormData({ ...formData, rm: e.target.value })}
-                      placeholder="Regional Manager"
-                    />
-                  </div>
+                  {/* Regional Manager Dropdown - Only show for State Manager */}
+                  {user.role === 'state_manager' && (
+                    <div>
+                      <label className="block text-sm font-medium mb-1">Regional Manager (RM) *</label>
+                      <select
+                        value={formData.rm_id}
+                        onChange={(e) => handleRMSelect(e.target.value)}
+                        className="w-full border rounded-lg p-2 text-sm"
+                        required
+                      >
+                        <option value="">Select Regional Manager</option>
+                        {regionalManagers.map(rm => (
+                          <option key={rm.id} value={rm.id}>{rm.name}</option>
+                        ))}
+                      </select>
+                    </div>
+                  )}
 
                   <div>
                     <label className="block text-sm font-medium mb-1">DM (District Manager)</label>
@@ -631,6 +693,38 @@ const Recruiting = ({ user }) => {
           </div>
         )}
 
+        {/* Regional Manager Sub-Tabs - Only show for State Manager */}
+        {user.role === 'state_manager' && regionalManagers.length > 0 && (
+          <div className="mb-4">
+            <label className="block text-xs font-medium text-slate-500 mb-2">Filter by Regional Manager</label>
+            <div className="flex gap-2 overflow-x-auto pb-2">
+              <button
+                onClick={() => setSelectedRM('all')}
+                className={`px-4 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-colors ${
+                  selectedRM === 'all' 
+                    ? 'bg-slate-800 text-amber-400' 
+                    : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                }`}
+              >
+                All RMs ({getCountForRM('all')})
+              </button>
+              {regionalManagers.map(rm => (
+                <button
+                  key={rm.id}
+                  onClick={() => setSelectedRM(rm.id)}
+                  className={`px-4 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-colors ${
+                    selectedRM === rm.id 
+                      ? 'bg-slate-800 text-amber-400' 
+                      : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                  }`}
+                >
+                  {rm.name} ({getCountForRM(rm.id)})
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
         {/* Filters */}
         <div className="flex flex-col sm:flex-row gap-3 mb-4">
           <div className="relative flex-1">
@@ -654,7 +748,7 @@ const Recruiting = ({ user }) => {
           </select>
         </div>
 
-        {/* Section Tabs */}
+        {/* Pipeline Status Tabs */}
         <div className="flex gap-2 mb-4 border-b pb-2 overflow-x-auto">
           <button
             onClick={() => setActiveSection('active')}
@@ -665,7 +759,7 @@ const Recruiting = ({ user }) => {
             }`}
           >
             <Clock size={16} />
-            Active Pipeline ({activeRecruits.length})
+            Active ({activeRecruits.length})
           </button>
           <button
             onClick={() => setActiveSection('completed')}
