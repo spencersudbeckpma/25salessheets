@@ -2796,16 +2796,21 @@ async def delete_docusphere_document(doc_id: str, current_user: dict = Depends(g
 
 
 # ============================================
-# Recruiting Pipeline Endpoints (State Manager Only)
+# Recruiting Pipeline Endpoints (State Manager and Regional Manager)
 # ============================================
 
 @api_router.get("/recruiting")
 async def get_recruits(current_user: dict = Depends(get_current_user)):
-    """Get all recruits (State Manager only)"""
-    if current_user['role'] != 'state_manager':
-        raise HTTPException(status_code=403, detail="Only State Managers can access recruiting")
+    """Get recruits - State Manager sees all, Regional Manager sees only their own"""
+    if current_user['role'] not in ['state_manager', 'regional_manager']:
+        raise HTTPException(status_code=403, detail="Only State Managers and Regional Managers can access recruiting")
     
-    recruits = await db.recruits.find({}, {"_id": 0}).sort("created_at", -1).to_list(1000)
+    if current_user['role'] == 'regional_manager':
+        # Regional Manager only sees their own recruits
+        recruits = await db.recruits.find({"rm_id": current_user['id']}, {"_id": 0}).sort("created_at", -1).to_list(1000)
+    else:
+        # State Manager sees all
+        recruits = await db.recruits.find({}, {"_id": 0}).sort("created_at", -1).to_list(1000)
     return recruits
 
 @api_router.post("/recruiting")
