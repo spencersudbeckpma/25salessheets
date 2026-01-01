@@ -2831,6 +2831,7 @@ async def create_recruit(recruit_data: dict, current_user: dict = Depends(get_cu
         "pass_fail": recruit_data.get('pass_fail', ''),
         "npa_license": recruit_data.get('npa_license', False),
         "comments": recruit_data.get('comments', ''),
+        "pipeline_status": recruit_data.get('pipeline_status', 'active'),
         "created_by": current_user['id'],
         "created_at": datetime.now(timezone.utc).isoformat(),
         "updated_at": datetime.now(timezone.utc).isoformat()
@@ -2865,6 +2866,7 @@ async def update_recruit(recruit_id: str, recruit_data: dict, current_user: dict
         "pass_fail": recruit_data.get('pass_fail', existing.get('pass_fail')),
         "npa_license": recruit_data.get('npa_license', existing.get('npa_license')),
         "comments": recruit_data.get('comments', existing.get('comments')),
+        "pipeline_status": recruit_data.get('pipeline_status', existing.get('pipeline_status', 'active')),
         "updated_at": datetime.now(timezone.utc).isoformat()
     }
     
