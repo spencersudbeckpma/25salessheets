@@ -173,6 +173,12 @@ const Dashboard = ({ user, setUser }) => {
               <Reports user={user} />
             </TabsContent>
           )}
+
+          {user.role === 'state_manager' && (
+            <TabsContent value="recruiting" data-testid="recruiting-content" className="mt-4 md:mt-6">
+              <Recruiting user={user} />
+            </TabsContent>
+          )}
         </Tabs>
       </div>
     </div>
