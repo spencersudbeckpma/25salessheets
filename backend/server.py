@@ -2817,9 +2817,12 @@ async def create_recruit(recruit_data: dict, current_user: dict = Depends(get_cu
     recruit = {
         "id": str(uuid.uuid4()),
         "name": recruit_data.get('name', ''),
+        "phone": recruit_data.get('phone', ''),
+        "email": recruit_data.get('email', ''),
         "source": recruit_data.get('source', ''),
         "state": recruit_data.get('state', ''),
-        "rm_dm": recruit_data.get('rm_dm', ''),
+        "rm": recruit_data.get('rm', ''),
+        "dm": recruit_data.get('dm', ''),
         "text_email": recruit_data.get('text_email', False),
         "vertafore": recruit_data.get('vertafore', False),
         "study_materials": recruit_data.get('study_materials', False),
@@ -2848,9 +2851,12 @@ async def update_recruit(recruit_id: str, recruit_data: dict, current_user: dict
     
     update_data = {
         "name": recruit_data.get('name', existing.get('name')),
+        "phone": recruit_data.get('phone', existing.get('phone')),
+        "email": recruit_data.get('email', existing.get('email')),
         "source": recruit_data.get('source', existing.get('source')),
         "state": recruit_data.get('state', existing.get('state')),
-        "rm_dm": recruit_data.get('rm_dm', existing.get('rm_dm')),
+        "rm": recruit_data.get('rm', existing.get('rm')),
+        "dm": recruit_data.get('dm', existing.get('dm')),
         "text_email": recruit_data.get('text_email', existing.get('text_email')),
         "vertafore": recruit_data.get('vertafore', existing.get('vertafore')),
         "study_materials": recruit_data.get('study_materials', existing.get('study_materials')),
