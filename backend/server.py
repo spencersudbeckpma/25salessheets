@@ -2796,6 +2796,87 @@ async def delete_docusphere_document(doc_id: str, current_user: dict = Depends(g
 
 
 # ============================================
+# Recruiting Pipeline Endpoints (State Manager Only)
+# ============================================
+
+@api_router.get("/recruiting")
+async def get_recruits(current_user: dict = Depends(get_current_user)):
+    """Get all recruits (State Manager only)"""
+    if current_user['role'] != 'state_manager':
+        raise HTTPException(status_code=403, detail="Only State Managers can access recruiting")
+    
+    recruits = await db.recruits.find({}, {"_id": 0}).sort("created_at", -1).to_list(1000)
+    return recruits
+
+@api_router.post("/recruiting")
+async def create_recruit(recruit_data: dict, current_user: dict = Depends(get_current_user)):
+    """Create a new recruit (State Manager only)"""
+    if current_user['role'] != 'state_manager':
+        raise HTTPException(status_code=403, detail="Only State Managers can manage recruiting")
+    
+    recruit = {
+        "id": str(uuid.uuid4()),
+        "year": recruit_data.get('year', str(datetime.now().year)),
+        "name": recruit_data.get('name', ''),
+        "source": recruit_data.get('source', ''),
+        "state": recruit_data.get('state', ''),
+        "rm_dm": recruit_data.get('rm_dm', ''),
+        "text_email": recruit_data.get('text_email', False),
+        "vertafore": recruit_data.get('vertafore', False),
+        "study_materials": recruit_data.get('study_materials', False),
+        "fingerprint": recruit_data.get('fingerprint', False),
+        "pass_test": recruit_data.get('pass_test', False),
+        "comments": recruit_data.get('comments', ''),
+        "created_by": current_user['id'],
+        "created_at": datetime.now(timezone.utc).isoformat(),
+        "updated_at": datetime.now(timezone.utc).isoformat()
+    }
+    
+    await db.recruits.insert_one(recruit)
+    return {"message": "Recruit created", "id": recruit['id']}
+
+@api_router.put("/recruiting/{recruit_id}")
+async def update_recruit(recruit_id: str, recruit_data: dict, current_user: dict = Depends(get_current_user)):
+    """Update a recruit (State Manager only)"""
+    if current_user['role'] != 'state_manager':
+        raise HTTPException(status_code=403, detail="Only State Managers can manage recruiting")
+    
+    existing = await db.recruits.find_one({"id": recruit_id})
+    if not existing:
+        raise HTTPException(status_code=404, detail="Recruit not found")
+    
+    update_data = {
+        "year": recruit_data.get('year', existing.get('year')),
+        "name": recruit_data.get('name', existing.get('name')),
+        "source": recruit_data.get('source', existing.get('source')),
+        "state": recruit_data.get('state', existing.get('state')),
+        "rm_dm": recruit_data.get('rm_dm', existing.get('rm_dm')),
+        "text_email": recruit_data.get('text_email', existing.get('text_email')),
+        "vertafore": recruit_data.get('vertafore', existing.get('vertafore')),
+        "study_materials": recruit_data.get('study_materials', existing.get('study_materials')),
+        "fingerprint": recruit_data.get('fingerprint', existing.get('fingerprint')),
+        "pass_test": recruit_data.get('pass_test', existing.get('pass_test')),
+        "comments": recruit_data.get('comments', existing.get('comments')),
+        "updated_at": datetime.now(timezone.utc).isoformat()
+    }
+    
+    await db.recruits.update_one({"id": recruit_id}, {"$set": update_data})
+    return {"message": "Recruit updated"}
+
+@api_router.delete("/recruiting/{recruit_id}")
+async def delete_recruit(recruit_id: str, current_user: dict = Depends(get_current_user)):
+    """Delete a recruit (State Manager only)"""
+    if current_user['role'] != 'state_manager':
+        raise HTTPException(status_code=403, detail="Only State Managers can manage recruiting")
+    
+    result = await db.recruits.delete_one({"id": recruit_id})
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Recruit not found")
+    
+    return {"message": "Recruit deleted"}
+
+
+# ============================================
 # PMA Bonus PDF Management Endpoints
 # ============================================
 
