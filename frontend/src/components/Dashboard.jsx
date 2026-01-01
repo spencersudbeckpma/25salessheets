@@ -9,6 +9,7 @@ import Reports from './Reports';
 import Analytics from './Analytics';
 import PMABonuses from './PMABonuses';
 import PMADocuSphere from './PMADocuSphere';
+import Recruiting from './Recruiting';
 import { Button } from './ui/button';
 import { LogOut } from 'lucide-react';
 
