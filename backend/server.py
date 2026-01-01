@@ -2816,7 +2816,6 @@ async def create_recruit(recruit_data: dict, current_user: dict = Depends(get_cu
     
     recruit = {
         "id": str(uuid.uuid4()),
-        "year": recruit_data.get('year', str(datetime.now().year)),
         "name": recruit_data.get('name', ''),
         "source": recruit_data.get('source', ''),
         "state": recruit_data.get('state', ''),
@@ -2825,7 +2824,9 @@ async def create_recruit(recruit_data: dict, current_user: dict = Depends(get_cu
         "vertafore": recruit_data.get('vertafore', False),
         "study_materials": recruit_data.get('study_materials', False),
         "fingerprint": recruit_data.get('fingerprint', False),
-        "pass_test": recruit_data.get('pass_test', False),
+        "testing_date": recruit_data.get('testing_date', ''),
+        "pass_fail": recruit_data.get('pass_fail', ''),
+        "npa_license": recruit_data.get('npa_license', False),
         "comments": recruit_data.get('comments', ''),
         "created_by": current_user['id'],
         "created_at": datetime.now(timezone.utc).isoformat(),
@@ -2846,7 +2847,6 @@ async def update_recruit(recruit_id: str, recruit_data: dict, current_user: dict
         raise HTTPException(status_code=404, detail="Recruit not found")
     
     update_data = {
-        "year": recruit_data.get('year', existing.get('year')),
         "name": recruit_data.get('name', existing.get('name')),
         "source": recruit_data.get('source', existing.get('source')),
         "state": recruit_data.get('state', existing.get('state')),
@@ -2855,7 +2855,9 @@ async def update_recruit(recruit_id: str, recruit_data: dict, current_user: dict
         "vertafore": recruit_data.get('vertafore', existing.get('vertafore')),
         "study_materials": recruit_data.get('study_materials', existing.get('study_materials')),
         "fingerprint": recruit_data.get('fingerprint', existing.get('fingerprint')),
-        "pass_test": recruit_data.get('pass_test', existing.get('pass_test')),
+        "testing_date": recruit_data.get('testing_date', existing.get('testing_date')),
+        "pass_fail": recruit_data.get('pass_fail', existing.get('pass_fail')),
+        "npa_license": recruit_data.get('npa_license', existing.get('npa_license')),
         "comments": recruit_data.get('comments', existing.get('comments')),
         "updated_at": datetime.now(timezone.utc).isoformat()
     }
