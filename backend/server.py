@@ -1163,13 +1163,13 @@ async def get_period_report(report_type: str, period: str, current_user: dict = 
         ).to_list(1000)
         
         # If user_id specified, show that manager's team (not filter direct reports)
+        target_manager = None
         if user_id:
             # Get all subordinates to verify the user is in the hierarchy
             all_subordinates = await get_all_subordinates(current_user['id'])
             all_subordinates.insert(0, current_user)  # Include self
             
             # Verify the requested user is in the hierarchy
-            target_manager = None
             for member in all_subordinates:
                 if member['id'] == user_id:
                     target_manager = member
@@ -1187,31 +1187,30 @@ async def get_period_report(report_type: str, period: str, current_user: dict = 
         
         report_data = []
         
-        # If a specific manager is selected, include their individual numbers first
-        if user_id and target_manager:
-            # Add the manager's individual activity
-            manager_activities = await db.activities.find({
-                "user_id": target_manager['id'],
-                "date": {"$gte": start_date.isoformat()}
-            }, {"_id": 0}).to_list(10000)
-            
-            manager_totals = {
-                "contacts": sum(a.get('contacts', 0) for a in manager_activities),
-                "appointments": sum(a.get('appointments', 0) for a in manager_activities),
-                "presentations": sum(a.get('presentations', 0) for a in manager_activities),
-                "referrals": sum(a.get('referrals', 0) for a in manager_activities),
-                "testimonials": sum(a.get('testimonials', 0) for a in manager_activities),
-                "sales": sum(a.get('sales', 0) for a in manager_activities),
-                "new_face_sold": sum(a.get('new_face_sold', 0) for a in manager_activities),
-                "premium": sum(a.get('premium', 0) for a in manager_activities)
-            }
-            
-            report_data.append({
-                "team_name": target_manager.get('name', 'Unknown') + " (Individual)",
-                "manager": target_manager.get('name', 'Unknown'),
-                "role": target_manager.get('role', 'unknown').replace('_', ' ').title(),
-                **manager_totals
-            })
+        # Always include the viewing user's (or selected manager's) individual numbers first
+        individual_user = target_manager if user_id and target_manager else current_user
+        user_activities = await db.activities.find({
+            "user_id": individual_user['id'],
+            "date": {"$gte": start_date.isoformat()}
+        }, {"_id": 0}).to_list(10000)
+        
+        user_totals = {
+            "contacts": sum(a.get('contacts', 0) for a in user_activities),
+            "appointments": sum(a.get('appointments', 0) for a in user_activities),
+            "presentations": sum(a.get('presentations', 0) for a in user_activities),
+            "referrals": sum(a.get('referrals', 0) for a in user_activities),
+            "testimonials": sum(a.get('testimonials', 0) for a in user_activities),
+            "sales": sum(a.get('sales', 0) for a in user_activities),
+            "new_face_sold": sum(a.get('new_face_sold', 0) for a in user_activities),
+            "premium": sum(a.get('premium', 0) for a in user_activities)
+        }
+        
+        report_data.append({
+            "team_name": individual_user.get('name', 'Unknown') + " (Individual)",
+            "manager": individual_user.get('name', 'Unknown'),
+            "role": individual_user.get('role', 'unknown').replace('_', ' ').title(),
+            **user_totals
+        })
         
         # Add team data for direct reports
         for manager in direct_reports:
