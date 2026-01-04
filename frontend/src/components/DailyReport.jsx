@@ -257,6 +257,18 @@ const DailyReport = ({ user, embedded = false }) => {
   const renderIndividualReport = () => {
     if (!reportData || reportData.report_type !== 'individual') return null;
 
+    // Calculate totals
+    const totals = reportData.data.reduce((acc, person) => ({
+      contacts: acc.contacts + (parseFloat(person.contacts) || 0),
+      appointments: acc.appointments + (parseFloat(person.appointments) || 0),
+      presentations: acc.presentations + (parseFloat(person.presentations) || 0),
+      referrals: acc.referrals + (parseFloat(person.referrals) || 0),
+      testimonials: acc.testimonials + (parseFloat(person.testimonials) || 0),
+      sales: acc.sales + (parseFloat(person.sales) || 0),
+      new_face_sold: acc.new_face_sold + (parseFloat(person.new_face_sold) || 0),
+      premium: acc.premium + (parseFloat(person.premium) || 0)
+    }), { contacts: 0, appointments: 0, presentations: 0, referrals: 0, testimonials: 0, sales: 0, new_face_sold: 0, premium: 0 });
+
     return (
       <div className="mt-6">
         <div className="overflow-x-auto">
@@ -317,6 +329,24 @@ const DailyReport = ({ user, embedded = false }) => {
                 );
               })}
             </tbody>
+            {/* Totals Row */}
+            {reportData.data.length > 0 && (
+              <tfoot className="bg-gradient-to-r from-amber-100 to-yellow-100 border-t-2 border-amber-400">
+                <tr>
+                  <td className="px-4 py-3 text-sm font-bold text-amber-900">TOTALS</td>
+                  <td className="px-4 py-3 text-sm font-bold text-amber-900">{reportData.data.length} members</td>
+                  <td className="px-4 py-3 text-sm text-center font-bold text-amber-900">{totals.contacts}</td>
+                  <td className="px-4 py-3 text-sm text-center font-bold text-amber-900">{totals.appointments}</td>
+                  <td className="px-4 py-3 text-sm text-center font-bold text-amber-900">{totals.presentations}</td>
+                  <td className="px-4 py-3 text-sm text-center font-bold text-amber-900">{totals.referrals}</td>
+                  <td className="px-4 py-3 text-sm text-center font-bold text-amber-900">{totals.testimonials}</td>
+                  <td className="px-4 py-3 text-sm text-center font-bold text-amber-900">{totals.sales}</td>
+                  <td className="px-4 py-3 text-sm text-center font-bold text-amber-900">{totals.new_face_sold}</td>
+                  <td className="px-4 py-3 text-sm text-center font-bold text-green-700">${totals.premium.toFixed(2)}</td>
+                  <td className="px-4 py-3 text-sm text-center"></td>
+                </tr>
+              </tfoot>
+            )}
           </table>
         </div>
         {reportData.data.length === 0 && (
