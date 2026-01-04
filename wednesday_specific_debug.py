@@ -17,7 +17,7 @@ import sys
 from pytz import timezone as pytz_timezone
 
 # Configuration
-BACKEND_URL = "https://sales-tracker-452.preview.emergentagent.com/api"
+BACKEND_URL = "https://sales-pipeline-64.preview.emergentagent.com/api"
 
 class Colors:
     GREEN = '\033[92m'
