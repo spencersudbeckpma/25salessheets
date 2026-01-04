@@ -4,7 +4,7 @@ import { toast } from 'sonner';
 import { Card, CardHeader, CardTitle, CardContent } from './ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs';
 import { Button } from './ui/button';
-import { TrendingUp, Users, BarChart3, User, ChevronRight, ChevronDown, Target } from 'lucide-react';
+import { TrendingUp, Users, BarChart3, User, ChevronRight, ChevronDown, Target, Activity, Calendar } from 'lucide-react';
 import GoalProgress from './GoalProgress';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
