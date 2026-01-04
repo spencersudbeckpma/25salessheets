@@ -107,6 +107,8 @@ const Analytics = ({ user }) => {
   const [teamAverages, setTeamAverages] = useState(null);
   const [individualMemberAverages, setIndividualMemberAverages] = useState(null);
   const [managerTeamAverages, setManagerTeamAverages] = useState(null);
+  const [trueFieldAverages, setTrueFieldAverages] = useState(null);
+  const [fieldPeriod, setFieldPeriod] = useState('last_4_weeks');
   const [selectedPeriod, setSelectedPeriod] = useState('last_4_weeks');
   const [managerPeriod, setManagerPeriod] = useState('last_4_weeks');
   const [loading, setLoading] = useState(true);
@@ -114,6 +116,7 @@ const Analytics = ({ user }) => {
   const [subordinateData, setSubordinateData] = useState({});
 
   const isManager = ['state_manager', 'regional_manager', 'district_manager'].includes(user.role);
+  const isStateManager = user.role === 'state_manager';
 
   useEffect(() => {
     fetchPersonalAverages();
@@ -121,6 +124,9 @@ const Analytics = ({ user }) => {
       fetchTeamAverages();
       fetchIndividualMemberAverages();
       fetchManagerTeamAverages();
+    }
+    if (isStateManager) {
+      fetchTrueFieldAverages();
     }
   }, []);
 
@@ -135,6 +141,24 @@ const Analytics = ({ user }) => {
       fetchManagerTeamAverages();
     }
   }, [managerPeriod]);
+
+  useEffect(() => {
+    if (isStateManager) {
+      fetchTrueFieldAverages();
+    }
+  }, [fieldPeriod]);
+
+  const fetchTrueFieldAverages = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await axios.get(`${API}/analytics/true-field-averages?period=${fieldPeriod}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      setTrueFieldAverages(response.data);
+    } catch (error) {
+      console.error('Failed to fetch true field averages');
+    }
+  };
 
   const fetchPersonalAverages = async () => {
     try {
