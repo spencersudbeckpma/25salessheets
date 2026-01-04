@@ -888,13 +888,7 @@ async def get_daily_report(report_type: str, date: str, current_user: dict = Dep
         }
     
     elif report_type == "team":
-        # Get direct reports and their teams (exclude archived)
-        direct_reports = await db.users.find(
-            {"manager_id": current_user['id'], "$or": [{"status": "active"}, {"status": {"$exists": False}}]},
-            {"_id": 0, "password_hash": 0}
-        ).to_list(1000)
-        
-        # If user_id specified, show that manager's team (not filter direct reports)
+        # Get all team members - show each individual person, not aggregated teams
         target_manager = None
         if user_id:
             # Get all subordinates to verify the user is in the hierarchy
@@ -909,75 +903,37 @@ async def get_daily_report(report_type: str, date: str, current_user: dict = Dep
             
             if not target_manager:
                 raise HTTPException(status_code=403, detail="Manager not found in your hierarchy")
-            
-            # Get the target manager's team (their direct reports, exclude archived)
-            target_direct_reports = await db.users.find(
-                {"manager_id": user_id, "$or": [{"status": "active"}, {"status": {"$exists": False}}]},
-                {"_id": 0, "password_hash": 0}
-            ).to_list(1000)
-            direct_reports = target_direct_reports  # Show the selected manager's direct reports
+        
+        # Get all team members (individuals) under the viewing user or selected manager
+        base_user = target_manager if target_manager else current_user
+        all_team_members = await get_all_subordinates(base_user['id'])
+        all_team_members.insert(0, base_user)  # Include the manager themselves first
         
         report_data = []
         
-        # Always include the viewing user's (or selected manager's) individual numbers first
-        individual_user = target_manager if user_id and target_manager else current_user
-        user_activity = await db.activities.find_one({
-            "user_id": individual_user['id'],
-            "date": report_date
-        }, {"_id": 0})
-        
-        user_totals = {
-            "contacts": user_activity.get('contacts', 0) if user_activity else 0,
-            "appointments": user_activity.get('appointments', 0) if user_activity else 0,
-            "presentations": user_activity.get('presentations', 0) if user_activity else 0,
-            "referrals": user_activity.get('referrals', 0) if user_activity else 0,
-            "testimonials": user_activity.get('testimonials', 0) if user_activity else 0,
-            "sales": user_activity.get('sales', 0) if user_activity else 0,
-            "new_face_sold": user_activity.get('new_face_sold', 0) if user_activity else 0,
-            "premium": user_activity.get('premium', 0) if user_activity else 0
-        }
-        
-        report_data.append({
-            "team_name": individual_user.get('name', 'Unknown') + " (Individual)",
-            "manager": individual_user.get('name', 'Unknown'),
-            "role": individual_user.get('role', 'unknown').replace('_', ' ').title(),
-            **user_totals
-        })
-        
-        # Add team data for direct reports
-        for manager in direct_reports:
-            # Get all members under this manager
-            team_members = await get_all_subordinates(manager['id'])
-            team_members.insert(0, manager)  # Include manager
+        # Add each individual team member's data
+        for member in all_team_members:
+            activity = await db.activities.find_one({
+                "user_id": member['id'],
+                "date": report_date
+            }, {"_id": 0})
             
-            # Aggregate totals for this team
-            team_totals = {
-                "contacts": 0, "appointments": 0, "presentations": 0,
-                "referrals": 0, "testimonials": 0, "sales": 0,
-                "new_face_sold": 0, "premium": 0
+            member_totals = {
+                "contacts": activity.get('contacts', 0) if activity else 0,
+                "appointments": activity.get('appointments', 0) if activity else 0,
+                "presentations": activity.get('presentations', 0) if activity else 0,
+                "referrals": activity.get('referrals', 0) if activity else 0,
+                "testimonials": activity.get('testimonials', 0) if activity else 0,
+                "sales": activity.get('sales', 0) if activity else 0,
+                "new_face_sold": activity.get('new_face_sold', 0) if activity else 0,
+                "premium": activity.get('premium', 0) if activity else 0
             }
             
-            for member in team_members:
-                activity = await db.activities.find_one({
-                    "user_id": member['id'],
-                    "date": report_date
-                }, {"_id": 0})
-                
-                if activity:
-                    team_totals["contacts"] += activity.get('contacts', 0)
-                    team_totals["appointments"] += activity.get('appointments', 0)
-                    team_totals["presentations"] += activity.get('presentations', 0)
-                    team_totals["referrals"] += activity.get('referrals', 0)
-                    team_totals["testimonials"] += activity.get('testimonials', 0)
-                    team_totals["sales"] += activity.get('sales', 0)
-                    team_totals["new_face_sold"] += activity.get('new_face_sold', 0)
-                    team_totals["premium"] += activity.get('premium', 0)
-            
             report_data.append({
-                "team_name": manager.get('name', 'Unknown') + "'s Team",
-                "manager": manager.get('name', 'Unknown'),
-                "role": manager.get('role', 'unknown').replace('_', ' ').title(),
-                **team_totals
+                "team_name": member.get('name', 'Unknown'),
+                "manager": member.get('name', 'Unknown'),
+                "role": member.get('role', 'unknown').replace('_', ' ').title(),
+                **member_totals
             })
         
         return {
