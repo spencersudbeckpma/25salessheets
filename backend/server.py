@@ -3548,6 +3548,152 @@ async def get_manager_subordinate_averages(manager_id: str, period: str, current
         "managers": manager_results
     }
 
+
+# ============================================
+# True Field Averages (State Manager Only)
+# ============================================
+
+@api_router.get("/analytics/true-field-averages")
+async def get_true_field_averages(period: str = "last_4_weeks", current_user: dict = Depends(get_current_user)):
+    """Get true field averages - only counting people who logged activity in the period (State Manager only)"""
+    if current_user['role'] != 'state_manager':
+        raise HTTPException(status_code=403, detail="Only State Managers can access true field averages")
+    
+    from datetime import timedelta
+    
+    central_tz = pytz_timezone('America/Chicago')
+    today = datetime.now(central_tz).date()
+    
+    # Define period ranges
+    periods = {
+        "last_week": today - timedelta(weeks=1),
+        "last_2_weeks": today - timedelta(weeks=2),
+        "last_4_weeks": today - timedelta(weeks=4),
+        "last_8_weeks": today - timedelta(weeks=8),
+        "last_12_weeks": today - timedelta(weeks=12),
+        "ytd": today.replace(month=1, day=1)
+    }
+    
+    if period not in periods:
+        period = "last_4_weeks"
+    
+    start_date = periods[period]
+    
+    # Get ALL activities in the period
+    activities = await db.activities.find({
+        "date": {"$gte": start_date.isoformat()}
+    }, {"_id": 0}).to_list(100000)
+    
+    # Get unique users who logged activity in this period
+    active_user_ids = set()
+    user_totals = {}
+    
+    for activity in activities:
+        user_id = activity.get('user_id')
+        if not user_id:
+            continue
+            
+        active_user_ids.add(user_id)
+        
+        if user_id not in user_totals:
+            user_totals[user_id] = {
+                "appointments": 0,
+                "presentations": 0,
+                "sales": 0,
+                "premium": 0,
+                "days_active": set()
+            }
+        
+        user_totals[user_id]["appointments"] += activity.get('appointments', 0)
+        user_totals[user_id]["presentations"] += activity.get('presentations', 0) or activity.get('sits', 0)
+        user_totals[user_id]["sales"] += activity.get('sales', 0)
+        user_totals[user_id]["premium"] += activity.get('premium', 0)
+        user_totals[user_id]["days_active"].add(activity.get('date'))
+    
+    # Calculate weeks in period
+    days_in_period = (today - start_date).days
+    weeks_in_period = max(days_in_period / 7, 1)
+    
+    # Calculate true averages (only from people who were active)
+    active_count = len(active_user_ids)
+    
+    if active_count > 0:
+        total_appointments = sum(u["appointments"] for u in user_totals.values())
+        total_presentations = sum(u["presentations"] for u in user_totals.values())
+        total_sales = sum(u["sales"] for u in user_totals.values())
+        total_premium = sum(u["premium"] for u in user_totals.values())
+        
+        # Average per active person per week
+        true_averages = {
+            "appointments": round(total_appointments / weeks_in_period / active_count, 2),
+            "presentations": round(total_presentations / weeks_in_period / active_count, 2),
+            "sales": round(total_sales / weeks_in_period / active_count, 2),
+            "premium": round(total_premium / weeks_in_period / active_count, 2)
+        }
+        
+        # Totals for the period
+        totals = {
+            "appointments": total_appointments,
+            "presentations": total_presentations,
+            "sales": total_sales,
+            "premium": round(total_premium, 2)
+        }
+    else:
+        true_averages = {
+            "appointments": 0,
+            "presentations": 0,
+            "sales": 0,
+            "premium": 0
+        }
+        totals = {
+            "appointments": 0,
+            "presentations": 0,
+            "sales": 0,
+            "premium": 0
+        }
+    
+    # Get user details for breakdown
+    active_users_details = []
+    if active_user_ids:
+        users = await db.users.find(
+            {"id": {"$in": list(active_user_ids)}},
+            {"_id": 0, "id": 1, "name": 1, "role": 1}
+        ).to_list(1000)
+        
+        user_map = {u['id']: u for u in users}
+        
+        for user_id, data in user_totals.items():
+            user_info = user_map.get(user_id, {"name": "Unknown", "role": "unknown"})
+            active_users_details.append({
+                "id": user_id,
+                "name": user_info.get('name', 'Unknown'),
+                "role": user_info.get('role', 'unknown'),
+                "appointments": data["appointments"],
+                "presentations": data["presentations"],
+                "sales": data["sales"],
+                "premium": round(data["premium"], 2),
+                "days_active": len(data["days_active"]),
+                "avg_appointments_per_week": round(data["appointments"] / weeks_in_period, 2),
+                "avg_presentations_per_week": round(data["presentations"] / weeks_in_period, 2),
+                "avg_sales_per_week": round(data["sales"] / weeks_in_period, 2),
+                "avg_premium_per_week": round(data["premium"] / weeks_in_period, 2)
+            })
+        
+        # Sort by premium descending
+        active_users_details.sort(key=lambda x: x["premium"], reverse=True)
+    
+    return {
+        "period": period,
+        "start_date": start_date.isoformat(),
+        "end_date": today.isoformat(),
+        "weeks": round(weeks_in_period, 1),
+        "active_field_count": active_count,
+        "true_averages": true_averages,
+        "totals": totals,
+        "active_users": active_users_details
+    }
+
+
 # ============================================
 # Goal Progress & Pace Calculator Endpoints
 # ============================================
