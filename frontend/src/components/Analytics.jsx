@@ -264,7 +264,7 @@ const Analytics = ({ user }) => {
       </CardHeader>
       <CardContent>
         <Tabs defaultValue="personal" className="space-y-6">
-          <TabsList className={`grid w-full ${isManager ? 'grid-cols-5' : 'grid-cols-2'} bg-gray-100 p-1`}>
+          <TabsList className={`grid w-full ${isStateManager ? 'grid-cols-6' : isManager ? 'grid-cols-5' : 'grid-cols-2'} bg-gray-100 p-1`}>
             <TabsTrigger value="personal" className="py-2 text-xs md:text-sm">
               <User size={16} className="mr-1 md:mr-2" />
               <span className="hidden md:inline">My Averages</span>
@@ -293,6 +293,13 @@ const Analytics = ({ user }) => {
                   <span className="md:hidden">Members</span>
                 </TabsTrigger>
               </>
+            )}
+            {isStateManager && (
+              <TabsTrigger value="field" className="py-2 text-xs md:text-sm">
+                <Activity size={16} className="mr-1 md:mr-2" />
+                <span className="hidden md:inline">True Field Avgs</span>
+                <span className="md:hidden">Field</span>
+              </TabsTrigger>
             )}
           </TabsList>
 
