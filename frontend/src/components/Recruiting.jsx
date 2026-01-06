@@ -220,6 +220,7 @@ const Recruiting = ({ user }) => {
       rm: '',
       rm_id: '',
       dm: '',
+      dm_id: '',
       text_email: false,
       vertafore: false,
       study_materials: false,
