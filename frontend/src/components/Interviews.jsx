@@ -507,7 +507,7 @@ const Interviews = ({ user }) => {
               <div className="flex items-center justify-between">
                 <h2 className="text-xl font-bold flex items-center gap-2">
                   <ClipboardList size={24} />
-                  1st Interview Template 2025
+                  2026 Interview Guide
                 </h2>
                 <button onClick={resetForm} className="text-white hover:bg-white/20 p-1 rounded">
                   <X size={24} />
