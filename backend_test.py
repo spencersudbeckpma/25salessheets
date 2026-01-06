@@ -974,12 +974,12 @@ class InterviewManagementTester:
             print_error("❌ SOME TESTS FAILED - INTERVIEW MANAGEMENT FUNCTIONALITY NEEDS ATTENTION")
 
 if __name__ == "__main__":
-    tester = NewFaceCustomerTester()
+    tester = InterviewManagementTester()
     success = tester.run_all_tests()
     
     if success:
-        print_success("\n🎉 All New Face Customer functionality tests completed successfully!")
+        print_success("\n🎉 All Interview Management functionality tests completed successfully!")
         sys.exit(0)
     else:
-        print_error("\n💥 Some New Face Customer functionality tests failed!")
+        print_error("\n💥 Some Interview Management functionality tests failed!")
         sys.exit(1)
