@@ -2821,6 +2821,230 @@ async def delete_recruit(recruit_id: str, current_user: dict = Depends(get_curre
 
 
 # ============================================
+# Interview Management Endpoints
+# ============================================
+
+@api_router.get("/interviews")
+async def get_interviews(current_user: dict = Depends(get_current_user)):
+    """Get all interviews - State Manager sees all, others see their own"""
+    if current_user['role'] not in ['state_manager', 'regional_manager', 'district_manager']:
+        raise HTTPException(status_code=403, detail="Only managers can access interviews")
+    
+    if current_user['role'] == 'state_manager':
+        interviews = await db.interviews.find({}, {"_id": 0}).sort("created_at", -1).to_list(1000)
+    else:
+        # Regional/District managers see only their interviews
+        interviews = await db.interviews.find(
+            {"interviewer_id": current_user['id']}, 
+            {"_id": 0}
+        ).sort("created_at", -1).to_list(1000)
+    
+    return interviews
+
+@api_router.get("/interviews/stats")
+async def get_interview_stats(current_user: dict = Depends(get_current_user)):
+    """Get interview statistics"""
+    if current_user['role'] not in ['state_manager', 'regional_manager', 'district_manager']:
+        raise HTTPException(status_code=403, detail="Only managers can access interviews")
+    
+    from datetime import datetime, timedelta
+    import pytz
+    
+    central = pytz.timezone('America/Chicago')
+    now = datetime.now(central)
+    
+    # Calculate date ranges
+    today = now.date()
+    week_start = today - timedelta(days=today.weekday())
+    month_start = today.replace(day=1)
+    year_start = today.replace(month=1, day=1)
+    
+    # Build query based on role
+    base_query = {}
+    if current_user['role'] != 'state_manager':
+        base_query = {"interviewer_id": current_user['id']}
+    
+    # Get all interviews for stats
+    all_interviews = await db.interviews.find(base_query, {"_id": 0}).to_list(10000)
+    
+    # Calculate stats
+    total = len(all_interviews)
+    this_week = sum(1 for i in all_interviews if i.get('interview_date', '')[:10] >= str(week_start))
+    this_month = sum(1 for i in all_interviews if i.get('interview_date', '')[:10] >= str(month_start))
+    this_year = sum(1 for i in all_interviews if i.get('interview_date', '')[:10] >= str(year_start))
+    
+    # Status breakdown
+    moving_forward = sum(1 for i in all_interviews if i.get('status') == 'moving_forward')
+    not_moving = sum(1 for i in all_interviews if i.get('status') == 'not_moving_forward')
+    second_scheduled = sum(1 for i in all_interviews if i.get('status') == 'second_interview_scheduled')
+    completed = sum(1 for i in all_interviews if i.get('status') == 'completed')
+    
+    return {
+        "total": total,
+        "this_week": this_week,
+        "this_month": this_month,
+        "this_year": this_year,
+        "moving_forward": moving_forward,
+        "not_moving_forward": not_moving,
+        "second_interview_scheduled": second_scheduled,
+        "completed": completed
+    }
+
+@api_router.post("/interviews")
+async def create_interview(interview_data: dict, current_user: dict = Depends(get_current_user)):
+    """Create a new interview (1st interview submission)"""
+    if current_user['role'] not in ['state_manager', 'regional_manager', 'district_manager']:
+        raise HTTPException(status_code=403, detail="Only managers can conduct interviews")
+    
+    from uuid import uuid4
+    from datetime import datetime, timezone
+    
+    interview = {
+        "id": str(uuid4()),
+        "candidate_name": interview_data.get('candidate_name', ''),
+        "candidate_location": interview_data.get('candidate_location', ''),
+        "candidate_phone": interview_data.get('candidate_phone', ''),
+        "interview_date": interview_data.get('interview_date', ''),
+        "interviewer_id": current_user['id'],
+        "interviewer_name": current_user['name'],
+        
+        # Interview form fields
+        "hobbies_interests": interview_data.get('hobbies_interests', ''),
+        "must_have_commission": interview_data.get('must_have_commission', False),
+        "must_have_travel": interview_data.get('must_have_travel', False),
+        "must_have_background": interview_data.get('must_have_background', False),
+        "must_have_car": interview_data.get('must_have_car', False),
+        "work_history": interview_data.get('work_history', ''),
+        "what_would_change": interview_data.get('what_would_change', ''),
+        "why_left_recent": interview_data.get('why_left_recent', ''),
+        "other_interviews": interview_data.get('other_interviews', ''),
+        "top_3_looking_for": interview_data.get('top_3_looking_for', ''),
+        "why_important": interview_data.get('why_important', ''),
+        "situation_6_12_months": interview_data.get('situation_6_12_months', ''),
+        "family_impact": interview_data.get('family_impact', ''),
+        "competitiveness_scale": interview_data.get('competitiveness_scale', 5),
+        "competitiveness_example": interview_data.get('competitiveness_example', ''),
+        "work_ethic_scale": interview_data.get('work_ethic_scale', 5),
+        "work_ethic_example": interview_data.get('work_ethic_example', ''),
+        "career_packet_sent": interview_data.get('career_packet_sent', False),
+        "candidate_strength": interview_data.get('candidate_strength', 3),
+        "red_flags_notes": interview_data.get('red_flags_notes', ''),
+        
+        # Status and tracking
+        "status": interview_data.get('status', 'new'),  # new, moving_forward, not_moving_forward, second_interview_scheduled, completed
+        "second_interview_date": None,
+        "second_interview_notes": '',
+        "added_to_recruiting": False,
+        "recruit_id": None,
+        
+        "created_at": datetime.now(timezone.utc).isoformat(),
+        "updated_at": datetime.now(timezone.utc).isoformat()
+    }
+    
+    await db.interviews.insert_one(interview)
+    interview.pop('_id', None)
+    return interview
+
+@api_router.put("/interviews/{interview_id}")
+async def update_interview(interview_id: str, interview_data: dict, current_user: dict = Depends(get_current_user)):
+    """Update an interview"""
+    if current_user['role'] not in ['state_manager', 'regional_manager', 'district_manager']:
+        raise HTTPException(status_code=403, detail="Only managers can update interviews")
+    
+    existing = await db.interviews.find_one({"id": interview_id})
+    if not existing:
+        raise HTTPException(status_code=404, detail="Interview not found")
+    
+    # Non-state managers can only update their own interviews (except for 2nd interview scheduling)
+    if current_user['role'] != 'state_manager':
+        if existing.get('interviewer_id') != current_user['id']:
+            # Allow if only updating second_interview_date
+            allowed_fields = ['second_interview_date', 'second_interview_notes', 'status']
+            update_keys = set(interview_data.keys())
+            if not update_keys.issubset(set(allowed_fields)):
+                raise HTTPException(status_code=403, detail="You can only update your own interviews")
+    
+    from datetime import datetime, timezone
+    interview_data['updated_at'] = datetime.now(timezone.utc).isoformat()
+    
+    await db.interviews.update_one(
+        {"id": interview_id},
+        {"$set": interview_data}
+    )
+    
+    updated = await db.interviews.find_one({"id": interview_id}, {"_id": 0})
+    return updated
+
+@api_router.delete("/interviews/{interview_id}")
+async def delete_interview(interview_id: str, current_user: dict = Depends(get_current_user)):
+    """Delete an interview (State Manager only)"""
+    if current_user['role'] != 'state_manager':
+        raise HTTPException(status_code=403, detail="Only State Managers can delete interviews")
+    
+    existing = await db.interviews.find_one({"id": interview_id})
+    if not existing:
+        raise HTTPException(status_code=404, detail="Interview not found")
+    
+    await db.interviews.delete_one({"id": interview_id})
+    return {"message": "Interview deleted"}
+
+@api_router.post("/interviews/{interview_id}/add-to-recruiting")
+async def add_interview_to_recruiting(interview_id: str, current_user: dict = Depends(get_current_user)):
+    """Add a completed interview candidate to the recruiting pipeline"""
+    if current_user['role'] != 'state_manager':
+        raise HTTPException(status_code=403, detail="Only State Managers can add to recruiting pipeline")
+    
+    interview = await db.interviews.find_one({"id": interview_id})
+    if not interview:
+        raise HTTPException(status_code=404, detail="Interview not found")
+    
+    if interview.get('added_to_recruiting'):
+        raise HTTPException(status_code=400, detail="Already added to recruiting pipeline")
+    
+    from uuid import uuid4
+    from datetime import datetime, timezone
+    
+    # Create recruit from interview data
+    recruit = {
+        "id": str(uuid4()),
+        "name": interview.get('candidate_name', ''),
+        "phone": interview.get('candidate_phone', ''),
+        "email": '',
+        "source": 'Interview',
+        "state": interview.get('candidate_location', ''),
+        "rm": '',
+        "rm_id": '',
+        "dm": '',
+        "text_email": False,
+        "vertafore": False,
+        "study_materials": False,
+        "fingerprint": False,
+        "testing_date": '',
+        "pass_fail": '',
+        "npa_license": False,
+        "comments": f"From interview on {interview.get('interview_date', '')}. Interviewer: {interview.get('interviewer_name', '')}",
+        "pipeline_status": "active",
+        "created_at": datetime.now(timezone.utc).isoformat(),
+        "created_by": current_user['id']
+    }
+    
+    await db.recruits.insert_one(recruit)
+    
+    # Update interview to mark as added
+    await db.interviews.update_one(
+        {"id": interview_id},
+        {"$set": {
+            "added_to_recruiting": True,
+            "recruit_id": recruit['id'],
+            "updated_at": datetime.now(timezone.utc).isoformat()
+        }}
+    )
+    
+    recruit.pop('_id', None)
+    return {"message": "Added to recruiting pipeline", "recruit": recruit}
+
+
+# ============================================
 # PMA Bonus PDF Management Endpoints
 # ============================================
 
