@@ -4,10 +4,12 @@ import { toast } from 'sonner';
 import { Card, CardHeader, CardTitle, CardContent } from './ui/card';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs';
 import { 
   Users, Plus, Trash2, Save, X, Search, 
-  CheckCircle, Circle, Download, UserCheck, UserX, Clock, ChevronDown
+  CheckCircle, Circle, Download, UserCheck, UserX, Clock, ChevronDown, ClipboardList
 } from 'lucide-react';
+import Interviews from './Interviews';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
@@ -22,6 +24,7 @@ const Recruiting = ({ user }) => {
   const [activeSection, setActiveSection] = useState('active');
   const [selectedRM, setSelectedRM] = useState('all'); // For filtering by Regional Manager
   const [regionalManagers, setRegionalManagers] = useState([]);
+  const [activeTab, setActiveTab] = useState('pipeline'); // 'pipeline' or 'interviews'
 
   const [formData, setFormData] = useState({
     name: '',
