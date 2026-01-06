@@ -2784,9 +2784,9 @@ async def create_recruit(recruit_data: dict, current_user: dict = Depends(get_cu
 
 @api_router.put("/recruiting/{recruit_id}")
 async def update_recruit(recruit_id: str, recruit_data: dict, current_user: dict = Depends(get_current_user)):
-    """Update a recruit (State Manager or Regional Manager for their own recruits)"""
-    if current_user['role'] not in ['state_manager', 'regional_manager']:
-        raise HTTPException(status_code=403, detail="Only State Managers and Regional Managers can manage recruiting")
+    """Update a recruit (State Manager, Regional Manager or District Manager for their own recruits)"""
+    if current_user['role'] not in ['state_manager', 'regional_manager', 'district_manager']:
+        raise HTTPException(status_code=403, detail="Only managers can manage recruiting")
     
     existing = await db.recruits.find_one({"id": recruit_id})
     if not existing:
@@ -2794,6 +2794,10 @@ async def update_recruit(recruit_id: str, recruit_data: dict, current_user: dict
     
     # Regional Managers can only edit their own recruits
     if current_user['role'] == 'regional_manager' and existing.get('rm_id') != current_user['id']:
+        raise HTTPException(status_code=403, detail="You can only edit your own recruits")
+    
+    # District Managers can only edit their own recruits
+    if current_user['role'] == 'district_manager' and existing.get('dm_id') != current_user['id']:
         raise HTTPException(status_code=403, detail="You can only edit your own recruits")
     
     update_data = {
@@ -2805,6 +2809,7 @@ async def update_recruit(recruit_id: str, recruit_data: dict, current_user: dict
         "rm": recruit_data.get('rm', existing.get('rm')),
         "rm_id": recruit_data.get('rm_id', existing.get('rm_id')),
         "dm": recruit_data.get('dm', existing.get('dm')),
+        "dm_id": recruit_data.get('dm_id', existing.get('dm_id')),
         "text_email": recruit_data.get('text_email', existing.get('text_email')),
         "vertafore": recruit_data.get('vertafore', existing.get('vertafore')),
         "study_materials": recruit_data.get('study_materials', existing.get('study_materials')),
@@ -2822,9 +2827,9 @@ async def update_recruit(recruit_id: str, recruit_data: dict, current_user: dict
 
 @api_router.delete("/recruiting/{recruit_id}")
 async def delete_recruit(recruit_id: str, current_user: dict = Depends(get_current_user)):
-    """Delete a recruit (State Manager or Regional Manager for their own recruits)"""
-    if current_user['role'] not in ['state_manager', 'regional_manager']:
-        raise HTTPException(status_code=403, detail="Only State Managers and Regional Managers can manage recruiting")
+    """Delete a recruit (State Manager, Regional Manager or District Manager for their own recruits)"""
+    if current_user['role'] not in ['state_manager', 'regional_manager', 'district_manager']:
+        raise HTTPException(status_code=403, detail="Only managers can manage recruiting")
     
     existing = await db.recruits.find_one({"id": recruit_id})
     if not existing:
