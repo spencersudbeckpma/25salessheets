@@ -471,40 +471,64 @@ const Recruiting = ({ user }) => {
   return (
     <Card className="shadow-lg bg-white">
       <CardHeader className="pb-4">
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-          <CardTitle className="flex items-center gap-2 text-xl">
-            <Users className="text-amber-600" size={24} />
-            Recruiting Pipeline
-            {user.role === 'regional_manager' && (
-              <span className="text-sm font-normal text-slate-500 ml-2">({user.name})</span>
-            )}
-          </CardTitle>
-          <div className="flex gap-2">
-            <Button
-              onClick={exportToCSV}
-              variant="outline"
-              size="sm"
-              className="text-xs"
-            >
-              <Download size={14} className="mr-1" />
-              Export CSV
-            </Button>
-            <Button
-              onClick={() => setShowAddForm(true)}
-              className="bg-slate-800 hover:bg-slate-700 text-amber-400"
-              size="sm"
-            >
-              <Plus size={16} className="mr-1" />
-              Add Recruit
-            </Button>
-          </div>
-        </div>
+        <CardTitle className="flex items-center gap-2 text-xl">
+          <Users className="text-amber-600" size={24} />
+          Recruiting
+          {user.role === 'regional_manager' && (
+            <span className="text-sm font-normal text-slate-500 ml-2">({user.name})</span>
+          )}
+        </CardTitle>
         <p className="text-sm text-slate-500 mt-1">
-          Track your recruiting pipeline • {selectedRM === 'all' || user.role === 'regional_manager' ? recruits.filter(r => user.role === 'regional_manager' ? r.rm_id === user.id : true).length : recruits.filter(r => r.rm_id === selectedRM).length} recruits
+          Manage interviews and track your recruiting pipeline
         </p>
       </CardHeader>
 
       <CardContent>
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+          <TabsList className="grid w-full grid-cols-2 mb-6">
+            <TabsTrigger value="pipeline" className="flex items-center gap-2">
+              <Users size={16} />
+              Pipeline
+            </TabsTrigger>
+            <TabsTrigger value="interviews" className="flex items-center gap-2">
+              <ClipboardList size={16} />
+              Interviews
+            </TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="interviews">
+            <Interviews user={user} />
+          </TabsContent>
+
+          <TabsContent value="pipeline">
+            {/* Pipeline Header Actions */}
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
+              <div>
+                <h3 className="text-lg font-semibold">Recruiting Pipeline</h3>
+                <p className="text-sm text-slate-500">
+                  {selectedRM === 'all' || user.role === 'regional_manager' ? recruits.filter(r => user.role === 'regional_manager' ? r.rm_id === user.id : true).length : recruits.filter(r => r.rm_id === selectedRM).length} recruits
+                </p>
+              </div>
+              <div className="flex gap-2">
+                <Button
+                  onClick={exportToCSV}
+                  variant="outline"
+                  size="sm"
+                  className="text-xs"
+                >
+                  <Download size={14} className="mr-1" />
+                  Export CSV
+                </Button>
+                <Button
+                  onClick={() => setShowAddForm(true)}
+                  className="bg-slate-800 hover:bg-slate-700 text-amber-400"
+                  size="sm"
+                >
+                  <Plus size={16} className="mr-1" />
+                  Add Recruit
+                </Button>
+              </div>
+            </div>
         {/* Add/Edit Form Modal */}
         {showAddForm && (
           <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
