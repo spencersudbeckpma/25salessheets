@@ -272,23 +272,23 @@ class InterviewManagementTester:
             print_warning(f"Exception creating activity for {date_str}: {str(e)}")
             return False
 
-    def test_new_face_customers_all_endpoint(self):
-        """Test GET /api/new-face-customers/all endpoint with different manager roles"""
-        print_header("📊 TESTING NEW FACE CUSTOMERS ALL ENDPOINT")
+    def test_interviews_get_endpoint(self):
+        """Test GET /api/interviews endpoint with different manager roles"""
+        print_header("📊 TESTING INTERVIEWS GET ENDPOINT")
         
-        print_info("🎯 Testing /api/new-face-customers/all with different manager role access levels")
+        print_info("🎯 Testing /api/interviews with different manager role access levels")
         
-        # Test 1: State Manager access - should get all team data
-        print_info("\n📋 TEST 1: State Manager Access to All Team Data")
+        # Test 1: State Manager access - should get all interviews
+        print_info("\n📋 TEST 1: State Manager Access to All Interviews")
         if self.state_manager_token:
             try:
                 headers = {"Authorization": f"Bearer {self.state_manager_token}"}
-                response = self.session.get(f"{BACKEND_URL}/new-face-customers/all", headers=headers)
+                response = self.session.get(f"{BACKEND_URL}/interviews", headers=headers)
                 
                 if response.status_code == 200:
                     data = response.json()
-                    print_success("✅ State Manager can access all team New Face Customer data")
-                    print_info(f"   Retrieved {len(data)} New Face Customer records")
+                    print_success("✅ State Manager can access all interviews")
+                    print_info(f"   Retrieved {len(data)} interview records")
                     self.test_results['passed'] += 1
                     
                     # Verify response structure
@@ -298,11 +298,11 @@ class InterviewManagementTester:
                         
                         if len(data) > 0:
                             sample_record = data[0]
-                            required_fields = ['id', 'user_id', 'user_name', 'date', 'customer_name', 'county', 'policy_amount']
+                            required_fields = ['id', 'candidate_name', 'interviewer_id', 'interview_date', 'status']
                             missing_fields = [field for field in required_fields if field not in sample_record]
                             
                             if not missing_fields:
-                                print_success("✅ New Face Customer records have all required fields")
+                                print_success("✅ Interview records have all required fields")
                                 self.test_results['passed'] += 1
                             else:
                                 print_error(f"❌ Missing fields in records: {missing_fields}")
@@ -323,17 +323,17 @@ class InterviewManagementTester:
                 self.test_results['failed'] += 1
                 self.test_results['errors'].append(f"State Manager test exception: {str(e)}")
         
-        # Test 2: Regional Manager access - should get their team data (scoped to hierarchy)
-        print_info("\n📋 TEST 2: Regional Manager Access to Regional Team Data")
+        # Test 2: Regional Manager access - should get their own interviews only
+        print_info("\n📋 TEST 2: Regional Manager Access to Own Interviews")
         if self.regional_manager_token:
             try:
                 headers = {"Authorization": f"Bearer {self.regional_manager_token}"}
-                response = self.session.get(f"{BACKEND_URL}/new-face-customers/all", headers=headers)
+                response = self.session.get(f"{BACKEND_URL}/interviews", headers=headers)
                 
                 if response.status_code == 200:
                     data = response.json()
-                    print_success("✅ Regional Manager can access their team New Face Customer data")
-                    print_info(f"   Retrieved {len(data)} New Face Customer records for regional team")
+                    print_success("✅ Regional Manager can access their own interviews")
+                    print_info(f"   Retrieved {len(data)} interview records for regional manager")
                     self.test_results['passed'] += 1
                     
                     # Verify response structure
@@ -354,17 +354,17 @@ class InterviewManagementTester:
                 self.test_results['failed'] += 1
                 self.test_results['errors'].append(f"Regional Manager test exception: {str(e)}")
         
-        # Test 3: District Manager access - should get their team data (scoped to hierarchy)
-        print_info("\n📋 TEST 3: District Manager Access to District Team Data")
+        # Test 3: District Manager access - should get their own interviews only
+        print_info("\n📋 TEST 3: District Manager Access to Own Interviews")
         if self.district_manager_token:
             try:
                 headers = {"Authorization": f"Bearer {self.district_manager_token}"}
-                response = self.session.get(f"{BACKEND_URL}/new-face-customers/all", headers=headers)
+                response = self.session.get(f"{BACKEND_URL}/interviews", headers=headers)
                 
                 if response.status_code == 200:
                     data = response.json()
-                    print_success("✅ District Manager can access their team New Face Customer data")
-                    print_info(f"   Retrieved {len(data)} New Face Customer records for district team")
+                    print_success("✅ District Manager can access their own interviews")
+                    print_info(f"   Retrieved {len(data)} interview records for district manager")
                     self.test_results['passed'] += 1
                     
                     # Verify response structure
@@ -390,11 +390,11 @@ class InterviewManagementTester:
         if self.agent_token:
             try:
                 headers = {"Authorization": f"Bearer {self.agent_token}"}
-                response = self.session.get(f"{BACKEND_URL}/new-face-customers/all", headers=headers)
+                response = self.session.get(f"{BACKEND_URL}/interviews", headers=headers)
                 
                 if response.status_code == 403:
                     print_success("✅ Agent correctly denied access (403)")
-                    print_info("   Access control working as expected - only managers can access all team data")
+                    print_info("   Access control working as expected - only managers can access interviews")
                     self.test_results['passed'] += 1
                 else:
                     print_error(f"❌ Agent should get 403, got {response.status_code}")
@@ -407,79 +407,184 @@ class InterviewManagementTester:
                 self.test_results['failed'] += 1
                 self.test_results['errors'].append(f"Agent access test exception: {str(e)}")
 
-    def test_new_face_customers_create_endpoint(self):
-        """Test POST /api/new-face-customers endpoint"""
-        print_header("📝 TESTING NEW FACE CUSTOMERS CREATE ENDPOINT")
+    def test_interviews_stats_endpoint(self):
+        """Test GET /api/interviews/stats endpoint"""
+        print_header("📈 TESTING INTERVIEWS STATS ENDPOINT")
         
-        print_info("🎯 Testing POST /api/new-face-customers with different users")
-        print_info("   Should allow all users to create records")
-        print_info("   Should enforce limit of 3 records per user per day")
+        print_info("🎯 Testing /api/interviews/stats with different manager roles")
+        
+        # Test 1: State Manager can access stats
+        print_info("\n📋 TEST 1: State Manager Access to Interview Stats")
+        if self.state_manager_token:
+            try:
+                headers = {"Authorization": f"Bearer {self.state_manager_token}"}
+                response = self.session.get(f"{BACKEND_URL}/interviews/stats", headers=headers)
+                
+                if response.status_code == 200:
+                    data = response.json()
+                    print_success("✅ State Manager can access interview stats")
+                    self.test_results['passed'] += 1
+                    
+                    # Verify response structure
+                    required_fields = ['total', 'this_week', 'this_month', 'this_year', 'moving_forward', 'not_moving_forward', 'second_interview_scheduled', 'completed']
+                    missing_fields = [field for field in required_fields if field not in data]
+                    
+                    if not missing_fields:
+                        print_success("✅ Stats response has all required fields")
+                        print_info(f"   Total: {data.get('total', 0)}, This Week: {data.get('this_week', 0)}")
+                        print_info(f"   Moving Forward: {data.get('moving_forward', 0)}, Completed: {data.get('completed', 0)}")
+                        self.test_results['passed'] += 1
+                    else:
+                        print_error(f"❌ Missing fields in stats: {missing_fields}")
+                        self.test_results['failed'] += 1
+                        self.test_results['errors'].append(f"Missing stats fields: {missing_fields}")
+                        
+                else:
+                    print_error(f"❌ State Manager stats access failed: {response.status_code} - {response.text}")
+                    self.test_results['failed'] += 1
+                    self.test_results['errors'].append(f"State Manager stats access failed: {response.status_code}")
+                    
+            except Exception as e:
+                print_error(f"❌ Exception in State Manager stats test: {str(e)}")
+                self.test_results['failed'] += 1
+                self.test_results['errors'].append(f"State Manager stats test exception: {str(e)}")
+        
+        # Test 2: Regional Manager can access their own stats
+        print_info("\n📋 TEST 2: Regional Manager Access to Own Interview Stats")
+        if self.regional_manager_token:
+            try:
+                headers = {"Authorization": f"Bearer {self.regional_manager_token}"}
+                response = self.session.get(f"{BACKEND_URL}/interviews/stats", headers=headers)
+                
+                if response.status_code == 200:
+                    data = response.json()
+                    print_success("✅ Regional Manager can access their interview stats")
+                    print_info(f"   Total: {data.get('total', 0)}, This Week: {data.get('this_week', 0)}")
+                    self.test_results['passed'] += 1
+                else:
+                    print_error(f"❌ Regional Manager stats access failed: {response.status_code} - {response.text}")
+                    self.test_results['failed'] += 1
+                    self.test_results['errors'].append(f"Regional Manager stats access failed: {response.status_code}")
+                    
+            except Exception as e:
+                print_error(f"❌ Exception in Regional Manager stats test: {str(e)}")
+                self.test_results['failed'] += 1
+                self.test_results['errors'].append(f"Regional Manager stats test exception: {str(e)}")
+
+    def test_interviews_create_endpoint(self):
+        """Test POST /api/interviews endpoint"""
+        print_header("📝 TESTING INTERVIEWS CREATE ENDPOINT")
+        
+        print_info("🎯 Testing POST /api/interviews with comprehensive interview data")
         
         today = datetime.now().strftime('%Y-%m-%d')
         
-        # Test 1: Agent can create New Face Customer records
-        print_info("\n📋 TEST 1: Agent Can Create New Face Customer Records")
-        if self.agent_token:
+        # Test 1: Regional Manager can create interview with "moving_forward" status
+        print_info("\n📋 TEST 1: Regional Manager Creates Interview - Moving Forward")
+        if self.regional_manager_token:
             try:
-                headers = {"Authorization": f"Bearer {self.agent_token}"}
+                headers = {"Authorization": f"Bearer {self.regional_manager_token}"}
                 
-                # Create first record
-                customer_data = {
-                    "date": today,
-                    "customer_name": "John Smith",
-                    "county": "Dallas County",
-                    "policy_amount": 50000.00
+                interview_data = {
+                    "candidate_name": "Sarah Johnson",
+                    "candidate_location": "Dallas, TX",
+                    "candidate_phone": "555-123-4567",
+                    "interview_date": f"{today}T10:00:00",
+                    "hobbies_interests": "Reading, hiking, volunteering at local shelter",
+                    "must_have_commission": True,
+                    "must_have_travel": False,
+                    "must_have_background": True,
+                    "must_have_car": True,
+                    "work_history": "5 years in retail management, 2 years in customer service",
+                    "what_would_change": "Better work-life balance and growth opportunities",
+                    "why_left_recent": "Limited advancement opportunities",
+                    "other_interviews": "Interviewed with 2 other insurance companies",
+                    "top_3_looking_for": "Growth potential, good compensation, supportive team",
+                    "why_important": "Want to build a stable career in insurance",
+                    "situation_6_12_months": "Looking to establish myself and start building client base",
+                    "family_impact": "Supportive spouse, no major family constraints",
+                    "competitiveness_scale": 8,
+                    "competitiveness_example": "Always exceeded sales targets in previous roles",
+                    "work_ethic_scale": 9,
+                    "work_ethic_example": "Consistently worked extra hours to help team meet goals",
+                    "career_packet_sent": True,
+                    "candidate_strength": 4,
+                    "red_flags_notes": "None identified",
+                    "status": "moving_forward"
                 }
                 
                 response = self.session.post(
-                    f"{BACKEND_URL}/new-face-customers",
-                    json=customer_data,
+                    f"{BACKEND_URL}/interviews",
+                    json=interview_data,
                     headers=headers
                 )
                 
                 if response.status_code == 200:
                     data = response.json()
-                    print_success("✅ Agent can create New Face Customer record")
-                    print_info(f"   Message: {data.get('message', 'No message')}")
-                    print_info(f"   Record ID: {data.get('id', 'No ID')}")
+                    print_success("✅ Regional Manager can create interview (moving forward)")
+                    print_info(f"   Interview ID: {data.get('id', 'No ID')}")
+                    print_info(f"   Candidate: {data.get('candidate_name', 'Unknown')}")
+                    print_info(f"   Status: {data.get('status', 'Unknown')}")
                     self.test_results['passed'] += 1
-                    self.agent_customer_id = data.get('id')  # Store for delete test
+                    self.regional_interview_id = data.get('id')  # Store for update tests
                 else:
-                    print_error(f"❌ Agent create failed: {response.status_code} - {response.text}")
+                    print_error(f"❌ Regional Manager create failed: {response.status_code} - {response.text}")
                     self.test_results['failed'] += 1
-                    self.test_results['errors'].append(f"Agent create failed: {response.status_code}")
+                    self.test_results['errors'].append(f"Regional Manager create failed: {response.status_code}")
                     
             except Exception as e:
-                print_error(f"❌ Exception in Agent create test: {str(e)}")
+                print_error(f"❌ Exception in Regional Manager create test: {str(e)}")
                 self.test_results['failed'] += 1
-                self.test_results['errors'].append(f"Agent create test exception: {str(e)}")
+                self.test_results['errors'].append(f"Regional Manager create test exception: {str(e)}")
         
-        # Test 2: District Manager can create New Face Customer records
-        print_info("\n📋 TEST 2: District Manager Can Create New Face Customer Records")
+        # Test 2: District Manager can create interview with "not_moving_forward" status
+        print_info("\n📋 TEST 2: District Manager Creates Interview - Not Moving Forward")
         if self.district_manager_token:
             try:
                 headers = {"Authorization": f"Bearer {self.district_manager_token}"}
                 
-                customer_data = {
-                    "date": today,
-                    "customer_name": "Jane Doe",
-                    "county": "Tarrant County",
-                    "policy_amount": 75000.00
+                interview_data = {
+                    "candidate_name": "Mike Thompson",
+                    "candidate_location": "Austin, TX",
+                    "candidate_phone": "555-987-6543",
+                    "interview_date": f"{today}T14:00:00",
+                    "hobbies_interests": "Sports, gaming",
+                    "must_have_commission": False,
+                    "must_have_travel": True,
+                    "must_have_background": False,
+                    "must_have_car": False,
+                    "work_history": "Various part-time jobs",
+                    "what_would_change": "More stability",
+                    "why_left_recent": "Job ended",
+                    "other_interviews": "None",
+                    "top_3_looking_for": "Steady income, benefits, easy work",
+                    "why_important": "Need a job",
+                    "situation_6_12_months": "Just want to work",
+                    "family_impact": "No issues",
+                    "competitiveness_scale": 3,
+                    "competitiveness_example": "Not very competitive",
+                    "work_ethic_scale": 4,
+                    "work_ethic_example": "Do what's required",
+                    "career_packet_sent": False,
+                    "candidate_strength": 2,
+                    "red_flags_notes": "Lacks motivation and drive",
+                    "status": "not_moving_forward"
                 }
                 
                 response = self.session.post(
-                    f"{BACKEND_URL}/new-face-customers",
-                    json=customer_data,
+                    f"{BACKEND_URL}/interviews",
+                    json=interview_data,
                     headers=headers
                 )
                 
                 if response.status_code == 200:
                     data = response.json()
-                    print_success("✅ District Manager can create New Face Customer record")
-                    print_info(f"   Message: {data.get('message', 'No message')}")
-                    print_info(f"   Record ID: {data.get('id', 'No ID')}")
+                    print_success("✅ District Manager can create interview (not moving forward)")
+                    print_info(f"   Interview ID: {data.get('id', 'No ID')}")
+                    print_info(f"   Candidate: {data.get('candidate_name', 'Unknown')}")
+                    print_info(f"   Status: {data.get('status', 'Unknown')}")
                     self.test_results['passed'] += 1
-                    self.district_customer_id = data.get('id')  # Store for delete test
+                    self.district_interview_id = data.get('id')  # Store for delete test
                 else:
                     print_error(f"❌ District Manager create failed: {response.status_code} - {response.text}")
                     self.test_results['failed'] += 1
@@ -490,74 +595,166 @@ class InterviewManagementTester:
                 self.test_results['failed'] += 1
                 self.test_results['errors'].append(f"District Manager create test exception: {str(e)}")
         
-        # Test 3: Test daily limit enforcement (3 records per user per day)
-        print_info("\n📋 TEST 3: Daily Limit Enforcement (3 records per user per day)")
+        # Test 3: Agent access - should return 403 Access Denied
+        print_info("\n📋 TEST 3: Agent Create Access Control - Should Be Denied")
         if self.agent_token:
             try:
                 headers = {"Authorization": f"Bearer {self.agent_token}"}
                 
-                # Try to create 3 more records (should succeed for 2, fail on 4th)
-                for i in range(4):
-                    customer_data = {
-                        "date": today,
-                        "customer_name": f"Test Customer {i+2}",
-                        "county": f"Test County {i+2}",
-                        "policy_amount": 25000.00 + (i * 5000)
-                    }
+                interview_data = {
+                    "candidate_name": "Test Candidate",
+                    "candidate_location": "Test City",
+                    "candidate_phone": "555-000-0000",
+                    "interview_date": f"{today}T16:00:00",
+                    "status": "moving_forward"
+                }
+                
+                response = self.session.post(
+                    f"{BACKEND_URL}/interviews",
+                    json=interview_data,
+                    headers=headers
+                )
+                
+                if response.status_code == 403:
+                    print_success("✅ Agent correctly denied create access (403)")
+                    print_info("   Access control working as expected - only managers can create interviews")
+                    self.test_results['passed'] += 1
+                else:
+                    print_error(f"❌ Agent should get 403, got {response.status_code}")
+                    print_error(f"   Response: {response.text}")
+                    self.test_results['failed'] += 1
+                    self.test_results['errors'].append(f"Agent create access control failed: {response.status_code}")
                     
-                    response = self.session.post(
-                        f"{BACKEND_URL}/new-face-customers",
-                        json=customer_data,
-                        headers=headers
-                    )
-                    
-                    if i < 2:  # Should succeed for records 2 and 3
-                        if response.status_code == 200:
-                            print_success(f"✅ Record {i+2} created successfully")
-                            self.test_results['passed'] += 1
-                        else:
-                            print_error(f"❌ Record {i+2} should succeed, got {response.status_code}")
-                            self.test_results['failed'] += 1
-                    else:  # Should fail on 4th record
-                        if response.status_code == 400:
-                            data = response.json()
-                            if "Maximum 3 new face customers per day" in data.get('detail', ''):
-                                print_success("✅ Daily limit correctly enforced (400)")
-                                print_info("   Limit message: Maximum 3 new face customers per day")
-                                self.test_results['passed'] += 1
-                            else:
-                                print_error(f"❌ Wrong error message: {data.get('detail', 'No detail')}")
-                                self.test_results['failed'] += 1
-                        else:
-                            print_error(f"❌ 4th record should get 400, got {response.status_code}")
-                            self.test_results['failed'] += 1
-                            
             except Exception as e:
-                print_error(f"❌ Exception in daily limit test: {str(e)}")
+                print_error(f"❌ Exception in Agent create access test: {str(e)}")
                 self.test_results['failed'] += 1
-                self.test_results['errors'].append(f"Daily limit test exception: {str(e)}")
+                self.test_results['errors'].append(f"Agent create access test exception: {str(e)}")
 
-    def test_new_face_customers_delete_endpoint(self):
-        """Test DELETE /api/new-face-customers/{customer_id} endpoint"""
-        print_header("🗑️ TESTING NEW FACE CUSTOMERS DELETE ENDPOINT")
+    def test_interviews_update_endpoint(self):
+        """Test PUT /api/interviews/{interview_id} endpoint"""
+        print_header("✏️ TESTING INTERVIEWS UPDATE ENDPOINT")
         
-        print_info("🎯 Testing DELETE /api/new-face-customers/{customer_id} with different manager roles")
-        print_info("   Should allow State, Regional, District Managers to delete")
-        print_info("   Should allow record owner to delete their own records")
+        print_info("🎯 Testing PUT /api/interviews/{interview_id} for status changes and 2nd interview scheduling")
         
-        # Test 1: State Manager can delete any record
-        print_info("\n📋 TEST 1: State Manager Can Delete Records")
-        if self.state_manager_token and hasattr(self, 'agent_customer_id'):
+        # Test 1: State Manager can schedule 2nd interview
+        print_info("\n📋 TEST 1: State Manager Schedules 2nd Interview")
+        if self.state_manager_token and hasattr(self, 'regional_interview_id'):
             try:
                 headers = {"Authorization": f"Bearer {self.state_manager_token}"}
-                response = self.session.delete(
-                    f"{BACKEND_URL}/new-face-customers/{self.agent_customer_id}",
+                tomorrow = (datetime.now() + timedelta(days=1)).strftime('%Y-%m-%d')
+                
+                update_data = {
+                    "second_interview_date": f"{tomorrow}T10:00:00",
+                    "second_interview_notes": "Scheduled for final interview with state manager",
+                    "status": "second_interview_scheduled"
+                }
+                
+                response = self.session.put(
+                    f"{BACKEND_URL}/interviews/{self.regional_interview_id}",
+                    json=update_data,
                     headers=headers
                 )
                 
                 if response.status_code == 200:
                     data = response.json()
-                    print_success("✅ State Manager can delete New Face Customer record")
+                    print_success("✅ State Manager can schedule 2nd interview")
+                    print_info(f"   Status: {data.get('status', 'Unknown')}")
+                    print_info(f"   2nd Interview Date: {data.get('second_interview_date', 'Not set')}")
+                    self.test_results['passed'] += 1
+                else:
+                    print_error(f"❌ State Manager update failed: {response.status_code} - {response.text}")
+                    self.test_results['failed'] += 1
+                    self.test_results['errors'].append(f"State Manager update failed: {response.status_code}")
+                    
+            except Exception as e:
+                print_error(f"❌ Exception in State Manager update test: {str(e)}")
+                self.test_results['failed'] += 1
+                self.test_results['errors'].append(f"State Manager update test exception: {str(e)}")
+        
+        # Test 2: Regional Manager can update their own interview
+        print_info("\n📋 TEST 2: Regional Manager Updates Own Interview")
+        if self.regional_manager_token and hasattr(self, 'regional_interview_id'):
+            try:
+                headers = {"Authorization": f"Bearer {self.regional_manager_token}"}
+                
+                update_data = {
+                    "red_flags_notes": "Updated after further consideration - very strong candidate",
+                    "candidate_strength": 5
+                }
+                
+                response = self.session.put(
+                    f"{BACKEND_URL}/interviews/{self.regional_interview_id}",
+                    json=update_data,
+                    headers=headers
+                )
+                
+                if response.status_code == 200:
+                    data = response.json()
+                    print_success("✅ Regional Manager can update their own interview")
+                    print_info(f"   Candidate Strength: {data.get('candidate_strength', 'Unknown')}")
+                    self.test_results['passed'] += 1
+                else:
+                    print_error(f"❌ Regional Manager update failed: {response.status_code} - {response.text}")
+                    self.test_results['failed'] += 1
+                    self.test_results['errors'].append(f"Regional Manager update failed: {response.status_code}")
+                    
+            except Exception as e:
+                print_error(f"❌ Exception in Regional Manager update test: {str(e)}")
+                self.test_results['failed'] += 1
+                self.test_results['errors'].append(f"Regional Manager update test exception: {str(e)}")
+        
+        # Test 3: Mark interview as completed
+        print_info("\n📋 TEST 3: Mark Interview as Completed")
+        if self.state_manager_token and hasattr(self, 'regional_interview_id'):
+            try:
+                headers = {"Authorization": f"Bearer {self.state_manager_token}"}
+                
+                update_data = {
+                    "status": "completed",
+                    "second_interview_notes": "Completed successfully - ready for recruiting pipeline"
+                }
+                
+                response = self.session.put(
+                    f"{BACKEND_URL}/interviews/{self.regional_interview_id}",
+                    json=update_data,
+                    headers=headers
+                )
+                
+                if response.status_code == 200:
+                    data = response.json()
+                    print_success("✅ Interview marked as completed")
+                    print_info(f"   Status: {data.get('status', 'Unknown')}")
+                    self.test_results['passed'] += 1
+                    self.completed_interview_id = data.get('id')  # Store for recruiting test
+                else:
+                    print_error(f"❌ Mark completed failed: {response.status_code} - {response.text}")
+                    self.test_results['failed'] += 1
+                    self.test_results['errors'].append(f"Mark completed failed: {response.status_code}")
+                    
+            except Exception as e:
+                print_error(f"❌ Exception in mark completed test: {str(e)}")
+                self.test_results['failed'] += 1
+                self.test_results['errors'].append(f"Mark completed test exception: {str(e)}")
+
+    def test_interviews_delete_endpoint(self):
+        """Test DELETE /api/interviews/{interview_id} endpoint"""
+        print_header("🗑️ TESTING INTERVIEWS DELETE ENDPOINT")
+        
+        print_info("🎯 Testing DELETE /api/interviews/{interview_id} - State Manager only")
+        
+        # Test 1: State Manager can delete interview
+        print_info("\n📋 TEST 1: State Manager Can Delete Interview")
+        if self.state_manager_token and hasattr(self, 'district_interview_id'):
+            try:
+                headers = {"Authorization": f"Bearer {self.state_manager_token}"}
+                response = self.session.delete(
+                    f"{BACKEND_URL}/interviews/{self.district_interview_id}",
+                    headers=headers
+                )
+                
+                if response.status_code == 200:
+                    data = response.json()
+                    print_success("✅ State Manager can delete interview")
                     print_info(f"   Message: {data.get('message', 'No message')}")
                     self.test_results['passed'] += 1
                 else:
@@ -570,303 +767,162 @@ class InterviewManagementTester:
                 self.test_results['failed'] += 1
                 self.test_results['errors'].append(f"State Manager delete test exception: {str(e)}")
         
-        # Test 2: Regional Manager can delete records
-        print_info("\n📋 TEST 2: Regional Manager Can Delete Records")
-        if self.regional_manager_token and hasattr(self, 'district_customer_id'):
+        # Test 2: Regional Manager should be denied delete access
+        print_info("\n📋 TEST 2: Regional Manager Delete Access Control - Should Be Denied")
+        if self.regional_manager_token:
             try:
+                # First create an interview to try to delete
                 headers = {"Authorization": f"Bearer {self.regional_manager_token}"}
-                response = self.session.delete(
-                    f"{BACKEND_URL}/new-face-customers/{self.district_customer_id}",
+                today = datetime.now().strftime('%Y-%m-%d')
+                
+                interview_data = {
+                    "candidate_name": "Delete Test Candidate",
+                    "candidate_location": "Test City",
+                    "candidate_phone": "555-999-9999",
+                    "interview_date": f"{today}T12:00:00",
+                    "status": "not_moving_forward"
+                }
+                
+                create_response = self.session.post(
+                    f"{BACKEND_URL}/interviews",
+                    json=interview_data,
                     headers=headers
                 )
                 
-                if response.status_code == 200:
-                    data = response.json()
-                    print_success("✅ Regional Manager can delete New Face Customer record")
-                    print_info(f"   Message: {data.get('message', 'No message')}")
-                    self.test_results['passed'] += 1
+                if create_response.status_code == 200:
+                    interview_id = create_response.json().get('id')
+                    
+                    # Now try to delete it as Regional Manager
+                    delete_response = self.session.delete(
+                        f"{BACKEND_URL}/interviews/{interview_id}",
+                        headers=headers
+                    )
+                    
+                    if delete_response.status_code == 403:
+                        print_success("✅ Regional Manager correctly denied delete access (403)")
+                        print_info("   Access control working - only State Manager can delete")
+                        self.test_results['passed'] += 1
+                    else:
+                        print_error(f"❌ Regional Manager should get 403, got {delete_response.status_code}")
+                        self.test_results['failed'] += 1
+                        self.test_results['errors'].append(f"Regional Manager delete access control failed: {delete_response.status_code}")
                 else:
-                    print_error(f"❌ Regional Manager delete failed: {response.status_code} - {response.text}")
+                    print_error("❌ Could not create interview for delete test")
                     self.test_results['failed'] += 1
-                    self.test_results['errors'].append(f"Regional Manager delete failed: {response.status_code}")
                     
             except Exception as e:
                 print_error(f"❌ Exception in Regional Manager delete test: {str(e)}")
                 self.test_results['failed'] += 1
                 self.test_results['errors'].append(f"Regional Manager delete test exception: {str(e)}")
-        
-        # Test 3: District Manager can delete records
-        print_info("\n📋 TEST 3: District Manager Can Delete Records")
-        if self.district_manager_token:
-            try:
-                # First create a record to delete
-                headers = {"Authorization": f"Bearer {self.district_manager_token}"}
-                today = datetime.now().strftime('%Y-%m-%d')
-                
-                customer_data = {
-                    "date": today,
-                    "customer_name": "Delete Test Customer",
-                    "county": "Delete Test County",
-                    "policy_amount": 30000.00
-                }
-                
-                create_response = self.session.post(
-                    f"{BACKEND_URL}/new-face-customers",
-                    json=customer_data,
-                    headers=headers
-                )
-                
-                if create_response.status_code == 200:
-                    customer_id = create_response.json().get('id')
-                    
-                    # Now delete it
-                    delete_response = self.session.delete(
-                        f"{BACKEND_URL}/new-face-customers/{customer_id}",
-                        headers=headers
-                    )
-                    
-                    if delete_response.status_code == 200:
-                        data = delete_response.json()
-                        print_success("✅ District Manager can delete New Face Customer record")
-                        print_info(f"   Message: {data.get('message', 'No message')}")
-                        self.test_results['passed'] += 1
-                    else:
-                        print_error(f"❌ District Manager delete failed: {delete_response.status_code} - {delete_response.text}")
-                        self.test_results['failed'] += 1
-                        self.test_results['errors'].append(f"District Manager delete failed: {delete_response.status_code}")
-                else:
-                    print_error("❌ Could not create record for District Manager delete test")
-                    self.test_results['failed'] += 1
-                    
-            except Exception as e:
-                print_error(f"❌ Exception in District Manager delete test: {str(e)}")
-                self.test_results['failed'] += 1
-                self.test_results['errors'].append(f"District Manager delete test exception: {str(e)}")
-        
-        # Test 4: Owner can delete their own records
-        print_info("\n📋 TEST 4: Record Owner Can Delete Their Own Records")
-        if self.agent_token:
-            try:
-                # First create a record as agent
-                headers = {"Authorization": f"Bearer {self.agent_token}"}
-                today = datetime.now().strftime('%Y-%m-%d')
-                
-                customer_data = {
-                    "date": today,
-                    "customer_name": "Owner Delete Test",
-                    "county": "Owner Test County",
-                    "policy_amount": 40000.00
-                }
-                
-                create_response = self.session.post(
-                    f"{BACKEND_URL}/new-face-customers",
-                    json=customer_data,
-                    headers=headers
-                )
-                
-                if create_response.status_code == 200:
-                    customer_id = create_response.json().get('id')
-                    
-                    # Now delete it as the same agent (owner)
-                    delete_response = self.session.delete(
-                        f"{BACKEND_URL}/new-face-customers/{customer_id}",
-                        headers=headers
-                    )
-                    
-                    if delete_response.status_code == 200:
-                        data = delete_response.json()
-                        print_success("✅ Record owner can delete their own New Face Customer record")
-                        print_info(f"   Message: {data.get('message', 'No message')}")
-                        self.test_results['passed'] += 1
-                    else:
-                        print_error(f"❌ Owner delete failed: {delete_response.status_code} - {delete_response.text}")
-                        self.test_results['failed'] += 1
-                        self.test_results['errors'].append(f"Owner delete failed: {delete_response.status_code}")
-                else:
-                    print_error("❌ Could not create record for owner delete test")
-                    self.test_results['failed'] += 1
-                    
-            except Exception as e:
-                print_error(f"❌ Exception in owner delete test: {str(e)}")
-                self.test_results['failed'] += 1
-                self.test_results['errors'].append(f"Owner delete test exception: {str(e)}")
-        
-        # Test 5: Test delete non-existent record
-        print_info("\n📋 TEST 5: Delete Non-existent Record")
-        if self.state_manager_token:
-            try:
-                headers = {"Authorization": f"Bearer {self.state_manager_token}"}
-                response = self.session.delete(
-                    f"{BACKEND_URL}/new-face-customers/non-existent-id-12345",
-                    headers=headers
-                )
-                
-                if response.status_code == 404:
-                    print_success("✅ Non-existent record correctly returns 404")
-                    self.test_results['passed'] += 1
-                else:
-                    print_error(f"❌ Non-existent record should return 404, got {response.status_code}")
-                    self.test_results['failed'] += 1
-                    self.test_results['errors'].append(f"Non-existent record handling failed: {response.status_code}")
-                    
-            except Exception as e:
-                print_error(f"❌ Exception in non-existent record test: {str(e)}")
-                self.test_results['failed'] += 1
-                self.test_results['errors'].append(f"Non-existent record test exception: {str(e)}")
 
-    def test_team_hierarchy_scoping(self):
-        """Test that team hierarchy scoping works correctly for different manager levels"""
-        print_header("🏢 TESTING TEAM HIERARCHY SCOPING")
+    def test_add_to_recruiting_endpoint(self):
+        """Test POST /api/interviews/{interview_id}/add-to-recruiting endpoint"""
+        print_header("🎯 TESTING ADD TO RECRUITING PIPELINE ENDPOINT")
         
-        print_info("🎯 Testing that managers only see data from their own team hierarchy")
-        print_info("   State Manager should see all data")
-        print_info("   Regional Manager should see regional team data")
-        print_info("   District Manager should see district team data")
+        print_info("🎯 Testing POST /api/interviews/{interview_id}/add-to-recruiting")
         
-        # First, create some test data with different users
-        today = datetime.now().strftime('%Y-%m-%d')
-        
-        # Create records for each user level
-        test_records = []
-        
-        # Test 1: Create records for each user type
-        print_info("\n📋 TEST 1: Creating Test Records for Hierarchy Testing")
-        
-        users_and_tokens = [
-            ("State Manager", self.state_manager_token, "State Customer"),
-            ("Regional Manager", self.regional_manager_token, "Regional Customer"),
-            ("District Manager", self.district_manager_token, "District Customer"),
-            ("Agent", self.agent_token, "Agent Customer")
-        ]
-        
-        for user_type, token, customer_name in users_and_tokens:
-            if token:
-                try:
-                    headers = {"Authorization": f"Bearer {token}"}
-                    customer_data = {
-                        "date": today,
-                        "customer_name": customer_name,
-                        "county": f"{user_type} County",
-                        "policy_amount": 60000.00
-                    }
-                    
-                    response = self.session.post(
-                        f"{BACKEND_URL}/new-face-customers",
-                        json=customer_data,
-                        headers=headers
-                    )
-                    
-                    if response.status_code == 200:
-                        record_id = response.json().get('id')
-                        test_records.append((user_type, record_id))
-                        print_success(f"✅ Created test record for {user_type}")
-                        self.test_results['passed'] += 1
-                    else:
-                        print_error(f"❌ Failed to create record for {user_type}: {response.status_code}")
-                        self.test_results['failed'] += 1
-                        
-                except Exception as e:
-                    print_error(f"❌ Exception creating record for {user_type}: {str(e)}")
-                    self.test_results['failed'] += 1
-        
-        # Test 2: Verify State Manager sees all records
-        print_info("\n📋 TEST 2: State Manager Should See All Team Records")
-        if self.state_manager_token:
+        # Test 1: State Manager can add completed interview to recruiting
+        print_info("\n📋 TEST 1: State Manager Adds Completed Interview to Recruiting")
+        if self.state_manager_token and hasattr(self, 'completed_interview_id'):
             try:
                 headers = {"Authorization": f"Bearer {self.state_manager_token}"}
-                response = self.session.get(f"{BACKEND_URL}/new-face-customers/all", headers=headers)
+                response = self.session.post(
+                    f"{BACKEND_URL}/interviews/{self.completed_interview_id}/add-to-recruiting",
+                    headers=headers
+                )
                 
                 if response.status_code == 200:
                     data = response.json()
-                    print_success(f"✅ State Manager retrieved {len(data)} total records")
+                    print_success("✅ State Manager can add interview to recruiting pipeline")
+                    print_info(f"   Message: {data.get('message', 'No message')}")
                     
-                    # Should see records from all levels in hierarchy
-                    customer_names = [record.get('customer_name', '') for record in data]
-                    expected_customers = ["State Customer", "Regional Customer", "District Customer", "Agent Customer"]
+                    # Verify recruit was created
+                    recruit_data = data.get('recruit', {})
+                    if recruit_data:
+                        print_success("✅ Recruit created successfully")
+                        print_info(f"   Recruit Name: {recruit_data.get('name', 'Unknown')}")
+                        print_info(f"   Recruit Phone: {recruit_data.get('phone', 'Unknown')}")
+                        print_info(f"   Recruit ID: {recruit_data.get('id', 'Unknown')}")
+                        self.test_results['passed'] += 1
+                        self.recruit_id = recruit_data.get('id')  # Store for verification
+                    else:
+                        print_error("❌ No recruit data returned")
+                        self.test_results['failed'] += 1
+                        
+                    self.test_results['passed'] += 1
+                else:
+                    print_error(f"❌ Add to recruiting failed: {response.status_code} - {response.text}")
+                    self.test_results['failed'] += 1
+                    self.test_results['errors'].append(f"Add to recruiting failed: {response.status_code}")
                     
-                    found_customers = [name for name in expected_customers if name in customer_names]
+            except Exception as e:
+                print_error(f"❌ Exception in add to recruiting test: {str(e)}")
+                self.test_results['failed'] += 1
+                self.test_results['errors'].append(f"Add to recruiting test exception: {str(e)}")
+        
+        # Test 2: Verify recruit was actually created in recruiting collection
+        print_info("\n📋 TEST 2: Verify Recruit Created in Recruiting Collection")
+        if self.state_manager_token and hasattr(self, 'recruit_id'):
+            try:
+                headers = {"Authorization": f"Bearer {self.state_manager_token}"}
+                response = self.session.get(f"{BACKEND_URL}/recruiting", headers=headers)
+                
+                if response.status_code == 200:
+                    recruits = response.json()
                     
-                    if len(found_customers) >= 3:  # Should see at least most of the hierarchy
-                        print_success(f"✅ State Manager sees records from multiple hierarchy levels: {found_customers}")
+                    # Find our recruit
+                    found_recruit = None
+                    for recruit in recruits:
+                        if recruit.get('id') == self.recruit_id:
+                            found_recruit = recruit
+                            break
+                    
+                    if found_recruit:
+                        print_success("✅ Recruit found in recruiting collection")
+                        print_info(f"   Name: {found_recruit.get('name', 'Unknown')}")
+                        print_info(f"   Phone: {found_recruit.get('phone', 'Unknown')}")
+                        print_info(f"   Comments: {found_recruit.get('comments', 'No comments')}")
                         self.test_results['passed'] += 1
                     else:
-                        print_warning(f"⚠️ State Manager may not see all hierarchy levels: {found_customers}")
-                        
+                        print_error("❌ Recruit not found in recruiting collection")
+                        self.test_results['failed'] += 1
+                        self.test_results['errors'].append("Recruit not found in collection")
                 else:
-                    print_error(f"❌ State Manager hierarchy test failed: {response.status_code}")
+                    print_error(f"❌ Could not fetch recruiting data: {response.status_code}")
                     self.test_results['failed'] += 1
                     
             except Exception as e:
-                print_error(f"❌ Exception in State Manager hierarchy test: {str(e)}")
+                print_error(f"❌ Exception in recruit verification test: {str(e)}")
                 self.test_results['failed'] += 1
+                self.test_results['errors'].append(f"Recruit verification test exception: {str(e)}")
         
-        # Test 3: Verify Regional Manager sees appropriate scope
-        print_info("\n📋 TEST 3: Regional Manager Should See Regional Team Records")
+        # Test 3: Regional Manager should be denied access
+        print_info("\n📋 TEST 3: Regional Manager Add to Recruiting Access Control - Should Be Denied")
         if self.regional_manager_token:
             try:
                 headers = {"Authorization": f"Bearer {self.regional_manager_token}"}
-                response = self.session.get(f"{BACKEND_URL}/new-face-customers/all", headers=headers)
+                response = self.session.post(
+                    f"{BACKEND_URL}/interviews/fake-id/add-to-recruiting",
+                    headers=headers
+                )
                 
-                if response.status_code == 200:
-                    data = response.json()
-                    print_success(f"✅ Regional Manager retrieved {len(data)} records from their team")
-                    
-                    # Should see records from regional level and below
-                    customer_names = [record.get('customer_name', '') for record in data]
-                    
-                    # Should see regional, district, and agent records, but not state manager's personal records
-                    regional_scope_customers = ["Regional Customer", "District Customer", "Agent Customer"]
-                    found_in_scope = [name for name in regional_scope_customers if name in customer_names]
-                    
-                    if len(found_in_scope) >= 2:  # Should see at least regional and subordinate records
-                        print_success(f"✅ Regional Manager sees appropriate scope: {found_in_scope}")
-                        self.test_results['passed'] += 1
-                    else:
-                        print_warning(f"⚠️ Regional Manager scope may be incorrect: {found_in_scope}")
-                        
+                if response.status_code == 403:
+                    print_success("✅ Regional Manager correctly denied add to recruiting access (403)")
+                    print_info("   Access control working - only State Manager can add to recruiting")
+                    self.test_results['passed'] += 1
                 else:
-                    print_error(f"❌ Regional Manager hierarchy test failed: {response.status_code}")
+                    print_error(f"❌ Regional Manager should get 403, got {response.status_code}")
                     self.test_results['failed'] += 1
+                    self.test_results['errors'].append(f"Regional Manager add to recruiting access control failed: {response.status_code}")
                     
             except Exception as e:
-                print_error(f"❌ Exception in Regional Manager hierarchy test: {str(e)}")
+                print_error(f"❌ Exception in Regional Manager add to recruiting test: {str(e)}")
                 self.test_results['failed'] += 1
-        
-        # Test 4: Verify District Manager sees appropriate scope
-        print_info("\n📋 TEST 4: District Manager Should See District Team Records")
-        if self.district_manager_token:
-            try:
-                headers = {"Authorization": f"Bearer {self.district_manager_token}"}
-                response = self.session.get(f"{BACKEND_URL}/new-face-customers/all", headers=headers)
-                
-                if response.status_code == 200:
-                    data = response.json()
-                    print_success(f"✅ District Manager retrieved {len(data)} records from their team")
-                    
-                    # Should see records from district level and below
-                    customer_names = [record.get('customer_name', '') for record in data]
-                    
-                    # Should see district and agent records
-                    district_scope_customers = ["District Customer", "Agent Customer"]
-                    found_in_scope = [name for name in district_scope_customers if name in customer_names]
-                    
-                    if len(found_in_scope) >= 1:  # Should see at least district records
-                        print_success(f"✅ District Manager sees appropriate scope: {found_in_scope}")
-                        self.test_results['passed'] += 1
-                    else:
-                        print_warning(f"⚠️ District Manager scope may be incorrect: {found_in_scope}")
-                        
-                else:
-                    print_error(f"❌ District Manager hierarchy test failed: {response.status_code}")
-                    self.test_results['failed'] += 1
-                    
-            except Exception as e:
-                print_error(f"❌ Exception in District Manager hierarchy test: {str(e)}")
-                self.test_results['failed'] += 1
+                self.test_results['errors'].append(f"Regional Manager add to recruiting test exception: {str(e)}")
 
     def run_all_tests(self):
-        """Run all New Face Customer functionality tests"""
-        print_header("🚀 STARTING COMPREHENSIVE NEW FACE CUSTOMER FUNCTIONALITY TESTING")
+        """Run all Interview Management functionality tests"""
+        print_header("🚀 STARTING COMPREHENSIVE INTERVIEW MANAGEMENT FUNCTIONALITY TESTING")
         
         # Setup test users
         if not self.setup_test_users():
@@ -874,10 +930,12 @@ class InterviewManagementTester:
             return False
         
         # Run all test suites
-        self.test_new_face_customers_all_endpoint()
-        self.test_new_face_customers_create_endpoint()
-        self.test_new_face_customers_delete_endpoint()
-        self.test_team_hierarchy_scoping()
+        self.test_interviews_get_endpoint()
+        self.test_interviews_stats_endpoint()
+        self.test_interviews_create_endpoint()
+        self.test_interviews_update_endpoint()
+        self.test_interviews_delete_endpoint()
+        self.test_add_to_recruiting_endpoint()
         
         # Print final results
         self.print_final_results()
@@ -886,7 +944,7 @@ class InterviewManagementTester:
 
     def print_final_results(self):
         """Print comprehensive test results"""
-        print_header("📊 NEW FACE CUSTOMER FUNCTIONALITY TEST RESULTS")
+        print_header("📊 INTERVIEW MANAGEMENT FUNCTIONALITY TEST RESULTS")
         
         total_tests = self.test_results['passed'] + self.test_results['failed']
         success_rate = (self.test_results['passed'] / total_tests * 100) if total_tests > 0 else 0
@@ -905,13 +963,15 @@ class InterviewManagementTester:
         print_info(f"Success Rate: {success_rate:.1f}%")
         
         if self.test_results['failed'] == 0:
-            print_success("🎉 ALL NEW FACE CUSTOMER FUNCTIONALITY TESTS PASSED!")
+            print_success("🎉 ALL INTERVIEW MANAGEMENT FUNCTIONALITY TESTS PASSED!")
             print_success("✅ Manager role access levels working correctly")
-            print_success("✅ New Face Customer creation with daily limits working correctly")
-            print_success("✅ Manager and owner delete permissions working correctly")
-            print_success("✅ Team hierarchy scoping working correctly")
+            print_success("✅ Interview creation with comprehensive fields working correctly")
+            print_success("✅ Interview status transitions and updates working correctly")
+            print_success("✅ State Manager delete permissions working correctly")
+            print_success("✅ Add to recruiting pipeline working correctly")
+            print_success("✅ Access control for different manager levels working correctly")
         else:
-            print_error("❌ SOME TESTS FAILED - NEW FACE CUSTOMER FUNCTIONALITY NEEDS ATTENTION")
+            print_error("❌ SOME TESTS FAILED - INTERVIEW MANAGEMENT FUNCTIONALITY NEEDS ATTENTION")
 
 if __name__ == "__main__":
     tester = NewFaceCustomerTester()
