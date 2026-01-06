@@ -2712,13 +2712,16 @@ async def delete_docusphere_document(doc_id: str, current_user: dict = Depends(g
 
 @api_router.get("/recruiting")
 async def get_recruits(current_user: dict = Depends(get_current_user)):
-    """Get recruits - State Manager sees all, Regional Manager sees only their own"""
-    if current_user['role'] not in ['state_manager', 'regional_manager']:
-        raise HTTPException(status_code=403, detail="Only State Managers and Regional Managers can access recruiting")
+    """Get recruits - State Manager sees all, Regional/District Manager sees only their own"""
+    if current_user['role'] not in ['state_manager', 'regional_manager', 'district_manager']:
+        raise HTTPException(status_code=403, detail="Only managers can access recruiting")
     
     if current_user['role'] == 'regional_manager':
-        # Regional Manager only sees their own recruits
+        # Regional Manager only sees their own recruits (assigned to them as RM)
         recruits = await db.recruits.find({"rm_id": current_user['id']}, {"_id": 0}).sort("created_at", -1).to_list(1000)
+    elif current_user['role'] == 'district_manager':
+        # District Manager only sees their own recruits (assigned to them as DM)
+        recruits = await db.recruits.find({"dm_id": current_user['id']}, {"_id": 0}).sort("created_at", -1).to_list(1000)
     else:
         # State Manager sees all
         recruits = await db.recruits.find({}, {"_id": 0}).sort("created_at", -1).to_list(1000)
@@ -2726,16 +2729,30 @@ async def get_recruits(current_user: dict = Depends(get_current_user)):
 
 @api_router.post("/recruiting")
 async def create_recruit(recruit_data: dict, current_user: dict = Depends(get_current_user)):
-    """Create a new recruit (State Manager or Regional Manager)"""
-    if current_user['role'] not in ['state_manager', 'regional_manager']:
-        raise HTTPException(status_code=403, detail="Only State Managers and Regional Managers can manage recruiting")
+    """Create a new recruit (State Manager, Regional Manager, or District Manager)"""
+    if current_user['role'] not in ['state_manager', 'regional_manager', 'district_manager']:
+        raise HTTPException(status_code=403, detail="Only managers can manage recruiting")
     
-    # If Regional Manager is creating, auto-assign to themselves
+    # Handle RM assignment
     rm_id = recruit_data.get('rm_id', '')
     rm_name = recruit_data.get('rm', '')
     if current_user['role'] == 'regional_manager':
         rm_id = current_user['id']
         rm_name = current_user['name']
+    
+    # Handle DM assignment
+    dm_id = recruit_data.get('dm_id', '')
+    dm_name = recruit_data.get('dm', '')
+    if current_user['role'] == 'district_manager':
+        dm_id = current_user['id']
+        dm_name = current_user['name']
+        # Also get the DM's manager (Regional Manager) and assign them
+        dm_user = await db.users.find_one({"id": current_user['id']}, {"_id": 0})
+        if dm_user and dm_user.get('manager_id'):
+            rm_user = await db.users.find_one({"id": dm_user['manager_id']}, {"_id": 0})
+            if rm_user:
+                rm_id = rm_user['id']
+                rm_name = rm_user['name']
     
     recruit = {
         "id": str(uuid.uuid4()),
@@ -2746,7 +2763,8 @@ async def create_recruit(recruit_data: dict, current_user: dict = Depends(get_cu
         "state": recruit_data.get('state', ''),
         "rm": rm_name,
         "rm_id": rm_id,
-        "dm": recruit_data.get('dm', ''),
+        "dm": dm_name,
+        "dm_id": dm_id,
         "text_email": recruit_data.get('text_email', False),
         "vertafore": recruit_data.get('vertafore', False),
         "study_materials": recruit_data.get('study_materials', False),
