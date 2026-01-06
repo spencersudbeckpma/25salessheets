@@ -3061,6 +3061,7 @@ async def add_interview_to_recruiting(interview_id: str, current_user: dict = De
         "rm": '',
         "rm_id": '',
         "dm": '',
+        "dm_id": '',
         "text_email": False,
         "vertafore": False,
         "study_materials": False,
