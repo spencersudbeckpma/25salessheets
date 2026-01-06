@@ -780,21 +780,115 @@ const Interviews = ({ user }) => {
       {/* View Interview Modal */}
       {showViewModal && selectedInterview && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-start justify-center z-50 overflow-y-auto py-8">
-          <div className="bg-white rounded-lg shadow-xl w-full max-w-3xl mx-4">
-            <div className="p-6 border-b bg-gradient-to-r from-gray-700 to-gray-800 text-white rounded-t-lg">
+          <div className="bg-white rounded-lg shadow-xl w-full max-w-3xl mx-4" id="interview-print-content">
+            <div className="p-6 border-b bg-gradient-to-r from-gray-700 to-gray-800 text-white rounded-t-lg print:bg-gray-800">
               <div className="flex items-center justify-between">
                 <div>
                   <h2 className="text-xl font-bold">{selectedInterview.candidate_name}</h2>
                   <p className="text-sm opacity-80">{selectedInterview.candidate_location} • {selectedInterview.candidate_phone}</p>
                 </div>
-                <button onClick={() => { setShowViewModal(false); setSelectedInterview(null); }} className="text-white hover:bg-white/20 p-1 rounded">
-                  <X size={24} />
-                </button>
+                <div className="flex items-center gap-2 print:hidden">
+                  <button 
+                    onClick={() => {
+                      const printContent = document.getElementById('interview-print-content');
+                      const printWindow = window.open('', '_blank');
+                      printWindow.document.write(`
+                        <html>
+                          <head>
+                            <title>2026 Interview Guide - ${selectedInterview.candidate_name}</title>
+                            <style>
+                              body { font-family: Arial, sans-serif; padding: 20px; max-width: 800px; margin: 0 auto; }
+                              .header { background: #374151; color: white; padding: 20px; border-radius: 8px; margin-bottom: 20px; }
+                              .header h1 { margin: 0; font-size: 24px; }
+                              .header p { margin: 5px 0 0; opacity: 0.8; }
+                              .section { margin-bottom: 15px; padding: 15px; border: 1px solid #e5e7eb; border-radius: 8px; }
+                              .section-title { font-weight: bold; color: #1f2937; margin-bottom: 8px; }
+                              .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+                              .must-have { background: #fef3c7; padding: 15px; border-radius: 8px; border: 1px solid #fcd34d; }
+                              .red-flag { background: #fee2e2; padding: 15px; border-radius: 8px; border: 1px solid #fca5a5; }
+                              .status { display: inline-block; padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: 600; }
+                              .status-completed { background: #d1fae5; color: #065f46; }
+                              .status-moving { background: #dcfce7; color: #166534; }
+                              .status-scheduled { background: #e9d5ff; color: #6b21a8; }
+                              .status-not-moving { background: #fee2e2; color: #991b1b; }
+                              .meta { color: #6b7280; font-size: 14px; margin-top: 10px; }
+                              @media print { body { padding: 0; } }
+                            </style>
+                          </head>
+                          <body>
+                            <div class="header">
+                              <h1>2026 Interview Guide</h1>
+                              <p>${selectedInterview.candidate_name} • ${selectedInterview.candidate_location} • ${selectedInterview.candidate_phone}</p>
+                            </div>
+                            
+                            <div class="section">
+                              <div class="grid">
+                                <div><strong>Status:</strong> <span class="status ${
+                                  selectedInterview.status === 'completed' ? 'status-completed' : 
+                                  selectedInterview.status === 'moving_forward' ? 'status-moving' :
+                                  selectedInterview.status === 'second_interview_scheduled' ? 'status-scheduled' : 'status-not-moving'
+                                }">${getStatusLabel(selectedInterview.status)}</span></div>
+                                <div><strong>Interview Date:</strong> ${selectedInterview.interview_date}</div>
+                                <div><strong>Interviewer:</strong> ${selectedInterview.interviewer_name}</div>
+                                ${selectedInterview.second_interview_date ? `<div><strong>2nd Interview:</strong> ${selectedInterview.second_interview_date}</div>` : ''}
+                              </div>
+                            </div>
+                            
+                            <div class="section">
+                              <div class="grid">
+                                <div><strong>Competitiveness:</strong> ${selectedInterview.competitiveness_scale}/10</div>
+                                <div><strong>Work Ethic:</strong> ${selectedInterview.work_ethic_scale}/10</div>
+                                <div><strong>Candidate Strength:</strong> ${selectedInterview.candidate_strength}/5</div>
+                                <div><strong>Career Packet Sent:</strong> ${selectedInterview.career_packet_sent ? 'Yes' : 'No'}</div>
+                              </div>
+                            </div>
+                            
+                            <div class="must-have">
+                              <div class="section-title">Must Haves to Move Forward:</div>
+                              <div class="grid">
+                                <div>Commission: ${selectedInterview.must_have_commission ? '✅ Yes' : '❌ No'}</div>
+                                <div>Instate Travel - 1099: ${selectedInterview.must_have_travel ? '✅ Yes' : '❌ No'}</div>
+                                <div>Background: ${selectedInterview.must_have_background ? '✅ Yes' : '❌ No'}</div>
+                                <div>Reliable Car: ${selectedInterview.must_have_car ? '✅ Yes' : '❌ No'}</div>
+                              </div>
+                            </div>
+                            
+                            ${selectedInterview.hobbies_interests ? `<div class="section"><div class="section-title">Hobbies, Interests, Support System:</div><p>${selectedInterview.hobbies_interests}</p></div>` : ''}
+                            ${selectedInterview.work_history ? `<div class="section"><div class="section-title">Work History & Experience:</div><p>${selectedInterview.work_history}</p></div>` : ''}
+                            ${selectedInterview.what_would_change ? `<div class="section"><div class="section-title">What Would You Change:</div><p>${selectedInterview.what_would_change}</p></div>` : ''}
+                            ${selectedInterview.why_left_recent ? `<div class="section"><div class="section-title">Why Left Recent Role:</div><p>${selectedInterview.why_left_recent}</p></div>` : ''}
+                            ${selectedInterview.other_interviews ? `<div class="section"><div class="section-title">Other Recent Interviews:</div><p>${selectedInterview.other_interviews}</p></div>` : ''}
+                            ${selectedInterview.top_3_looking_for ? `<div class="section"><div class="section-title">Top 3 Things Looking For:</div><p>${selectedInterview.top_3_looking_for}</p></div>` : ''}
+                            ${selectedInterview.why_important ? `<div class="section"><div class="section-title">Why Important Right Now:</div><p>${selectedInterview.why_important}</p></div>` : ''}
+                            ${selectedInterview.situation_6_12_months ? `<div class="section"><div class="section-title">6-12 Months Situation:</div><p>${selectedInterview.situation_6_12_months}</p></div>` : ''}
+                            ${selectedInterview.family_impact ? `<div class="section"><div class="section-title">Family Impact:</div><p>${selectedInterview.family_impact}</p></div>` : ''}
+                            ${selectedInterview.competitiveness_example ? `<div class="section"><div class="section-title">Competitiveness Example:</div><p>${selectedInterview.competitiveness_example}</p></div>` : ''}
+                            ${selectedInterview.work_ethic_example ? `<div class="section"><div class="section-title">Work Ethic Example:</div><p>${selectedInterview.work_ethic_example}</p></div>` : ''}
+                            ${selectedInterview.red_flags_notes ? `<div class="red-flag"><div class="section-title">Red Flags / Notes:</div><p>${selectedInterview.red_flags_notes}</p></div>` : ''}
+                            
+                            <div class="meta">
+                              <p>Created: ${new Date(selectedInterview.created_at).toLocaleString()}</p>
+                            </div>
+                          </body>
+                        </html>
+                      `);
+                      printWindow.document.close();
+                      printWindow.print();
+                    }}
+                    className="text-white hover:bg-white/20 p-2 rounded flex items-center gap-1"
+                    title="Print Interview"
+                  >
+                    <Printer size={20} />
+                  </button>
+                  <button onClick={() => { setShowViewModal(false); setSelectedInterview(null); }} className="text-white hover:bg-white/20 p-1 rounded">
+                    <X size={24} />
+                  </button>
+                </div>
               </div>
             </div>
             
             <div className="p-6 max-h-[70vh] overflow-y-auto space-y-4">
-              <div className="flex items-center gap-4 mb-4">
+              <div className="flex items-center gap-4 mb-4 flex-wrap">
                 <span className={`px-3 py-1 rounded-full text-sm font-medium border ${getStatusColor(selectedInterview.status)}`}>
                   {getStatusLabel(selectedInterview.status)}
                 </span>
@@ -820,7 +914,7 @@ const Interviews = ({ user }) => {
 
               <div className="bg-amber-50 border border-amber-200 rounded-lg p-3">
                 <strong className="text-amber-900">Must Haves:</strong>
-                <div className="flex gap-4 mt-2 text-sm">
+                <div className="flex flex-wrap gap-4 mt-2 text-sm">
                   <span>Commission: {selectedInterview.must_have_commission ? '✅' : '❌'}</span>
                   <span>Travel: {selectedInterview.must_have_travel ? '✅' : '❌'}</span>
                   <span>Background: {selectedInterview.must_have_background ? '✅' : '❌'}</span>
@@ -834,11 +928,26 @@ const Interviews = ({ user }) => {
               {selectedInterview.work_history && (
                 <div><strong>Work History:</strong><p className="text-gray-700 mt-1">{selectedInterview.work_history}</p></div>
               )}
+              {selectedInterview.what_would_change && (
+                <div><strong>What Would Change:</strong><p className="text-gray-700 mt-1">{selectedInterview.what_would_change}</p></div>
+              )}
               {selectedInterview.why_left_recent && (
                 <div><strong>Why Left Recent Role:</strong><p className="text-gray-700 mt-1">{selectedInterview.why_left_recent}</p></div>
               )}
+              {selectedInterview.other_interviews && (
+                <div><strong>Other Interviews:</strong><p className="text-gray-700 mt-1">{selectedInterview.other_interviews}</p></div>
+              )}
               {selectedInterview.top_3_looking_for && (
                 <div><strong>Top 3 Looking For:</strong><p className="text-gray-700 mt-1">{selectedInterview.top_3_looking_for}</p></div>
+              )}
+              {selectedInterview.why_important && (
+                <div><strong>Why Important:</strong><p className="text-gray-700 mt-1">{selectedInterview.why_important}</p></div>
+              )}
+              {selectedInterview.situation_6_12_months && (
+                <div><strong>6-12 Months Situation:</strong><p className="text-gray-700 mt-1">{selectedInterview.situation_6_12_months}</p></div>
+              )}
+              {selectedInterview.family_impact && (
+                <div><strong>Family Impact:</strong><p className="text-gray-700 mt-1">{selectedInterview.family_impact}</p></div>
               )}
               {selectedInterview.competitiveness_example && (
                 <div><strong>Competitiveness Example:</strong><p className="text-gray-700 mt-1">{selectedInterview.competitiveness_example}</p></div>
@@ -854,32 +963,98 @@ const Interviews = ({ user }) => {
               )}
             </div>
 
-            <div className="p-6 border-t bg-gray-50 rounded-b-lg flex gap-3 justify-end">
-              <Button variant="outline" onClick={() => { setShowViewModal(false); setSelectedInterview(null); }}>
-                Close
+            <div className="p-6 border-t bg-gray-50 rounded-b-lg flex gap-3 justify-between">
+              <Button 
+                variant="outline" 
+                onClick={() => {
+                  const printContent = document.getElementById('interview-print-content');
+                  const printWindow = window.open('', '_blank');
+                  printWindow.document.write(`
+                    <html>
+                      <head>
+                        <title>2026 Interview Guide - ${selectedInterview.candidate_name}</title>
+                        <style>
+                          body { font-family: Arial, sans-serif; padding: 20px; max-width: 800px; margin: 0 auto; }
+                          .header { background: #374151; color: white; padding: 20px; border-radius: 8px; margin-bottom: 20px; }
+                          .header h1 { margin: 0; font-size: 24px; }
+                          .header p { margin: 5px 0 0; opacity: 0.8; }
+                          .section { margin-bottom: 15px; padding: 15px; border: 1px solid #e5e7eb; border-radius: 8px; }
+                          .section-title { font-weight: bold; color: #1f2937; margin-bottom: 8px; }
+                          .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+                          .must-have { background: #fef3c7; padding: 15px; border-radius: 8px; border: 1px solid #fcd34d; margin-bottom: 15px; }
+                          .red-flag { background: #fee2e2; padding: 15px; border-radius: 8px; border: 1px solid #fca5a5; margin-bottom: 15px; }
+                          .status { display: inline-block; padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: 600; }
+                          .meta { color: #6b7280; font-size: 14px; margin-top: 10px; }
+                        </style>
+                      </head>
+                      <body>
+                        <div class="header">
+                          <h1>2026 Interview Guide</h1>
+                          <p>${selectedInterview.candidate_name} • ${selectedInterview.candidate_location} • ${selectedInterview.candidate_phone}</p>
+                        </div>
+                        <div class="section"><div class="grid">
+                          <div><strong>Interview Date:</strong> ${selectedInterview.interview_date}</div>
+                          <div><strong>Interviewer:</strong> ${selectedInterview.interviewer_name}</div>
+                          <div><strong>Status:</strong> ${getStatusLabel(selectedInterview.status)}</div>
+                          ${selectedInterview.second_interview_date ? `<div><strong>2nd Interview:</strong> ${selectedInterview.second_interview_date}</div>` : ''}
+                        </div></div>
+                        <div class="section"><div class="grid">
+                          <div><strong>Competitiveness:</strong> ${selectedInterview.competitiveness_scale}/10</div>
+                          <div><strong>Work Ethic:</strong> ${selectedInterview.work_ethic_scale}/10</div>
+                          <div><strong>Candidate Strength:</strong> ${selectedInterview.candidate_strength}/5</div>
+                          <div><strong>Career Packet Sent:</strong> ${selectedInterview.career_packet_sent ? 'Yes' : 'No'}</div>
+                        </div></div>
+                        <div class="must-have"><div class="section-title">Must Haves:</div><div class="grid">
+                          <div>Commission: ${selectedInterview.must_have_commission ? '✅' : '❌'}</div>
+                          <div>Travel: ${selectedInterview.must_have_travel ? '✅' : '❌'}</div>
+                          <div>Background: ${selectedInterview.must_have_background ? '✅' : '❌'}</div>
+                          <div>Car: ${selectedInterview.must_have_car ? '✅' : '❌'}</div>
+                        </div></div>
+                        ${selectedInterview.hobbies_interests ? `<div class="section"><div class="section-title">Hobbies/Interests:</div><p>${selectedInterview.hobbies_interests}</p></div>` : ''}
+                        ${selectedInterview.work_history ? `<div class="section"><div class="section-title">Work History:</div><p>${selectedInterview.work_history}</p></div>` : ''}
+                        ${selectedInterview.why_left_recent ? `<div class="section"><div class="section-title">Why Left Recent Role:</div><p>${selectedInterview.why_left_recent}</p></div>` : ''}
+                        ${selectedInterview.top_3_looking_for ? `<div class="section"><div class="section-title">Top 3 Looking For:</div><p>${selectedInterview.top_3_looking_for}</p></div>` : ''}
+                        ${selectedInterview.competitiveness_example ? `<div class="section"><div class="section-title">Competitiveness Example:</div><p>${selectedInterview.competitiveness_example}</p></div>` : ''}
+                        ${selectedInterview.work_ethic_example ? `<div class="section"><div class="section-title">Work Ethic Example:</div><p>${selectedInterview.work_ethic_example}</p></div>` : ''}
+                        ${selectedInterview.red_flags_notes ? `<div class="red-flag"><div class="section-title">Red Flags/Notes:</div><p>${selectedInterview.red_flags_notes}</p></div>` : ''}
+                        <div class="meta"><p>Created: ${new Date(selectedInterview.created_at).toLocaleString()}</p></div>
+                      </body>
+                    </html>
+                  `);
+                  printWindow.document.close();
+                  printWindow.print();
+                }}
+              >
+                <Printer size={18} className="mr-2" />
+                Print
               </Button>
-              {selectedInterview.status === 'moving_forward' && user.role === 'state_manager' && (
-                <Button 
-                  onClick={() => { 
-                    setShowViewModal(false);
-                    setFormData(prev => ({ ...prev, second_interview_date: '', second_interview_notes: '' }));
-                    setShowSecondInterviewModal(true); 
-                  }}
-                  className="bg-purple-600 hover:bg-purple-700 text-white"
-                >
-                  <Calendar size={18} className="mr-2" />
-                  Schedule 2nd Interview
+              <div className="flex gap-3">
+                <Button variant="outline" onClick={() => { setShowViewModal(false); setSelectedInterview(null); }}>
+                  Close
                 </Button>
-              )}
-              {selectedInterview.status === 'completed' && !selectedInterview.added_to_recruiting && user.role === 'state_manager' && (
-                <Button 
-                  onClick={() => { addToRecruiting(selectedInterview); setShowViewModal(false); }}
-                  className="bg-green-600 hover:bg-green-700 text-white"
-                >
-                  <UserPlus size={18} className="mr-2" />
-                  Add to Recruiting
-                </Button>
-              )}
+                {selectedInterview.status === 'moving_forward' && user.role === 'state_manager' && (
+                  <Button 
+                    onClick={() => { 
+                      setShowViewModal(false);
+                      setFormData(prev => ({ ...prev, second_interview_date: '', second_interview_notes: '' }));
+                      setShowSecondInterviewModal(true); 
+                    }}
+                    className="bg-purple-600 hover:bg-purple-700 text-white"
+                  >
+                    <Calendar size={18} className="mr-2" />
+                    Schedule 2nd Interview
+                  </Button>
+                )}
+                {selectedInterview.status === 'completed' && !selectedInterview.added_to_recruiting && user.role === 'state_manager' && (
+                  <Button 
+                    onClick={() => { addToRecruiting(selectedInterview); setShowViewModal(false); }}
+                    className="bg-green-600 hover:bg-green-700 text-white"
+                  >
+                    <UserPlus size={18} className="mr-2" />
+                    Add to Recruiting
+                  </Button>
+                )}
+              </div>
             </div>
           </div>
         </div>
