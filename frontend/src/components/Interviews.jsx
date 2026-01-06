@@ -620,7 +620,7 @@ const Interviews = ({ user }) => {
               </div>
 
               <div>
-                <label className="block text-sm font-medium mb-1">What are the top 3 things you're looking for in your next opportunity?</label>
+                <label className="block text-sm font-medium mb-1">What are the top 3 things you&apos;re looking for in your next opportunity?</label>
                 <textarea
                   value={formData.top_3_looking_for}
                   onChange={(e) => setFormData({...formData, top_3_looking_for: e.target.value})}
