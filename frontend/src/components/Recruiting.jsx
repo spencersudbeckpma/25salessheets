@@ -508,12 +508,12 @@ const Recruiting = ({ user }) => {
     </div>
   );
 
-  // Check if user has access (State Manager or Regional Manager)
-  if (!['state_manager', 'regional_manager'].includes(user.role)) {
+  // Check if user has access (State Manager, Regional Manager, or District Manager)
+  if (!['state_manager', 'regional_manager', 'district_manager'].includes(user.role)) {
     return (
       <Card className="shadow-lg">
         <CardContent className="p-8 text-center text-slate-500">
-          You don't have access to this section.
+          You don&apos;t have access to this section.
         </CardContent>
       </Card>
     );
@@ -525,7 +525,7 @@ const Recruiting = ({ user }) => {
         <CardTitle className="flex items-center gap-2 text-xl">
           <Users className="text-amber-600" size={24} />
           Recruiting
-          {user.role === 'regional_manager' && (
+          {(user.role === 'regional_manager' || user.role === 'district_manager') && (
             <span className="text-sm font-normal text-slate-500 ml-2">({user.name})</span>
           )}
         </CardTitle>
