@@ -49,3 +49,27 @@
 ## Incorporate User Feedback
 - User specifically requested "total rows at the bottom" for all report tables ✅
 - The totals should sum all metrics for the selected period ✅ (except premium formatting issue)
+
+## Interview Feature Test
+- **Feature**: Interview Management integrated into Recruiting tab
+- **Test Date**: 2026-01-06
+
+### Test Requirements
+1. Login as State Manager (spencer.sudbeck@pmagent.net / Bizlink25)
+2. Navigate to Recruiting tab
+3. Verify two sub-tabs exist: "Pipeline" and "Interviews"
+4. Test Interview functionality:
+   - New Interview form with all fields from user's screenshots
+   - Submit Interview (Moving Forward)
+   - Submit Interview (Not Moving Forward)
+   - View interview details modal
+   - Schedule 2nd Interview (State Manager only)
+   - Mark interview as Completed
+   - Add to Recruiting pipeline after completion
+   - Stats cards update correctly
+   - Table and Kanban views work
+   - Search and filter by status
+
+### Access Control
+- State Manager: Full access - can see all interviews, schedule 2nd interviews, delete
+- Regional/District Manager: Can conduct 1st interviews, see only their own interviews
