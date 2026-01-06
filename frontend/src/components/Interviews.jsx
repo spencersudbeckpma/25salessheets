@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
 import { toast } from 'sonner';
 import { Card, CardHeader, CardTitle, CardContent } from './ui/card';
@@ -7,7 +7,7 @@ import { Input } from './ui/input';
 import { 
   Users, Plus, Trash2, Save, X, Search, Calendar, 
   CheckCircle, Circle, ClipboardList, UserPlus, 
-  ArrowRight, Eye, Edit, BarChart3, List, Columns
+  ArrowRight, Eye, Edit, BarChart3, List, Columns, Printer
 } from 'lucide-react';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
