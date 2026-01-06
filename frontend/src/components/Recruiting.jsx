@@ -133,6 +133,7 @@ const Recruiting = ({ user }) => {
       rm: recruit.rm || '',
       rm_id: recruit.rm_id || '',
       dm: recruit.dm || '',
+      dm_id: recruit.dm_id || '',
       text_email: recruit.text_email || false,
       vertafore: recruit.vertafore || false,
       study_materials: recruit.study_materials || false,
@@ -145,6 +146,38 @@ const Recruiting = ({ user }) => {
     });
     setEditingId(recruit.id);
     setShowAddForm(true);
+  };
+
+  const handleDMSelect = (dmId) => {
+    const selectedDM = districtManagers.find(dm => dm.id === dmId);
+    if (selectedDM) {
+      setFormData({
+        ...formData,
+        dm: selectedDM.name,
+        dm_id: selectedDM.id
+      });
+    } else {
+      setFormData({
+        ...formData,
+        dm: '',
+        dm_id: ''
+      });
+    }
+  };
+
+  // Get DMs filtered by selected RM (for State Manager) or all DMs under the user
+  const getFilteredDMs = () => {
+    if (user.role === 'state_manager') {
+      // If an RM is selected, show only DMs under that RM
+      if (formData.rm_id) {
+        return districtManagers.filter(dm => dm.manager_id === formData.rm_id);
+      }
+      return districtManagers;
+    } else if (user.role === 'regional_manager') {
+      // Show DMs under this RM
+      return districtManagers.filter(dm => dm.manager_id === user.id);
+    }
+    return [];
   };
 
   const handleDelete = async (id) => {
