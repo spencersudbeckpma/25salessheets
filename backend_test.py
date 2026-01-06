@@ -99,8 +99,8 @@ class InterviewManagementTester:
             return None
 
     def setup_test_users(self):
-        """Setup test users for New Face Customer functionality testing"""
-        print_header("SETTING UP TEST USERS FOR NEW FACE CUSTOMER TESTING")
+        """Setup test users for Interview Management functionality testing"""
+        print_header("SETTING UP TEST USERS FOR INTERVIEW MANAGEMENT TESTING")
         
         # Try to login with existing state manager first
         try:
@@ -116,9 +116,9 @@ class InterviewManagementTester:
             else:
                 print_warning("Could not login existing state manager, trying to register new one")
                 self.state_manager_token = self.register_test_user(
-                    "state.manager.newface@test.com",
+                    "state.manager.interview@test.com",
                     "TestPassword123!",
-                    "State Manager NewFace Test",
+                    "State Manager Interview Test",
                     "state_manager"
                 )
                 if self.state_manager_token:
@@ -127,9 +127,9 @@ class InterviewManagementTester:
         except Exception as e:
             print_warning(f"Exception logging in existing state manager: {str(e)}")
             self.state_manager_token = self.register_test_user(
-                "state.manager.newface@test.com",
+                "state.manager.interview@test.com",
                 "TestPassword123!",
-                "State Manager NewFace Test",
+                "State Manager Interview Test",
                 "state_manager"
             )
             if self.state_manager_token:
@@ -139,9 +139,9 @@ class InterviewManagementTester:
         # Register Regional Manager under State Manager
         if self.state_manager_id:
             self.regional_manager_token = self.register_test_user_with_manager(
-                "regional.manager.newface@test.com", 
+                "regional.manager.interview@test.com", 
                 "TestPassword123!",
-                "Regional Manager NewFace Test",
+                "Regional Manager Interview Test",
                 "regional_manager",
                 self.state_manager_id
             )
@@ -153,9 +153,9 @@ class InterviewManagementTester:
         # Register District Manager under Regional Manager
         if self.regional_manager_id:
             self.district_manager_token = self.register_test_user_with_manager(
-                "district.manager.newface@test.com", 
+                "district.manager.interview@test.com", 
                 "TestPassword123!",
-                "District Manager NewFace Test",
+                "District Manager Interview Test",
                 "district_manager",
                 self.regional_manager_id
             )
@@ -167,9 +167,9 @@ class InterviewManagementTester:
         # Register Agent under District Manager
         if self.district_manager_id:
             self.agent_token = self.register_test_user_with_manager(
-                "agent.newface@test.com",
+                "agent.interview@test.com",
                 "TestPassword123!",
-                "Agent NewFace Test",
+                "Agent Interview Test",
                 "agent",
                 self.district_manager_id
             )
@@ -182,10 +182,10 @@ class InterviewManagementTester:
             print_error("Failed to setup state manager - cannot continue testing")
             return False
             
-        print_success("✅ Test hierarchy created for New Face Customer testing:")
-        print_info("   State Manager (should access all team data)")
-        print_info("   └── Regional Manager (should access regional team data)")
-        print_info("       └── District Manager (should access district team data)")
+        print_success("✅ Test hierarchy created for Interview Management testing:")
+        print_info("   State Manager (full access to all interviews)")
+        print_info("   └── Regional Manager (can conduct interviews, see own only)")
+        print_info("       └── District Manager (can conduct interviews, see own only)")
         print_info("           └── Agent (should be denied access)")
             
         return True
