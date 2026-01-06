@@ -680,14 +680,22 @@ const Recruiting = ({ user }) => {
                     </div>
                   )}
 
-                  <div>
-                    <label className="block text-sm font-medium mb-1">DM (District Manager)</label>
-                    <Input
-                      value={formData.dm}
-                      onChange={(e) => setFormData({ ...formData, dm: e.target.value })}
-                      placeholder="District Manager"
-                    />
-                  </div>
+                  {/* District Manager Dropdown - Show for State Manager and Regional Manager */}
+                  {(user.role === 'state_manager' || user.role === 'regional_manager') && (
+                    <div>
+                      <label className="block text-sm font-medium mb-1">DM (District Manager)</label>
+                      <select
+                        value={formData.dm_id}
+                        onChange={(e) => handleDMSelect(e.target.value)}
+                        className="w-full border rounded-lg p-2 text-sm"
+                      >
+                        <option value="">Select District Manager</option>
+                        {getFilteredDMs().map(dm => (
+                          <option key={dm.id} value={dm.id}>{dm.name}</option>
+                        ))}
+                      </select>
+                    </div>
+                  )}
 
                   <div>
                     <label className="block text-sm font-medium mb-1">Testing Date</label>
