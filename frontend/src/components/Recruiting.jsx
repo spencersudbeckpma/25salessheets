@@ -35,6 +35,7 @@ const Recruiting = ({ user }) => {
     rm: '',
     rm_id: '', // Store the RM's user ID for filtering
     dm: '',
+    dm_id: '', // Store the DM's user ID for filtering
     text_email: false,
     vertafore: false,
     study_materials: false,
@@ -45,10 +46,12 @@ const Recruiting = ({ user }) => {
     comments: '',
     pipeline_status: 'active'
   });
+  const [districtManagers, setDistrictManagers] = useState([]);
 
   useEffect(() => {
     fetchRecruits();
     fetchRegionalManagers();
+    fetchDistrictManagers();
   }, []);
 
   const fetchRecruits = async () => {
@@ -76,6 +79,20 @@ const Recruiting = ({ user }) => {
       setRegionalManagers(rms);
     } catch (error) {
       console.error('Failed to fetch regional managers');
+    }
+  };
+
+  const fetchDistrictManagers = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await axios.get(`${API}/team/members`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      // Filter to only get district managers
+      const dms = response.data.filter(m => m.role === 'district_manager');
+      setDistrictManagers(dms);
+    } catch (error) {
+      console.error('Failed to fetch district managers');
     }
   };
 
