@@ -4,6 +4,7 @@ import { toast } from 'sonner';
 import { Card, CardHeader, CardTitle, CardContent } from './ui/card';
 import { Input } from './ui/input';
 import { Label } from './ui/label';
+import { Archive } from 'lucide-react';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
@@ -13,6 +14,7 @@ const NewFaceTracking = ({ user, embedded = false }) => {
   const [loading, setLoading] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterDate, setFilterDate] = useState('');
+  const [selectedYear, setSelectedYear] = useState('2026'); // Default to 2026
 
   useEffect(() => {
     fetchAllCustomers();
@@ -33,16 +35,20 @@ const NewFaceTracking = ({ user, embedded = false }) => {
     }
   };
 
-  // Filter customers based on search
+  // Filter customers based on search and year
   const filteredCustomers = customers.filter(customer => {
     const matchesSearch = !searchTerm || 
-      customer.customer_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      customer.county.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      customer.user_name.toLowerCase().includes(searchTerm.toLowerCase());
+      customer.customer_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      customer.county?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      customer.user_name?.toLowerCase().includes(searchTerm.toLowerCase());
     
     const matchesDate = !filterDate || customer.date === filterDate;
     
-    return matchesSearch && matchesDate;
+    // Year filter
+    const customerYear = customer.date ? customer.date.substring(0, 4) : '';
+    const matchesYear = selectedYear === 'all' || customerYear === selectedYear;
+    
+    return matchesSearch && matchesDate && matchesYear;
   });
 
   // Group by agent
@@ -54,8 +60,54 @@ const NewFaceTracking = ({ user, embedded = false }) => {
     return acc;
   }, {});
 
+  // Get available years from data
+  const availableYears = [...new Set(customers.map(c => c.date ? c.date.substring(0, 4) : '').filter(y => y))].sort().reverse();
+
   const content = (
     <>
+      {/* Year Tabs */}
+      <div className="flex items-center gap-2 mb-4">
+        <button
+          onClick={() => setSelectedYear('2026')}
+          className={`px-4 py-2 rounded-lg font-medium transition-all ${
+            selectedYear === '2026' 
+              ? 'bg-blue-600 text-white' 
+              : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+          }`}
+        >
+          2026
+        </button>
+        <button
+          onClick={() => setSelectedYear('2025')}
+          className={`px-4 py-2 rounded-lg font-medium transition-all flex items-center gap-2 ${
+            selectedYear === '2025' 
+              ? 'bg-amber-600 text-white' 
+              : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+          }`}
+        >
+          <Archive size={16} />
+          2025 Archive
+        </button>
+        <button
+          onClick={() => setSelectedYear('all')}
+          className={`px-4 py-2 rounded-lg font-medium transition-all ${
+            selectedYear === 'all' 
+              ? 'bg-gray-700 text-white' 
+              : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+          }`}
+        >
+          All Time
+        </button>
+      </div>
+
+      {/* Archive Notice */}
+      {selectedYear === '2025' && (
+        <div className="mb-4 p-3 bg-amber-50 border border-amber-200 rounded-lg text-amber-800 text-sm flex items-center gap-2">
+          <Archive size={18} />
+          <span>Viewing <strong>2025 archived data</strong>. This data is read-only for historical reference.</span>
+        </div>
+      )}
+
       {/* Filters */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
         <div>
@@ -73,8 +125,8 @@ const NewFaceTracking = ({ user, embedded = false }) => {
             value={filterDate}
             onChange={(e) => setFilterDate(e.target.value)}
           />
-          </div>
         </div>
+      </div>
 
         {/* Summary Stats */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
