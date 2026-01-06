@@ -2826,14 +2826,24 @@ async def delete_recruit(recruit_id: str, current_user: dict = Depends(get_curre
 
 @api_router.get("/interviews")
 async def get_interviews(current_user: dict = Depends(get_current_user)):
-    """Get all interviews - State Manager sees all, others see their own"""
+    """Get all interviews - State Manager sees all, Regional sees own + their DMs, District sees own only"""
     if current_user['role'] not in ['state_manager', 'regional_manager', 'district_manager']:
         raise HTTPException(status_code=403, detail="Only managers can access interviews")
     
     if current_user['role'] == 'state_manager':
         interviews = await db.interviews.find({}, {"_id": 0}).sort("created_at", -1).to_list(1000)
+    elif current_user['role'] == 'regional_manager':
+        # Regional managers see their own interviews + their direct reports' (District Managers) interviews
+        subordinates = await get_all_subordinates(current_user['id'])
+        subordinate_ids = [s['id'] for s in subordinates]
+        subordinate_ids.append(current_user['id'])  # Include self
+        
+        interviews = await db.interviews.find(
+            {"interviewer_id": {"$in": subordinate_ids}}, 
+            {"_id": 0}
+        ).sort("created_at", -1).to_list(1000)
     else:
-        # Regional/District managers see only their interviews
+        # District managers see only their own interviews
         interviews = await db.interviews.find(
             {"interviewer_id": current_user['id']}, 
             {"_id": 0}
