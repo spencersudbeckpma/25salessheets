@@ -504,9 +504,11 @@ const Recruiting = ({ user }) => {
             {/* Pipeline Header Actions */}
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
               <div>
-                <h3 className="text-lg font-semibold">Recruiting Pipeline</h3>
+                <h3 className="text-lg font-semibold">
+                  {user.role === 'state_manager' ? 'Recruiting Pipeline' : 'My Recruiting Pipeline'}
+                </h3>
                 <p className="text-sm text-slate-500">
-                  {selectedRM === 'all' || user.role === 'regional_manager' ? recruits.filter(r => user.role === 'regional_manager' ? r.rm_id === user.id : true).length : recruits.filter(r => r.rm_id === selectedRM).length} recruits
+                  {recruits.length} recruits
                 </p>
               </div>
               <div className="flex gap-2">
