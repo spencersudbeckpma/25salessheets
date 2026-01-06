@@ -1,13 +1,16 @@
 #!/usr/bin/env python3
 """
-Backend Testing Script - NEW FACE CUSTOMER TRACKING FUNCTIONALITY TESTING
-NEW FUNCTIONALITY: Test New Face Customer endpoints with different manager role access levels
-Focus: Test hierarchical role system access for New Face Customer tracking
-- GET /api/new-face-customers/all (State, Regional, District Managers)
-- POST /api/new-face-customers (All users with 3 per day limit)
-- DELETE /api/new-face-customers/{customer_id} (Managers + Owner)
-- Test role-based access control and team hierarchy scoping
-- Validate manager access levels and data scoping
+Backend Testing Script - INTERVIEW MANAGEMENT FUNCTIONALITY TESTING
+NEW FUNCTIONALITY: Test Interview Management endpoints with different manager role access levels
+Focus: Test Interview Management system for Sales Tracker application
+- GET /api/interviews (State Manager sees all, others see their own)
+- GET /api/interviews/stats (Interview statistics)
+- POST /api/interviews (Create new interview with comprehensive fields)
+- PUT /api/interviews/{interview_id} (Update interview, status changes, 2nd interview scheduling)
+- DELETE /api/interviews/{interview_id} (Delete interview - State Manager only)
+- POST /api/interviews/{interview_id}/add-to-recruiting (Add completed interview to recruiting pipeline)
+- Test role-based access control and interview workflow
+- Validate manager access levels and interview status transitions
 """
 
 import requests
