@@ -3119,6 +3119,191 @@ async def add_interview_to_recruiting(interview_id: str, current_user: dict = De
 
 
 # ============================================
+# SNA (Sales New Agent) Tracker Endpoints
+# ============================================
+
+@api_router.get("/sna-tracker")
+async def get_sna_agents(current_user: dict = Depends(get_current_user)):
+    """Get all SNA (new agents) being tracked - State and Regional Managers only"""
+    if current_user['role'] not in ['state_manager', 'regional_manager']:
+        raise HTTPException(status_code=403, detail="Only State and Regional Managers can access SNA tracker")
+    
+    # Get all users marked as SNA
+    if current_user['role'] == 'state_manager':
+        sna_users = await db.users.find(
+            {"sna_tracking": True},
+            {"_id": 0, "password_hash": 0}
+        ).to_list(1000)
+    else:
+        # Regional managers see only their subordinates
+        subordinates = await get_all_subordinates(current_user['id'])
+        subordinate_ids = [s['id'] for s in subordinates]
+        sna_users = await db.users.find(
+            {"sna_tracking": True, "id": {"$in": subordinate_ids}},
+            {"_id": 0, "password_hash": 0}
+        ).to_list(1000)
+    
+    # Calculate progress for each SNA
+    sna_data = []
+    for user in sna_users:
+        sna_start = user.get('sna_start_date', '')
+        if not sna_start:
+            continue
+            
+        # Calculate weeks since start
+        try:
+            start_date = datetime.fromisoformat(sna_start.replace('Z', '+00:00')).date()
+        except:
+            start_date = datetime.strptime(sna_start[:10], '%Y-%m-%d').date()
+        
+        today = datetime.now(timezone.utc).date()
+        days_in = (today - start_date).days
+        weeks_in = days_in // 7
+        
+        # If past 15 weeks, skip (they've "graduated")
+        if weeks_in > 15:
+            continue
+        
+        # Get total premium since SNA start
+        activities = await db.activities.find({
+            "user_id": user['id'],
+            "date": {"$gte": sna_start[:10]}
+        }, {"_id": 0}).to_list(10000)
+        
+        total_premium = sum(a.get('premium', 0) for a in activities)
+        
+        # Calculate pace
+        goal = 30000
+        weeks_remaining = max(0, 15 - weeks_in)
+        expected_by_now = (goal / 15) * weeks_in if weeks_in > 0 else 0
+        on_pace = total_premium >= expected_by_now
+        
+        # Calculate weekly needed to hit goal
+        if weeks_remaining > 0:
+            weekly_needed = (goal - total_premium) / weeks_remaining
+        else:
+            weekly_needed = 0
+        
+        # Get manager info
+        manager = await db.users.find_one({"id": user.get('manager_id', '')}, {"_id": 0, "password_hash": 0})
+        
+        sna_data.append({
+            "id": user['id'],
+            "name": user.get('name', ''),
+            "email": user.get('email', ''),
+            "role": user.get('role', ''),
+            "manager_name": manager.get('name', '') if manager else '',
+            "sna_start_date": sna_start,
+            "weeks_in": weeks_in,
+            "weeks_remaining": weeks_remaining,
+            "total_premium": total_premium,
+            "goal": goal,
+            "expected_by_now": round(expected_by_now, 2),
+            "on_pace": on_pace,
+            "weekly_needed": round(weekly_needed, 2),
+            "progress_percent": round((total_premium / goal) * 100, 1)
+        })
+    
+    return sna_data
+
+@api_router.post("/sna-tracker/{user_id}/start")
+async def start_sna_tracking(user_id: str, current_user: dict = Depends(get_current_user)):
+    """Mark a user as SNA (start tracking)"""
+    if current_user['role'] not in ['state_manager', 'regional_manager']:
+        raise HTTPException(status_code=403, detail="Only State and Regional Managers can manage SNA tracking")
+    
+    user = await db.users.find_one({"id": user_id})
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    await db.users.update_one(
+        {"id": user_id},
+        {"$set": {
+            "sna_tracking": True,
+            "sna_start_date": datetime.now(timezone.utc).isoformat(),
+            "sna_started_by": current_user['id']
+        }}
+    )
+    
+    return {"message": f"Started SNA tracking for {user.get('name', '')}"}
+
+@api_router.post("/sna-tracker/{user_id}/stop")
+async def stop_sna_tracking(user_id: str, current_user: dict = Depends(get_current_user)):
+    """Remove a user from SNA tracking"""
+    if current_user['role'] not in ['state_manager', 'regional_manager']:
+        raise HTTPException(status_code=403, detail="Only State and Regional Managers can manage SNA tracking")
+    
+    await db.users.update_one(
+        {"id": user_id},
+        {"$set": {
+            "sna_tracking": False
+        }}
+    )
+    
+    return {"message": "Stopped SNA tracking"}
+
+
+# ============================================
+# NPA (New Producing Agent) Tracker Endpoints
+# ============================================
+
+@api_router.get("/npa-tracker")
+async def get_npa_agents(current_user: dict = Depends(get_current_user)):
+    """Get all agents with their first production info"""
+    if current_user['role'] not in ['state_manager', 'regional_manager', 'district_manager']:
+        raise HTTPException(status_code=403, detail="Only managers can access NPA tracker")
+    
+    # Get users based on role
+    if current_user['role'] == 'state_manager':
+        users = await db.users.find(
+            {"role": {"$in": ["agent", "district_manager"]}},
+            {"_id": 0, "password_hash": 0}
+        ).to_list(1000)
+    else:
+        # Get subordinates
+        subordinates = await get_all_subordinates(current_user['id'])
+        subordinate_ids = [s['id'] for s in subordinates]
+        users = await db.users.find(
+            {"id": {"$in": subordinate_ids}, "role": {"$in": ["agent", "district_manager"]}},
+            {"_id": 0, "password_hash": 0}
+        ).to_list(1000)
+    
+    npa_data = []
+    for user in users:
+        # Find first activity with premium > 0
+        first_production = await db.activities.find_one(
+            {"user_id": user['id'], "premium": {"$gt": 0}},
+            {"_id": 0},
+            sort=[("date", 1)]
+        )
+        
+        # Get manager (upline) info
+        manager = await db.users.find_one({"id": user.get('manager_id', '')}, {"_id": 0, "password_hash": 0})
+        
+        # Get manager's manager (for full upline)
+        upline_manager = None
+        if manager:
+            upline_manager = await db.users.find_one({"id": manager.get('manager_id', '')}, {"_id": 0, "password_hash": 0})
+        
+        npa_data.append({
+            "id": user['id'],
+            "name": user.get('name', ''),
+            "email": user.get('email', ''),
+            "role": user.get('role', '').replace('_', ' ').title(),
+            "first_production_date": first_production.get('date', '') if first_production else None,
+            "first_production_premium": first_production.get('premium', 0) if first_production else 0,
+            "upline_dm": manager.get('name', '') if manager else '',
+            "upline_rm": upline_manager.get('name', '') if upline_manager else '',
+            "has_produced": first_production is not None
+        })
+    
+    # Sort by first production date (most recent first), with non-producers at end
+    npa_data.sort(key=lambda x: (x['first_production_date'] is None, x['first_production_date'] or ''), reverse=True)
+    
+    return npa_data
+
+
+# ============================================
 # PMA Bonus PDF Management Endpoints
 # ============================================
 
