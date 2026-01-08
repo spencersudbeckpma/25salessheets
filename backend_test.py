@@ -734,8 +734,8 @@ class SNANPATrackerTester:
                 self.test_results['failed'] += 1
 
     def run_all_tests(self):
-        """Run all Interview Management functionality tests"""
-        print_header("🚀 STARTING COMPREHENSIVE INTERVIEW MANAGEMENT FUNCTIONALITY TESTING")
+        """Run all SNA & NPA Tracker functionality tests"""
+        print_header("🚀 STARTING COMPREHENSIVE SNA & NPA TRACKER FUNCTIONALITY TESTING")
         
         # Setup test users
         if not self.setup_test_users():
@@ -743,12 +743,12 @@ class SNANPATrackerTester:
             return False
         
         # Run all test suites
-        self.test_interviews_get_endpoint()
-        self.test_interviews_stats_endpoint()
-        self.test_interviews_create_endpoint()
-        self.test_interviews_update_endpoint()
-        self.test_interviews_delete_endpoint()
-        self.test_add_to_recruiting_endpoint()
+        self.test_sna_tracker_get_endpoint()
+        self.test_sna_tracker_start_stop_endpoints()
+        self.test_npa_tracker_get_endpoint()
+        self.test_npa_tracker_create_endpoint()
+        self.test_npa_tracker_update_endpoint()
+        self.test_npa_tracker_delete_endpoint()
         
         # Print final results
         self.print_final_results()
@@ -757,7 +757,7 @@ class SNANPATrackerTester:
 
     def print_final_results(self):
         """Print comprehensive test results"""
-        print_header("📊 INTERVIEW MANAGEMENT FUNCTIONALITY TEST RESULTS")
+        print_header("📊 SNA & NPA TRACKER FUNCTIONALITY TEST RESULTS")
         
         total_tests = self.test_results['passed'] + self.test_results['failed']
         success_rate = (self.test_results['passed'] / total_tests * 100) if total_tests > 0 else 0
@@ -776,15 +776,15 @@ class SNANPATrackerTester:
         print_info(f"Success Rate: {success_rate:.1f}%")
         
         if self.test_results['failed'] == 0:
-            print_success("🎉 ALL INTERVIEW MANAGEMENT FUNCTIONALITY TESTS PASSED!")
+            print_success("🎉 ALL SNA & NPA TRACKER FUNCTIONALITY TESTS PASSED!")
+            print_success("✅ SNA Tracker: 90-day tracking, $30,000 goal working correctly")
+            print_success("✅ NPA Tracker: $1,000 goal, manual add/edit/delete working correctly")
             print_success("✅ Manager role access levels working correctly")
-            print_success("✅ Interview creation with comprehensive fields working correctly")
-            print_success("✅ Interview status transitions and updates working correctly")
-            print_success("✅ State Manager delete permissions working correctly")
-            print_success("✅ Add to recruiting pipeline working correctly")
+            print_success("✅ Start/stop SNA tracking working correctly")
+            print_success("✅ NPA achievement tracking working correctly")
             print_success("✅ Access control for different manager levels working correctly")
         else:
-            print_error("❌ SOME TESTS FAILED - INTERVIEW MANAGEMENT FUNCTIONALITY NEEDS ATTENTION")
+            print_error("❌ SOME TESTS FAILED - SNA & NPA TRACKER FUNCTIONALITY NEEDS ATTENTION")
 
 if __name__ == "__main__":
     tester = InterviewManagementTester()
