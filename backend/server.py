@@ -3033,7 +3033,7 @@ async def update_interview(interview_id: str, interview_data: dict, current_user
 
 @api_router.delete("/interviews/{interview_id}")
 async def delete_interview(interview_id: str, current_user: dict = Depends(get_current_user)):
-    """Delete an interview (State Manager only)"""
+    """Archive an interview (soft delete) - State Manager only. Stats are preserved."""
     if current_user['role'] != 'state_manager':
         raise HTTPException(status_code=403, detail="Only State Managers can delete interviews")
     
@@ -3041,8 +3041,17 @@ async def delete_interview(interview_id: str, current_user: dict = Depends(get_c
     if not existing:
         raise HTTPException(status_code=404, detail="Interview not found")
     
-    await db.interviews.delete_one({"id": interview_id})
-    return {"message": "Interview deleted"}
+    # Soft delete - mark as archived instead of deleting
+    from datetime import datetime, timezone
+    await db.interviews.update_one(
+        {"id": interview_id},
+        {"$set": {
+            "archived": True,
+            "archived_at": datetime.now(timezone.utc).isoformat(),
+            "archived_by": current_user['id']
+        }}
+    )
+    return {"message": "Interview archived"}
 
 @api_router.post("/interviews/{interview_id}/add-to-recruiting")
 async def add_interview_to_recruiting(interview_id: str, current_user: dict = Depends(get_current_user)):
