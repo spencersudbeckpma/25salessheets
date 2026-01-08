@@ -3297,6 +3297,7 @@ async def get_npa_agents(current_user: dict = Depends(get_current_user)):
         
         agent_info = {
             "id": agent.get('id'),
+            "user_id": agent.get('user_id', ''),  # Link to team member if selected from list
             "name": agent.get('name', ''),
             "phone": agent.get('phone', ''),
             "email": agent.get('email', ''),
