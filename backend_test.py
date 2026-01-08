@@ -104,8 +104,8 @@ class SNANPATrackerTester:
             return None
 
     def setup_test_users(self):
-        """Setup test users for Interview Management functionality testing"""
-        print_header("SETTING UP TEST USERS FOR INTERVIEW MANAGEMENT TESTING")
+        """Setup test users for SNA & NPA Tracker functionality testing"""
+        print_header("SETTING UP TEST USERS FOR SNA & NPA TRACKER TESTING")
         
         # Try to login with existing state manager first
         try:
@@ -121,9 +121,9 @@ class SNANPATrackerTester:
             else:
                 print_warning("Could not login existing state manager, trying to register new one")
                 self.state_manager_token = self.register_test_user(
-                    "state.manager.interview@test.com",
+                    "state.manager.tracker@test.com",
                     "TestPassword123!",
-                    "State Manager Interview Test",
+                    "State Manager Tracker Test",
                     "state_manager"
                 )
                 if self.state_manager_token:
@@ -132,9 +132,9 @@ class SNANPATrackerTester:
         except Exception as e:
             print_warning(f"Exception logging in existing state manager: {str(e)}")
             self.state_manager_token = self.register_test_user(
-                "state.manager.interview@test.com",
+                "state.manager.tracker@test.com",
                 "TestPassword123!",
-                "State Manager Interview Test",
+                "State Manager Tracker Test",
                 "state_manager"
             )
             if self.state_manager_token:
@@ -144,9 +144,9 @@ class SNANPATrackerTester:
         # Register Regional Manager under State Manager
         if self.state_manager_id:
             self.regional_manager_token = self.register_test_user_with_manager(
-                "regional.manager.interview@test.com", 
+                "regional.manager.tracker@test.com", 
                 "TestPassword123!",
-                "Regional Manager Interview Test",
+                "Regional Manager Tracker Test",
                 "regional_manager",
                 self.state_manager_id
             )
@@ -158,9 +158,9 @@ class SNANPATrackerTester:
         # Register District Manager under Regional Manager
         if self.regional_manager_id:
             self.district_manager_token = self.register_test_user_with_manager(
-                "district.manager.interview@test.com", 
+                "district.manager.tracker@test.com", 
                 "TestPassword123!",
-                "District Manager Interview Test",
+                "District Manager Tracker Test",
                 "district_manager",
                 self.regional_manager_id
             )
@@ -172,9 +172,9 @@ class SNANPATrackerTester:
         # Register Agent under District Manager
         if self.district_manager_id:
             self.agent_token = self.register_test_user_with_manager(
-                "agent.interview@test.com",
+                "agent.tracker@test.com",
                 "TestPassword123!",
-                "Agent Interview Test",
+                "Agent Tracker Test",
                 "agent",
                 self.district_manager_id
             )
@@ -187,10 +187,10 @@ class SNANPATrackerTester:
             print_error("Failed to setup state manager - cannot continue testing")
             return False
             
-        print_success("✅ Test hierarchy created for Interview Management testing:")
-        print_info("   State Manager (full access to all interviews)")
-        print_info("   └── Regional Manager (can conduct interviews, see own only)")
-        print_info("       └── District Manager (can conduct interviews, see own only)")
+        print_success("✅ Test hierarchy created for SNA & NPA Tracker testing:")
+        print_info("   State Manager (full access to all trackers)")
+        print_info("   └── Regional Manager (can manage SNA/NPA tracking)")
+        print_info("       └── District Manager (can manage NPA tracking only)")
         print_info("           └── Agent (should be denied access)")
             
         return True
