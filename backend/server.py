@@ -3281,8 +3281,7 @@ async def get_npa_agents(current_user: dict = Depends(get_current_user)):
         npa_agents = await db.npa_agents.find({}, {"_id": 0}).to_list(1000)
     else:
         # Managers see only their own added agents
-        subordinates = await get_all_subordinates(current_user['id'])
-        subordinate_ids = [s['id'] for s in subordinates]
+        subordinate_ids = await get_all_subordinates(current_user['id'])
         subordinate_ids.append(current_user['id'])
         npa_agents = await db.npa_agents.find(
             {"added_by": {"$in": subordinate_ids}},
