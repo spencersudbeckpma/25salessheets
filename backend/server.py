@@ -3121,6 +3121,10 @@ async def add_interview_to_recruiting(interview_id: str, current_user: dict = De
 # ============================================
 # SNA (Sales New Agent) Tracker Endpoints
 # ============================================
+# Tracks new agents for their first 90 days toward a $30,000 premium goal
+
+SNA_GOAL = 30000
+SNA_TRACKING_DAYS = 90
 
 @api_router.get("/sna-tracker")
 async def get_sna_agents(current_user: dict = Depends(get_current_user)):
@@ -3145,12 +3149,14 @@ async def get_sna_agents(current_user: dict = Depends(get_current_user)):
     
     # Calculate progress for each SNA
     sna_data = []
+    graduated_data = []
+    
     for user in sna_users:
         sna_start = user.get('sna_start_date', '')
         if not sna_start:
             continue
             
-        # Calculate weeks since start
+        # Calculate days since start
         try:
             start_date = datetime.fromisoformat(sna_start.replace('Z', '+00:00')).date()
         except:
@@ -3158,11 +3164,7 @@ async def get_sna_agents(current_user: dict = Depends(get_current_user)):
         
         today = datetime.now(timezone.utc).date()
         days_in = (today - start_date).days
-        weeks_in = days_in // 7
-        
-        # If past 15 weeks, skip (they've "graduated")
-        if weeks_in > 15:
-            continue
+        days_remaining = max(0, SNA_TRACKING_DAYS - days_in)
         
         # Get total premium since SNA start
         activities = await db.activities.find({
@@ -3172,39 +3174,58 @@ async def get_sna_agents(current_user: dict = Depends(get_current_user)):
         
         total_premium = sum(a.get('premium', 0) for a in activities)
         
-        # Calculate pace
-        goal = 30000
-        weeks_remaining = max(0, 15 - weeks_in)
-        expected_by_now = (goal / 15) * weeks_in if weeks_in > 0 else 0
+        # Calculate pace based on 90 days
+        expected_by_now = (SNA_GOAL / SNA_TRACKING_DAYS) * days_in if days_in > 0 else 0
         on_pace = total_premium >= expected_by_now
         
-        # Calculate weekly needed to hit goal
-        if weeks_remaining > 0:
-            weekly_needed = (goal - total_premium) / weeks_remaining
+        # Calculate daily needed to hit goal
+        if days_remaining > 0:
+            daily_needed = (SNA_GOAL - total_premium) / days_remaining
+            weekly_needed = daily_needed * 7
         else:
+            daily_needed = 0
             weekly_needed = 0
         
         # Get manager info
         manager = await db.users.find_one({"id": user.get('manager_id', '')}, {"_id": 0, "password_hash": 0})
         
-        sna_data.append({
+        agent_data = {
             "id": user['id'],
             "name": user.get('name', ''),
             "email": user.get('email', ''),
             "role": user.get('role', ''),
             "manager_name": manager.get('name', '') if manager else '',
             "sna_start_date": sna_start,
-            "weeks_in": weeks_in,
-            "weeks_remaining": weeks_remaining,
+            "days_in": days_in,
+            "days_remaining": days_remaining,
             "total_premium": total_premium,
-            "goal": goal,
+            "goal": SNA_GOAL,
             "expected_by_now": round(expected_by_now, 2),
             "on_pace": on_pace,
             "weekly_needed": round(weekly_needed, 2),
-            "progress_percent": round((total_premium / goal) * 100, 1)
-        })
+            "daily_needed": round(daily_needed, 2),
+            "progress_percent": round((total_premium / SNA_GOAL) * 100, 1),
+            "completed": total_premium >= SNA_GOAL,
+            "graduated_date": user.get('sna_graduated_date', None)
+        }
+        
+        # Check if graduated (hit goal OR past 90 days)
+        if total_premium >= SNA_GOAL:
+            agent_data['status'] = 'completed'
+            graduated_data.append(agent_data)
+        elif days_in > SNA_TRACKING_DAYS:
+            agent_data['status'] = 'expired'
+            graduated_data.append(agent_data)
+        else:
+            agent_data['status'] = 'active'
+            sna_data.append(agent_data)
     
-    return sna_data
+    return {
+        "active": sna_data,
+        "graduated": graduated_data,
+        "goal": SNA_GOAL,
+        "tracking_days": SNA_TRACKING_DAYS
+    }
 
 @api_router.post("/sna-tracker/{user_id}/start")
 async def start_sna_tracking(user_id: str, current_user: dict = Depends(get_current_user)):
@@ -3246,61 +3267,151 @@ async def stop_sna_tracking(user_id: str, current_user: dict = Depends(get_curre
 # ============================================
 # NPA (New Producing Agent) Tracker Endpoints
 # ============================================
+# Agents are manually added and tracked toward $1,000 premium goal
+
+NPA_GOAL = 1000
 
 @api_router.get("/npa-tracker")
 async def get_npa_agents(current_user: dict = Depends(get_current_user)):
-    """Get all agents with their first production info"""
+    """Get all manually added NPA agents and their progress"""
     if current_user['role'] not in ['state_manager', 'regional_manager', 'district_manager']:
         raise HTTPException(status_code=403, detail="Only managers can access NPA tracker")
     
-    # Get users based on role
+    # Get NPA agents based on role
     if current_user['role'] == 'state_manager':
-        users = await db.users.find(
-            {"role": {"$in": ["agent", "district_manager"]}},
-            {"_id": 0, "password_hash": 0}
-        ).to_list(1000)
+        npa_agents = await db.npa_agents.find({}, {"_id": 0}).to_list(1000)
     else:
-        # Get subordinates
+        # Managers see only their own added agents
         subordinates = await get_all_subordinates(current_user['id'])
         subordinate_ids = [s['id'] for s in subordinates]
-        users = await db.users.find(
-            {"id": {"$in": subordinate_ids}, "role": {"$in": ["agent", "district_manager"]}},
-            {"_id": 0, "password_hash": 0}
+        subordinate_ids.append(current_user['id'])
+        npa_agents = await db.npa_agents.find(
+            {"added_by": {"$in": subordinate_ids}},
+            {"_id": 0}
         ).to_list(1000)
     
     npa_data = []
-    for user in users:
-        # Find first activity with premium > 0
-        first_production = await db.activities.find_one(
-            {"user_id": user['id'], "premium": {"$gt": 0}},
-            {"_id": 0},
-            sort=[("date", 1)]
-        )
-        
-        # Get manager (upline) info
-        manager = await db.users.find_one({"id": user.get('manager_id', '')}, {"_id": 0, "password_hash": 0})
-        
-        # Get manager's manager (for full upline)
-        upline_manager = None
-        if manager:
-            upline_manager = await db.users.find_one({"id": manager.get('manager_id', '')}, {"_id": 0, "password_hash": 0})
-        
-        npa_data.append({
-            "id": user['id'],
-            "name": user.get('name', ''),
-            "email": user.get('email', ''),
-            "role": user.get('role', '').replace('_', ' ').title(),
-            "first_production_date": first_production.get('date', '') if first_production else None,
-            "first_production_premium": first_production.get('premium', 0) if first_production else 0,
-            "upline_dm": manager.get('name', '') if manager else '',
-            "upline_rm": upline_manager.get('name', '') if upline_manager else '',
-            "has_produced": first_production is not None
-        })
+    achieved_data = []
     
-    # Sort by first production date (most recent first), with non-producers at end
-    npa_data.sort(key=lambda x: (x['first_production_date'] is None, x['first_production_date'] or ''), reverse=True)
+    for agent in npa_agents:
+        total_premium = agent.get('total_premium', 0)
+        achieved_npa = total_premium >= NPA_GOAL
+        
+        agent_info = {
+            "id": agent.get('id'),
+            "name": agent.get('name', ''),
+            "phone": agent.get('phone', ''),
+            "email": agent.get('email', ''),
+            "start_date": agent.get('start_date', ''),
+            "upline_dm": agent.get('upline_dm', ''),
+            "upline_rm": agent.get('upline_rm', ''),
+            "total_premium": total_premium,
+            "goal": NPA_GOAL,
+            "progress_percent": round((total_premium / NPA_GOAL) * 100, 1) if NPA_GOAL > 0 else 0,
+            "achieved_npa": achieved_npa,
+            "achievement_date": agent.get('achievement_date', None),
+            "added_by": agent.get('added_by', ''),
+            "added_by_name": agent.get('added_by_name', ''),
+            "created_at": agent.get('created_at', ''),
+            "notes": agent.get('notes', '')
+        }
+        
+        if achieved_npa:
+            achieved_data.append(agent_info)
+        else:
+            npa_data.append(agent_info)
     
-    return npa_data
+    # Sort active by progress descending, achieved by achievement date descending
+    npa_data.sort(key=lambda x: x['total_premium'], reverse=True)
+    achieved_data.sort(key=lambda x: x.get('achievement_date') or '', reverse=True)
+    
+    return {
+        "active": npa_data,
+        "achieved": achieved_data,
+        "goal": NPA_GOAL
+    }
+
+@api_router.post("/npa-tracker")
+async def add_npa_agent(data: dict, current_user: dict = Depends(get_current_user)):
+    """Add a new agent to NPA tracking"""
+    if current_user['role'] not in ['state_manager', 'regional_manager', 'district_manager']:
+        raise HTTPException(status_code=403, detail="Only managers can add NPA agents")
+    
+    npa_agent = {
+        "id": str(uuid4()),
+        "name": data.get('name', ''),
+        "phone": data.get('phone', ''),
+        "email": data.get('email', ''),
+        "start_date": data.get('start_date', datetime.now(timezone.utc).strftime('%Y-%m-%d')),
+        "upline_dm": data.get('upline_dm', ''),
+        "upline_rm": data.get('upline_rm', ''),
+        "total_premium": float(data.get('total_premium', 0)),
+        "notes": data.get('notes', ''),
+        "added_by": current_user['id'],
+        "added_by_name": current_user.get('name', ''),
+        "created_at": datetime.now(timezone.utc).isoformat(),
+        "achievement_date": None
+    }
+    
+    # Check if they've achieved NPA status
+    if npa_agent['total_premium'] >= NPA_GOAL:
+        npa_agent['achievement_date'] = datetime.now(timezone.utc).strftime('%Y-%m-%d')
+    
+    await db.npa_agents.insert_one(npa_agent)
+    
+    return {"message": f"Added {npa_agent['name']} to NPA tracking", "id": npa_agent['id']}
+
+@api_router.put("/npa-tracker/{agent_id}")
+async def update_npa_agent(agent_id: str, data: dict, current_user: dict = Depends(get_current_user)):
+    """Update an NPA agent's information or premium"""
+    if current_user['role'] not in ['state_manager', 'regional_manager', 'district_manager']:
+        raise HTTPException(status_code=403, detail="Only managers can update NPA agents")
+    
+    existing = await db.npa_agents.find_one({"id": agent_id})
+    if not existing:
+        raise HTTPException(status_code=404, detail="NPA agent not found")
+    
+    # Build update dict
+    update_data = {}
+    if 'name' in data:
+        update_data['name'] = data['name']
+    if 'phone' in data:
+        update_data['phone'] = data['phone']
+    if 'email' in data:
+        update_data['email'] = data['email']
+    if 'start_date' in data:
+        update_data['start_date'] = data['start_date']
+    if 'upline_dm' in data:
+        update_data['upline_dm'] = data['upline_dm']
+    if 'upline_rm' in data:
+        update_data['upline_rm'] = data['upline_rm']
+    if 'total_premium' in data:
+        new_premium = float(data['total_premium'])
+        update_data['total_premium'] = new_premium
+        # Check if just achieved NPA status
+        if new_premium >= NPA_GOAL and not existing.get('achievement_date'):
+            update_data['achievement_date'] = datetime.now(timezone.utc).strftime('%Y-%m-%d')
+    if 'notes' in data:
+        update_data['notes'] = data['notes']
+    
+    update_data['updated_at'] = datetime.now(timezone.utc).isoformat()
+    update_data['updated_by'] = current_user['id']
+    
+    await db.npa_agents.update_one({"id": agent_id}, {"$set": update_data})
+    
+    return {"message": "NPA agent updated successfully"}
+
+@api_router.delete("/npa-tracker/{agent_id}")
+async def delete_npa_agent(agent_id: str, current_user: dict = Depends(get_current_user)):
+    """Remove an agent from NPA tracking"""
+    if current_user['role'] not in ['state_manager', 'regional_manager']:
+        raise HTTPException(status_code=403, detail="Only State and Regional Managers can delete NPA agents")
+    
+    result = await db.npa_agents.delete_one({"id": agent_id})
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="NPA agent not found")
+    
+    return {"message": "NPA agent removed from tracking"}
 
 
 # ============================================
