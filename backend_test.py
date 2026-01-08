@@ -1,16 +1,21 @@
 #!/usr/bin/env python3
 """
-Backend Testing Script - INTERVIEW MANAGEMENT FUNCTIONALITY TESTING
-NEW FUNCTIONALITY: Test Interview Management endpoints with different manager role access levels
-Focus: Test Interview Management system for Sales Tracker application
-- GET /api/interviews (State Manager sees all, others see their own)
-- GET /api/interviews/stats (Interview statistics)
-- POST /api/interviews (Create new interview with comprehensive fields)
-- PUT /api/interviews/{interview_id} (Update interview, status changes, 2nd interview scheduling)
-- DELETE /api/interviews/{interview_id} (Delete interview - State Manager only)
-- POST /api/interviews/{interview_id}/add-to-recruiting (Add completed interview to recruiting pipeline)
-- Test role-based access control and interview workflow
-- Validate manager access levels and interview status transitions
+Backend Testing Script - SNA TRACKER & NPA TRACKER FUNCTIONALITY TESTING
+NEW FUNCTIONALITY: Test SNA Tracker and NPA Tracker endpoints with different manager role access levels
+Focus: Test SNA (90-day $30K goal) and NPA ($1K first production) tracking systems
+
+SNA TRACKER ENDPOINTS:
+- GET /api/sna-tracker (Get active/graduated agents with 90-day tracking, $30K goal)
+- POST /api/sna-tracker/{user_id}/start (Start tracking a team member)
+- POST /api/sna-tracker/{user_id}/stop (Stop tracking a team member)
+
+NPA TRACKER ENDPOINTS:
+- GET /api/npa-tracker (Get active/achieved agents with $1K goal)
+- POST /api/npa-tracker (Add new NPA agent manually)
+- PUT /api/npa-tracker/{agent_id} (Update premium to trigger achievement)
+- DELETE /api/npa-tracker/{agent_id} (Delete agent - State/Regional managers only)
+
+Test role-based access control and tracking workflows
 """
 
 import requests
