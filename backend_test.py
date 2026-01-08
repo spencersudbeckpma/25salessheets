@@ -787,12 +787,12 @@ class SNANPATrackerTester:
             print_error("❌ SOME TESTS FAILED - SNA & NPA TRACKER FUNCTIONALITY NEEDS ATTENTION")
 
 if __name__ == "__main__":
-    tester = InterviewManagementTester()
+    tester = SNANPATrackerTester()
     success = tester.run_all_tests()
     
     if success:
-        print_success("\n🎉 All Interview Management functionality tests completed successfully!")
+        print_success("\n🎉 All SNA & NPA Tracker functionality tests completed successfully!")
         sys.exit(0)
     else:
-        print_error("\n💥 Some Interview Management functionality tests failed!")
+        print_error("\n💥 Some SNA & NPA Tracker functionality tests failed!")
         sys.exit(1)
