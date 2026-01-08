@@ -3338,7 +3338,7 @@ async def add_npa_agent(data: dict, current_user: dict = Depends(get_current_use
         raise HTTPException(status_code=403, detail="Only managers can add NPA agents")
     
     npa_agent = {
-        "id": str(uuid4()),
+        "id": str(uuid.uuid4()),
         "name": data.get('name', ''),
         "phone": data.get('phone', ''),
         "email": data.get('email', ''),
