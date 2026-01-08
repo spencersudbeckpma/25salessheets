@@ -3140,8 +3140,7 @@ async def get_sna_agents(current_user: dict = Depends(get_current_user)):
         ).to_list(1000)
     else:
         # Regional managers see only their subordinates
-        subordinates = await get_all_subordinates(current_user['id'])
-        subordinate_ids = [s['id'] for s in subordinates]
+        subordinate_ids = await get_all_subordinates(current_user['id'])
         sna_users = await db.users.find(
             {"sna_tracking": True, "id": {"$in": subordinate_ids}},
             {"_id": 0, "password_hash": 0}
