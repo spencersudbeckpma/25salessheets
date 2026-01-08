@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { Card, CardHeader, CardTitle, CardContent } from './ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs';
 import DailyReport from './DailyReport';
@@ -8,6 +8,8 @@ import NPATracker from './NPATracker';
 import { FileText, Users, Target, Award } from 'lucide-react';
 
 const Reports = ({ user }) => {
+  const canAccessSNA = ['state_manager', 'regional_manager'].includes(user.role);
+
   return (
     <Card className="shadow-lg bg-white" data-testid="reports-card">
       <CardHeader className="pb-4">
@@ -18,22 +20,34 @@ const Reports = ({ user }) => {
       </CardHeader>
       <CardContent className="pt-2">
         <Tabs defaultValue="reports" className="space-y-4">
-          <TabsList className="inline-flex flex-wrap bg-gray-100 p-1 gap-1">
-            <TabsTrigger value="reports" className="py-2 px-4 text-sm whitespace-nowrap flex items-center gap-2">
+          <TabsList className="inline-flex bg-gray-100 p-1 rounded-lg">
+            <TabsTrigger 
+              value="reports" 
+              className="px-4 py-2 text-sm rounded-md flex items-center gap-2 data-[state=active]:bg-white data-[state=active]:shadow"
+            >
               <FileText size={16} />
               Reports
             </TabsTrigger>
-            <TabsTrigger value="new-faces" className="py-2 px-4 text-sm whitespace-nowrap flex items-center gap-2">
+            <TabsTrigger 
+              value="new-faces" 
+              className="px-4 py-2 text-sm rounded-md flex items-center gap-2 data-[state=active]:bg-white data-[state=active]:shadow"
+            >
               <Users size={16} />
               New Faces
             </TabsTrigger>
-            {['state_manager', 'regional_manager'].includes(user.role) && (
-              <TabsTrigger value="sna-tracker" className="py-2 px-4 text-sm whitespace-nowrap flex items-center gap-2">
+            {canAccessSNA && (
+              <TabsTrigger 
+                value="sna-tracker" 
+                className="px-4 py-2 text-sm rounded-md flex items-center gap-2 data-[state=active]:bg-white data-[state=active]:shadow"
+              >
                 <Target size={16} />
                 SNA Tracker
               </TabsTrigger>
             )}
-            <TabsTrigger value="npa-tracker" className="py-2 px-4 text-sm whitespace-nowrap flex items-center gap-2">
+            <TabsTrigger 
+              value="npa-tracker" 
+              className="px-4 py-2 text-sm rounded-md flex items-center gap-2 data-[state=active]:bg-white data-[state=active]:shadow"
+            >
               <Award size={16} />
               NPA Tracker
             </TabsTrigger>
@@ -47,7 +61,7 @@ const Reports = ({ user }) => {
             <NewFaceTracking user={user} embedded={true} />
           </TabsContent>
 
-          {['state_manager', 'regional_manager'].includes(user.role) && (
+          {canAccessSNA && (
             <TabsContent value="sna-tracker" className="mt-4">
               <SNATracker user={user} />
             </TabsContent>
