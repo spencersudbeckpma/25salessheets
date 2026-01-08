@@ -10,7 +10,7 @@ from datetime import datetime, timedelta
 import sys
 
 # Configuration
-BACKEND_URL = "https://sales-pipeline-64.preview.emergentagent.com/api"
+BACKEND_URL = "https://performance-hub-75.preview.emergentagent.com/api"
 
 class Colors:
     GREEN = '\033[92m'
