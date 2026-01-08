@@ -1001,7 +1001,12 @@ async def get_period_report(report_type: str, period: str, current_user: dict = 
     today = datetime.now(central_tz).date()
     
     # Calculate date range based on period
-    if period == "monthly":
+    if period == "weekly":
+        # Current week (Monday to Sunday)
+        start_date = today - timedelta(days=today.weekday())
+        end_date = start_date + timedelta(days=6)
+        period_name = f"Week of {start_date.strftime('%b %d')} - {end_date.strftime('%b %d, %Y')}"
+    elif period == "monthly":
         if month:
             # Parse the selected month (YYYY-MM format)
             try:
@@ -1045,7 +1050,7 @@ async def get_period_report(report_type: str, period: str, current_user: dict = 
             start_date = today.replace(month=1, day=1)
             period_name = f"Year {today.year}"
     else:
-        raise HTTPException(status_code=400, detail="Invalid period. Use 'monthly', 'quarterly', or 'yearly'")
+        raise HTTPException(status_code=400, detail="Invalid period. Use 'weekly', 'monthly', 'quarterly', or 'yearly'")
     
     # Helper function to get all subordinates recursively (exclude archived)
     async def get_all_subordinates(user_id: str):
