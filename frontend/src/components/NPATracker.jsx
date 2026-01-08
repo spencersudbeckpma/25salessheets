@@ -243,9 +243,17 @@ const NPATracker = ({ user }) => {
           {!isEdit && (
             <div className="flex bg-gray-100 rounded-lg p-1 mb-4">
               <button
+                type="button"
                 onClick={() => {
                   setAddMode('select');
-                  resetForm();
+                  setSelectedMemberId('');
+                  setFormData(prev => ({
+                    ...prev,
+                    name: '',
+                    phone: '',
+                    email: '',
+                    user_id: ''
+                  }));
                 }}
                 className={`flex-1 px-3 py-2 rounded-md text-sm font-medium transition-colors flex items-center justify-center gap-2 ${
                   addMode === 'select' 
@@ -257,9 +265,17 @@ const NPATracker = ({ user }) => {
                 Select Team Member
               </button>
               <button
+                type="button"
                 onClick={() => {
                   setAddMode('manual');
-                  resetForm();
+                  setSelectedMemberId('');
+                  setFormData(prev => ({
+                    ...prev,
+                    name: '',
+                    phone: '',
+                    email: '',
+                    user_id: ''
+                  }));
                 }}
                 className={`flex-1 px-3 py-2 rounded-md text-sm font-medium transition-colors flex items-center justify-center gap-2 ${
                   addMode === 'manual' 
