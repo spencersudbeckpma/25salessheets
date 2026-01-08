@@ -1,6 +1,28 @@
 # Test Results
 
 ## Current Test
+- **Feature**: SNA Tracker & NPA Tracker Implementation
+- **Description**: Implementing two new tracking features - SNA (90-day $30K goal) and NPA ($1K first production)
+- **Test Date**: 2026-01-08
+- **Tested By**: Testing Agent
+- **Status**: IN PROGRESS
+
+## Test Requirements
+1. Login as State Manager (spencer.sudbeck@pmagent.net / Bizlink25)
+2. Navigate to Reports tab
+3. Test SNA Tracker tab:
+   - View SNA Tracker page (should show empty state or tracked agents)
+   - Click "Add New Agent" button and verify modal works
+   - Check that it shows 90-day tracking period and $30,000 goal
+   - Verify "Active" and "Graduated/Completed" tabs work
+4. Test NPA Tracker tab:
+   - View NPA Tracker page (should show existing test agents)
+   - Click "Add Agent" button and add a new agent manually
+   - Edit an existing agent's premium
+   - Verify agents move to "Achieved NPA" when hitting $1,000
+   - Test delete functionality (State/Regional Managers only)
+
+## Previous Test
 - **Feature**: Reports Tab Totals Row
 - **Description**: Added totals rows at the bottom of Individual, Team, and Hierarchy report tables
 - **Test Date**: 2026-01-04
