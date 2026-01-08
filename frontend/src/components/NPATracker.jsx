@@ -6,8 +6,8 @@ import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { 
   Award, Calendar, DollarSign, User, Users, Search, 
-  CheckCircle, XCircle, ArrowUpRight, Plus, Edit2, Trash2, X,
-  TrendingUp, Trophy, Target
+  CheckCircle, ArrowUpRight, Plus, Edit2, Trash2, X,
+  Trophy, Target, UserPlus
 } from 'lucide-react';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
@@ -15,12 +15,15 @@ const API = `${BACKEND_URL}/api`;
 
 const NPATracker = ({ user }) => {
   const [npaData, setNpaData] = useState({ active: [], achieved: [], goal: 1000 });
+  const [teamMembers, setTeamMembers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [activeTab, setActiveTab] = useState('active'); // 'active' or 'achieved'
   const [showAddModal, setShowAddModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [editingAgent, setEditingAgent] = useState(null);
+  const [selectedMemberId, setSelectedMemberId] = useState('');
+  const [addMode, setAddMode] = useState('select'); // 'select' or 'manual'
   const [formData, setFormData] = useState({
     name: '',
     phone: '',
@@ -29,11 +32,13 @@ const NPATracker = ({ user }) => {
     upline_dm: '',
     upline_rm: '',
     total_premium: 0,
-    notes: ''
+    notes: '',
+    user_id: ''
   });
 
   useEffect(() => {
     fetchNPAData();
+    fetchTeamMembers();
   }, []);
 
   const fetchNPAData = async () => {
@@ -50,12 +55,49 @@ const NPATracker = ({ user }) => {
     }
   };
 
+  const fetchTeamMembers = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await axios.get(`${API}/team/members`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      // Filter to agents and DMs
+      setTeamMembers(response.data.filter(m => 
+        ['agent', 'district_manager'].includes(m.role)
+      ));
+    } catch (error) {
+      console.error('Failed to fetch team members');
+    }
+  };
+
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     setFormData(prev => ({
       ...prev,
       [name]: name === 'total_premium' ? parseFloat(value) || 0 : value
     }));
+  };
+
+  const handleMemberSelect = (memberId) => {
+    setSelectedMemberId(memberId);
+    if (memberId) {
+      const member = teamMembers.find(m => m.id === memberId);
+      if (member) {
+        // Find member's manager for upline info
+        const manager = teamMembers.find(m => m.id === member.manager_id);
+        setFormData(prev => ({
+          ...prev,
+          name: member.name || '',
+          email: member.email || '',
+          phone: member.phone || '',
+          user_id: member.id,
+          upline_dm: manager?.role === 'district_manager' ? manager.name : '',
+          upline_rm: manager?.role === 'regional_manager' ? manager.name : ''
+        }));
+      }
+    } else {
+      resetForm();
+    }
   };
 
   const resetForm = () => {
@@ -67,13 +109,16 @@ const NPATracker = ({ user }) => {
       upline_dm: '',
       upline_rm: '',
       total_premium: 0,
-      notes: ''
+      notes: '',
+      user_id: ''
     });
+    setSelectedMemberId('');
+    setAddMode('select');
   };
 
   const handleAddAgent = async () => {
     if (!formData.name) {
-      toast.error('Please enter agent name');
+      toast.error('Please select a team member or enter agent name');
       return;
     }
 
@@ -101,7 +146,8 @@ const NPATracker = ({ user }) => {
       upline_dm: agent.upline_dm || '',
       upline_rm: agent.upline_rm || '',
       total_premium: agent.total_premium || 0,
-      notes: agent.notes || ''
+      notes: agent.notes || '',
+      user_id: agent.user_id || ''
     });
     setShowEditModal(true);
   };
@@ -142,6 +188,12 @@ const NPATracker = ({ user }) => {
     }
   };
 
+  // Get available members (not already being tracked)
+  const allTracked = [...(npaData.active || []), ...(npaData.achieved || [])];
+  const availableMembers = teamMembers.filter(
+    m => !allTracked.some(a => a.user_id === m.id || a.name === m.name)
+  );
+
   // Filter agents based on search
   const filterAgents = (agents) => {
     if (!searchTerm) return agents;
@@ -171,14 +223,14 @@ const NPATracker = ({ user }) => {
     );
   }
 
-  // Modal Component
+  // Add/Edit Modal Component
   const AgentModal = ({ isEdit, onClose, onSubmit }) => (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
       <div className="bg-white rounded-lg shadow-xl w-full max-w-lg mx-4 max-h-[90vh] overflow-y-auto">
         <div className="p-6 border-b sticky top-0 bg-white">
           <div className="flex items-center justify-between">
             <h3 className="text-lg font-semibold">
-              {isEdit ? 'Edit NPA Agent' : 'Add New NPA Agent'}
+              {isEdit ? 'Edit NPA Agent' : 'Add Agent to NPA Tracking'}
             </h3>
             <button onClick={onClose} className="text-gray-500 hover:text-gray-700">
               <X size={24} />
@@ -187,15 +239,84 @@ const NPATracker = ({ user }) => {
         </div>
         
         <div className="p-6 space-y-4">
-          <div>
-            <label className="block text-sm font-medium mb-1">Agent Name *</label>
-            <Input
-              name="name"
-              value={formData.name}
-              onChange={handleInputChange}
-              placeholder="Full name"
-            />
-          </div>
+          {/* Mode Toggle - only for Add modal */}
+          {!isEdit && (
+            <div className="flex bg-gray-100 rounded-lg p-1 mb-4">
+              <button
+                onClick={() => {
+                  setAddMode('select');
+                  resetForm();
+                }}
+                className={`flex-1 px-3 py-2 rounded-md text-sm font-medium transition-colors flex items-center justify-center gap-2 ${
+                  addMode === 'select' 
+                    ? 'bg-white shadow text-amber-700' 
+                    : 'text-gray-600 hover:text-gray-900'
+                }`}
+              >
+                <Users size={16} />
+                Select Team Member
+              </button>
+              <button
+                onClick={() => {
+                  setAddMode('manual');
+                  resetForm();
+                }}
+                className={`flex-1 px-3 py-2 rounded-md text-sm font-medium transition-colors flex items-center justify-center gap-2 ${
+                  addMode === 'manual' 
+                    ? 'bg-white shadow text-amber-700' 
+                    : 'text-gray-600 hover:text-gray-900'
+                }`}
+              >
+                <UserPlus size={16} />
+                Manual Entry
+              </button>
+            </div>
+          )}
+
+          {/* Team Member Selection */}
+          {!isEdit && addMode === 'select' && (
+            <div>
+              <label className="block text-sm font-medium mb-2">Select Team Member *</label>
+              <select
+                value={selectedMemberId}
+                onChange={(e) => handleMemberSelect(e.target.value)}
+                className="w-full border rounded-lg p-3"
+              >
+                <option value="">-- Select a team member --</option>
+                {availableMembers.map(member => (
+                  <option key={member.id} value={member.id}>
+                    {member.name} ({member.role?.replace('_', ' ')})
+                  </option>
+                ))}
+              </select>
+              {availableMembers.length === 0 && (
+                <p className="text-sm text-amber-600 mt-2">
+                  All team members are already being tracked. Use "Manual Entry" to add external agents.
+                </p>
+              )}
+            </div>
+          )}
+
+          {/* Manual Entry or Edit Mode Fields */}
+          {(addMode === 'manual' || isEdit) && (
+            <div>
+              <label className="block text-sm font-medium mb-1">Agent Name *</label>
+              <Input
+                name="name"
+                value={formData.name}
+                onChange={handleInputChange}
+                placeholder="Full name"
+              />
+            </div>
+          )}
+
+          {/* Show selected member info */}
+          {!isEdit && addMode === 'select' && selectedMemberId && (
+            <div className="p-3 bg-green-50 rounded-lg border border-green-200">
+              <p className="font-medium text-green-800">{formData.name}</p>
+              <p className="text-sm text-green-600">{formData.email}</p>
+            </div>
+          )}
 
           <div className="grid grid-cols-2 gap-4">
             <div>
@@ -215,6 +336,7 @@ const NPATracker = ({ user }) => {
                 value={formData.email}
                 onChange={handleInputChange}
                 placeholder="agent@email.com"
+                disabled={addMode === 'select' && selectedMemberId}
               />
             </div>
           </div>
@@ -297,8 +419,9 @@ const NPATracker = ({ user }) => {
           <Button 
             onClick={onSubmit}
             className="bg-amber-600 hover:bg-amber-700 text-white"
+            disabled={!isEdit && addMode === 'select' && !selectedMemberId}
           >
-            {isEdit ? 'Update Agent' : 'Add Agent'}
+            {isEdit ? 'Update Agent' : 'Add to Tracking'}
           </Button>
         </div>
       </div>
