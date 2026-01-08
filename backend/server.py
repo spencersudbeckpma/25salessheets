@@ -2863,12 +2863,15 @@ async def delete_recruit(recruit_id: str, current_user: dict = Depends(get_curre
 
 @api_router.get("/interviews")
 async def get_interviews(current_user: dict = Depends(get_current_user)):
-    """Get all interviews - State Manager sees all, Regional sees own + their DMs, District sees own only"""
+    """Get all interviews - State Manager sees all, Regional sees own + their DMs, District sees own only. Excludes archived."""
     if current_user['role'] not in ['state_manager', 'regional_manager', 'district_manager']:
         raise HTTPException(status_code=403, detail="Only managers can access interviews")
     
+    # Base query excludes archived interviews
+    archived_filter = {"$or": [{"archived": {"$exists": False}}, {"archived": False}]}
+    
     if current_user['role'] == 'state_manager':
-        interviews = await db.interviews.find({}, {"_id": 0}).sort("created_at", -1).to_list(1000)
+        interviews = await db.interviews.find(archived_filter, {"_id": 0}).sort("created_at", -1).to_list(1000)
     elif current_user['role'] == 'regional_manager':
         # Regional managers see their own interviews + their direct reports' (District Managers) interviews
         subordinates = await get_all_subordinates(current_user['id'])
@@ -2876,13 +2879,13 @@ async def get_interviews(current_user: dict = Depends(get_current_user)):
         subordinate_ids.append(current_user['id'])  # Include self
         
         interviews = await db.interviews.find(
-            {"interviewer_id": {"$in": subordinate_ids}}, 
+            {"$and": [{"interviewer_id": {"$in": subordinate_ids}}, archived_filter]}, 
             {"_id": 0}
         ).sort("created_at", -1).to_list(1000)
     else:
         # District managers see only their own interviews
         interviews = await db.interviews.find(
-            {"interviewer_id": current_user['id']}, 
+            {"$and": [{"interviewer_id": current_user['id']}, archived_filter]}, 
             {"_id": 0}
         ).sort("created_at", -1).to_list(1000)
     
@@ -2890,7 +2893,7 @@ async def get_interviews(current_user: dict = Depends(get_current_user)):
 
 @api_router.get("/interviews/stats")
 async def get_interview_stats(current_user: dict = Depends(get_current_user)):
-    """Get interview statistics"""
+    """Get interview statistics - includes ALL interviews (even archived) to preserve totals"""
     if current_user['role'] not in ['state_manager', 'regional_manager', 'district_manager']:
         raise HTTPException(status_code=403, detail="Only managers can access interviews")
     
@@ -2906,7 +2909,7 @@ async def get_interview_stats(current_user: dict = Depends(get_current_user)):
     month_start = today.replace(day=1)
     year_start = today.replace(month=1, day=1)
     
-    # Build query based on role
+    # Build query based on role - NOTE: Stats include archived interviews to preserve totals
     base_query = {}
     if current_user['role'] == 'state_manager':
         base_query = {}
