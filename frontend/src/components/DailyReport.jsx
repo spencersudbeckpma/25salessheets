@@ -624,6 +624,7 @@ const DailyReport = ({ user, embedded = false }) => {
 
   const periods = [
     { id: 'daily', label: 'Daily', icon: Calendar, color: 'blue', description: 'View data for a specific date' },
+    { id: 'weekly', label: 'Weekly', icon: Calendar, color: 'teal', description: 'Current week totals (Mon-Sun)' },
     { id: 'monthly', label: 'Monthly', icon: BarChart3, color: 'green', description: 'Current month totals' },
     { id: 'quarterly', label: 'Quarterly', icon: LineChart, color: 'purple', description: 'Current quarter totals' },
     { id: 'yearly', label: 'Yearly', icon: TrendingUp, color: 'orange', description: 'Current year totals' }
@@ -636,7 +637,7 @@ const DailyReport = ({ user, embedded = false }) => {
         <label className="block text-sm font-semibold text-gray-700 mb-3">
           Select Time Period
         </label>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+        <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
             {periods.map((period) => {
               const Icon = period.icon;
               return (
