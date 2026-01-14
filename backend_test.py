@@ -514,93 +514,161 @@ class InterviewEndpointsTester:
                 print_error(f"❌ Exception in District Manager interview stats test: {str(e)}")
                 self.test_results['failed'] += 1
 
-    def test_npa_tracker_get_endpoint(self):
-        """Test GET /api/npa-tracker endpoint"""
-        print_header("📊 TESTING NPA TRACKER GET ENDPOINT")
+    def test_interviews_create_endpoint(self):
+        """Test POST /api/interviews endpoint"""
+        print_header("📝 TESTING POST /api/interviews ENDPOINT")
         
-        print_info("🎯 Testing /api/npa-tracker - Should return active/achieved agents with $1K goal")
+        print_info("🎯 Testing POST /api/interviews - Create new interviews")
         
-        # Test 1: State Manager access
-        print_info("\n📋 TEST 1: State Manager Access to NPA Tracker")
-        if self.state_manager_token:
+        # Test 1: Regional Manager creates interview
+        print_info("\n📋 TEST 1: Regional Manager Creates Interview")
+        if self.regional_manager_token:
             try:
-                headers = {"Authorization": f"Bearer {self.state_manager_token}"}
-                response = self.session.get(f"{BACKEND_URL}/npa-tracker", headers=headers)
+                headers = {"Authorization": f"Bearer {self.regional_manager_token}"}
+                
+                interview_data = {
+                    "candidate_name": "Sarah Johnson",
+                    "candidate_location": "Dallas, TX",
+                    "candidate_phone": "555-123-4567",
+                    "interview_date": "2026-01-08T10:00:00",
+                    "hobbies_interests": "Reading, hiking, volunteering",
+                    "must_have_commission": True,
+                    "must_have_travel": False,
+                    "must_have_background": True,
+                    "must_have_car": True,
+                    "work_history": "5 years in sales, 3 years in customer service",
+                    "what_would_change": "Better work-life balance",
+                    "why_left_recent": "Seeking growth opportunities",
+                    "other_interviews": "None currently",
+                    "top_3_looking_for": "Growth, stability, good team",
+                    "why_important": "Career advancement",
+                    "situation_6_12_months": "Established in new role",
+                    "family_impact": "Positive - better income",
+                    "competitiveness_scale": 8,
+                    "competitiveness_example": "Always exceeded sales targets",
+                    "work_ethic_scale": 9,
+                    "work_ethic_example": "First to arrive, last to leave",
+                    "career_packet_sent": True,
+                    "candidate_strength": 4,
+                    "red_flags_notes": "None observed",
+                    "status": "moving_forward"
+                }
+                
+                response = self.session.post(
+                    f"{BACKEND_URL}/interviews",
+                    json=interview_data,
+                    headers=headers
+                )
                 
                 if response.status_code == 200:
                     data = response.json()
-                    print_success("✅ State Manager can access NPA tracker")
+                    print_success("✅ Regional Manager can create interview")
+                    print_info(f"   Candidate: {data.get('candidate_name', 'Unknown')}")
+                    print_info(f"   Status: {data.get('status', 'Unknown')}")
+                    print_info(f"   Interview ID: {data.get('id', 'No ID')}")
                     self.test_results['passed'] += 1
                     
-                    # Verify response structure
-                    required_fields = ['active', 'achieved', 'goal']
-                    missing_fields = [field for field in required_fields if field not in data]
-                    
-                    if not missing_fields:
-                        print_success("✅ NPA tracker response has all required fields")
-                        print_info(f"   Goal: ${data.get('goal', 0):,}")
-                        print_info(f"   Active Agents: {len(data.get('active', []))}")
-                        print_info(f"   Achieved Agents: {len(data.get('achieved', []))}")
-                        
-                        # Verify goal
-                        if data.get('goal') == 1000:
-                            print_success("✅ Correct NPA goal ($1,000)")
-                            self.test_results['passed'] += 1
-                        else:
-                            print_error(f"❌ Expected NPA goal: $1,000. Got: ${data.get('goal')}")
-                            self.test_results['failed'] += 1
-                        
-                        self.test_results['passed'] += 1
-                    else:
-                        print_error(f"❌ Missing fields in NPA tracker response: {missing_fields}")
-                        self.test_results['failed'] += 1
-                        
+                    # Store interview ID for later tests
+                    if data.get('id'):
+                        self.created_interview_ids.append(data['id'])
+                        self.regional_interview_id = data['id']
                 else:
-                    print_error(f"❌ State Manager NPA tracker access failed: {response.status_code} - {response.text}")
+                    print_error(f"❌ Regional Manager create interview failed: {response.status_code} - {response.text}")
                     self.test_results['failed'] += 1
                     
             except Exception as e:
-                print_error(f"❌ Exception in State Manager NPA tracker test: {str(e)}")
+                print_error(f"❌ Exception in Regional Manager create interview test: {str(e)}")
                 self.test_results['failed'] += 1
         
-        # Test 2: District Manager access
-        print_info("\n📋 TEST 2: District Manager Access to NPA Tracker")
+        # Test 2: District Manager creates interview
+        print_info("\n📋 TEST 2: District Manager Creates Interview")
         if self.district_manager_token:
             try:
                 headers = {"Authorization": f"Bearer {self.district_manager_token}"}
-                response = self.session.get(f"{BACKEND_URL}/npa-tracker", headers=headers)
+                
+                interview_data = {
+                    "candidate_name": "Mike Thompson",
+                    "candidate_location": "Austin, TX",
+                    "candidate_phone": "555-987-6543",
+                    "interview_date": "2026-01-08T14:00:00",
+                    "hobbies_interests": "Sports, music, cooking",
+                    "must_have_commission": False,
+                    "must_have_travel": True,
+                    "must_have_background": False,
+                    "must_have_car": True,
+                    "work_history": "3 years retail management",
+                    "what_would_change": "More challenging work",
+                    "why_left_recent": "Company downsizing",
+                    "other_interviews": "Two other companies",
+                    "top_3_looking_for": "Challenge, team, benefits",
+                    "why_important": "Financial stability",
+                    "situation_6_12_months": "Fully trained and productive",
+                    "family_impact": "Neutral - similar income",
+                    "competitiveness_scale": 6,
+                    "competitiveness_example": "Competitive in sports",
+                    "work_ethic_scale": 7,
+                    "work_ethic_example": "Reliable and punctual",
+                    "career_packet_sent": False,
+                    "candidate_strength": 3,
+                    "red_flags_notes": "Seems hesitant about commission",
+                    "status": "not_moving_forward"
+                }
+                
+                response = self.session.post(
+                    f"{BACKEND_URL}/interviews",
+                    json=interview_data,
+                    headers=headers
+                )
                 
                 if response.status_code == 200:
                     data = response.json()
-                    print_success("✅ District Manager can access NPA tracker")
-                    print_info(f"   Active Agents: {len(data.get('active', []))}")
-                    print_info(f"   Achieved Agents: {len(data.get('achieved', []))}")
+                    print_success("✅ District Manager can create interview")
+                    print_info(f"   Candidate: {data.get('candidate_name', 'Unknown')}")
+                    print_info(f"   Status: {data.get('status', 'Unknown')}")
                     self.test_results['passed'] += 1
+                    
+                    # Store interview ID for later tests
+                    if data.get('id'):
+                        self.created_interview_ids.append(data['id'])
+                        self.district_interview_id = data['id']
                 else:
-                    print_error(f"❌ District Manager NPA tracker access failed: {response.status_code} - {response.text}")
+                    print_error(f"❌ District Manager create interview failed: {response.status_code} - {response.text}")
                     self.test_results['failed'] += 1
                     
             except Exception as e:
-                print_error(f"❌ Exception in District Manager NPA tracker test: {str(e)}")
+                print_error(f"❌ Exception in District Manager create interview test: {str(e)}")
                 self.test_results['failed'] += 1
         
         # Test 3: Agent should be denied access
-        print_info("\n📋 TEST 3: Agent Access Control - Should Be Denied")
+        print_info("\n📋 TEST 3: Agent Create Interview Access Control - Should Be Denied")
         if self.agent_token:
             try:
                 headers = {"Authorization": f"Bearer {self.agent_token}"}
-                response = self.session.get(f"{BACKEND_URL}/npa-tracker", headers=headers)
+                
+                interview_data = {
+                    "candidate_name": "Test Candidate",
+                    "candidate_location": "Test City",
+                    "candidate_phone": "555-000-0000",
+                    "interview_date": "2026-01-08T16:00:00",
+                    "status": "new"
+                }
+                
+                response = self.session.post(
+                    f"{BACKEND_URL}/interviews",
+                    json=interview_data,
+                    headers=headers
+                )
                 
                 if response.status_code == 403:
-                    print_success("✅ Agent correctly denied NPA tracker access (403)")
-                    print_info("   Access control working - only managers can access NPA tracker")
+                    print_success("✅ Agent correctly denied interview creation access (403)")
+                    print_info("   Access control working - only managers can create interviews")
                     self.test_results['passed'] += 1
                 else:
                     print_error(f"❌ Agent should get 403, got {response.status_code}")
                     self.test_results['failed'] += 1
                     
             except Exception as e:
-                print_error(f"❌ Exception in Agent NPA tracker test: {str(e)}")
+                print_error(f"❌ Exception in Agent create interview test: {str(e)}")
                 self.test_results['failed'] += 1
 
     def test_npa_tracker_create_endpoint(self):
