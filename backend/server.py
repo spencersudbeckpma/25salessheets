@@ -2879,9 +2879,7 @@ async def get_interviews(current_user: dict = Depends(get_current_user)):
         interviews = await db.interviews.find(archived_filter, {"_id": 0}).sort("created_at", -1).to_list(1000)
     elif current_user['role'] == 'regional_manager':
         # Regional managers see their own interviews + their direct reports' (District Managers) interviews
-        subordinates = await get_all_subordinates(current_user['id'])
-        subordinate_ids = [s['id'] for s in subordinates]
-        subordinate_ids.append(current_user['id'])  # Include self
+        subordinate_ids = await get_all_subordinates(current_user['id'])
         
         interviews = await db.interviews.find(
             {"$and": [{"interviewer_id": {"$in": subordinate_ids}}, archived_filter]}, 
