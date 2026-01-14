@@ -810,13 +810,8 @@ const Interviews = ({ user }) => {
                             
                             ${selectedInterview.hobbies_interests ? `<div class="section"><div class="section-title">Hobbies, Interests, Support System:</div><p>${selectedInterview.hobbies_interests}</p></div>` : ''}
                             ${selectedInterview.work_history ? `<div class="section"><div class="section-title">Work History & Experience:</div><p>${selectedInterview.work_history}</p></div>` : ''}
-                            ${selectedInterview.what_would_change ? `<div class="section"><div class="section-title">What Would You Change:</div><p>${selectedInterview.what_would_change}</p></div>` : ''}
-                            ${selectedInterview.why_left_recent ? `<div class="section"><div class="section-title">Why Left Recent Role:</div><p>${selectedInterview.why_left_recent}</p></div>` : ''}
                             ${selectedInterview.other_interviews ? `<div class="section"><div class="section-title">Other Recent Interviews:</div><p>${selectedInterview.other_interviews}</p></div>` : ''}
                             ${selectedInterview.top_3_looking_for ? `<div class="section"><div class="section-title">Top 3 Things Looking For:</div><p>${selectedInterview.top_3_looking_for}</p></div>` : ''}
-                            ${selectedInterview.why_important ? `<div class="section"><div class="section-title">Why Important Right Now:</div><p>${selectedInterview.why_important}</p></div>` : ''}
-                            ${selectedInterview.situation_6_12_months ? `<div class="section"><div class="section-title">6-12 Months Situation:</div><p>${selectedInterview.situation_6_12_months}</p></div>` : ''}
-                            ${selectedInterview.family_impact ? `<div class="section"><div class="section-title">Family Impact:</div><p>${selectedInterview.family_impact}</p></div>` : ''}
                             ${selectedInterview.competitiveness_example ? `<div class="section"><div class="section-title">Competitiveness Example:</div><p>${selectedInterview.competitiveness_example}</p></div>` : ''}
                             ${selectedInterview.work_ethic_example ? `<div class="section"><div class="section-title">Work Ethic Example:</div><p>${selectedInterview.work_ethic_example}</p></div>` : ''}
                             ${selectedInterview.red_flags_notes ? `<div class="red-flag"><div class="section-title">Red Flags / Notes:</div><p>${selectedInterview.red_flags_notes}</p></div>` : ''}
