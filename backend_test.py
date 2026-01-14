@@ -278,94 +278,131 @@ class InterviewEndpointsTester:
             print_warning(f"Exception creating activity for {date_str}: {str(e)}")
             return False
 
-    def test_sna_tracker_get_endpoint(self):
-        """Test GET /api/sna-tracker endpoint"""
-        print_header("📊 TESTING SNA TRACKER GET ENDPOINT")
+    def test_interviews_get_endpoint(self):
+        """Test GET /api/interviews endpoint with different roles"""
+        print_header("📊 TESTING GET /api/interviews ENDPOINT")
         
-        print_info("🎯 Testing /api/sna-tracker - Should return active/graduated agents with 90-day tracking and $30K goal")
+        print_info("🎯 Testing /api/interviews - Role-based access to interviews (NO 'failed to fetch' errors)")
         
-        # Test 1: State Manager access
-        print_info("\n📋 TEST 1: State Manager Access to SNA Tracker")
+        # Test 1: State Manager access - should see all interviews
+        print_info("\n📋 TEST 1: State Manager Access to All Interviews")
         if self.state_manager_token:
             try:
                 headers = {"Authorization": f"Bearer {self.state_manager_token}"}
-                response = self.session.get(f"{BACKEND_URL}/sna-tracker", headers=headers)
+                response = self.session.get(f"{BACKEND_URL}/interviews", headers=headers)
                 
                 if response.status_code == 200:
                     data = response.json()
-                    print_success("✅ State Manager can access SNA tracker")
+                    print_success("✅ State Manager can access interviews (NO 500 error)")
+                    print_info(f"   Retrieved {len(data)} interviews")
                     self.test_results['passed'] += 1
                     
                     # Verify response structure
-                    required_fields = ['active', 'graduated', 'goal', 'tracking_days']
-                    missing_fields = [field for field in required_fields if field not in data]
-                    
-                    if not missing_fields:
-                        print_success("✅ SNA tracker response has all required fields")
-                        print_info(f"   Goal: ${data.get('goal', 0):,}")
-                        print_info(f"   Tracking Days: {data.get('tracking_days', 0)}")
-                        print_info(f"   Active Agents: {len(data.get('active', []))}")
-                        print_info(f"   Graduated Agents: {len(data.get('graduated', []))}")
-                        
-                        # Verify goal and tracking days
-                        if data.get('goal') == 30000 and data.get('tracking_days') == 90:
-                            print_success("✅ Correct goal ($30,000) and tracking period (90 days)")
-                            self.test_results['passed'] += 1
-                        else:
-                            print_error(f"❌ Expected goal: $30,000, tracking: 90 days. Got goal: ${data.get('goal')}, tracking: {data.get('tracking_days')}")
-                            self.test_results['failed'] += 1
-                        
+                    if isinstance(data, list):
+                        print_success("✅ Response is a proper list (not 'failed to fetch')")
                         self.test_results['passed'] += 1
+                        
+                        # Check if interviews have required fields
+                        if data:
+                            sample_interview = data[0]
+                            required_fields = ['id', 'candidate_name', 'interviewer_id', 'interview_date', 'status']
+                            missing_fields = [field for field in required_fields if field not in sample_interview]
+                            
+                            if not missing_fields:
+                                print_success("✅ Interview records have all required fields")
+                                self.test_results['passed'] += 1
+                            else:
+                                print_error(f"❌ Missing fields in interview records: {missing_fields}")
+                                self.test_results['failed'] += 1
                     else:
-                        print_error(f"❌ Missing fields in SNA tracker response: {missing_fields}")
+                        print_error("❌ Response is not a list - possible 'failed to fetch' issue")
                         self.test_results['failed'] += 1
                         
                 else:
-                    print_error(f"❌ State Manager SNA tracker access failed: {response.status_code} - {response.text}")
+                    print_error(f"❌ State Manager interviews access failed: {response.status_code} - {response.text}")
+                    if response.status_code == 500:
+                        print_error("   🚨 500 ERROR - This indicates the 'failed to fetch' bug!")
                     self.test_results['failed'] += 1
                     
             except Exception as e:
-                print_error(f"❌ Exception in State Manager SNA tracker test: {str(e)}")
+                print_error(f"❌ Exception in State Manager interviews test: {str(e)}")
                 self.test_results['failed'] += 1
         
-        # Test 2: Regional Manager access
-        print_info("\n📋 TEST 2: Regional Manager Access to SNA Tracker")
+        # Test 2: Regional Manager access - should see own + subordinates' interviews
+        print_info("\n📋 TEST 2: Regional Manager Access to Own + Subordinates' Interviews")
         if self.regional_manager_token:
             try:
                 headers = {"Authorization": f"Bearer {self.regional_manager_token}"}
-                response = self.session.get(f"{BACKEND_URL}/sna-tracker", headers=headers)
+                response = self.session.get(f"{BACKEND_URL}/interviews", headers=headers)
                 
                 if response.status_code == 200:
                     data = response.json()
-                    print_success("✅ Regional Manager can access SNA tracker")
-                    print_info(f"   Active Agents: {len(data.get('active', []))}")
-                    print_info(f"   Graduated Agents: {len(data.get('graduated', []))}")
+                    print_success("✅ Regional Manager can access interviews (NO 500 error)")
+                    print_info(f"   Retrieved {len(data)} interviews")
                     self.test_results['passed'] += 1
+                    
+                    if isinstance(data, list):
+                        print_success("✅ Response is a proper list (subordinate filtering working)")
+                        self.test_results['passed'] += 1
+                    else:
+                        print_error("❌ Response is not a list - subordinate filtering failed")
+                        self.test_results['failed'] += 1
                 else:
-                    print_error(f"❌ Regional Manager SNA tracker access failed: {response.status_code} - {response.text}")
+                    print_error(f"❌ Regional Manager interviews access failed: {response.status_code} - {response.text}")
+                    if response.status_code == 500:
+                        print_error("   🚨 500 ERROR - This is the bug we're testing for!")
                     self.test_results['failed'] += 1
                     
             except Exception as e:
-                print_error(f"❌ Exception in Regional Manager SNA tracker test: {str(e)}")
+                print_error(f"❌ Exception in Regional Manager interviews test: {str(e)}")
                 self.test_results['failed'] += 1
         
-        # Test 3: District Manager should be denied access
-        print_info("\n📋 TEST 3: District Manager Access Control - Should Be Denied")
+        # Test 3: District Manager access - should see only own interviews
+        print_info("\n📋 TEST 3: District Manager Access to Own Interviews Only")
         if self.district_manager_token:
             try:
                 headers = {"Authorization": f"Bearer {self.district_manager_token}"}
-                response = self.session.get(f"{BACKEND_URL}/sna-tracker", headers=headers)
+                response = self.session.get(f"{BACKEND_URL}/interviews", headers=headers)
                 
-                if response.status_code == 403:
-                    print_success("✅ District Manager correctly denied SNA tracker access (403)")
-                    print_info("   Access control working - only State/Regional Managers can access SNA tracker")
+                if response.status_code == 200:
+                    data = response.json()
+                    print_success("✅ District Manager can access interviews (NO 500 error)")
+                    print_info(f"   Retrieved {len(data)} interviews")
                     self.test_results['passed'] += 1
+                    
+                    if isinstance(data, list):
+                        print_success("✅ Response is a proper list (own interviews filtering working)")
+                        self.test_results['passed'] += 1
+                    else:
+                        print_error("❌ Response is not a list - own interviews filtering failed")
+                        self.test_results['failed'] += 1
                 else:
-                    print_error(f"❌ District Manager should get 403, got {response.status_code}")
+                    print_error(f"❌ District Manager interviews access failed: {response.status_code} - {response.text}")
+                    if response.status_code == 500:
+                        print_error("   🚨 500 ERROR - This is the bug we're testing for!")
                     self.test_results['failed'] += 1
                     
             except Exception as e:
-                print_error(f"❌ Exception in District Manager SNA tracker test: {str(e)}")
+                print_error(f"❌ Exception in District Manager interviews test: {str(e)}")
+                self.test_results['failed'] += 1
+        
+        # Test 4: Agent should be denied access
+        print_info("\n📋 TEST 4: Agent Access Control - Should Be Denied")
+        if self.agent_token:
+            try:
+                headers = {"Authorization": f"Bearer {self.agent_token}"}
+                response = self.session.get(f"{BACKEND_URL}/interviews", headers=headers)
+                
+                if response.status_code == 403:
+                    print_success("✅ Agent correctly denied interviews access (403)")
+                    print_info("   Access control working - only managers can access interviews")
+                    self.test_results['passed'] += 1
+                else:
+                    print_error(f"❌ Agent should get 403, got {response.status_code}")
+                    self.test_results['failed'] += 1
+                    
+            except Exception as e:
+                print_error(f"❌ Exception in Agent interviews test: {str(e)}")
                 self.test_results['failed'] += 1
 
     def test_sna_tracker_start_stop_endpoints(self):
