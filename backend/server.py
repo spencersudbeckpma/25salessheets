@@ -2918,9 +2918,7 @@ async def get_interview_stats(current_user: dict = Depends(get_current_user)):
         base_query = {}
     elif current_user['role'] == 'regional_manager':
         # Include own interviews + subordinates' interviews
-        subordinates = await get_all_subordinates(current_user['id'])
-        subordinate_ids = [s['id'] for s in subordinates]
-        subordinate_ids.append(current_user['id'])
+        subordinate_ids = await get_all_subordinates(current_user['id'])
         base_query = {"interviewer_id": {"$in": subordinate_ids}}
     else:
         # District manager sees only own
