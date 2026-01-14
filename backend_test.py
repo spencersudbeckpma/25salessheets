@@ -405,67 +405,113 @@ class InterviewEndpointsTester:
                 print_error(f"❌ Exception in Agent interviews test: {str(e)}")
                 self.test_results['failed'] += 1
 
-    def test_sna_tracker_start_stop_endpoints(self):
-        """Test POST /api/sna-tracker/{user_id}/start and /stop endpoints"""
-        print_header("🎯 TESTING SNA TRACKER START/STOP ENDPOINTS")
+    def test_interviews_stats_endpoint(self):
+        """Test GET /api/interviews/stats endpoint with different roles"""
+        print_header("📊 TESTING GET /api/interviews/stats ENDPOINT")
         
-        print_info("🎯 Testing SNA tracking start/stop functionality")
+        print_info("🎯 Testing /api/interviews/stats - Role-based statistics (NO 500 errors)")
         
-        # First get team members to find a user to track
-        print_info("\n📋 Getting team members for SNA tracking test")
+        # Test 1: State Manager stats - should see all interviews stats
+        print_info("\n📋 TEST 1: State Manager Access to All Interview Stats")
         if self.state_manager_token:
             try:
                 headers = {"Authorization": f"Bearer {self.state_manager_token}"}
-                response = self.session.get(f"{BACKEND_URL}/team/members", headers=headers)
+                response = self.session.get(f"{BACKEND_URL}/interviews/stats", headers=headers)
                 
                 if response.status_code == 200:
-                    team_members = response.json()
-                    if team_members:
-                        test_user_id = team_members[0]['id']
-                        test_user_name = team_members[0].get('name', 'Unknown')
-                        print_success(f"✅ Found team member to test: {test_user_name}")
-                        
-                        # Test 1: Start SNA tracking
-                        print_info(f"\n📋 TEST 1: Start SNA Tracking for {test_user_name}")
-                        start_response = self.session.post(
-                            f"{BACKEND_URL}/sna-tracker/{test_user_id}/start",
-                            headers=headers
-                        )
-                        
-                        if start_response.status_code == 200:
-                            start_data = start_response.json()
-                            print_success("✅ Successfully started SNA tracking")
-                            print_info(f"   Message: {start_data.get('message', 'No message')}")
-                            self.test_results['passed'] += 1
-                            self.sna_test_user_id = test_user_id  # Store for stop test
-                        else:
-                            print_error(f"❌ Start SNA tracking failed: {start_response.status_code} - {start_response.text}")
-                            self.test_results['failed'] += 1
-                        
-                        # Test 2: Stop SNA tracking
-                        print_info(f"\n📋 TEST 2: Stop SNA Tracking for {test_user_name}")
-                        stop_response = self.session.post(
-                            f"{BACKEND_URL}/sna-tracker/{test_user_id}/stop",
-                            headers=headers
-                        )
-                        
-                        if stop_response.status_code == 200:
-                            stop_data = stop_response.json()
-                            print_success("✅ Successfully stopped SNA tracking")
-                            print_info(f"   Message: {stop_data.get('message', 'No message')}")
-                            self.test_results['passed'] += 1
-                        else:
-                            print_error(f"❌ Stop SNA tracking failed: {stop_response.status_code} - {stop_response.text}")
-                            self.test_results['failed'] += 1
+                    data = response.json()
+                    print_success("✅ State Manager can access interview stats (NO 500 error)")
+                    self.test_results['passed'] += 1
+                    
+                    # Verify response structure
+                    required_fields = ['total', 'this_week', 'this_month', 'this_year', 'moving_forward', 'not_moving_forward', 'second_interview_scheduled', 'completed']
+                    missing_fields = [field for field in required_fields if field not in data]
+                    
+                    if not missing_fields:
+                        print_success("✅ Interview stats response has all required fields")
+                        print_info(f"   Total: {data.get('total', 0)}")
+                        print_info(f"   This Week: {data.get('this_week', 0)}")
+                        print_info(f"   This Month: {data.get('this_month', 0)}")
+                        print_info(f"   This Year: {data.get('this_year', 0)}")
+                        print_info(f"   Moving Forward: {data.get('moving_forward', 0)}")
+                        print_info(f"   Not Moving Forward: {data.get('not_moving_forward', 0)}")
+                        print_info(f"   Second Interview Scheduled: {data.get('second_interview_scheduled', 0)}")
+                        print_info(f"   Completed: {data.get('completed', 0)}")
+                        self.test_results['passed'] += 1
                     else:
-                        print_warning("No team members found for SNA tracking test")
+                        print_error(f"❌ Missing fields in interview stats response: {missing_fields}")
                         self.test_results['failed'] += 1
+                        
                 else:
-                    print_error(f"❌ Could not get team members: {response.status_code}")
+                    print_error(f"❌ State Manager interview stats access failed: {response.status_code} - {response.text}")
+                    if response.status_code == 500:
+                        print_error("   🚨 500 ERROR - This indicates the subordinate filtering bug!")
                     self.test_results['failed'] += 1
                     
             except Exception as e:
-                print_error(f"❌ Exception in SNA start/stop test: {str(e)}")
+                print_error(f"❌ Exception in State Manager interview stats test: {str(e)}")
+                self.test_results['failed'] += 1
+        
+        # Test 2: Regional Manager stats - should see own + subordinates' stats
+        print_info("\n📋 TEST 2: Regional Manager Access to Own + Subordinates' Stats")
+        if self.regional_manager_token:
+            try:
+                headers = {"Authorization": f"Bearer {self.regional_manager_token}"}
+                response = self.session.get(f"{BACKEND_URL}/interviews/stats", headers=headers)
+                
+                if response.status_code == 200:
+                    data = response.json()
+                    print_success("✅ Regional Manager can access interview stats (NO 500 error)")
+                    print_info(f"   Total: {data.get('total', 0)}")
+                    print_info(f"   This Week: {data.get('this_week', 0)}")
+                    self.test_results['passed'] += 1
+                    
+                    # Verify all required fields are present
+                    required_fields = ['total', 'this_week', 'this_month', 'this_year']
+                    if all(field in data for field in required_fields):
+                        print_success("✅ Regional Manager stats have all required fields")
+                        self.test_results['passed'] += 1
+                    else:
+                        print_error("❌ Missing required fields in Regional Manager stats")
+                        self.test_results['failed'] += 1
+                else:
+                    print_error(f"❌ Regional Manager interview stats access failed: {response.status_code} - {response.text}")
+                    if response.status_code == 500:
+                        print_error("   🚨 500 ERROR - This is the subordinate filtering bug!")
+                    self.test_results['failed'] += 1
+                    
+            except Exception as e:
+                print_error(f"❌ Exception in Regional Manager interview stats test: {str(e)}")
+                self.test_results['failed'] += 1
+        
+        # Test 3: District Manager stats - should see only own stats
+        print_info("\n📋 TEST 3: District Manager Access to Own Stats Only")
+        if self.district_manager_token:
+            try:
+                headers = {"Authorization": f"Bearer {self.district_manager_token}"}
+                response = self.session.get(f"{BACKEND_URL}/interviews/stats", headers=headers)
+                
+                if response.status_code == 200:
+                    data = response.json()
+                    print_success("✅ District Manager can access interview stats (NO 500 error)")
+                    print_info(f"   Total: {data.get('total', 0)}")
+                    self.test_results['passed'] += 1
+                    
+                    # Verify stats structure
+                    if isinstance(data, dict) and 'total' in data:
+                        print_success("✅ District Manager stats have proper structure")
+                        self.test_results['passed'] += 1
+                    else:
+                        print_error("❌ District Manager stats have improper structure")
+                        self.test_results['failed'] += 1
+                else:
+                    print_error(f"❌ District Manager interview stats access failed: {response.status_code} - {response.text}")
+                    if response.status_code == 500:
+                        print_error("   🚨 500 ERROR - This indicates a filtering bug!")
+                    self.test_results['failed'] += 1
+                    
+            except Exception as e:
+                print_error(f"❌ Exception in District Manager interview stats test: {str(e)}")
                 self.test_results['failed'] += 1
 
     def test_npa_tracker_get_endpoint(self):
