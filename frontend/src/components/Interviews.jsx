@@ -878,26 +878,11 @@ const Interviews = ({ user }) => {
               {selectedInterview.work_history && (
                 <div><strong>Work History:</strong><p className="text-gray-700 mt-1">{selectedInterview.work_history}</p></div>
               )}
-              {selectedInterview.what_would_change && (
-                <div><strong>What Would Change:</strong><p className="text-gray-700 mt-1">{selectedInterview.what_would_change}</p></div>
-              )}
-              {selectedInterview.why_left_recent && (
-                <div><strong>Why Left Recent Role:</strong><p className="text-gray-700 mt-1">{selectedInterview.why_left_recent}</p></div>
-              )}
               {selectedInterview.other_interviews && (
                 <div><strong>Other Interviews:</strong><p className="text-gray-700 mt-1">{selectedInterview.other_interviews}</p></div>
               )}
               {selectedInterview.top_3_looking_for && (
                 <div><strong>Top 3 Looking For:</strong><p className="text-gray-700 mt-1">{selectedInterview.top_3_looking_for}</p></div>
-              )}
-              {selectedInterview.why_important && (
-                <div><strong>Why Important:</strong><p className="text-gray-700 mt-1">{selectedInterview.why_important}</p></div>
-              )}
-              {selectedInterview.situation_6_12_months && (
-                <div><strong>6-12 Months Situation:</strong><p className="text-gray-700 mt-1">{selectedInterview.situation_6_12_months}</p></div>
-              )}
-              {selectedInterview.family_impact && (
-                <div><strong>Family Impact:</strong><p className="text-gray-700 mt-1">{selectedInterview.family_impact}</p></div>
               )}
               {selectedInterview.competitiveness_example && (
                 <div><strong>Competitiveness Example:</strong><p className="text-gray-700 mt-1">{selectedInterview.competitiveness_example}</p></div>
