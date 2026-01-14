@@ -593,24 +593,6 @@ const Interviews = ({ user }) => {
               </div>
 
               <div>
-                <label className="block text-sm font-medium mb-1">What would you have changed if you could?</label>
-                <textarea
-                  value={formData.what_would_change}
-                  onChange={(e) => setFormData({...formData, what_would_change: e.target.value})}
-                  className="w-full border rounded-lg p-3 min-h-20"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium mb-1">Why did you leave your most recent role?</label>
-                <textarea
-                  value={formData.why_left_recent}
-                  onChange={(e) => setFormData({...formData, why_left_recent: e.target.value})}
-                  className="w-full border rounded-lg p-3 min-h-20"
-                />
-              </div>
-
-              <div>
                 <label className="block text-sm font-medium mb-1">Have you interviewed for other positions recently?</label>
                 <textarea
                   value={formData.other_interviews}
@@ -624,33 +606,6 @@ const Interviews = ({ user }) => {
                 <textarea
                   value={formData.top_3_looking_for}
                   onChange={(e) => setFormData({...formData, top_3_looking_for: e.target.value})}
-                  className="w-full border rounded-lg p-3 min-h-20"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium mb-1">Why are those things important to you right now?</label>
-                <textarea
-                  value={formData.why_important}
-                  onChange={(e) => setFormData({...formData, why_important: e.target.value})}
-                  className="w-full border rounded-lg p-3 min-h-20"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium mb-1">If your current situation stayed the same for the next 6-12 months, how would you feel?</label>
-                <textarea
-                  value={formData.situation_6_12_months}
-                  onChange={(e) => setFormData({...formData, situation_6_12_months: e.target.value})}
-                  className="w-full border rounded-lg p-3 min-h-20"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium mb-1">What would that mean for you and your family?</label>
-                <textarea
-                  value={formData.family_impact}
-                  onChange={(e) => setFormData({...formData, family_impact: e.target.value})}
                   className="w-full border rounded-lg p-3 min-h-20"
                 />
               </div>
