@@ -105,8 +105,8 @@ class InterviewEndpointsTester:
             return None
 
     def setup_test_users(self):
-        """Setup test users for SNA & NPA Tracker functionality testing"""
-        print_header("SETTING UP TEST USERS FOR SNA & NPA TRACKER TESTING")
+        """Setup test users for Interview Endpoints functionality testing"""
+        print_header("SETTING UP TEST USERS FOR INTERVIEW ENDPOINTS TESTING")
         
         # Try to login with existing state manager first
         try:
@@ -122,9 +122,9 @@ class InterviewEndpointsTester:
             else:
                 print_warning("Could not login existing state manager, trying to register new one")
                 self.state_manager_token = self.register_test_user(
-                    "state.manager.tracker@test.com",
+                    "state.manager.interview@test.com",
                     "TestPassword123!",
-                    "State Manager Tracker Test",
+                    "State Manager Interview Test",
                     "state_manager"
                 )
                 if self.state_manager_token:
@@ -133,9 +133,9 @@ class InterviewEndpointsTester:
         except Exception as e:
             print_warning(f"Exception logging in existing state manager: {str(e)}")
             self.state_manager_token = self.register_test_user(
-                "state.manager.tracker@test.com",
+                "state.manager.interview@test.com",
                 "TestPassword123!",
-                "State Manager Tracker Test",
+                "State Manager Interview Test",
                 "state_manager"
             )
             if self.state_manager_token:
@@ -145,9 +145,9 @@ class InterviewEndpointsTester:
         # Register Regional Manager under State Manager
         if self.state_manager_id:
             self.regional_manager_token = self.register_test_user_with_manager(
-                "regional.manager.tracker@test.com", 
+                "regional.manager.interview@test.com", 
                 "TestPassword123!",
-                "Regional Manager Tracker Test",
+                "Regional Manager Interview Test",
                 "regional_manager",
                 self.state_manager_id
             )
@@ -159,9 +159,9 @@ class InterviewEndpointsTester:
         # Register District Manager under Regional Manager
         if self.regional_manager_id:
             self.district_manager_token = self.register_test_user_with_manager(
-                "district.manager.tracker@test.com", 
+                "district.manager.interview@test.com", 
                 "TestPassword123!",
-                "District Manager Tracker Test",
+                "District Manager Interview Test",
                 "district_manager",
                 self.regional_manager_id
             )
@@ -173,9 +173,9 @@ class InterviewEndpointsTester:
         # Register Agent under District Manager
         if self.district_manager_id:
             self.agent_token = self.register_test_user_with_manager(
-                "agent.tracker@test.com",
+                "agent.interview@test.com",
                 "TestPassword123!",
-                "Agent Tracker Test",
+                "Agent Interview Test",
                 "agent",
                 self.district_manager_id
             )
@@ -188,10 +188,10 @@ class InterviewEndpointsTester:
             print_error("Failed to setup state manager - cannot continue testing")
             return False
             
-        print_success("✅ Test hierarchy created for SNA & NPA Tracker testing:")
-        print_info("   State Manager (full access to all trackers)")
-        print_info("   └── Regional Manager (can manage SNA/NPA tracking)")
-        print_info("       └── District Manager (can manage NPA tracking only)")
+        print_success("✅ Test hierarchy created for Interview Endpoints testing:")
+        print_info("   State Manager (can see all interviews, delete, add to recruiting)")
+        print_info("   └── Regional Manager (can see own + subordinates' interviews)")
+        print_info("       └── District Manager (can see only own interviews)")
         print_info("           └── Agent (should be denied access)")
             
         return True
