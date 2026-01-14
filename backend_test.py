@@ -53,7 +53,7 @@ def print_header(message):
     print(f"{Colors.BOLD}{Colors.BLUE}{message}{Colors.ENDC}")
     print(f"{Colors.BOLD}{Colors.BLUE}{'='*60}{Colors.ENDC}")
 
-class SNANPATrackerTester:
+class InterviewEndpointsTester:
     def __init__(self):
         self.session = requests.Session()
         self.state_manager_token = None
