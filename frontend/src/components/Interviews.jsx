@@ -947,7 +947,6 @@ const Interviews = ({ user }) => {
                         </div></div>
                         ${selectedInterview.hobbies_interests ? `<div class="section"><div class="section-title">Hobbies/Interests:</div><p>${selectedInterview.hobbies_interests}</p></div>` : ''}
                         ${selectedInterview.work_history ? `<div class="section"><div class="section-title">Work History:</div><p>${selectedInterview.work_history}</p></div>` : ''}
-                        ${selectedInterview.why_left_recent ? `<div class="section"><div class="section-title">Why Left Recent Role:</div><p>${selectedInterview.why_left_recent}</p></div>` : ''}
                         ${selectedInterview.top_3_looking_for ? `<div class="section"><div class="section-title">Top 3 Looking For:</div><p>${selectedInterview.top_3_looking_for}</p></div>` : ''}
                         ${selectedInterview.competitiveness_example ? `<div class="section"><div class="section-title">Competitiveness Example:</div><p>${selectedInterview.competitiveness_example}</p></div>` : ''}
                         ${selectedInterview.work_ethic_example ? `<div class="section"><div class="section-title">Work Ethic Example:</div><p>${selectedInterview.work_ethic_example}</p></div>` : ''}
