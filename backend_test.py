@@ -1,21 +1,22 @@
 #!/usr/bin/env python3
 """
-Backend Testing Script - SNA TRACKER & NPA TRACKER FUNCTIONALITY TESTING
-NEW FUNCTIONALITY: Test SNA Tracker and NPA Tracker endpoints with different manager role access levels
-Focus: Test SNA (90-day $30K goal) and NPA ($1K first production) tracking systems
+Backend Testing Script - INTERVIEW ENDPOINTS FUNCTIONALITY TESTING
+FOCUS: Test Interview Management endpoints fix for Regional and District Managers
 
-SNA TRACKER ENDPOINTS:
-- GET /api/sna-tracker (Get active/graduated agents with 90-day tracking, $30K goal)
-- POST /api/sna-tracker/{user_id}/start (Start tracking a team member)
-- POST /api/sna-tracker/{user_id}/stop (Stop tracking a team member)
+ISSUE FIXED:
+The get_all_subordinates function returns a list of user ID strings, but the interviews code 
+was incorrectly treating it as a list of dictionaries with an 'id' key. This caused 
+"failed to fetch interview" errors for Regional and District Managers.
 
-NPA TRACKER ENDPOINTS:
-- GET /api/npa-tracker (Get active/achieved agents with $1K goal)
-- POST /api/npa-tracker (Add new NPA agent manually)
-- PUT /api/npa-tracker/{agent_id} (Update premium to trigger achievement)
-- DELETE /api/npa-tracker/{agent_id} (Delete agent - State/Regional managers only)
+INTERVIEW ENDPOINTS TO TEST:
+- GET /api/interviews (Get interviews based on role - State sees all, Regional sees own + subordinates, District sees own)
+- GET /api/interviews/stats (Get interview statistics with proper role-based filtering)
+- POST /api/interviews (Create new interview)
+- PUT /api/interviews/{interview_id} (Update interview)
+- DELETE /api/interviews/{interview_id} (Archive interview - State Manager only)
+- POST /api/interviews/{interview_id}/add-to-recruiting (Add completed interview to recruiting pipeline)
 
-Test role-based access control and tracking workflows
+Test role-based access control and ensure no "failed to fetch interview" errors
 """
 
 import requests
