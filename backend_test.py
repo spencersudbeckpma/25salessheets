@@ -69,6 +69,7 @@ class InterviewEndpointsTester:
             'failed': 0,
             'errors': []
         }
+        self.created_interview_ids = []  # Track created interviews for cleanup
 
     def register_test_user(self, email, password, name, role):
         """Register a test user"""
