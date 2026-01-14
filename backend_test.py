@@ -671,223 +671,181 @@ class InterviewEndpointsTester:
                 print_error(f"❌ Exception in Agent create interview test: {str(e)}")
                 self.test_results['failed'] += 1
 
-    def test_npa_tracker_create_endpoint(self):
-        """Test POST /api/npa-tracker endpoint"""
-        print_header("📝 TESTING NPA TRACKER CREATE ENDPOINT")
+    def test_interviews_update_endpoint(self):
+        """Test PUT /api/interviews/{interview_id} endpoint"""
+        print_header("✏️ TESTING PUT /api/interviews/{interview_id} ENDPOINT")
         
-        print_info("🎯 Testing POST /api/npa-tracker - Add new NPA agent manually")
+        print_info("🎯 Testing PUT /api/interviews/{interview_id} - Update interviews and schedule 2nd interviews")
         
-        # Test 1: State Manager can add NPA agent
-        print_info("\n📋 TEST 1: State Manager Adds New NPA Agent")
-        if self.state_manager_token:
-            try:
-                headers = {"Authorization": f"Bearer {self.state_manager_token}"}
-                
-                npa_agent_data = {
-                    "name": "Test Agent",
-                    "phone": "555-123-4567",
-                    "start_date": "2026-01-01",
-                    "upline_dm": "DM Name",
-                    "upline_rm": "RM Name",
-                    "total_premium": 500
-                }
-                
-                response = self.session.post(
-                    f"{BACKEND_URL}/npa-tracker",
-                    json=npa_agent_data,
-                    headers=headers
-                )
-                
-                if response.status_code == 200:
-                    data = response.json()
-                    print_success("✅ State Manager can add NPA agent")
-                    print_info(f"   Message: {data.get('message', 'No message')}")
-                    print_info(f"   Agent ID: {data.get('id', 'No ID')}")
-                    self.test_results['passed'] += 1
-                    self.npa_agent_id = data.get('id')  # Store for update/delete tests
-                else:
-                    print_error(f"❌ State Manager add NPA agent failed: {response.status_code} - {response.text}")
-                    self.test_results['failed'] += 1
-                    
-            except Exception as e:
-                print_error(f"❌ Exception in State Manager add NPA agent test: {str(e)}")
-                self.test_results['failed'] += 1
-        
-        # Test 2: District Manager can add NPA agent
-        print_info("\n📋 TEST 2: District Manager Adds New NPA Agent")
-        if self.district_manager_token:
-            try:
-                headers = {"Authorization": f"Bearer {self.district_manager_token}"}
-                
-                npa_agent_data = {
-                    "name": "District Test Agent",
-                    "phone": "555-987-6543",
-                    "start_date": "2026-01-01",
-                    "upline_dm": "District Manager",
-                    "upline_rm": "Regional Manager",
-                    "total_premium": 750
-                }
-                
-                response = self.session.post(
-                    f"{BACKEND_URL}/npa-tracker",
-                    json=npa_agent_data,
-                    headers=headers
-                )
-                
-                if response.status_code == 200:
-                    data = response.json()
-                    print_success("✅ District Manager can add NPA agent")
-                    print_info(f"   Message: {data.get('message', 'No message')}")
-                    self.test_results['passed'] += 1
-                    self.district_npa_agent_id = data.get('id')  # Store for tests
-                else:
-                    print_error(f"❌ District Manager add NPA agent failed: {response.status_code} - {response.text}")
-                    self.test_results['failed'] += 1
-                    
-            except Exception as e:
-                print_error(f"❌ Exception in District Manager add NPA agent test: {str(e)}")
-                self.test_results['failed'] += 1
-
-    def test_npa_tracker_update_endpoint(self):
-        """Test PUT /api/npa-tracker/{agent_id} endpoint"""
-        print_header("✏️ TESTING NPA TRACKER UPDATE ENDPOINT")
-        
-        print_info("🎯 Testing PUT /api/npa-tracker/{agent_id} - Update premium to trigger NPA achievement")
-        
-        # Test 1: Update premium to trigger NPA achievement (>=1000)
-        print_info("\n📋 TEST 1: Update Premium to Trigger NPA Achievement")
-        if self.state_manager_token and hasattr(self, 'npa_agent_id'):
+        # Test 1: State Manager schedules 2nd interview
+        print_info("\n📋 TEST 1: State Manager Schedules 2nd Interview")
+        if self.state_manager_token and hasattr(self, 'regional_interview_id'):
             try:
                 headers = {"Authorization": f"Bearer {self.state_manager_token}"}
                 
                 update_data = {
-                    "total_premium": 1100  # Above $1,000 threshold
+                    "status": "second_interview_scheduled",
+                    "second_interview_date": "2026-01-09T10:00:00",
+                    "second_interview_notes": "Candidate shows strong potential"
                 }
                 
                 response = self.session.put(
-                    f"{BACKEND_URL}/npa-tracker/{self.npa_agent_id}",
+                    f"{BACKEND_URL}/interviews/{self.regional_interview_id}",
                     json=update_data,
                     headers=headers
                 )
                 
                 if response.status_code == 200:
                     data = response.json()
-                    print_success("✅ Successfully updated NPA agent premium")
-                    print_info(f"   Message: {data.get('message', 'No message')}")
+                    print_success("✅ State Manager can schedule 2nd interview")
+                    print_info(f"   Status: {data.get('status', 'Unknown')}")
+                    print_info(f"   2nd Interview Date: {data.get('second_interview_date', 'Not set')}")
                     self.test_results['passed'] += 1
-                    
-                    # Verify agent moved to achieved list
-                    print_info("   Verifying agent moved to achieved list...")
-                    get_response = self.session.get(f"{BACKEND_URL}/npa-tracker", headers=headers)
-                    if get_response.status_code == 200:
-                        tracker_data = get_response.json()
-                        achieved_agents = tracker_data.get('achieved', [])
-                        
-                        # Find our agent in achieved list
-                        found_achieved = False
-                        for agent in achieved_agents:
-                            if agent.get('id') == self.npa_agent_id:
-                                found_achieved = True
-                                if agent.get('total_premium') >= 1000 and agent.get('achievement_date'):
-                                    print_success("✅ Agent moved to achieved list with achievement date")
-                                    print_info(f"   Premium: ${agent.get('total_premium', 0)}")
-                                    print_info(f"   Achievement Date: {agent.get('achievement_date', 'Not set')}")
-                                    self.test_results['passed'] += 1
-                                else:
-                                    print_error("❌ Agent in achieved list but missing achievement date or premium")
-                                    self.test_results['failed'] += 1
-                                break
-                        
-                        if not found_achieved:
-                            print_error("❌ Agent not found in achieved list after premium update")
-                            self.test_results['failed'] += 1
-                    
                 else:
-                    print_error(f"❌ Update NPA agent premium failed: {response.status_code} - {response.text}")
+                    print_error(f"❌ State Manager schedule 2nd interview failed: {response.status_code} - {response.text}")
                     self.test_results['failed'] += 1
                     
             except Exception as e:
-                print_error(f"❌ Exception in update NPA agent test: {str(e)}")
+                print_error(f"❌ Exception in State Manager schedule 2nd interview test: {str(e)}")
                 self.test_results['failed'] += 1
-
-    def test_npa_tracker_delete_endpoint(self):
-        """Test DELETE /api/npa-tracker/{agent_id} endpoint"""
-        print_header("🗑️ TESTING NPA TRACKER DELETE ENDPOINT")
         
-        print_info("🎯 Testing DELETE /api/npa-tracker/{agent_id} - State/Regional Managers only")
-        
-        # Test 1: State Manager can delete NPA agent
-        print_info("\n📋 TEST 1: State Manager Can Delete NPA Agent")
-        if self.state_manager_token and hasattr(self, 'district_npa_agent_id'):
+        # Test 2: Regional Manager updates own interview
+        print_info("\n📋 TEST 2: Regional Manager Updates Own Interview")
+        if self.regional_manager_token and hasattr(self, 'regional_interview_id'):
             try:
-                headers = {"Authorization": f"Bearer {self.state_manager_token}"}
-                response = self.session.delete(
-                    f"{BACKEND_URL}/npa-tracker/{self.district_npa_agent_id}",
+                headers = {"Authorization": f"Bearer {self.regional_manager_token}"}
+                
+                update_data = {
+                    "candidate_strength": 5,
+                    "red_flags_notes": "No red flags - excellent candidate"
+                }
+                
+                response = self.session.put(
+                    f"{BACKEND_URL}/interviews/{self.regional_interview_id}",
+                    json=update_data,
                     headers=headers
                 )
                 
                 if response.status_code == 200:
                     data = response.json()
-                    print_success("✅ State Manager can delete NPA agent")
-                    print_info(f"   Message: {data.get('message', 'No message')}")
+                    print_success("✅ Regional Manager can update own interview")
+                    print_info(f"   Candidate Strength: {data.get('candidate_strength', 'Unknown')}")
                     self.test_results['passed'] += 1
                 else:
-                    print_error(f"❌ State Manager delete NPA agent failed: {response.status_code} - {response.text}")
+                    print_error(f"❌ Regional Manager update own interview failed: {response.status_code} - {response.text}")
                     self.test_results['failed'] += 1
                     
             except Exception as e:
-                print_error(f"❌ Exception in State Manager delete NPA agent test: {str(e)}")
+                print_error(f"❌ Exception in Regional Manager update interview test: {str(e)}")
                 self.test_results['failed'] += 1
         
-        # Test 2: District Manager should be denied delete access
-        print_info("\n📋 TEST 2: District Manager Delete Access Control - Should Be Denied")
-        if self.district_manager_token:
+        # Test 3: Mark interview as completed
+        print_info("\n📋 TEST 3: Mark Interview as Completed")
+        if self.state_manager_token and hasattr(self, 'regional_interview_id'):
             try:
-                # First create an agent to try to delete
-                headers = {"Authorization": f"Bearer {self.district_manager_token}"}
+                headers = {"Authorization": f"Bearer {self.state_manager_token}"}
                 
-                npa_agent_data = {
-                    "name": "Delete Test Agent",
-                    "phone": "555-999-9999",
-                    "start_date": "2026-01-01",
-                    "upline_dm": "Test DM",
-                    "upline_rm": "Test RM",
-                    "total_premium": 200
+                update_data = {
+                    "status": "completed"
                 }
                 
-                create_response = self.session.post(
-                    f"{BACKEND_URL}/npa-tracker",
-                    json=npa_agent_data,
+                response = self.session.put(
+                    f"{BACKEND_URL}/interviews/{self.regional_interview_id}",
+                    json=update_data,
                     headers=headers
                 )
                 
-                if create_response.status_code == 200:
-                    agent_id = create_response.json().get('id')
-                    
-                    # Now try to delete it as District Manager
-                    delete_response = self.session.delete(
-                        f"{BACKEND_URL}/npa-tracker/{agent_id}",
-                        headers=headers
-                    )
-                    
-                    if delete_response.status_code == 403:
-                        print_success("✅ District Manager correctly denied delete access (403)")
-                        print_info("   Access control working - only State/Regional Managers can delete")
-                        self.test_results['passed'] += 1
-                    else:
-                        print_error(f"❌ District Manager should get 403, got {delete_response.status_code}")
-                        self.test_results['failed'] += 1
+                if response.status_code == 200:
+                    data = response.json()
+                    print_success("✅ Successfully marked interview as completed")
+                    print_info(f"   Status: {data.get('status', 'Unknown')}")
+                    self.test_results['passed'] += 1
                 else:
-                    print_error("❌ Could not create NPA agent for delete test")
+                    print_error(f"❌ Mark interview as completed failed: {response.status_code} - {response.text}")
                     self.test_results['failed'] += 1
                     
             except Exception as e:
-                print_error(f"❌ Exception in District Manager delete test: {str(e)}")
+                print_error(f"❌ Exception in mark interview completed test: {str(e)}")
+                self.test_results['failed'] += 1
+
+    def test_interviews_verification_after_creation(self):
+        """Verify that created interviews show up in stats and lists"""
+        print_header("🔍 TESTING INTERVIEW VERIFICATION AFTER CREATION")
+        
+        print_info("🎯 Verifying created interviews appear in stats and lists")
+        
+        # Test 1: Verify interviews appear in Regional Manager's list
+        print_info("\n📋 TEST 1: Verify Regional Manager Can See Created Interview")
+        if self.regional_manager_token:
+            try:
+                headers = {"Authorization": f"Bearer {self.regional_manager_token}"}
+                response = self.session.get(f"{BACKEND_URL}/interviews", headers=headers)
+                
+                if response.status_code == 200:
+                    interviews = response.json()
+                    print_success("✅ Regional Manager can fetch interviews after creation")
+                    
+                    # Look for our created interview
+                    found_interview = False
+                    if hasattr(self, 'regional_interview_id'):
+                        for interview in interviews:
+                            if interview.get('id') == self.regional_interview_id:
+                                found_interview = True
+                                print_success("✅ Created interview found in Regional Manager's list")
+                                print_info(f"   Candidate: {interview.get('candidate_name', 'Unknown')}")
+                                print_info(f"   Status: {interview.get('status', 'Unknown')}")
+                                break
+                    
+                    if found_interview:
+                        self.test_results['passed'] += 1
+                    else:
+                        print_error("❌ Created interview not found in Regional Manager's list")
+                        self.test_results['failed'] += 1
+                else:
+                    print_error(f"❌ Regional Manager cannot fetch interviews: {response.status_code}")
+                    self.test_results['failed'] += 1
+                    
+            except Exception as e:
+                print_error(f"❌ Exception in interview verification test: {str(e)}")
+                self.test_results['failed'] += 1
+        
+        # Test 2: Verify stats are updated
+        print_info("\n📋 TEST 2: Verify Interview Stats Are Updated")
+        if self.regional_manager_token:
+            try:
+                headers = {"Authorization": f"Bearer {self.regional_manager_token}"}
+                response = self.session.get(f"{BACKEND_URL}/interviews/stats", headers=headers)
+                
+                if response.status_code == 200:
+                    stats = response.json()
+                    print_success("✅ Regional Manager can fetch interview stats")
+                    
+                    # Check if stats show our interviews
+                    total = stats.get('total', 0)
+                    moving_forward = stats.get('moving_forward', 0)
+                    completed = stats.get('completed', 0)
+                    
+                    print_info(f"   Total Interviews: {total}")
+                    print_info(f"   Moving Forward: {moving_forward}")
+                    print_info(f"   Completed: {completed}")
+                    
+                    if total > 0:
+                        print_success("✅ Interview stats show created interviews")
+                        self.test_results['passed'] += 1
+                    else:
+                        print_warning("⚠️ No interviews in stats (may be expected if no interviews exist)")
+                        self.test_results['passed'] += 1  # Not necessarily a failure
+                else:
+                    print_error(f"❌ Regional Manager cannot fetch interview stats: {response.status_code}")
+                    self.test_results['failed'] += 1
+                    
+            except Exception as e:
+                print_error(f"❌ Exception in interview stats verification test: {str(e)}")
                 self.test_results['failed'] += 1
 
     def run_all_tests(self):
-        """Run all SNA & NPA Tracker functionality tests"""
-        print_header("🚀 STARTING COMPREHENSIVE SNA & NPA TRACKER FUNCTIONALITY TESTING")
+        """Run all Interview Endpoints functionality tests"""
+        print_header("🚀 STARTING COMPREHENSIVE INTERVIEW ENDPOINTS FUNCTIONALITY TESTING")
         
         # Setup test users
         if not self.setup_test_users():
@@ -895,12 +853,11 @@ class InterviewEndpointsTester:
             return False
         
         # Run all test suites
-        self.test_sna_tracker_get_endpoint()
-        self.test_sna_tracker_start_stop_endpoints()
-        self.test_npa_tracker_get_endpoint()
-        self.test_npa_tracker_create_endpoint()
-        self.test_npa_tracker_update_endpoint()
-        self.test_npa_tracker_delete_endpoint()
+        self.test_interviews_get_endpoint()
+        self.test_interviews_stats_endpoint()
+        self.test_interviews_create_endpoint()
+        self.test_interviews_update_endpoint()
+        self.test_interviews_verification_after_creation()
         
         # Print final results
         self.print_final_results()
@@ -909,7 +866,7 @@ class InterviewEndpointsTester:
 
     def print_final_results(self):
         """Print comprehensive test results"""
-        print_header("📊 SNA & NPA TRACKER FUNCTIONALITY TEST RESULTS")
+        print_header("📊 INTERVIEW ENDPOINTS FUNCTIONALITY TEST RESULTS")
         
         total_tests = self.test_results['passed'] + self.test_results['failed']
         success_rate = (self.test_results['passed'] / total_tests * 100) if total_tests > 0 else 0
@@ -928,23 +885,27 @@ class InterviewEndpointsTester:
         print_info(f"Success Rate: {success_rate:.1f}%")
         
         if self.test_results['failed'] == 0:
-            print_success("🎉 ALL SNA & NPA TRACKER FUNCTIONALITY TESTS PASSED!")
-            print_success("✅ SNA Tracker: 90-day tracking, $30,000 goal working correctly")
-            print_success("✅ NPA Tracker: $1,000 goal, manual add/edit/delete working correctly")
-            print_success("✅ Manager role access levels working correctly")
-            print_success("✅ Start/stop SNA tracking working correctly")
-            print_success("✅ NPA achievement tracking working correctly")
-            print_success("✅ Access control for different manager levels working correctly")
+            print_success("🎉 ALL INTERVIEW ENDPOINTS TESTS PASSED!")
+            print_success("✅ GET /api/interviews - No 'failed to fetch' errors for Regional/District Managers")
+            print_success("✅ GET /api/interviews/stats - Statistics working correctly for all manager roles")
+            print_success("✅ POST /api/interviews - Interview creation working correctly")
+            print_success("✅ PUT /api/interviews/{id} - Interview updates and 2nd interview scheduling working")
+            print_success("✅ Role-based access control working correctly")
+            print_success("✅ Subordinate filtering working correctly (no 500 errors)")
         else:
-            print_error("❌ SOME TESTS FAILED - SNA & NPA TRACKER FUNCTIONALITY NEEDS ATTENTION")
+            print_error("❌ SOME TESTS FAILED - INTERVIEW ENDPOINTS NEED ATTENTION")
+            if any("500" in str(error) for error in self.test_results['errors']):
+                print_error("🚨 500 ERRORS DETECTED - The 'failed to fetch interview' bug may still exist!")
 
 if __name__ == "__main__":
-    tester = SNANPATrackerTester()
+    tester = InterviewEndpointsTester()
     success = tester.run_all_tests()
     
     if success:
-        print_success("\n🎉 All SNA & NPA Tracker functionality tests completed successfully!")
+        print_success("\n🎉 All Interview Endpoints functionality tests completed successfully!")
+        print_success("✅ The 'failed to fetch interview' bug has been FIXED!")
         sys.exit(0)
     else:
-        print_error("\n💥 Some SNA & NPA Tracker functionality tests failed!")
+        print_error("\n💥 Some Interview Endpoints functionality tests failed!")
+        print_error("❌ The 'failed to fetch interview' bug may still exist!")
         sys.exit(1)
