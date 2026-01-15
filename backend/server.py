@@ -2997,13 +2997,17 @@ async def get_interview_regional_breakdown(current_user: dict = Depends(get_curr
         {"_id": 0, "id": 1, "name": 1, "email": 1, "is_active": 1}
     ).to_list(100)
     
-    # Filter out test/demo accounts (case-insensitive check)
+    # Filter out test/demo accounts
+    # - Exclude emails with @test.com domain
+    # - Exclude names containing test/demo keywords
     test_keywords = ['test', 'demo', 'sample', 'fake', 'dummy']
+    test_email_domains = ['@test.com', '@example.com', '@demo.com']
+    
     regional_managers = [
         rm for rm in regional_managers 
         if not any(keyword in (rm.get('name', '') or '').lower() for keyword in test_keywords)
-        and not any(keyword in (rm.get('email', '') or '').lower() for keyword in test_keywords)
-        and rm.get('is_active', True) != False  # Also filter out inactive accounts
+        and not any(domain in (rm.get('email', '') or '').lower() for domain in test_email_domains)
+        and rm.get('is_active', True) != False
     ]
     
     # Get all district managers with their manager_id (to link to RM) - also exclude test accounts
@@ -3016,7 +3020,7 @@ async def get_interview_regional_breakdown(current_user: dict = Depends(get_curr
     district_managers = [
         dm for dm in district_managers 
         if not any(keyword in (dm.get('name', '') or '').lower() for keyword in test_keywords)
-        and not any(keyword in (dm.get('email', '') or '').lower() for keyword in test_keywords)
+        and not any(domain in (dm.get('email', '') or '').lower() for domain in test_email_domains)
         and dm.get('is_active', True) != False
     ]
     
