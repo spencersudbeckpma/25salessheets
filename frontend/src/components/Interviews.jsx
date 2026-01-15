@@ -1011,6 +1011,17 @@ const Interviews = ({ user }) => {
                 <Printer size={18} className="mr-2" />
                 Print
               </Button>
+              <Button 
+                variant="outline"
+                onClick={() => {
+                  setSelectedShareMembers(selectedInterview.shared_with || []);
+                  setShowShareModal(true);
+                }}
+                className="text-blue-600 border-blue-300 hover:bg-blue-50"
+              >
+                <Share2 size={18} className="mr-2" />
+                Share
+              </Button>
               <div className="flex gap-3">
                 <Button variant="outline" onClick={() => { setShowViewModal(false); setSelectedInterview(null); }}>
                   Close
@@ -1038,6 +1049,89 @@ const Interviews = ({ user }) => {
                   </Button>
                 )}
               </div>
+            </div>
+
+            {/* Shared With Info */}
+            {selectedInterview.shared_with && selectedInterview.shared_with.length > 0 && (
+              <div className="px-6 pb-4 bg-blue-50 text-sm text-blue-700 flex items-center gap-2">
+                <Share2 size={14} />
+                Shared with {selectedInterview.shared_with_names?.join(', ') || `${selectedInterview.shared_with.length} team member(s)`}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Share Interview Modal */}
+      {showShareModal && selectedInterview && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg shadow-xl w-full max-w-md mx-4">
+            <div className="p-6 border-b bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-t-lg">
+              <div className="flex items-center justify-between">
+                <h3 className="text-lg font-semibold flex items-center gap-2">
+                  <Share2 size={20} />
+                  Share Interview
+                </h3>
+                <button onClick={() => { setShowShareModal(false); setSelectedShareMembers([]); }} className="text-white/80 hover:text-white">
+                  <X size={24} />
+                </button>
+              </div>
+              <p className="text-white/80 text-sm mt-1">
+                Share "{selectedInterview.candidate_name}" with team members
+              </p>
+            </div>
+
+            <div className="p-6 max-h-96 overflow-y-auto">
+              <p className="text-sm text-gray-600 mb-4">
+                Select team members who should be able to view this interview:
+              </p>
+              
+              {teamMembers.filter(m => m.id !== user.id).length === 0 ? (
+                <p className="text-gray-500 text-center py-4">No team members available to share with</p>
+              ) : (
+                <div className="space-y-2">
+                  {teamMembers.filter(m => m.id !== user.id).map(member => (
+                    <label 
+                      key={member.id}
+                      className={`flex items-center gap-3 p-3 rounded-lg border cursor-pointer transition-colors ${
+                        selectedShareMembers.includes(member.id) 
+                          ? 'bg-blue-50 border-blue-300' 
+                          : 'bg-gray-50 border-gray-200 hover:bg-gray-100'
+                      }`}
+                    >
+                      <input
+                        type="checkbox"
+                        checked={selectedShareMembers.includes(member.id)}
+                        onChange={() => toggleShareMember(member.id)}
+                        className="w-4 h-4 text-blue-600 rounded"
+                      />
+                      <div className="flex-1">
+                        <div className="font-medium text-gray-900">{member.name}</div>
+                        <div className="text-xs text-gray-500">
+                          {member.role?.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())}
+                        </div>
+                      </div>
+                      {selectedShareMembers.includes(member.id) && (
+                        <CheckCircle size={18} className="text-blue-600" />
+                      )}
+                    </label>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            <div className="p-6 border-t bg-gray-50 rounded-b-lg flex gap-3 justify-end">
+              <Button variant="outline" onClick={() => { setShowShareModal(false); setSelectedShareMembers([]); }}>
+                Cancel
+              </Button>
+              <Button 
+                onClick={handleShareInterview}
+                className="bg-blue-600 hover:bg-blue-700 text-white"
+                disabled={selectedShareMembers.length === 0}
+              >
+                <Share2 size={18} className="mr-2" />
+                Share with {selectedShareMembers.length} member{selectedShareMembers.length !== 1 ? 's' : ''}
+              </Button>
             </div>
           </div>
         </div>
