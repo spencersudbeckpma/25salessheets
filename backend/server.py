@@ -2991,36 +2991,29 @@ async def get_interview_regional_breakdown(current_user: dict = Depends(get_curr
     # Get all interviews
     all_interviews = await db.interviews.find({}, {"_id": 0}).to_list(10000)
     
-    # Get all regional managers - EXCLUDE test/demo accounts
+    # Get all regional managers - ONLY include real accounts with company email
     regional_managers = await db.users.find(
         {"role": "regional_manager"},
         {"_id": 0, "id": 1, "name": 1, "email": 1, "is_active": 1}
     ).to_list(100)
     
-    # Filter out test/demo accounts
-    # - Exclude emails with @test.com domain
-    # - Exclude names containing test/demo keywords
-    test_keywords = ['test', 'demo', 'sample', 'fake', 'dummy']
-    test_email_domains = ['@test.com', '@example.com', '@demo.com']
-    
+    # Filter to ONLY include accounts with @pmagent.net email domain (real employees)
     regional_managers = [
         rm for rm in regional_managers 
-        if not any(keyword in (rm.get('name', '') or '').lower() for keyword in test_keywords)
-        and not any(domain in (rm.get('email', '') or '').lower() for domain in test_email_domains)
+        if '@pmagent.net' in (rm.get('email', '') or '').lower()
         and rm.get('is_active', True) != False
     ]
     
-    # Get all district managers with their manager_id (to link to RM) - also exclude test accounts
+    # Get all district managers with their manager_id (to link to RM) - also only real accounts
     district_managers = await db.users.find(
         {"role": "district_manager"},
         {"_id": 0, "id": 1, "name": 1, "manager_id": 1, "email": 1, "is_active": 1}
     ).to_list(100)
     
-    # Filter out test/demo DM accounts
+    # Filter to ONLY include accounts with @pmagent.net email domain
     district_managers = [
         dm for dm in district_managers 
-        if not any(keyword in (dm.get('name', '') or '').lower() for keyword in test_keywords)
-        and not any(domain in (dm.get('email', '') or '').lower() for domain in test_email_domains)
+        if '@pmagent.net' in (dm.get('email', '') or '').lower()
         and dm.get('is_active', True) != False
     ]
     
