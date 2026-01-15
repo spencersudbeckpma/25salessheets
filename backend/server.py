@@ -2991,17 +2991,34 @@ async def get_interview_regional_breakdown(current_user: dict = Depends(get_curr
     # Get all interviews
     all_interviews = await db.interviews.find({}, {"_id": 0}).to_list(10000)
     
-    # Get all regional managers
+    # Get all regional managers - EXCLUDE test/demo accounts
     regional_managers = await db.users.find(
         {"role": "regional_manager"},
-        {"_id": 0, "id": 1, "name": 1}
+        {"_id": 0, "id": 1, "name": 1, "email": 1, "is_active": 1}
     ).to_list(100)
     
-    # Get all district managers with their manager_id (to link to RM)
+    # Filter out test/demo accounts (case-insensitive check)
+    test_keywords = ['test', 'demo', 'sample', 'fake', 'dummy']
+    regional_managers = [
+        rm for rm in regional_managers 
+        if not any(keyword in (rm.get('name', '') or '').lower() for keyword in test_keywords)
+        and not any(keyword in (rm.get('email', '') or '').lower() for keyword in test_keywords)
+        and rm.get('is_active', True) != False  # Also filter out inactive accounts
+    ]
+    
+    # Get all district managers with their manager_id (to link to RM) - also exclude test accounts
     district_managers = await db.users.find(
         {"role": "district_manager"},
-        {"_id": 0, "id": 1, "name": 1, "manager_id": 1}
+        {"_id": 0, "id": 1, "name": 1, "manager_id": 1, "email": 1, "is_active": 1}
     ).to_list(100)
+    
+    # Filter out test/demo DM accounts
+    district_managers = [
+        dm for dm in district_managers 
+        if not any(keyword in (dm.get('name', '') or '').lower() for keyword in test_keywords)
+        and not any(keyword in (dm.get('email', '') or '').lower() for keyword in test_keywords)
+        and dm.get('is_active', True) != False
+    ]
     
     # Build a map of DM -> RM
     dm_to_rm = {}
