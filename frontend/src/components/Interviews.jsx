@@ -421,6 +421,17 @@ const Interviews = ({ user }) => {
                         <span className={`px-2 py-1 rounded-full text-xs font-medium border ${getStatusColor(interview.status)}`}>
                           {getStatusLabel(interview.status)}
                         </span>
+                        {interview.is_shared && (
+                          <span className="ml-2 px-2 py-0.5 bg-blue-100 text-blue-700 text-xs rounded-full">
+                            Shared
+                          </span>
+                        )}
+                        {interview.shared_with && interview.shared_with.length > 0 && !interview.is_shared && (
+                          <span className="ml-2 px-2 py-0.5 bg-green-100 text-green-700 text-xs rounded-full flex items-center gap-1 inline-flex">
+                            <Share2 size={10} />
+                            {interview.shared_with.length}
+                          </span>
+                        )}
                       </td>
                       <td className="px-4 py-3">
                         <div className="font-medium">{interview.candidate_name}</div>
