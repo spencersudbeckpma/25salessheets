@@ -7,7 +7,7 @@ import { Input } from './ui/input';
 import { 
   Users, Plus, Trash2, Save, X, Search, Calendar, 
   CheckCircle, Circle, ClipboardList, UserPlus, 
-  ArrowRight, Eye, Edit, BarChart3, List, Columns, Printer
+  ArrowRight, Eye, Edit, BarChart3, List, Columns, Printer, Share2
 } from 'lucide-react';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
@@ -27,6 +27,9 @@ const Interviews = ({ user }) => {
   const [selectedInterview, setSelectedInterview] = useState(null);
   const [showViewModal, setShowViewModal] = useState(false);
   const [showSecondInterviewModal, setShowSecondInterviewModal] = useState(false);
+  const [showShareModal, setShowShareModal] = useState(false);
+  const [teamMembers, setTeamMembers] = useState([]);
+  const [selectedShareMembers, setSelectedShareMembers] = useState([]);
 
   const [formData, setFormData] = useState({
     candidate_name: '',
@@ -58,6 +61,7 @@ const Interviews = ({ user }) => {
 
   useEffect(() => {
     fetchInterviews();
+    fetchTeamMembers();
     fetchStats();
   }, []);
 
