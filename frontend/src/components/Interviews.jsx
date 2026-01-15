@@ -899,16 +899,32 @@ const Interviews = ({ user }) => {
               </div>
 
               {/* Career Packet */}
-              <div className="flex items-center gap-3">
-                <label className="flex items-center gap-2 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={formData.career_packet_sent}
-                    onChange={(e) => setFormData({...formData, career_packet_sent: e.target.checked})}
-                    className="w-4 h-4 rounded border-gray-300"
-                  />
-                  <span className="text-sm font-medium">Did you Send and Run Through Career Opportunity packet?</span>
-                </label>
+              <div>
+                <label className="block text-sm font-medium mb-2">Did you run through the Career Opportunity Packet?</label>
+                <div className="flex gap-3">
+                  <button
+                    type="button"
+                    onClick={() => setFormData({...formData, career_packet_sent: true})}
+                    className={`px-6 py-2 rounded-lg font-medium transition-all ${
+                      formData.career_packet_sent === true 
+                        ? 'bg-green-600 text-white' 
+                        : 'bg-gray-100 border hover:bg-green-50'
+                    }`}
+                  >
+                    Yes
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setFormData({...formData, career_packet_sent: false})}
+                    className={`px-6 py-2 rounded-lg font-medium transition-all ${
+                      formData.career_packet_sent === false 
+                        ? 'bg-red-600 text-white' 
+                        : 'bg-gray-100 border hover:bg-red-50'
+                    }`}
+                  >
+                    No
+                  </button>
+                </div>
               </div>
 
               {/* Candidate Strength */}
