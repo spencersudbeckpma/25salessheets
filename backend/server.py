@@ -2970,6 +2970,112 @@ async def get_interview_stats(current_user: dict = Depends(get_current_user)):
         "completed": completed
     }
 
+@api_router.get("/interviews/regional-breakdown")
+async def get_interview_regional_breakdown(current_user: dict = Depends(get_current_user)):
+    """Get interview statistics broken down by region/manager - State Manager only"""
+    if current_user['role'] != 'state_manager':
+        raise HTTPException(status_code=403, detail="Only State Managers can view regional breakdown")
+    
+    from datetime import datetime, timedelta
+    import pytz
+    
+    central = pytz.timezone('America/Chicago')
+    now = datetime.now(central)
+    
+    # Calculate date ranges
+    today = now.date()
+    week_start = today - timedelta(days=today.weekday())
+    month_start = today.replace(day=1)
+    year_start = today.replace(month=1, day=1)
+    
+    # Get all interviews
+    all_interviews = await db.interviews.find({}, {"_id": 0}).to_list(10000)
+    
+    # Get all regional managers
+    regional_managers = await db.users.find(
+        {"role": "regional_manager"},
+        {"_id": 0, "id": 1, "name": 1}
+    ).to_list(100)
+    
+    # Get all district managers with their manager_id (to link to RM)
+    district_managers = await db.users.find(
+        {"role": "district_manager"},
+        {"_id": 0, "id": 1, "name": 1, "manager_id": 1}
+    ).to_list(100)
+    
+    # Build a map of DM -> RM
+    dm_to_rm = {}
+    for dm in district_managers:
+        dm_to_rm[dm['id']] = dm.get('manager_id', '')
+    
+    # Build regional breakdown
+    regional_data = []
+    
+    for rm in regional_managers:
+        rm_id = rm['id']
+        rm_name = rm.get('name', 'Unknown')
+        
+        # Get all DMs under this RM
+        rm_dm_ids = [dm['id'] for dm in district_managers if dm.get('manager_id') == rm_id]
+        
+        # All interviewers in this region (RM + their DMs)
+        region_interviewer_ids = [rm_id] + rm_dm_ids
+        
+        # Filter interviews by this region
+        region_interviews = [i for i in all_interviews if i.get('interviewer_id') in region_interviewer_ids]
+        
+        # Calculate stats
+        total = len(region_interviews)
+        this_week = sum(1 for i in region_interviews if i.get('interview_date', '')[:10] >= str(week_start))
+        this_month = sum(1 for i in region_interviews if i.get('interview_date', '')[:10] >= str(month_start))
+        this_year = sum(1 for i in region_interviews if i.get('interview_date', '')[:10] >= str(year_start))
+        
+        # Moving forward rate
+        moving_forward = sum(1 for i in region_interviews if i.get('status') in ['moving_forward', 'second_interview_scheduled', 'completed'])
+        
+        # Build DM breakdown within this region
+        dm_breakdown = []
+        for dm in district_managers:
+            if dm.get('manager_id') == rm_id:
+                dm_interviews = [i for i in all_interviews if i.get('interviewer_id') == dm['id']]
+                dm_breakdown.append({
+                    "id": dm['id'],
+                    "name": dm.get('name', 'Unknown'),
+                    "total": len(dm_interviews),
+                    "this_week": sum(1 for i in dm_interviews if i.get('interview_date', '')[:10] >= str(week_start)),
+                    "this_month": sum(1 for i in dm_interviews if i.get('interview_date', '')[:10] >= str(month_start)),
+                    "this_year": sum(1 for i in dm_interviews if i.get('interview_date', '')[:10] >= str(year_start))
+                })
+        
+        # RM's own interviews (not through DMs)
+        rm_own_interviews = [i for i in all_interviews if i.get('interviewer_id') == rm_id]
+        
+        regional_data.append({
+            "rm_id": rm_id,
+            "rm_name": rm_name,
+            "total": total,
+            "this_week": this_week,
+            "this_month": this_month,
+            "this_year": this_year,
+            "moving_forward": moving_forward,
+            "moving_forward_rate": round((moving_forward / total * 100), 1) if total > 0 else 0,
+            "rm_own_interviews": len(rm_own_interviews),
+            "dm_count": len(rm_dm_ids),
+            "dm_breakdown": sorted(dm_breakdown, key=lambda x: x['this_week'], reverse=True)
+        })
+    
+    # Sort by this_week descending (most active regions first)
+    regional_data.sort(key=lambda x: x['this_week'], reverse=True)
+    
+    return {
+        "regional_breakdown": regional_data,
+        "date_ranges": {
+            "week_start": str(week_start),
+            "month_start": str(month_start),
+            "year_start": str(year_start)
+        }
+    }
+
 @api_router.post("/interviews")
 async def create_interview(interview_data: dict, current_user: dict = Depends(get_current_user)):
     """Create a new interview (1st interview submission)"""
