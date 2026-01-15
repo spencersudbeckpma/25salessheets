@@ -730,6 +730,8 @@ const Interviews = ({ user }) => {
           ))}
         </div>
       )}
+        </>
+      )}
 
       {/* New Interview Form Modal */}
       {showForm && (
