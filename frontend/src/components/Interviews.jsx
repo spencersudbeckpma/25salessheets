@@ -335,6 +335,34 @@ const Interviews = ({ user }) => {
 
   return (
     <div className="space-y-6">
+      {/* View Toggle for State Manager */}
+      {user.role === 'state_manager' && (
+        <div className="flex bg-gray-100 rounded-lg p-1 w-fit">
+          <button
+            onClick={() => setMainView('interviews')}
+            className={`px-4 py-2 rounded-md text-sm font-medium transition-colors flex items-center gap-2 ${
+              mainView === 'interviews' 
+                ? 'bg-white shadow text-blue-700' 
+                : 'text-gray-600 hover:text-gray-900'
+            }`}
+          >
+            <ClipboardList size={16} />
+            My Interviews
+          </button>
+          <button
+            onClick={() => setMainView('regional')}
+            className={`px-4 py-2 rounded-md text-sm font-medium transition-colors flex items-center gap-2 ${
+              mainView === 'regional' 
+                ? 'bg-white shadow text-blue-700' 
+                : 'text-gray-600 hover:text-gray-900'
+            }`}
+          >
+            <BarChart3 size={16} />
+            Regional Breakdown
+          </button>
+        </div>
+      )}
+
       {/* Stats Cards */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <Card className="bg-gradient-to-br from-blue-500 to-blue-600 text-white">
@@ -363,41 +391,167 @@ const Interviews = ({ user }) => {
         </Card>
       </div>
 
-      {/* Actions Bar */}
-      <div className="flex flex-wrap items-center gap-3 justify-between">
-        <div className="flex items-center gap-3">
-          <Button 
-            onClick={() => setShowForm(true)}
-            className="bg-blue-600 hover:bg-blue-700 text-white"
-          >
-            <Plus size={18} className="mr-2" />
-            New Interview
-          </Button>
-          
-          <div className="flex bg-gray-100 rounded-lg p-1">
-            <button
-              onClick={() => setViewMode('table')}
-              className={`px-3 py-1 rounded ${viewMode === 'table' ? 'bg-white shadow' : ''}`}
-            >
-              <List size={18} />
-            </button>
-            <button
-              onClick={() => setViewMode('kanban')}
-              className={`px-3 py-1 rounded ${viewMode === 'kanban' ? 'bg-white shadow' : ''}`}
-            >
-              <Columns size={18} />
-            </button>
-          </div>
-        </div>
+      {/* Regional Breakdown View */}
+      {mainView === 'regional' && user.role === 'state_manager' && (
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-lg flex items-center gap-2">
+              <BarChart3 size={20} className="text-blue-600" />
+              Interview Activity by Region
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            {regionalData.regional_breakdown.length === 0 ? (
+              <p className="text-gray-500 text-center py-8">No regional data available</p>
+            ) : (
+              <div className="space-y-4">
+                {/* Summary Table */}
+                <div className="overflow-x-auto">
+                  <table className="w-full">
+                    <thead className="bg-gray-100">
+                      <tr>
+                        <th className="px-4 py-3 text-left text-sm font-semibold">Region</th>
+                        <th className="px-4 py-3 text-center text-sm font-semibold">This Week</th>
+                        <th className="px-4 py-3 text-center text-sm font-semibold">This Month</th>
+                        <th className="px-4 py-3 text-center text-sm font-semibold">This Year</th>
+                        <th className="px-4 py-3 text-center text-sm font-semibold">Total</th>
+                        <th className="px-4 py-3 text-center text-sm font-semibold">Moving Forward %</th>
+                        <th className="px-4 py-3 text-center text-sm font-semibold">DMs</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {regionalData.regional_breakdown.map((region, idx) => (
+                        <React.Fragment key={region.rm_id}>
+                          <tr 
+                            className={`${idx % 2 === 0 ? 'bg-white' : 'bg-gray-50'} cursor-pointer hover:bg-blue-50 transition-colors`}
+                            onClick={() => setExpandedRegion(expandedRegion === region.rm_id ? null : region.rm_id)}
+                          >
+                            <td className="px-4 py-3">
+                              <div className="flex items-center gap-2">
+                                <span className={`transform transition-transform ${expandedRegion === region.rm_id ? 'rotate-90' : ''}`}>
+                                  ▶
+                                </span>
+                                <div>
+                                  <div className="font-medium">{region.rm_name}</div>
+                                  <div className="text-xs text-gray-500">Regional Manager</div>
+                                </div>
+                              </div>
+                            </td>
+                            <td className="px-4 py-3 text-center">
+                              <span className={`px-2 py-1 rounded-full text-sm font-medium ${
+                                region.this_week > 0 ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'
+                              }`}>
+                                {region.this_week}
+                              </span>
+                            </td>
+                            <td className="px-4 py-3 text-center font-medium">{region.this_month}</td>
+                            <td className="px-4 py-3 text-center font-medium">{region.this_year}</td>
+                            <td className="px-4 py-3 text-center font-medium">{region.total}</td>
+                            <td className="px-4 py-3 text-center">
+                              <span className={`px-2 py-1 rounded-full text-sm ${
+                                region.moving_forward_rate >= 50 ? 'bg-green-100 text-green-700' : 
+                                region.moving_forward_rate >= 25 ? 'bg-yellow-100 text-yellow-700' : 
+                                'bg-red-100 text-red-700'
+                              }`}>
+                                {region.moving_forward_rate}%
+                              </span>
+                            </td>
+                            <td className="px-4 py-3 text-center text-gray-600">{region.dm_count}</td>
+                          </tr>
+                          
+                          {/* Expanded DM breakdown */}
+                          {expandedRegion === region.rm_id && region.dm_breakdown.length > 0 && (
+                            <tr>
+                              <td colSpan="7" className="px-4 py-2 bg-blue-50">
+                                <div className="ml-8 space-y-1">
+                                  <div className="text-xs font-medium text-gray-500 mb-2">District Manager Breakdown:</div>
+                                  <table className="w-full">
+                                    <thead>
+                                      <tr className="text-xs text-gray-500">
+                                        <th className="text-left py-1">DM Name</th>
+                                        <th className="text-center py-1">Week</th>
+                                        <th className="text-center py-1">Month</th>
+                                        <th className="text-center py-1">Year</th>
+                                        <th className="text-center py-1">Total</th>
+                                      </tr>
+                                    </thead>
+                                    <tbody>
+                                      {region.dm_breakdown.map(dm => (
+                                        <tr key={dm.id} className="text-sm">
+                                          <td className="py-1">{dm.name}</td>
+                                          <td className="text-center py-1">
+                                            <span className={dm.this_week > 0 ? 'text-green-600 font-medium' : 'text-gray-400'}>
+                                              {dm.this_week}
+                                            </span>
+                                          </td>
+                                          <td className="text-center py-1">{dm.this_month}</td>
+                                          <td className="text-center py-1">{dm.this_year}</td>
+                                          <td className="text-center py-1">{dm.total}</td>
+                                        </tr>
+                                      ))}
+                                      {/* RM's own interviews row */}
+                                      <tr className="text-sm border-t">
+                                        <td className="py-1 italic text-gray-600">{region.rm_name} (RM direct)</td>
+                                        <td className="text-center py-1 text-gray-600">-</td>
+                                        <td className="text-center py-1 text-gray-600">-</td>
+                                        <td className="text-center py-1 text-gray-600">-</td>
+                                        <td className="text-center py-1 text-gray-600">{region.rm_own_interviews}</td>
+                                      </tr>
+                                    </tbody>
+                                  </table>
+                                </div>
+                              </td>
+                            </tr>
+                          )}
+                        </React.Fragment>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      )}
 
-        <div className="flex items-center gap-3">
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={18} />
-            <Input
-              placeholder="Search..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-10 w-64"
+      {/* Regular Interview View */}
+      {mainView === 'interviews' && (
+        <>
+          {/* Actions Bar */}
+          <div className="flex flex-wrap items-center gap-3 justify-between">
+            <div className="flex items-center gap-3">
+              <Button 
+                onClick={() => setShowForm(true)}
+                className="bg-blue-600 hover:bg-blue-700 text-white"
+              >
+                <Plus size={18} className="mr-2" />
+                New Interview
+              </Button>
+              
+              <div className="flex bg-gray-100 rounded-lg p-1">
+                <button
+                  onClick={() => setViewMode('table')}
+                  className={`px-3 py-1 rounded ${viewMode === 'table' ? 'bg-white shadow' : ''}`}
+                >
+                  <List size={18} />
+                </button>
+                <button
+                  onClick={() => setViewMode('kanban')}
+                  className={`px-3 py-1 rounded ${viewMode === 'kanban' ? 'bg-white shadow' : ''}`}
+                >
+                  <Columns size={18} />
+                </button>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-3">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={18} />
+                <Input
+                  placeholder="Search..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="pl-10 w-64"
             />
           </div>
           
