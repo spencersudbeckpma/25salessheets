@@ -79,6 +79,21 @@ const Interviews = ({ user }) => {
     }
   };
 
+  const fetchTeamMembers = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await axios.get(`${API}/team/members`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      // Filter to managers only (people who might want to see interviews)
+      setTeamMembers(response.data.filter(m => 
+        ['state_manager', 'regional_manager', 'district_manager'].includes(m.role)
+      ));
+    } catch (error) {
+      console.error('Failed to fetch team members');
+    }
+  };
+
   const fetchStats = async () => {
     try {
       const token = localStorage.getItem('token');
@@ -89,6 +104,36 @@ const Interviews = ({ user }) => {
     } catch (error) {
       console.error('Failed to fetch stats');
     }
+  };
+
+  const handleShareInterview = async () => {
+    if (selectedShareMembers.length === 0) {
+      toast.error('Please select at least one team member to share with');
+      return;
+    }
+
+    try {
+      const token = localStorage.getItem('token');
+      await axios.post(`${API}/interviews/${selectedInterview.id}/share`, {
+        shared_with: selectedShareMembers
+      }, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      toast.success('Interview shared successfully!');
+      setShowShareModal(false);
+      setSelectedShareMembers([]);
+      fetchInterviews();
+    } catch (error) {
+      toast.error(error.response?.data?.detail || 'Failed to share interview');
+    }
+  };
+
+  const toggleShareMember = (memberId) => {
+    setSelectedShareMembers(prev => 
+      prev.includes(memberId) 
+        ? prev.filter(id => id !== memberId)
+        : [...prev, memberId]
+    );
   };
 
   const handleSubmit = async (moveForward = true) => {
