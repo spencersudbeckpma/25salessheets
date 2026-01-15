@@ -66,6 +66,9 @@ const Interviews = ({ user }) => {
     fetchInterviews();
     fetchTeamMembers();
     fetchStats();
+    if (user.role === 'state_manager') {
+      fetchRegionalData();
+    }
   }, []);
 
   const fetchInterviews = async () => {
@@ -94,6 +97,18 @@ const Interviews = ({ user }) => {
       ));
     } catch (error) {
       console.error('Failed to fetch team members');
+    }
+  };
+
+  const fetchRegionalData = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await axios.get(`${API}/interviews/regional-breakdown`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      setRegionalData(response.data);
+    } catch (error) {
+      console.error('Failed to fetch regional data');
     }
   };
 
