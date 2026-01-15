@@ -3113,6 +3113,41 @@ async def add_interview_to_recruiting(interview_id: str, current_user: dict = De
     recruit.pop('_id', None)
     return {"message": "Added to recruiting pipeline", "recruit": recruit}
 
+@api_router.post("/interviews/{interview_id}/share")
+async def share_interview(interview_id: str, share_data: dict, current_user: dict = Depends(get_current_user)):
+    """Share an interview with specific team members"""
+    if current_user['role'] not in ['state_manager', 'regional_manager', 'district_manager']:
+        raise HTTPException(status_code=403, detail="Only managers can share interviews")
+    
+    existing = await db.interviews.find_one({"id": interview_id})
+    if not existing:
+        raise HTTPException(status_code=404, detail="Interview not found")
+    
+    # Only the interviewer or state manager can share
+    if existing.get('interviewer_id') != current_user['id'] and current_user['role'] != 'state_manager':
+        raise HTTPException(status_code=403, detail="Only the interviewer or state manager can share this interview")
+    
+    shared_with = share_data.get('shared_with', [])
+    
+    # Get the names of shared users for display
+    shared_users = await db.users.find(
+        {"id": {"$in": shared_with}}, 
+        {"_id": 0, "id": 1, "name": 1}
+    ).to_list(100)
+    shared_with_names = [u.get('name', '') for u in shared_users]
+    
+    await db.interviews.update_one(
+        {"id": interview_id},
+        {"$set": {
+            "shared_with": shared_with,
+            "shared_with_names": shared_with_names,
+            "shared_by": current_user['id'],
+            "shared_at": datetime.now(timezone.utc).isoformat()
+        }}
+    )
+    
+    return {"message": f"Interview shared with {len(shared_with)} team member(s)"}
+
 
 # ============================================
 # SNA (Sales New Agent) Tracker Endpoints
