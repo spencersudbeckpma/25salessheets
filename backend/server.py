@@ -3029,6 +3029,16 @@ async def get_interview_regional_breakdown(current_user: dict = Depends(get_curr
     for dm in district_managers:
         dm_to_rm[dm['id']] = dm.get('manager_id', '')
     
+    # Get State Manager IDs to exclude their interviews from regional breakdown
+    state_managers = await db.users.find(
+        {"role": "state_manager"},
+        {"_id": 0, "id": 1}
+    ).to_list(100)
+    state_manager_ids = [sm['id'] for sm in state_managers]
+    
+    # Filter out State Manager interviews from all_interviews for regional breakdown
+    all_interviews_excluding_sm = [i for i in all_interviews if i.get('interviewer_id') not in state_manager_ids]
+    
     # Build regional breakdown
     regional_data = []
     
@@ -3042,8 +3052,8 @@ async def get_interview_regional_breakdown(current_user: dict = Depends(get_curr
         # All interviewers in this region (RM + their DMs)
         region_interviewer_ids = [rm_id] + rm_dm_ids
         
-        # Filter interviews by this region
-        region_interviews = [i for i in all_interviews if i.get('interviewer_id') in region_interviewer_ids]
+        # Filter interviews by this region (using filtered list that excludes SM interviews)
+        region_interviews = [i for i in all_interviews_excluding_sm if i.get('interviewer_id') in region_interviewer_ids]
         
         # Calculate stats
         total = len(region_interviews)
@@ -3058,7 +3068,7 @@ async def get_interview_regional_breakdown(current_user: dict = Depends(get_curr
         dm_breakdown = []
         for dm in district_managers:
             if dm.get('manager_id') == rm_id:
-                dm_interviews = [i for i in all_interviews if i.get('interviewer_id') == dm['id']]
+                dm_interviews = [i for i in all_interviews_excluding_sm if i.get('interviewer_id') == dm['id']]
                 dm_breakdown.append({
                     "id": dm['id'],
                     "name": dm.get('name', 'Unknown'),
@@ -3069,7 +3079,7 @@ async def get_interview_regional_breakdown(current_user: dict = Depends(get_curr
                 })
         
         # RM's own interviews (not through DMs)
-        rm_own_interviews = [i for i in all_interviews if i.get('interviewer_id') == rm_id]
+        rm_own_interviews = [i for i in all_interviews_excluding_sm if i.get('interviewer_id') == rm_id]
         
         regional_data.append({
             "rm_id": rm_id,
