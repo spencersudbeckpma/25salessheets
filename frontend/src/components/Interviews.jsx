@@ -22,6 +22,9 @@ const Interviews = ({ user }) => {
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [viewMode, setViewMode] = useState('table'); // 'table' or 'kanban'
+  const [mainView, setMainView] = useState('interviews'); // 'interviews' or 'regional'
+  const [regionalData, setRegionalData] = useState({ regional_breakdown: [], date_ranges: {} });
+  const [expandedRegion, setExpandedRegion] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState('all');
   const [selectedInterview, setSelectedInterview] = useState(null);
