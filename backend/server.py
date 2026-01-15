@@ -2868,29 +2868,49 @@ async def delete_recruit(recruit_id: str, current_user: dict = Depends(get_curre
 
 @api_router.get("/interviews")
 async def get_interviews(current_user: dict = Depends(get_current_user)):
-    """Get all interviews - State Manager sees all, Regional sees own + their DMs, District sees own only. Excludes archived."""
+    """Get all interviews - State Manager sees all, Regional sees own + their DMs, District sees own only. 
+    Also includes interviews shared with the current user. Excludes archived."""
     if current_user['role'] not in ['state_manager', 'regional_manager', 'district_manager']:
         raise HTTPException(status_code=403, detail="Only managers can access interviews")
     
     # Base query excludes archived interviews
     archived_filter = {"$or": [{"archived": {"$exists": False}}, {"archived": False}]}
     
+    # Query for interviews shared with current user
+    shared_with_filter = {"shared_with": current_user['id']}
+    
     if current_user['role'] == 'state_manager':
         interviews = await db.interviews.find(archived_filter, {"_id": 0}).sort("created_at", -1).to_list(1000)
     elif current_user['role'] == 'regional_manager':
-        # Regional managers see their own interviews + their direct reports' (District Managers) interviews
+        # Regional managers see their own interviews + their direct reports' + shared with them
         subordinate_ids = await get_all_subordinates(current_user['id'])
         
         interviews = await db.interviews.find(
-            {"$and": [{"interviewer_id": {"$in": subordinate_ids}}, archived_filter]}, 
+            {"$and": [
+                {"$or": [
+                    {"interviewer_id": {"$in": subordinate_ids}},
+                    shared_with_filter
+                ]},
+                archived_filter
+            ]}, 
             {"_id": 0}
         ).sort("created_at", -1).to_list(1000)
     else:
-        # District managers see only their own interviews
+        # District managers see only their own interviews + shared with them
         interviews = await db.interviews.find(
-            {"$and": [{"interviewer_id": current_user['id']}, archived_filter]}, 
+            {"$and": [
+                {"$or": [
+                    {"interviewer_id": current_user['id']},
+                    shared_with_filter
+                ]},
+                archived_filter
+            ]}, 
             {"_id": 0}
         ).sort("created_at", -1).to_list(1000)
+    
+    # Mark which interviews are shared (not owned by current user)
+    for interview in interviews:
+        interview['is_shared'] = interview.get('interviewer_id') != current_user['id'] and current_user['id'] in (interview.get('shared_with') or [])
     
     return interviews
 
