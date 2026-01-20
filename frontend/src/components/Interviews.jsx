@@ -1374,11 +1374,11 @@ const Interviews = ({ user }) => {
                 Select team members who should be able to view this interview:
               </p>
               
-              {teamMembers.filter(m => m.id !== user.id && m.name !== 'Bill Fischer').length === 0 ? (
+              {teamMembers.filter(m => m.id !== user.id).length === 0 ? (
                 <p className="text-gray-500 text-center py-4">No team members available to share with</p>
               ) : (
                 <div className="space-y-2">
-                  {teamMembers.filter(m => m.id !== user.id && m.name !== 'Bill Fischer').map(member => (
+                  {teamMembers.filter(m => m.id !== user.id).map(member => (
                     <label 
                       key={member.id}
                       className={`flex items-center gap-3 p-3 rounded-lg border cursor-pointer transition-colors ${
