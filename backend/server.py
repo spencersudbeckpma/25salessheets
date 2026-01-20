@@ -3527,12 +3527,31 @@ async def get_npa_agents(current_user: dict = Depends(get_current_user)):
     achieved_data = []
     
     for agent in npa_agents:
-        total_premium = agent.get('total_premium', 0)
+        # If linked to a user, calculate their actual premium from activities
+        user_id = agent.get('user_id', '')
+        if user_id:
+            # Get all activities for this user and sum premium
+            activities = await db.activities.find(
+                {"user_id": user_id, "premium": {"$gt": 0}},
+                {"_id": 0, "premium": 1}
+            ).to_list(10000)
+            total_premium = sum(a.get('premium', 0) for a in activities)
+        else:
+            # Use manually entered premium
+            total_premium = agent.get('total_premium', 0)
+        
         achieved_npa = total_premium >= NPA_GOAL
+        
+        # Check if just achieved NPA and update achievement date
+        if achieved_npa and not agent.get('achievement_date'):
+            await db.npa_agents.update_one(
+                {"id": agent.get('id')},
+                {"$set": {"achievement_date": datetime.now(timezone.utc).strftime('%Y-%m-%d')}}
+            )
         
         agent_info = {
             "id": agent.get('id'),
-            "user_id": agent.get('user_id', ''),  # Link to team member if selected from list
+            "user_id": user_id,
             "name": agent.get('name', ''),
             "phone": agent.get('phone', ''),
             "email": agent.get('email', ''),
