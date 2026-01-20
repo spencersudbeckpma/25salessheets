@@ -5,7 +5,7 @@ import { Card, CardContent } from './ui/card';
 import { 
   Target, TrendingUp, TrendingDown, Clock, 
   DollarSign, CheckCircle, AlertCircle, Users, Trophy,
-  Calendar
+  Calendar, X
 } from 'lucide-react';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
@@ -31,6 +31,21 @@ const SNATracker = ({ user }) => {
       toast.error('Failed to fetch SNA data');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleRemove = async (userId, name) => {
+    if (!window.confirm(`Remove ${name} from SNA tracking?`)) return;
+
+    try {
+      const token = localStorage.getItem('token');
+      await axios.post(`${API}/sna-tracker/${userId}/exclude`, {}, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      toast.success('Removed from SNA tracking');
+      fetchSNAAgents();
+    } catch (error) {
+      toast.error(error.response?.data?.detail || 'Failed to remove');
     }
   };
 
