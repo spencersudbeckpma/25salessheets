@@ -746,7 +746,11 @@ const Interviews = ({ user }) => {
                     <Card 
                       key={interview.id} 
                       className="cursor-pointer hover:shadow-md transition-shadow"
-                      onClick={() => { setSelectedInterview(interview); setShowViewModal(true); }}
+                      onClick={() => { 
+                        setSelectedInterview(interview); 
+                        setSecondInterviewAnswers(interview.second_interview_answers || '');
+                        setShowViewModal(true); 
+                      }}
                     >
                       <CardContent className="p-3">
                         <div className="font-medium text-sm">{interview.candidate_name}</div>
