@@ -749,6 +749,89 @@ const DailyReport = ({ user, embedded = false }) => {
           </div>
         )}
 
+        {selectedPeriod === 'weekly' && (
+          <div className="mb-6 p-4 bg-gradient-to-r from-teal-50 to-cyan-100 rounded-lg border border-teal-300">
+            <label className="block text-sm font-semibold text-gray-700 mb-2">
+              Select Week
+            </label>
+            <div className="flex items-center gap-3">
+              <button
+                onClick={() => setSelectedWeekOffset(prev => prev - 1)}
+                className="p-2 rounded-lg bg-white border border-gray-300 hover:bg-gray-50 transition-colors"
+                title="Previous week"
+              >
+                <ChevronLeft size={20} />
+              </button>
+              
+              <div className="flex-1 text-center">
+                <div className="font-semibold text-gray-900">
+                  {getWeekDateRange(selectedWeekOffset).label}
+                </div>
+                <div className="text-sm text-gray-600">
+                  {getWeekDateRange(selectedWeekOffset).displayRange}
+                </div>
+              </div>
+              
+              <button
+                onClick={() => setSelectedWeekOffset(prev => Math.min(prev + 1, 0))}
+                disabled={selectedWeekOffset >= 0}
+                className={`p-2 rounded-lg border transition-colors ${
+                  selectedWeekOffset >= 0 
+                    ? 'bg-gray-100 border-gray-200 text-gray-400 cursor-not-allowed' 
+                    : 'bg-white border-gray-300 hover:bg-gray-50'
+                }`}
+                title="Next week"
+              >
+                <ChevronRight size={20} />
+              </button>
+            </div>
+            
+            {/* Quick select buttons */}
+            <div className="flex flex-wrap gap-2 mt-3">
+              <button
+                onClick={() => setSelectedWeekOffset(0)}
+                className={`px-3 py-1 text-sm rounded-full transition-colors ${
+                  selectedWeekOffset === 0 ? 'bg-teal-500 text-white' : 'bg-white border hover:bg-teal-50'
+                }`}
+              >
+                This Week
+              </button>
+              <button
+                onClick={() => setSelectedWeekOffset(-1)}
+                className={`px-3 py-1 text-sm rounded-full transition-colors ${
+                  selectedWeekOffset === -1 ? 'bg-teal-500 text-white' : 'bg-white border hover:bg-teal-50'
+                }`}
+              >
+                Last Week
+              </button>
+              <button
+                onClick={() => setSelectedWeekOffset(-2)}
+                className={`px-3 py-1 text-sm rounded-full transition-colors ${
+                  selectedWeekOffset === -2 ? 'bg-teal-500 text-white' : 'bg-white border hover:bg-teal-50'
+                }`}
+              >
+                2 Weeks Ago
+              </button>
+              <button
+                onClick={() => setSelectedWeekOffset(-3)}
+                className={`px-3 py-1 text-sm rounded-full transition-colors ${
+                  selectedWeekOffset === -3 ? 'bg-teal-500 text-white' : 'bg-white border hover:bg-teal-50'
+                }`}
+              >
+                3 Weeks Ago
+              </button>
+              <button
+                onClick={() => setSelectedWeekOffset(-4)}
+                className={`px-3 py-1 text-sm rounded-full transition-colors ${
+                  selectedWeekOffset === -4 ? 'bg-teal-500 text-white' : 'bg-white border hover:bg-teal-50'
+                }`}
+              >
+                4 Weeks Ago
+              </button>
+            </div>
+          </div>
+        )}
+
         {selectedPeriod === 'quarterly' && (
           <div className="mb-6 p-4 bg-gradient-to-r from-purple-50 to-violet-100 rounded-lg border border-purple-300">
             <label className="block text-sm font-semibold text-gray-700 mb-2">
