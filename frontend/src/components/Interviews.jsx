@@ -90,12 +90,15 @@ const Interviews = ({ user }) => {
   const fetchTeamMembers = async () => {
     try {
       const token = localStorage.getItem('token');
-      const response = await axios.get(`${API}/team/members`, {
+      // Use all-members endpoint to get all DMs across the hierarchy
+      const response = await axios.get(`${API}/team/all-members`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       // Filter to managers only (people who might want to see interviews)
+      // Exclude Bill Fischer from the list
       setTeamMembers(response.data.filter(m => 
-        ['state_manager', 'regional_manager', 'district_manager'].includes(m.role)
+        ['state_manager', 'regional_manager', 'district_manager'].includes(m.role) &&
+        m.name !== 'Bill Fischer'
       ));
     } catch (error) {
       console.error('Failed to fetch team members');
