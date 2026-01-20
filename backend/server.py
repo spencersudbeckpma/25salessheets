@@ -982,15 +982,16 @@ async def get_daily_report(report_type: str, date: str, current_user: dict = Dep
         raise HTTPException(status_code=400, detail="Invalid report type. Use 'individual', 'team', or 'organization'")
 
 @api_router.get("/reports/period/{report_type}")
-async def get_period_report(report_type: str, period: str, current_user: dict = Depends(get_current_user), user_id: str = None, month: str = None, quarter: str = None, year: str = None):
+async def get_period_report(report_type: str, period: str, current_user: dict = Depends(get_current_user), user_id: str = None, month: str = None, quarter: str = None, year: str = None, week_start: str = None, week_end: str = None):
     """
-    Get period report (monthly, quarterly, yearly) for a specific period.
+    Get period report (weekly, monthly, quarterly, yearly) for a specific period.
     report_type: 'individual', 'team', or 'organization'
-    period: 'monthly', 'quarterly', or 'yearly'
+    period: 'weekly', 'monthly', 'quarterly', or 'yearly'
     user_id: Optional - specific user ID for individual reports (defaults to all team members)
     month: Optional - specific month for monthly reports in YYYY-MM format (defaults to current month)
     quarter: Optional - specific quarter for quarterly reports in YYYY-Q1 format (defaults to current quarter)
     year: Optional - specific year for yearly reports in YYYY format (defaults to current year)
+    week_start, week_end: Optional - specific week range in YYYY-MM-DD format (defaults to current week)
     Returns JSON data for on-screen viewing
     """
     if current_user['role'] not in ['state_manager', 'regional_manager', 'district_manager']:
@@ -1002,10 +1003,19 @@ async def get_period_report(report_type: str, period: str, current_user: dict = 
     
     # Calculate date range based on period
     if period == "weekly":
-        # Current week (Monday to Sunday)
-        start_date = today - timedelta(days=today.weekday())
-        end_date = start_date + timedelta(days=6)
-        period_name = f"Week of {start_date.strftime('%b %d')} - {end_date.strftime('%b %d, %Y')}"
+        if week_start and week_end:
+            # Use provided week range
+            try:
+                start_date = datetime.strptime(week_start, '%Y-%m-%d').date()
+                end_date = datetime.strptime(week_end, '%Y-%m-%d').date()
+                period_name = f"Week of {start_date.strftime('%b %d')} - {end_date.strftime('%b %d, %Y')}"
+            except ValueError:
+                raise HTTPException(status_code=400, detail="Invalid week format. Use YYYY-MM-DD")
+        else:
+            # Current week (Monday to Sunday)
+            start_date = today - timedelta(days=today.weekday())
+            end_date = start_date + timedelta(days=6)
+            period_name = f"Week of {start_date.strftime('%b %d')} - {end_date.strftime('%b %d, %Y')}"
     elif period == "monthly":
         if month:
             # Parse the selected month (YYYY-MM format)
