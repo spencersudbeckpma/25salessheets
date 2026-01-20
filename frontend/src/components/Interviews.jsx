@@ -1362,7 +1362,7 @@ const Interviews = ({ user }) => {
                 </button>
               </div>
               <p className="text-white/80 text-sm mt-1">
-                Share "{selectedInterview.candidate_name}" with team members
+                Share &ldquo;{selectedInterview.candidate_name}&rdquo; with team members
               </p>
             </div>
 
