@@ -9,7 +9,7 @@ import json
 from datetime import datetime, timedelta
 
 # Configuration
-BACKEND_URL = "https://performance-hub-75.preview.emergentagent.com/api"
+BACKEND_URL = "https://premium-tracker-6.preview.emergentagent.com/api"
 
 def test_team_view_workflow():
     """Test the exact workflow that Team View frontend uses"""

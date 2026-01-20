@@ -1,173 +1,156 @@
 <analysis>An analysis of the conversation and codebase has been completed. Here is the summary to assist the next agent.
 
-**original_problem_statement**: The user's initial request was to fix and enhance a sales tracking application. This session involved several major feature additions and bug fixes. The agent first fixed an issue where folders were not appearing on mobile in the PMA DocuSphere module. Then, the agent created a complex Recruiting pipeline from scratch, visible to State Managers and Regional Managers with role-specific views. Following that, a new True Field Averages section was added to the Analytics tab. Finally, the user reported issues with the Goals function not saving and the Reports tab not calculating totals, the latter of which is the current focus.
+**original_problem_statement**: The initial goal from the last session was to build SNA Tracker and NPA Tracker reports. This session focused on implementing and iteratively refining these trackers based on user feedback.
+
+Key requests and changes made during this session include:
+- Implementing the initial versions of the SNA and NPA trackers.
+- Changing the NPA tracker from manual name entry to selecting from a dropdown of existing team members.
+- Re-architecting the SNA tracker to be fully automatic, triggering on an agent's first production entry, and later re-introducing a manual remove feature per user request.
+- Adding a Regional Breakdown view to the Interviews tab to show stats by region, with complex filters to exclude test accounts and the user's own interviews.
+- Adding an interview Share feature.
+- Removing several questions from the interview form and changing a checkbox to a Yes/No button group.
+- Fixing a critical bug preventing interview stats from rolling up the hierarchy for managers.
+- Changing the Weekly report from a fixed week-by-week navigation to a flexible date-range picker.
+- Troubleshooting multiple deployment-related issues, including fixing the  file and guiding the user on clearing browser cache.
+- The final user request is to fix the NPA tracker so that when an existing user is added, their production premium is automatically pulled from their activity data instead of being a manual entry.
 
 **User's preferred language**: English
 
 **what currently exists?**
-The Team Sudbeck Sales Tracker is a full-stack application (React, FastAPI, MongoDB) with a Navy/Gold Executive theme.
-- **Core Features**: Role-based access (State Manager, Regional Manager, etc.), team management, analytics, and activity/goal tracking.
-- **PMA DocuSphere**: A document management system with nested folders and bulk PDF upload capabilities. The folder structure is complete in both preview and deployed databases, but a bug with file uploads to specific folders is fixed only in preview.
-- **Recruiting Pipeline**: A new Recruiting tab, accessible by State and Regional Managers.
-    - **State Manager View**: Shows all recruits, filterable by Regional Manager (RM). Can create recruits and assign them to an RM.
-    - **Regional Manager View**: Shows only their own assigned recruits.
-    - **Functionality**: Tracks recruits through a multi-step pipeline (Active, Completed, Did Not Complete) with detailed fields and progress checkmarks.
-- **Analytics**: Contains several tabs, including a new True Field Avgs tab visible only to State Managers, which calculates performance metrics based on users who were active in a selected period.
+- **SNA Tracker**: A fully automatic tracker. It identifies new agents from their first production activity and tracks their progress towards a 0,000 premium goal over 90 days. The UI shows active agents and a Graduated/Expired list. A Remove from Tracking button has been added to allow manual exclusion of agents from this automatic list.
+- **NPA Tracker**: A tracker for agents aiming to become a New Production Agent by reaching a ,000 premium goal. It has been updated to allow adding agents either by selecting from a dropdown of all team members in the hierarchy or through manual entry.
+- **Interviews Feature**:
+    - **Regional Breakdown**: A new view within the Interviews tab shows interview statistics (Weekly, Monthly, Total) broken down by Regional Manager. It correctly filters to show only real managers (via  email domain) and their subordinate DMs, excluding the State Manager's personal interviews from the totals.
+    - **Sharing Functionality**: A Share button exists in the interview view modal, allowing an interview record to be shared with selected team members.
+    - **Updated Form**: The interview guide form has been modified to remove five specific questions and convert the Career Packet question into a Yes/No button selector.
+- **Reports Tab**:
+    - The layout has been cleaned up, with all report tabs (, , , ) aligned in a single, non-wrapping row.
+    - The Weekly report now features a date range picker with Start Date and End Date fields, allowing users to define custom periods.
+- **Bug Fixes**:
+    - A critical bug was fixed in  that prevented interview data from rolling up the hierarchy to managers.
+    - An issue preventing the NPA tracker's team member dropdown from being populated was fixed by creating a new backend endpoint () that fetches the entire user hierarchy.
+    - A deployment issue was resolved by removing  from the  file, ensuring environment configurations are included.
 
 **Last working item**:
-- **Last item agent was working**: The user reported that the Reports tab does not calculate and display total values for the selected date range. The agent had just started investigating by viewing the relevant frontend component.
-- **Status**: NOT STARTED
+- **Last item agent was working**: The user reported that after adding an agent to the NPA tracker via the dropdown, their production premium did not automatically appear. The agent identified that the NPA tracker was not yet designed to fetch existing activity data for added users and was beginning to implement this logic.
+- **Status**: IN PROGRESS
 - **Agent Testing Done**: N
-- **Which testing method agent to use?**: Frontend testing agent to verify UI behavior after the fix, or manual testing with the screenshot tool to confirm totals appear correctly.
+- **Which testing method agent to use?**: both. Use the backend testing agent (or curl) to verify the  endpoint now returns agents with their  calculated from the  collection. Use the frontend testing agent to ensure the UI correctly displays this automatically fetched premium data.
 - **User Testing Done**: N
 
 **All Pending/In progress Issue list**:
-- **Issue 1**: Reports tab does not calculate or display totals for the selected period. (P0)
-- **Issue 2**: Document uploads in PMA DocuSphere do not go into the selected folder on the deployed version. (P1)
-- **Issue 3**: The Team Goals feature was failing to save for the user. (P2)
-
-**Issues Detail**:
-- **Issue 1: Reports tab totals are missing**
-    - **Attempted fixes**: None. The agent was just beginning to investigate the code in  (or a sub-component) when the session ended.
-    - **Next debug checklist**:
-        1.  Examine the frontend code responsible for fetching and rendering report data.
-        2.  Identify the logic that should aggregate the totals for metrics like appointments, sales, premium, etc.
-        3.  Check the API response to ensure the necessary data is being provided by the backend.
-        4.  Fix the frontend component to correctly calculate and display the totals.
-    - **Why fix this issue and what will be achieved with the fix?**: The reports are a core feature, and without totals, their utility is significantly reduced. This fix will restore full functionality to the reporting dashboard.
-    - **Status**: NOT STARTED
-    - **Is recurring issue?**: N
-    - **Should Test frontend/backend/both after fix?**: Frontend
-    - **Blocked on other issue**: None
-
-- **Issue 2: DocuSphere uploads go to All Documents**
-    - **Attempted fixes**: The agent identified that the backend endpoint was expecting  as a query parameter () instead of from the form data. The fix was to change the function signature in  to  and add the  import from FastAPI. This fix is confirmed to be working in the preview environment.
-    - **Next debug checklist**: This is not a bug to be fixed but a deployment issue. The code changes need to be deployed to the production environment.
-    - **Why fix this issue and what will be achieved with the fix?**: This is critical for the usability of the DocuSphere. It will allow the user to organize the 235+ documents they intend to upload.
-    - **Status**: RESOLVED (Awaiting Deployment)
-    - **Is recurring issue?**: Y (discrepancy between preview/deployed code)
-    - **Should Test frontend/backend/both after fix?**: Backend (already tested in preview)
-    - **Blocked on other issue**: None
-
-- **Issue 3: Team Goals saving failed**
-    - **Attempted fixes**: The agent hypothesized the issue was  failing on numbers with commas. A fix was implemented to strip commas before parsing. However, the user stated they were not using commas. Subsequent tests by the agent on the deployed version showed the feature working correctly even without the fix.
-    - **Next debug checklist**:
-        1.  Confirm with the user if the issue persists after the last deployment.
-        2.  If it does, attempt to reproduce the error by following the user's exact steps. The issue might be specific to their account, browser, or a state not captured by the agent's tests.
-    - **Why fix this issue and what will be achieved with the fix?**: Goal setting is a key motivational feature of the application.
-    - **Status**: USER VERIFICATION PENDING
-    - **Is recurring issue?**: N
-    - **Should Test frontend/backend/both after fix?**: Frontend
-    - **Blocked on other issue**: None
+  - Issue 1: NPA Tracker does not automatically pull production data for existing users. (P0)
+  
+  **Issues Detail**:
+  - **Issue 1**: 
+     - **Description**: When a user is added to the NPA Tracker by selecting them from the team member dropdown, their existing premium from their logged activities is not calculated or displayed. The tracker currently only shows manually entered data, making it inaccurate for existing users.
+     - **Attempted fixes**: The agent identified the root cause in . The  GET endpoint retrieves the list of manually added NPA agents but does not join this data with the  collection to calculate their actual total premium.
+     - **Next debug checklist**:
+        1. Modify the  GET endpoint in .
+        2. For each agent in the  collection that has a , perform a lookup in the  collection.
+        3. Sum the  for all activities matching the .
+        4. Add this calculated  to the agent object returned by the API.
+        5. Update the logic that moves an agent to the Achieved list to use this new .
+        6. Ensure the frontend () correctly displays this premium.
+     - **Why fix this issue and what will be achieved with the fix?**: This will automate the premium tracking for existing agents in the NPA tracker, making it accurate and removing the need for manual data entry and calculation.
+     - **Status**: IN PROGRESS
+     - **Is recurring issue?**: N
+     - **Should Test frontend/backend/both after fix?**: Both
 
 **In progress Task List**:
-- None.
+- None, the current work is captured in the pending issue list.
 
 **Upcoming and Future Tasks**
 - **Upcoming Tasks**:
-    - **Deploy Changes (P0)**: Deploy all recent fixes and features to the production environment. This is the highest priority to resolve user-reported issues and unblock them. This includes:
-        - The DocuSphere upload fix.
-        - The complete Recruiting Pipeline feature for both State and Regional Managers.
-        - The True Field Averages analytics tab.
-        - The potential fix for the Team Goals saving issue.
+    - **Deploy All Changes (P0)**: Once the NPA tracker data rollup is fixed, the highest priority is to deploy all the features and fixes from this session. This includes the automatic SNA tracker, all interview enhancements, and the report UI updates.
+    - **Verify Team Goals Saving Issue (P1)**: This is a low-priority carry-over item from a previous session. After deployment, the user should be prompted to re-test the Team Goals feature to confirm if any issues persist.
 - **Future Tasks**:
-    - **Code Refactoring (P2)**: Break down monolithic files like  (now over 3600 lines), , and  into smaller, manageable modules/components.
+    - **Code Refactoring (P2)**: The main backend file, , has become excessively large (now over 4000 lines) and contains logic for all features. This poses a significant maintenance risk. A dedicated refactoring effort should be prioritized to break  into smaller, modular files (e.g., by feature: , , ). Similarly, large frontend components like  and  should be broken down into smaller, reusable components.
 
 **Completed work in this session**
-- **Feature: Recruiting Pipeline**
-    - Created a new Recruiting tab from scratch, initially for State Managers.
-    - Added a full CRUD interface with a table matching the user's Excel sheet.
-    - Implemented pipeline status tracking (Active, Completed, Did Not Complete) with move functionality.
-    - Refined the UI based on iterative user feedback (e.g., added/removed columns, changed edit flow).
-    - Extended the feature to Regional Managers, creating a restricted My Recruiting view showing only their assigned recruits.
-    - Updated the dashboard to conditionally render the tab for both  and  roles.
-- **Feature: True Field Averages**
-    - Added a new True Field Avgs tab to the Analytics page, visible only to State Managers.
-    - Created a backend endpoint () to calculate averages based only on users who logged activity within a selected date range.
-    - Implemented a frontend UI with a date range selector, summary cards, and a list of active members.
-- **Bug Fix & Resolution: PMA DocuSphere**
-    - **Mobile View**: Fixed an issue where folders appeared to be missing on mobile. The root cause was a data loading failure, not a CSS issue. Added better loading/error states.
-    - **Folder Population**: Manually created the entire 21-folder structure in the **deployed** database, resolving a critical discrepancy where folders existed in preview but not in production.
-- **Cleanup**: Deleted test users and data created during debugging from both preview and deployed environments.
+- **Feature: SNA & NPA Trackers**
+    - Implemented automatic SNA tracking based on first production (, ).
+    - Added a manual exclude/remove feature back to the SNA tracker (, ).
+    - Implemented the NPA tracker with both manual entry and a team member selection dropdown (, ).
+- **Feature: Interview Enhancements**
+    - Created a Regional Breakdown view for interview stats with advanced filtering (, ).
+    - Added an interview Share feature (, ).
+    - Removed 5 questions from the interview form and view/print modals ().
+    - Updated the Career Packet question to a Yes/No button group ().
+- **Feature: Weekly Report Date Range**
+    - Replaced the week-by-week navigation with a flexible start/end date picker (, ).
+- **Bug Fixes & Improvements**:
+    - **Hierarchy Data**: Fixed stats rollup for interviews and the empty dropdown for the NPA tracker by implementing correct hierarchy data fetching (, ).
+    - **UI Layout**: Cleaned up the report tabs to prevent wrapping ().
+    - **Deployment**: Fixed a critical deployment issue by editing  to include  files.
 
 **Earlier issues found/mentioned but not fixed**
-- **Code Refactoring**: The , , and  files are extremely large and complex, making them hard to maintain and prone to bugs. This technical debt has been flagged but not addressed.
+   - **Code Refactoring**: The need to refactor the monolithic  and large frontend components was identified in the previous session and remains unaddressed due to the focus on new feature delivery.
 
 **Known issue recurrence from previous fork**
-- **Preview vs. Deployed Mismatch**: A major recurring issue is the divergence between the preview and deployed environments. This session saw discrepancies in both the database (folders missing in deployed DB) and the running code (upload bug fixed in preview but not deployed), causing significant user confusion and requiring manual synchronization.
+  - **Preview vs. Deployed Mismatch**: This issue recurred multiple times. The user reported that new features/fixes were not visible on their deployed app. This was caused by a combination of browser caching issues and a misconfigured  file blocking  files from being deployed. The agent guided the user on hard-refreshing and ultimately fixed the  file.
 
 **Code Architecture**
 
 
 **Key Technical Concepts**
-- **Role-Based Rendering**: Extensive use of conditional logic in React components (e.g., ) to show/hide entire features (Recruiting tab, True Field Avgs) or specific UI elements (RM filter).
-- **Complex State Management**: The  component manages multiple states including lists for different pipeline statuses, filters, search terms, and form data, all within React's .
-- **Backend Data Aggregation**: The True Field Averages endpoint uses MongoDB aggregation pipelines (or equivalent logic) to filter users with activity in a date range and then calculate average metrics.
-- **Environment Discrepancy**: A critical operational concept in this project is the separation between the preview and deployed environments, which have different databases and codebases, requiring manual data seeding and explicit deployment actions.
+- **Automatic Data Rollup**: The current task is to fetch related data from another collection () to enrich the primary data ().
+- **Recursive Hierarchy Fetching**: A new endpoint () was created to traverse the manager-subordinate relationship and return a complete list of all users in a hierarchy, which was crucial for the team member dropdowns.
+- **Soft Exclude/Hide**: An  collection was created to allow users to manually hide certain records from an otherwise automated list, providing a layer of manual control.
+- **Dynamic API Filtering**: The  endpoint uses multiple server-side filters (by name, email domain, role) to produce a clean, user-relevant dataset.
 
 **key DB schema**
-- **recruits**: 
-
-**changes in tech stack**
--  was used to correctly handle  in multipart form data.
--  was installed in the backend environment.
+  - **npa_agents**: 
+  - **sna_excluded_users**: (New) 
+  - **interviews**: (Modified) 
+  - **activities**:  (This existing collection is now needed for the NPA Tracker fix).
 
 **All files of reference**
-- : Contains all backend logic, including new endpoints for Recruiting and True Field Averages, and fixes for DocuSphere uploads.
-- : A large, new component for the entire recruiting pipeline feature.
-- : Heavily modified to include the new True Field Averages feature.
-- : Modified to handle role-based visibility of the new Recruiting tab.
-- : Modified to fix an issue with saving goals.
-- : Modified to fix a mobile data loading issue.
-
-**Areas that need refactoring**:
-- ****: Urgently needs to be broken down into separate router files by feature (e.g., , , ).
-- ****: This monolithic component should be broken into smaller pieces (e.g., , , ).
-- ****: Similarly, this component is growing large and its tabs should be refactored into their own components.
-
-**key api endpoints**
--  (GET, POST, PUT, DELETE): Full CRUD for the recruiting pipeline.
--  (GET): Calculates true averages for active field members.
--  (POST): Endpoint modified to correctly handle  from form data.
+- 
+- 
+- 
+- 
+- 
+- 
+- 
 
 **Critical Info for New Agent**
-- **DEPLOYMENT IS THE #1 BLOCKER**: The user is seeing bugs and missing features that are already fixed/built in the preview environment. The top priority is to guide the user to deploy the application so the  version matches the  version. Do not start new features until the user confirms the deployed app is up-to-date and working as expected.
-- **Preview vs. Deployed Environments**: Be acutely aware that the preview and deployed environments are separate. They have different databases and run different code versions. When the user reports an issue, first verify if it occurs in the preview environment. If not, it's likely a deployment issue.
-- **Refactoring is Overdue**: The codebase, especially , is becoming unmanageable. After resolving the current bug and deployment, strongly propose a refactoring task to the user to improve stability and development speed.
+- **Immediate Priority**: Your first task is to fix the NPA tracker. When an agent is selected from the dropdown, their current total premium must be automatically fetched from their activities and displayed. The current implementation only tracks manually entered premium.
+- **Data Discrepancy Alert**: Be aware that the preview environment's database contains test users (e.g., ), while the user's deployed environment has real users (). Filtering logic you write must work for the deployed data, and testing in preview may require creating temporary data that mimics the production environment.
+- **Deploy After Fix**: The user has been waiting for a large number of features and fixes. Once you complete and test the NPA tracker fix, you should guide the user to deploy all the pending changes and verify them.
+- **Refactoring Recommendation**: After the current task list is cleared and deployed, strongly advocate for a refactoring task. The codebase, especially , is becoming unmanageable and will lead to more bugs and slower development in the future.
 
 **documents and test reports created in this job**
-- None.
+-  was updated for backend testing of the SNA/NPA trackers.
 
-**Last 10 User Messages and any pending HUMAN messages**
-1.  : Team Goals are failing to save, provides a screenshot of the error. (Status: Investigated, potentially fixed, awaiting deployment/verification).
-2.  : Confirms they weren't using commas in the goal inputs.
-3.  : Asks if they should deploy or test now.
-4.  : Recommends testing the deployed version first.
-5.  : Requests a new feature: sub-tabs in the Recruiting folder for each Regional Manager to see their own pipeline. (Status: DONE).
-6.  : Asks for a screenshot of what a Regional Manager sees. (Status: DONE).
-7.  : Asks the agent to create a test account for the RM view. (Status: DONE).
-8.  : Asks the agent to remove the test data. (Status: DONE).
-9.  : Requests a new feature: True avgs of people in the field that week in the Analytics tab. (Status: DONE).
-10. : Reports a new bug: When I run reports tabs why don’t they add up totals for the selected period. (Status: IN PROGRESS).
+**Last 10 User Messages and any pending HUMAN messages** 
+1. **User**: Reported the weekly report doesn't let them view past weeks. (Status: COMPLETED)
+2. **User**: Asked for a date range picker for the weekly report instead of preset buttons. (Status: COMPLETED)
+3. **User**: Reported that the NPA tracker was not showing a new agent with first production. (Status: IN PROGRESS - led to the discovery of multiple issues)
+4. **User**: Clarified they were talking about the NPA tracker and that the add member dropdown was empty. (Status: IN PROGRESS - part of the same issue thread)
+5. **User**: Confirmed the new agent's role is Agent and that using Manual Entry works but doesn't link to the existing database user. (Status: IN PROGRESS - part of the same issue thread)
+6. **User**: Shared a screenshot showing a manually added agent in the NPA tracker with /bin/bash premium, asking why the numbers didn't roll up. (Status: THIS IS THE CURRENT WORKING ITEM)
+7. **User**: Asked Did u get it fixed while the agent was working on the SNA remove button. (Status: COMPLETED)
+8. **User**: Asked for the remove button to be added back to the SNA tracker. (Status: COMPLETED)
+9. **User**: Reported failed to remove when trying to remove from the now-automatic SNA tracker. (Status: COMPLETED, led to user asking for the button back)
+10. **User**: Complained about Jane showing up in the regional breakdown. (Status: COMPLETED)
 
 **Project Health Check:**
-- **Broken**: The **deployed** application has known bugs (DocuSphere upload, possibly Goals saving) and is missing several major features (Recruiting enhancements, True Field Averages). The Reports tab is broken in both environments.
+- **Broken**: Nothing is critically broken in the preview environment. However, the NPA tracker does not function as the user expects (automatic premium rollup), which is the current P0 issue. The deployed application is significantly out of date.
 - **Mocked**: None.
 
 **3rd Party Integrations**
 - None.
 
 **Testing status**
-- **Testing agent used after significant changes**: NO
-- **Troubleshoot agent used after agent stuck in loop**: NO
-- **Test files created**: None.
-- **Known regressions**: None.
+  - **Testing agent used after significant changes**: YES. Both frontend and backend testing agents were used multiple times to test the new trackers and the interview hierarchy fixes.
+  - **Troubleshoot agent used after agent stuck in loop**: NO
+  - **Test files created**: None.
+  - **Known regressions**: None.
 
 **Credentials to test flow:**
 - **State Manager**:  / 
-- **Test Regional Manager (Preview DB only)**:  / 
-- **Test Regional Manager (Deployed DB only)**:  / 
+- To test manager hierarchy, you may need to find or create Regional and District manager accounts in the database. Be aware of the data discrepancy between preview () and production ().
 
 **What agent forgot to execute**
-- The agent has consistently failed to ensure the user deploys the application after major features or fixes are completed in the preview environment. This has been the root cause of almost all of the user's confusion and repeated bug reports in the second half of the session.
-- The critical need for refactoring the monolithic  and frontend components has been ignored, accumulating significant technical debt.</analysis>
+- The agent initially removed the manual remove functionality from the SNA tracker when making it automatic, assuming it was no longer needed. The user requested it back, and the agent had to re-implement it as a manual exclude feature. This was a minor assumption that was quickly corrected.</analysis>
