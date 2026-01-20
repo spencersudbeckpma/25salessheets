@@ -249,6 +249,14 @@ const SNATracker = ({ user }) => {
                         <span className="font-medium">{agent.days_remaining}</span>
                       </div>
                     </div>
+
+                    {/* Remove Button */}
+                    <button
+                      onClick={() => handleRemove(agent.id, agent.name)}
+                      className="mt-3 w-full text-sm text-red-600 hover:text-red-700 hover:bg-red-50 py-1 rounded transition-colors"
+                    >
+                      Remove from Tracking
+                    </button>
                   </CardContent>
                 </Card>
               ))}
