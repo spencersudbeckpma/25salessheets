@@ -20,38 +20,40 @@ const Reports = ({ user }) => {
       </CardHeader>
       <CardContent className="pt-2">
         <Tabs defaultValue="reports" className="space-y-4">
-          <TabsList className="inline-flex bg-gray-100 p-1 rounded-lg">
-            <TabsTrigger 
-              value="reports" 
-              className="px-4 py-2 text-sm rounded-md flex items-center gap-2 data-[state=active]:bg-white data-[state=active]:shadow"
-            >
-              <FileText size={16} />
-              Reports
-            </TabsTrigger>
-            <TabsTrigger 
-              value="new-faces" 
-              className="px-4 py-2 text-sm rounded-md flex items-center gap-2 data-[state=active]:bg-white data-[state=active]:shadow"
-            >
-              <Users size={16} />
-              New Faces
-            </TabsTrigger>
-            {canAccessSNA && (
+          <div className="overflow-x-auto -mx-2 px-2">
+            <TabsList className="inline-flex bg-gray-100 p-1 rounded-lg min-w-max">
               <TabsTrigger 
-                value="sna-tracker" 
-                className="px-4 py-2 text-sm rounded-md flex items-center gap-2 data-[state=active]:bg-white data-[state=active]:shadow"
+                value="reports" 
+                className="px-3 sm:px-4 py-2 text-xs sm:text-sm rounded-md flex items-center gap-1.5 sm:gap-2 whitespace-nowrap data-[state=active]:bg-white data-[state=active]:shadow data-[state=active]:text-blue-700"
               >
-                <Target size={16} />
-                SNA Tracker
+                <FileText size={14} className="sm:w-4 sm:h-4" />
+                <span>Reports</span>
               </TabsTrigger>
-            )}
-            <TabsTrigger 
-              value="npa-tracker" 
-              className="px-4 py-2 text-sm rounded-md flex items-center gap-2 data-[state=active]:bg-white data-[state=active]:shadow"
-            >
-              <Award size={16} />
-              NPA Tracker
-            </TabsTrigger>
-          </TabsList>
+              <TabsTrigger 
+                value="new-faces" 
+                className="px-3 sm:px-4 py-2 text-xs sm:text-sm rounded-md flex items-center gap-1.5 sm:gap-2 whitespace-nowrap data-[state=active]:bg-white data-[state=active]:shadow data-[state=active]:text-blue-700"
+              >
+                <Users size={14} className="sm:w-4 sm:h-4" />
+                <span>New Faces</span>
+              </TabsTrigger>
+              {canAccessSNA && (
+                <TabsTrigger 
+                  value="sna-tracker" 
+                  className="px-3 sm:px-4 py-2 text-xs sm:text-sm rounded-md flex items-center gap-1.5 sm:gap-2 whitespace-nowrap data-[state=active]:bg-white data-[state=active]:shadow data-[state=active]:text-green-700"
+                >
+                  <Target size={14} className="sm:w-4 sm:h-4" />
+                  <span>SNA</span>
+                </TabsTrigger>
+              )}
+              <TabsTrigger 
+                value="npa-tracker" 
+                className="px-3 sm:px-4 py-2 text-xs sm:text-sm rounded-md flex items-center gap-1.5 sm:gap-2 whitespace-nowrap data-[state=active]:bg-white data-[state=active]:shadow data-[state=active]:text-amber-700"
+              >
+                <Award size={14} className="sm:w-4 sm:h-4" />
+                <span>NPA</span>
+              </TabsTrigger>
+            </TabsList>
+          </div>
 
           <TabsContent value="reports" className="mt-4">
             <DailyReport user={user} embedded={true} />
