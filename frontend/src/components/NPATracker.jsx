@@ -61,9 +61,9 @@ const NPATracker = ({ user }) => {
       const response = await axios.get(`${API}/team/members`, {
         headers: { Authorization: `Bearer ${token}` }
       });
-      // Filter to agents and DMs
+      // Filter to agents, DMs, and RMs - anyone who could be tracked for NPA
       setTeamMembers(response.data.filter(m => 
-        ['agent', 'district_manager'].includes(m.role)
+        ['agent', 'district_manager', 'regional_manager'].includes(m.role)
       ));
     } catch (error) {
       console.error('Failed to fetch team members');
