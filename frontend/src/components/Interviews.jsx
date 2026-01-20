@@ -660,7 +660,11 @@ const Interviews = ({ user }) => {
                       <td className="px-4 py-3">
                         <div className="flex items-center justify-center gap-2">
                           <button
-                            onClick={() => { setSelectedInterview(interview); setShowViewModal(true); }}
+                            onClick={() => { 
+                              setSelectedInterview(interview); 
+                              setSecondInterviewAnswers(interview.second_interview_answers || '');
+                              setShowViewModal(true); 
+                            }}
                             className="p-1 text-blue-600 hover:bg-blue-50 rounded"
                             title="View Details"
                           >
