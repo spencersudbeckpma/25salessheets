@@ -156,6 +156,39 @@ const Interviews = ({ user }) => {
     );
   };
 
+  const saveSecondInterviewAnswers = async () => {
+    if (!selectedInterview) return;
+    
+    setIsSavingAnswers(true);
+    try {
+      const token = localStorage.getItem('token');
+      await axios.put(`${API}/interviews/${selectedInterview.id}`, {
+        second_interview_answers: secondInterviewAnswers
+      }, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      
+      // Update the selected interview locally
+      setSelectedInterview(prev => ({
+        ...prev,
+        second_interview_answers: secondInterviewAnswers
+      }));
+      
+      // Update the interviews list
+      setInterviews(prev => prev.map(i => 
+        i.id === selectedInterview.id 
+          ? { ...i, second_interview_answers: secondInterviewAnswers }
+          : i
+      ));
+      
+      toast.success('2nd Interview Answers saved!');
+    } catch (error) {
+      toast.error('Failed to save answers');
+    } finally {
+      setIsSavingAnswers(false);
+    }
+  };
+
   const handleSubmit = async (moveForward = true) => {
     if (!formData.candidate_name.trim()) {
       toast.error('Candidate name is required');
