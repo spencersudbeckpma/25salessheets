@@ -95,10 +95,20 @@ const Interviews = ({ user }) => {
         headers: { Authorization: `Bearer ${token}` }
       });
       // Filter to managers only (people who might want to see interviews)
-      // Exclude Bill Fischer from the list
+      // Exclude Bill Fischer and test accounts from the list
+      const excludeNames = [
+        'Bill Fischer',
+        'District Manager 1',
+        'District Manager 2',
+        'Regional Manager 1',
+        'Regional Manager 2',
+        'Jane Agent',
+        'Test RM Account'
+      ];
       setTeamMembers(response.data.filter(m => 
         ['state_manager', 'regional_manager', 'district_manager'].includes(m.role) &&
-        m.name !== 'Bill Fischer'
+        !excludeNames.includes(m.name) &&
+        !m.name?.toLowerCase().includes('test')
       ));
     } catch (error) {
       console.error('Failed to fetch team members');
