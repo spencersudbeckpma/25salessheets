@@ -3302,51 +3302,65 @@ async def share_interview(interview_id: str, share_data: dict, current_user: dic
 # ============================================
 # SNA (Sales New Agent) Tracker Endpoints
 # ============================================
-# Tracks new agents for their first 90 days toward a $30,000 premium goal
+# Automatically tracks new agents from their first production for 90 days toward $30,000 premium goal
 
 SNA_GOAL = 30000
 SNA_TRACKING_DAYS = 90
 
 @api_router.get("/sna-tracker")
 async def get_sna_agents(current_user: dict = Depends(get_current_user)):
-    """Get all SNA (new agents) being tracked - State and Regional Managers only"""
+    """Get all SNA (new agents) being tracked - automatically based on first production"""
     if current_user['role'] not in ['state_manager', 'regional_manager']:
         raise HTTPException(status_code=403, detail="Only State and Regional Managers can access SNA tracker")
     
-    # Get all users marked as SNA
+    # Get all agents/DMs (potential SNAs) - only real accounts with @pmagent.net
     if current_user['role'] == 'state_manager':
-        sna_users = await db.users.find(
-            {"sna_tracking": True},
+        potential_snas = await db.users.find(
+            {"role": {"$in": ["agent", "district_manager"]}},
             {"_id": 0, "password_hash": 0}
         ).to_list(1000)
     else:
         # Regional managers see only their subordinates
         subordinate_ids = await get_all_subordinates(current_user['id'])
-        sna_users = await db.users.find(
-            {"sna_tracking": True, "id": {"$in": subordinate_ids}},
+        potential_snas = await db.users.find(
+            {"role": {"$in": ["agent", "district_manager"]}, "id": {"$in": subordinate_ids}},
             {"_id": 0, "password_hash": 0}
         ).to_list(1000)
     
-    # Calculate progress for each SNA
+    # Filter to only real accounts with @pmagent.net email
+    potential_snas = [u for u in potential_snas if '@pmagent.net' in (u.get('email', '') or '').lower()]
+    
+    # Calculate progress for each potential SNA
     sna_data = []
     graduated_data = []
     
-    for user in sna_users:
-        sna_start = user.get('sna_start_date', '')
+    for user in potential_snas:
+        # Find their FIRST production (first activity with premium > 0)
+        first_production = await db.activities.find_one(
+            {"user_id": user['id'], "premium": {"$gt": 0}},
+            {"_id": 0},
+            sort=[("date", 1)]  # Oldest first
+        )
+        
+        # Skip users who haven't produced yet
+        if not first_production:
+            continue
+        
+        sna_start = first_production.get('date', '')
         if not sna_start:
             continue
             
-        # Calculate days since start
+        # Calculate days since first production
         try:
-            start_date = datetime.fromisoformat(sna_start.replace('Z', '+00:00')).date()
-        except:
             start_date = datetime.strptime(sna_start[:10], '%Y-%m-%d').date()
+        except:
+            continue
         
         today = datetime.now(timezone.utc).date()
         days_in = (today - start_date).days
         days_remaining = max(0, SNA_TRACKING_DAYS - days_in)
         
-        # Get total premium since SNA start
+        # Get total premium since first production
         activities = await db.activities.find({
             "user_id": user['id'],
             "date": {"$gte": sna_start[:10]}
