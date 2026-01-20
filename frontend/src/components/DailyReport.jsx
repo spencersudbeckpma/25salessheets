@@ -140,9 +140,8 @@ const DailyReport = ({ user, embedded = false }) => {
       } else if (selectedPeriod === 'yearly') {
         params.year = selectedYear;
       } else if (selectedPeriod === 'weekly') {
-        const weekRange = getWeekDateRange(selectedWeekOffset);
-        params.week_start = weekRange.start;
-        params.week_end = weekRange.end;
+        params.week_start = weekStartDate;
+        params.week_end = weekEndDate;
       }
       
       const response = await axios.get(`${API}/reports/period/${reportType}`, {
