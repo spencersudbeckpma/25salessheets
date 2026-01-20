@@ -1140,6 +1140,45 @@ const Interviews = ({ user }) => {
                 </div>
               )}
 
+              {/* 2nd Interview Answers - Only for Moving Forward and beyond */}
+              {['moving_forward', 'second_interview_scheduled', 'completed'].includes(selectedInterview.status) && (
+                <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+                  <div className="flex items-center justify-between mb-2">
+                    <strong className="text-green-900 flex items-center gap-2">
+                      <ClipboardList size={18} />
+                      2nd Interview Answers
+                    </strong>
+                    <Button
+                      size="sm"
+                      onClick={saveSecondInterviewAnswers}
+                      disabled={isSavingAnswers || secondInterviewAnswers === (selectedInterview.second_interview_answers || '')}
+                      className="bg-green-600 hover:bg-green-700 text-white text-xs px-3 py-1 h-auto"
+                    >
+                      {isSavingAnswers ? (
+                        <span className="flex items-center gap-1">
+                          <div className="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                          Saving...
+                        </span>
+                      ) : (
+                        <span className="flex items-center gap-1">
+                          <Save size={14} />
+                          Save
+                        </span>
+                      )}
+                    </Button>
+                  </div>
+                  <textarea
+                    value={secondInterviewAnswers}
+                    onChange={(e) => setSecondInterviewAnswers(e.target.value)}
+                    placeholder="Enter detailed answers from the 2nd interview here..."
+                    className="w-full border border-green-300 rounded-lg p-3 min-h-[150px] text-sm focus:ring-2 focus:ring-green-500 focus:border-green-500 bg-white"
+                  />
+                  {selectedInterview.second_interview_answers && secondInterviewAnswers !== selectedInterview.second_interview_answers && (
+                    <p className="text-xs text-amber-600 mt-1">You have unsaved changes</p>
+                  )}
+                </div>
+              )}
+
               <div className="grid grid-cols-2 gap-4 text-sm">
                 <div><strong>Competitiveness:</strong> {selectedInterview.competitiveness_scale}/10</div>
                 <div><strong>Work Ethic:</strong> {selectedInterview.work_ethic_scale}/10</div>
