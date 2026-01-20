@@ -125,6 +125,7 @@ A comprehensive sales tracking application for insurance agencies, enabling team
 - [x] Interview Share feature
 - [x] Weekly Report date range picker
 - [x] Fixed hierarchy data rollup for interviews
+- [x] **2nd Interview Answers** - Editable field in interview guide for Moving Forward candidates
 
 ## Backlog / Future Tasks
 
