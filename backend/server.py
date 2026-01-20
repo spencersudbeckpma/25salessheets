@@ -3330,6 +3330,9 @@ async def get_sna_agents(current_user: dict = Depends(get_current_user)):
     # Filter to only real accounts with @pmagent.net email
     potential_snas = [u for u in potential_snas if '@pmagent.net' in (u.get('email', '') or '').lower()]
     
+    # Filter out excluded agents
+    potential_snas = [u for u in potential_snas if not u.get('sna_excluded', False)]
+    
     # Calculate progress for each potential SNA
     sna_data = []
     graduated_data = []
