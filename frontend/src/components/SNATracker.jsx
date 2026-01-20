@@ -2,11 +2,10 @@ import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { toast } from 'sonner';
 import { Card, CardContent } from './ui/card';
-import { Button } from './ui/button';
 import { 
-  UserPlus, Target, TrendingUp, TrendingDown, Clock, 
-  DollarSign, CheckCircle, AlertCircle, Users, X, Trophy,
-  Calendar, Award
+  Target, TrendingUp, TrendingDown, Clock, 
+  DollarSign, CheckCircle, AlertCircle, Users, Trophy,
+  Calendar
 } from 'lucide-react';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
@@ -14,15 +13,11 @@ const API = `${BACKEND_URL}/api`;
 
 const SNATracker = ({ user }) => {
   const [snaData, setSnaData] = useState({ active: [], graduated: [], goal: 30000, tracking_days: 90 });
-  const [teamMembers, setTeamMembers] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [showAddModal, setShowAddModal] = useState(false);
-  const [selectedUserId, setSelectedUserId] = useState('');
   const [activeTab, setActiveTab] = useState('active'); // 'active' or 'graduated'
 
   useEffect(() => {
     fetchSNAAgents();
-    fetchTeamMembers();
   }, []);
 
   const fetchSNAAgents = async () => {
@@ -38,62 +33,6 @@ const SNATracker = ({ user }) => {
       setLoading(false);
     }
   };
-
-  const fetchTeamMembers = async () => {
-    try {
-      const token = localStorage.getItem('token');
-      const response = await axios.get(`${API}/team/members`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      // Filter to agents and DMs who are not already being tracked
-      setTeamMembers(response.data.filter(m => 
-        ['agent', 'district_manager'].includes(m.role)
-      ));
-    } catch (error) {
-      console.error('Failed to fetch team members');
-    }
-  };
-
-  const startTracking = async () => {
-    if (!selectedUserId) {
-      toast.error('Please select a team member');
-      return;
-    }
-
-    try {
-      const token = localStorage.getItem('token');
-      await axios.post(`${API}/sna-tracker/${selectedUserId}/start`, {}, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      toast.success('Started SNA tracking!');
-      setShowAddModal(false);
-      setSelectedUserId('');
-      fetchSNAAgents();
-    } catch (error) {
-      toast.error(error.response?.data?.detail || 'Failed to start tracking');
-    }
-  };
-
-  const stopTracking = async (userId, name) => {
-    if (!window.confirm(`Remove ${name} from SNA tracking?`)) return;
-
-    try {
-      const token = localStorage.getItem('token');
-      await axios.post(`${API}/sna-tracker/${userId}/stop`, {}, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      toast.success('Removed from SNA tracking');
-      fetchSNAAgents();
-    } catch (error) {
-      toast.error('Failed to stop tracking');
-    }
-  };
-
-  // Get available members (not already being tracked)
-  const allTracked = [...snaData.active, ...snaData.graduated];
-  const availableMembers = teamMembers.filter(
-    m => !allTracked.some(s => s.id === m.id)
-  );
 
   // Stats
   const activeAgents = snaData.active || [];
@@ -112,23 +51,14 @@ const SNATracker = ({ user }) => {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h3 className="text-lg font-semibold flex items-center gap-2">
-            <Target className="text-green-600" size={20} />
-            SNA Tracker - New Agent Progress
-          </h3>
-          <p className="text-sm text-gray-500">
-            Track new agents for 90 days • ${snaData.goal?.toLocaleString()} premium goal
-          </p>
-        </div>
-        <Button
-          onClick={() => setShowAddModal(true)}
-          className="bg-green-600 hover:bg-green-700 text-white"
-        >
-          <UserPlus size={18} className="mr-2" />
-          Add New Agent
-        </Button>
+      <div>
+        <h3 className="text-lg font-semibold flex items-center gap-2">
+          <Target className="text-green-600" size={20} />
+          SNA Tracker - New Agent Progress
+        </h3>
+        <p className="text-sm text-gray-500">
+          Automatically tracks agents from first production • 90-day period • ${snaData.goal?.toLocaleString()} premium goal
+        </p>
       </div>
 
       {/* Summary Cards */}
@@ -211,8 +141,8 @@ const SNATracker = ({ user }) => {
             <Card>
               <CardContent className="p-8 text-center text-gray-500">
                 <Users size={48} className="mx-auto mb-4 opacity-50" />
-                <p>No new agents being tracked</p>
-                <p className="text-sm mt-2">Click "Add New Agent" to start tracking someone</p>
+                <p>No new agents in their 90-day period</p>
+                <p className="text-sm mt-2">Agents will automatically appear here when they enter their first production</p>
               </CardContent>
             </Card>
           ) : (
@@ -296,18 +226,14 @@ const SNATracker = ({ user }) => {
                         </span>
                       </div>
                       <div className="flex justify-between mt-1">
+                        <span className="text-gray-600">First production:</span>
+                        <span className="font-medium">{agent.sna_start_date}</span>
+                      </div>
+                      <div className="flex justify-between mt-1">
                         <span className="text-gray-600">Days remaining:</span>
                         <span className="font-medium">{agent.days_remaining}</span>
                       </div>
                     </div>
-
-                    {/* Remove Button */}
-                    <button
-                      onClick={() => stopTracking(agent.id, agent.name)}
-                      className="mt-3 w-full text-sm text-red-600 hover:text-red-700 hover:bg-red-50 py-1 rounded transition-colors"
-                    >
-                      Remove from Tracking
-                    </button>
                   </CardContent>
                 </Card>
               ))}
@@ -374,13 +300,6 @@ const SNATracker = ({ user }) => {
                               </div>
                             </div>
                           </div>
-
-                          <button
-                            onClick={() => stopTracking(agent.id, agent.name)}
-                            className="mt-3 w-full text-sm text-gray-500 hover:text-red-600 hover:bg-red-50 py-1 rounded transition-colors"
-                          >
-                            Remove from List
-                          </button>
                         </CardContent>
                       </Card>
                     ))}
@@ -430,13 +349,6 @@ const SNATracker = ({ user }) => {
                               </div>
                             </div>
                           </div>
-
-                          <button
-                            onClick={() => stopTracking(agent.id, agent.name)}
-                            className="mt-3 w-full text-sm text-gray-500 hover:text-red-600 hover:bg-red-50 py-1 rounded transition-colors"
-                          >
-                            Remove from List
-                          </button>
                         </CardContent>
                       </Card>
                     ))}
@@ -446,60 +358,6 @@ const SNATracker = ({ user }) => {
             </div>
           )}
         </>
-      )}
-
-      {/* Add Agent Modal */}
-      {showAddModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg shadow-xl w-full max-w-md mx-4">
-            <div className="p-6 border-b">
-              <div className="flex items-center justify-between">
-                <h3 className="text-lg font-semibold">Add New Agent to Track</h3>
-                <button onClick={() => setShowAddModal(false)} className="text-gray-500 hover:text-gray-700">
-                  <X size={24} />
-                </button>
-              </div>
-            </div>
-            
-            <div className="p-6">
-              <label className="block text-sm font-medium mb-2">Select Team Member</label>
-              <select
-                value={selectedUserId}
-                onChange={(e) => setSelectedUserId(e.target.value)}
-                className="w-full border rounded-lg p-3"
-              >
-                <option value="">-- Select a team member --</option>
-                {availableMembers.map(member => (
-                  <option key={member.id} value={member.id}>
-                    {member.name} ({member.role.replace('_', ' ')})
-                  </option>
-                ))}
-              </select>
-              
-              <div className="mt-4 p-3 bg-blue-50 rounded-lg text-sm text-blue-800">
-                <p className="font-medium mb-1">SNA Tracking Details:</p>
-                <ul className="list-disc list-inside space-y-1">
-                  <li>90-day tracking period</li>
-                  <li>$30,000 premium goal</li>
-                  <li>Pace calculated automatically from activities</li>
-                </ul>
-              </div>
-            </div>
-
-            <div className="p-6 border-t bg-gray-50 rounded-b-lg flex gap-3 justify-end">
-              <Button variant="outline" onClick={() => setShowAddModal(false)}>
-                Cancel
-              </Button>
-              <Button 
-                onClick={startTracking}
-                className="bg-green-600 hover:bg-green-700 text-white"
-                disabled={!selectedUserId}
-              >
-                Start Tracking
-              </Button>
-            </div>
-          </div>
-        </div>
       )}
     </div>
   );
