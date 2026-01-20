@@ -39,6 +39,7 @@ A comprehensive sales tracking application for insurance agencies, enabling team
 - Regional Breakdown view with stats by region
 - Share functionality
 - Updated interview guide form
+- **2nd Interview Answers** - Editable text area that appears only for candidates with "Moving Forward", "2nd Interview Scheduled", or "Completed" status. Allows entering detailed notes from the 2nd interview.
 
 ### 7. PMA Bonuses
 - Bonus tracking and calculation
