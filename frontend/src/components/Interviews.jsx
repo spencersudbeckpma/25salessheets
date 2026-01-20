@@ -33,6 +33,8 @@ const Interviews = ({ user }) => {
   const [showShareModal, setShowShareModal] = useState(false);
   const [teamMembers, setTeamMembers] = useState([]);
   const [selectedShareMembers, setSelectedShareMembers] = useState([]);
+  const [secondInterviewAnswers, setSecondInterviewAnswers] = useState('');
+  const [isSavingAnswers, setIsSavingAnswers] = useState(false);
 
   const [formData, setFormData] = useState({
     candidate_name: '',
