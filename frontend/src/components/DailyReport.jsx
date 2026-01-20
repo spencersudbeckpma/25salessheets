@@ -3,7 +3,7 @@ import axios from 'axios';
 import { toast } from 'sonner';
 import { Card, CardHeader, CardTitle, CardContent } from './ui/card';
 import { Button } from './ui/button';
-import { FileDown, Calendar, Users, Building, TrendingUp, Clock, BarChart3, LineChart, ChevronLeft, ChevronRight } from 'lucide-react';
+import { FileDown, Calendar, Users, Building, TrendingUp, Clock, BarChart3, LineChart } from 'lucide-react';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
@@ -18,29 +18,31 @@ const DailyReport = ({ user, embedded = false }) => {
     return `${now.getFullYear()}-Q${quarter}`;
   }); // YYYY-Q1 format
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear().toString());
-  const [selectedWeekOffset, setSelectedWeekOffset] = useState(0); // 0 = current week, -1 = last week, etc.
+  
+  // Date range for weekly reports
+  const getDefaultWeekStart = () => {
+    const now = new Date();
+    const day = now.getDay();
+    const diff = now.getDate() - day + (day === 0 ? -6 : 1); // Monday
+    const monday = new Date(now.setDate(diff));
+    return monday.toISOString().split('T')[0];
+  };
+  const getDefaultWeekEnd = () => {
+    const now = new Date();
+    const day = now.getDay();
+    const diff = now.getDate() - day + (day === 0 ? 0 : 7); // Sunday
+    const sunday = new Date(now.setDate(diff));
+    return sunday.toISOString().split('T')[0];
+  };
+  const [weekStartDate, setWeekStartDate] = useState(getDefaultWeekStart());
+  const [weekEndDate, setWeekEndDate] = useState(getDefaultWeekEnd());
+  
   const [activeTab, setActiveTab] = useState('individual');
   const [selectedManagerId, setSelectedManagerId] = useState('');
   const [availableManagers, setAvailableManagers] = useState([]);
   const [reportData, setReportData] = useState(null);
   const [hierarchyData, setHierarchyData] = useState(null);
   const [loading, setLoading] = useState(false);
-
-  // Helper function to get week date range
-  const getWeekDateRange = (offset = 0) => {
-    const now = new Date();
-    const currentDay = now.getDay();
-    const monday = new Date(now);
-    monday.setDate(now.getDate() - (currentDay === 0 ? 6 : currentDay - 1) + (offset * 7));
-    const sunday = new Date(monday);
-    sunday.setDate(monday.getDate() + 6);
-    return {
-      start: monday.toISOString().split('T')[0],
-      end: sunday.toISOString().split('T')[0],
-      label: offset === 0 ? 'This Week' : offset === -1 ? 'Last Week' : `${Math.abs(offset)} weeks ago`,
-      displayRange: `${monday.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} - ${sunday.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}`
-    };
-  };
 
   // Fetch available managers when component loads
   useEffect(() => {
@@ -56,7 +58,6 @@ const DailyReport = ({ user, embedded = false }) => {
       setAvailableManagers(response.data.managers);
     } catch (error) {
       console.error('Failed to fetch managers:', error);
-      // Don't show error to user - this is just for the dropdown
     }
   };
 
@@ -74,9 +75,8 @@ const DailyReport = ({ user, embedded = false }) => {
       } else if (selectedPeriod === 'yearly') {
         params.year = selectedYear;
       } else if (selectedPeriod === 'weekly') {
-        const weekRange = getWeekDateRange(selectedWeekOffset);
-        params.week_start = weekRange.start;
-        params.week_end = weekRange.end;
+        params.week_start = weekStartDate;
+        params.week_end = weekEndDate;
       } else if (selectedPeriod === 'daily') {
         params.date = selectedDate;
       }
