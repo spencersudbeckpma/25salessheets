@@ -3414,48 +3414,16 @@ async def get_sna_agents(current_user: dict = Depends(get_current_user)):
             agent_data['status'] = 'active'
             sna_data.append(agent_data)
     
+    # Sort active by days remaining (most urgent first), graduated by total premium
+    sna_data.sort(key=lambda x: x['days_remaining'])
+    graduated_data.sort(key=lambda x: x['total_premium'], reverse=True)
+    
     return {
         "active": sna_data,
         "graduated": graduated_data,
         "goal": SNA_GOAL,
         "tracking_days": SNA_TRACKING_DAYS
     }
-
-@api_router.post("/sna-tracker/{user_id}/start")
-async def start_sna_tracking(user_id: str, current_user: dict = Depends(get_current_user)):
-    """Mark a user as SNA (start tracking)"""
-    if current_user['role'] not in ['state_manager', 'regional_manager']:
-        raise HTTPException(status_code=403, detail="Only State and Regional Managers can manage SNA tracking")
-    
-    user = await db.users.find_one({"id": user_id})
-    if not user:
-        raise HTTPException(status_code=404, detail="User not found")
-    
-    await db.users.update_one(
-        {"id": user_id},
-        {"$set": {
-            "sna_tracking": True,
-            "sna_start_date": datetime.now(timezone.utc).isoformat(),
-            "sna_started_by": current_user['id']
-        }}
-    )
-    
-    return {"message": f"Started SNA tracking for {user.get('name', '')}"}
-
-@api_router.post("/sna-tracker/{user_id}/stop")
-async def stop_sna_tracking(user_id: str, current_user: dict = Depends(get_current_user)):
-    """Remove a user from SNA tracking"""
-    if current_user['role'] not in ['state_manager', 'regional_manager']:
-        raise HTTPException(status_code=403, detail="Only State and Regional Managers can manage SNA tracking")
-    
-    await db.users.update_one(
-        {"id": user_id},
-        {"$set": {
-            "sna_tracking": False
-        }}
-    )
-    
-    return {"message": "Stopped SNA tracking"}
 
 
 # ============================================
