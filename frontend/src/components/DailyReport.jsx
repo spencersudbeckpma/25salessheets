@@ -752,82 +752,28 @@ const DailyReport = ({ user, embedded = false }) => {
         {selectedPeriod === 'weekly' && (
           <div className="mb-6 p-4 bg-gradient-to-r from-teal-50 to-cyan-100 rounded-lg border border-teal-300">
             <label className="block text-sm font-semibold text-gray-700 mb-2">
-              Select Week
+              Select Date Range
             </label>
-            <div className="flex items-center gap-3">
-              <button
-                onClick={() => setSelectedWeekOffset(prev => prev - 1)}
-                className="p-2 rounded-lg bg-white border border-gray-300 hover:bg-gray-50 transition-colors"
-                title="Previous week"
-              >
-                <ChevronLeft size={20} />
-              </button>
-              
-              <div className="flex-1 text-center">
-                <div className="font-semibold text-gray-900">
-                  {getWeekDateRange(selectedWeekOffset).label}
-                </div>
-                <div className="text-sm text-gray-600">
-                  {getWeekDateRange(selectedWeekOffset).displayRange}
-                </div>
+            <div className="flex flex-wrap items-center gap-3">
+              <div>
+                <label className="block text-xs text-gray-500 mb-1">Start Date</label>
+                <input
+                  type="date"
+                  value={weekStartDate}
+                  onChange={(e) => setWeekStartDate(e.target.value)}
+                  className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
+                />
               </div>
-              
-              <button
-                onClick={() => setSelectedWeekOffset(prev => Math.min(prev + 1, 0))}
-                disabled={selectedWeekOffset >= 0}
-                className={`p-2 rounded-lg border transition-colors ${
-                  selectedWeekOffset >= 0 
-                    ? 'bg-gray-100 border-gray-200 text-gray-400 cursor-not-allowed' 
-                    : 'bg-white border-gray-300 hover:bg-gray-50'
-                }`}
-                title="Next week"
-              >
-                <ChevronRight size={20} />
-              </button>
-            </div>
-            
-            {/* Quick select buttons */}
-            <div className="flex flex-wrap gap-2 mt-3">
-              <button
-                onClick={() => setSelectedWeekOffset(0)}
-                className={`px-3 py-1 text-sm rounded-full transition-colors ${
-                  selectedWeekOffset === 0 ? 'bg-teal-500 text-white' : 'bg-white border hover:bg-teal-50'
-                }`}
-              >
-                This Week
-              </button>
-              <button
-                onClick={() => setSelectedWeekOffset(-1)}
-                className={`px-3 py-1 text-sm rounded-full transition-colors ${
-                  selectedWeekOffset === -1 ? 'bg-teal-500 text-white' : 'bg-white border hover:bg-teal-50'
-                }`}
-              >
-                Last Week
-              </button>
-              <button
-                onClick={() => setSelectedWeekOffset(-2)}
-                className={`px-3 py-1 text-sm rounded-full transition-colors ${
-                  selectedWeekOffset === -2 ? 'bg-teal-500 text-white' : 'bg-white border hover:bg-teal-50'
-                }`}
-              >
-                2 Weeks Ago
-              </button>
-              <button
-                onClick={() => setSelectedWeekOffset(-3)}
-                className={`px-3 py-1 text-sm rounded-full transition-colors ${
-                  selectedWeekOffset === -3 ? 'bg-teal-500 text-white' : 'bg-white border hover:bg-teal-50'
-                }`}
-              >
-                3 Weeks Ago
-              </button>
-              <button
-                onClick={() => setSelectedWeekOffset(-4)}
-                className={`px-3 py-1 text-sm rounded-full transition-colors ${
-                  selectedWeekOffset === -4 ? 'bg-teal-500 text-white' : 'bg-white border hover:bg-teal-50'
-                }`}
-              >
-                4 Weeks Ago
-              </button>
+              <span className="text-gray-500 mt-5">to</span>
+              <div>
+                <label className="block text-xs text-gray-500 mb-1">End Date</label>
+                <input
+                  type="date"
+                  value={weekEndDate}
+                  onChange={(e) => setWeekEndDate(e.target.value)}
+                  className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
+                />
+              </div>
             </div>
           </div>
         )}
