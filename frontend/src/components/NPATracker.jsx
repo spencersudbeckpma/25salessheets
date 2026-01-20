@@ -58,7 +58,7 @@ const NPATracker = ({ user }) => {
   const fetchTeamMembers = async () => {
     try {
       const token = localStorage.getItem('token');
-      const response = await axios.get(`${API}/team/members`, {
+      const response = await axios.get(`${API}/team/all-members`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       // Filter to agents, DMs, and RMs - anyone who could be tracked for NPA
