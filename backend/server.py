@@ -3425,6 +3425,40 @@ async def get_sna_agents(current_user: dict = Depends(get_current_user)):
         "tracking_days": SNA_TRACKING_DAYS
     }
 
+@api_router.post("/sna-tracker/{user_id}/exclude")
+async def exclude_from_sna_tracking(user_id: str, current_user: dict = Depends(get_current_user)):
+    """Exclude/remove a user from SNA tracking"""
+    if current_user['role'] not in ['state_manager', 'regional_manager']:
+        raise HTTPException(status_code=403, detail="Only State and Regional Managers can manage SNA tracking")
+    
+    user = await db.users.find_one({"id": user_id})
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    await db.users.update_one(
+        {"id": user_id},
+        {"$set": {
+            "sna_excluded": True,
+            "sna_excluded_by": current_user['id'],
+            "sna_excluded_at": datetime.now(timezone.utc).isoformat()
+        }}
+    )
+    
+    return {"message": f"Removed {user.get('name', '')} from SNA tracking"}
+
+@api_router.post("/sna-tracker/{user_id}/include")
+async def include_in_sna_tracking(user_id: str, current_user: dict = Depends(get_current_user)):
+    """Re-include a previously excluded user in SNA tracking"""
+    if current_user['role'] not in ['state_manager', 'regional_manager']:
+        raise HTTPException(status_code=403, detail="Only State and Regional Managers can manage SNA tracking")
+    
+    await db.users.update_one(
+        {"id": user_id},
+        {"$set": {"sna_excluded": False}}
+    )
+    
+    return {"message": "User re-added to SNA tracking"}
+
 
 # ============================================
 # NPA (New Producing Agent) Tracker Endpoints
