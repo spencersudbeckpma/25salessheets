@@ -791,11 +791,11 @@ const Interviews = ({ user }) => {
 
       {/* New Interview Form Modal */}
       {showForm && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-start justify-center z-50 overflow-y-auto py-8">
-          <div className="bg-white rounded-lg shadow-xl w-full max-w-3xl mx-4">
-            <div className="p-6 border-b bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-t-lg">
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-start justify-center z-50 overflow-y-auto py-4 sm:py-8">
+          <div className="bg-white rounded-lg shadow-xl w-full max-w-3xl mx-2 sm:mx-4 flex flex-col max-h-[95vh]">
+            <div className="p-4 sm:p-6 border-b bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-t-lg flex-shrink-0">
               <div className="flex items-center justify-between">
-                <h2 className="text-xl font-bold flex items-center gap-2">
+                <h2 className="text-lg sm:text-xl font-bold flex items-center gap-2">
                   <ClipboardList size={24} />
                   2026 Interview Guide
                 </h2>
@@ -805,7 +805,7 @@ const Interviews = ({ user }) => {
               </div>
             </div>
             
-            <div className="p-6 max-h-[70vh] overflow-y-auto space-y-6">
+            <div className="p-4 sm:p-6 overflow-y-auto flex-1 space-y-6">
               {/* Basic Info */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
