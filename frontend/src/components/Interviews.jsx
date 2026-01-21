@@ -1016,23 +1016,34 @@ const Interviews = ({ user }) => {
               </div>
             </div>
 
-            {/* Form Actions */}
-            <div className="p-6 border-t bg-gray-50 rounded-b-lg flex gap-3 justify-end">
-              <Button variant="outline" onClick={resetForm}>
+            {/* Form Actions - Sticky at bottom */}
+            <div className="p-4 sm:p-6 border-t bg-gray-50 rounded-b-lg flex-shrink-0 sticky bottom-0">
+              <div className="flex flex-col sm:flex-row gap-3">
+                <Button 
+                  onClick={() => handleSubmit(false)}
+                  className="w-full sm:flex-1 bg-red-600 hover:bg-red-700 text-white py-3 text-base font-semibold order-2 sm:order-1"
+                >
+                  ❌ Not Moving Forward
+                </Button>
+                <Button 
+                  onClick={() => handleSubmit(true)}
+                  className="w-full sm:flex-1 bg-green-600 hover:bg-green-700 text-white py-3 text-base font-semibold order-1 sm:order-2"
+                >
+                  ✅ Moving Forward - Submit
+                </Button>
+              </div>
+              <Button 
+                variant="outline" 
+                onClick={resetForm}
+                className="w-full mt-3 sm:hidden"
+              >
                 Cancel
               </Button>
-              <Button 
-                onClick={() => handleSubmit(false)}
-                className="bg-red-600 hover:bg-red-700 text-white"
-              >
-                Not Moving Forward - Submit & Close
-              </Button>
-              <Button 
-                onClick={() => handleSubmit(true)}
-                className="bg-green-600 hover:bg-green-700 text-white"
-              >
-                Submit Interview
-              </Button>
+              <div className="hidden sm:flex justify-center mt-3">
+                <Button variant="ghost" onClick={resetForm} className="text-gray-500">
+                  Cancel
+                </Button>
+              </div>
             </div>
           </div>
         </div>
