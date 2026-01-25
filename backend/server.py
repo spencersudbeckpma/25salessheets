@@ -4957,8 +4957,7 @@ async def get_weekly_suitability_report(
     
     # Managers see all team forms
     if current_user['role'] in ['state_manager', 'regional_manager', 'district_manager']:
-        team_ids = await get_all_subordinate_ids(current_user['id'])
-        team_ids.append(current_user['id'])
+        team_ids = await get_all_subordinates(current_user['id'])
         query["submitted_by"] = {"$in": team_ids}
     else:
         query["submitted_by"] = current_user['id']
