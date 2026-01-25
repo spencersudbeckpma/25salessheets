@@ -4812,7 +4812,7 @@ async def get_suitability_forms(
     elif current_user['role'] in ['state_manager', 'regional_manager', 'district_manager']:
         # Managers can view all forms from their team
         if view_all:
-            team_ids = await get_all_subordinate_ids(current_user['id'])
+            team_ids = await get_all_subordinates(current_user['id'])
             team_ids.append(current_user['id'])
             query["submitted_by"] = {"$in": team_ids}
     
