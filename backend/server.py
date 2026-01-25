@@ -4904,7 +4904,7 @@ async def export_suitability_forms(
     writer.writerow([
         "Client Name", "Phone", "Address", "Annual Income", "Monthly Savings",
         "Liquid Net Worth", "Sale Made", "Agents", "Presentation Date",
-        "Presentation Location", "Notes", "Submitted By", "Submitted Date"
+        "Presentation Location", "Notes", "Results", "Submitted By", "Submitted Date"
     ])
     
     # Get labels for ranges
@@ -4925,6 +4925,7 @@ async def export_suitability_forms(
             form.get('presentation_date', ''),
             form.get('presentation_location', ''),
             form.get('notes', ''),
+            form.get('results', ''),
             form.get('submitted_by_name', ''),
             form.get('created_at', '')[:10] if form.get('created_at') else ''
         ])
