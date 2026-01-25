@@ -177,6 +177,10 @@ const Dashboard = ({ user, setUser }) => {
             <TeamView user={user} />
           </TabsContent>
 
+          <TabsContent value="suitability" data-testid="suitability-content" className="mt-4 md:mt-6">
+            <SuitabilityForm user={user} />
+          </TabsContent>
+
           <TabsContent value="manage" data-testid="manage-content" className="mt-4 md:mt-6">
             <TeamManagement user={user} />
           </TabsContent>
