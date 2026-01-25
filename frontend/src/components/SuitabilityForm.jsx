@@ -211,7 +211,34 @@ const SuitabilityForm = ({ user }) => {
 
   const viewForm = (form) => {
     setSelectedForm(form);
+    setEditingResults(form.results || '');
     setShowViewModal(true);
+  };
+
+  const saveResults = async () => {
+    if (!selectedForm) return;
+    
+    setSavingResults(true);
+    try {
+      const token = localStorage.getItem('token');
+      await axios.put(`${API}/api/suitability-forms/${selectedForm.id}`, {
+        results: editingResults
+      }, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      
+      // Update locally
+      setSelectedForm(prev => ({ ...prev, results: editingResults }));
+      setForms(prev => prev.map(f => 
+        f.id === selectedForm.id ? { ...f, results: editingResults } : f
+      ));
+      
+      toast.success('Results saved!');
+    } catch (error) {
+      toast.error('Failed to save results');
+    } finally {
+      setSavingResults(false);
+    }
   };
 
   return (
