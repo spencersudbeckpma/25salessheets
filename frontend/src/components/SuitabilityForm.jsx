@@ -140,7 +140,7 @@ const SuitabilityForm = ({ user }) => {
     
     try {
       const token = localStorage.getItem('token');
-      await axios.delete(`${API}/suitability-forms/${formId}`, {
+      await axios.delete(`${API}/api/suitability-forms/${formId}`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       toast.success('Form deleted');
