@@ -4786,6 +4786,7 @@ class SuitabilityFormCreate(BaseModel):
     presentation_date: str
     presentation_location: str
     notes: Optional[str] = ""
+    results: Optional[str] = ""
 
 @api_router.get("/suitability-forms/config")
 async def get_suitability_form_config(current_user: dict = Depends(get_current_user)):
