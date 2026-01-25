@@ -154,7 +154,7 @@ const SuitabilityForm = ({ user }) => {
   const handleExport = async () => {
     try {
       const token = localStorage.getItem('token');
-      let url = `${API}/suitability-forms/export?format=csv`;
+      let url = `${API}/api/suitability-forms/export?format=csv`;
       
       if (weeklyReport) {
         url += `&start_date=${weeklyReport.week_start}&end_date=${weeklyReport.week_end}`;
