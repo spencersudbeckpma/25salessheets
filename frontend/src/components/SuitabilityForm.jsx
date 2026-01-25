@@ -802,6 +802,32 @@ const SuitabilityForm = ({ user }) => {
 
               <hr />
 
+              {/* Results Section - Editable by managers */}
+              <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
+                <div className="flex items-center justify-between mb-2">
+                  <p className="text-sm font-semibold text-amber-800">📋 Results (Manager Notes)</p>
+                  <Button
+                    size="sm"
+                    onClick={saveResults}
+                    disabled={savingResults || editingResults === (selectedForm.results || '')}
+                    className="bg-amber-600 hover:bg-amber-700 text-white text-xs px-3 py-1 h-auto"
+                  >
+                    {savingResults ? 'Saving...' : 'Save Results'}
+                  </Button>
+                </div>
+                <textarea
+                  value={editingResults}
+                  onChange={(e) => setEditingResults(e.target.value)}
+                  placeholder="Enter results, follow-up notes, or outcomes here..."
+                  className="w-full border border-amber-300 rounded-lg p-3 min-h-[100px] text-sm focus:ring-2 focus:ring-amber-500 focus:border-amber-500 bg-white"
+                />
+                {editingResults !== (selectedForm.results || '') && (
+                  <p className="text-xs text-amber-600 mt-1">You have unsaved changes</p>
+                )}
+              </div>
+
+              <hr />
+
               <div className="text-sm text-gray-500">
                 Submitted by {selectedForm.submitted_by_name} on {selectedForm.created_at?.substring(0, 10)}
               </div>
