@@ -51,7 +51,7 @@ const SuitabilityForm = ({ user }) => {
   const fetchConfig = async () => {
     try {
       const token = localStorage.getItem('token');
-      const response = await axios.get(`${API}/suitability-forms/config`, {
+      const response = await axios.get(`${API}/api/suitability-forms/config`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       setConfig(response.data);
@@ -63,7 +63,7 @@ const SuitabilityForm = ({ user }) => {
   const fetchForms = async () => {
     try {
       const token = localStorage.getItem('token');
-      const response = await axios.get(`${API}/suitability-forms`, {
+      const response = await axios.get(`${API}/api/suitability-forms`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       setForms(response.data);
@@ -76,7 +76,7 @@ const SuitabilityForm = ({ user }) => {
     setLoading(true);
     try {
       const token = localStorage.getItem('token');
-      const response = await axios.get(`${API}/suitability-forms/weekly-report?week_offset=${weekOffset}`, {
+      const response = await axios.get(`${API}/api/suitability-forms/weekly-report?week_offset=${weekOffset}`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       setWeeklyReport(response.data);
