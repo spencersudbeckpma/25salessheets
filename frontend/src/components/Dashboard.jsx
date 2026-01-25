@@ -80,6 +80,13 @@ const Dashboard = ({ user, setUser }) => {
                 Team View
               </TabsTrigger>
               <TabsTrigger 
+                value="suitability" 
+                data-testid="suitability-tab" 
+                className="py-2.5 px-3 text-xs md:text-sm whitespace-nowrap flex-shrink-0 rounded-lg text-slate-600 data-[state=active]:bg-slate-800 data-[state=active]:text-amber-400 data-[state=active]:shadow-md"
+              >
+                📋 Suitability
+              </TabsTrigger>
+              <TabsTrigger 
                 value="pma-bonuses" 
                 data-testid="pma-bonuses-tab" 
                 className="py-2.5 px-3 text-xs md:text-sm whitespace-nowrap flex-shrink-0 rounded-lg text-slate-600 data-[state=active]:bg-slate-800 data-[state=active]:text-amber-400 data-[state=active]:shadow-md"
