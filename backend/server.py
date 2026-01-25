@@ -4893,12 +4893,13 @@ async def export_suitability_forms(
     if not forms:
         raise HTTPException(status_code=404, detail="No forms found for the specified criteria")
     
-    # Build CSV
+    # Build CSV with proper Excel formatting
     import io
     import csv
     
     output = io.StringIO()
-    writer = csv.writer(output)
+    # Use excel dialect and quote all fields for better Excel compatibility
+    writer = csv.writer(output, dialect='excel', quoting=csv.QUOTE_ALL)
     
     # Header
     writer.writerow([
@@ -4914,28 +4915,31 @@ async def export_suitability_forms(
     
     for form in forms:
         writer.writerow([
-            form.get('client_name', ''),
-            form.get('client_phone', ''),
-            form.get('client_address', ''),
+            form.get('client_name', '') or '',
+            form.get('client_phone', '') or '',
+            form.get('client_address', '') or '',
             income_labels.get(form.get('annual_income', ''), form.get('annual_income', '')),
             savings_labels.get(form.get('monthly_savings', ''), form.get('monthly_savings', '')),
             net_worth_labels.get(form.get('liquid_net_worth', ''), form.get('liquid_net_worth', '')),
             "Yes" if form.get('sale_made') else "No",
-            ", ".join(form.get('agents', [])),
-            form.get('presentation_date', ''),
-            form.get('presentation_location', ''),
-            form.get('notes', ''),
-            form.get('results', ''),
-            form.get('submitted_by_name', ''),
+            "; ".join(form.get('agents', [])) if form.get('agents') else '',
+            form.get('presentation_date', '') or '',
+            form.get('presentation_location', '') or '',
+            (form.get('notes', '') or '').replace('\n', ' ').replace('\r', ' '),
+            (form.get('results', '') or '').replace('\n', ' ').replace('\r', ' '),
+            form.get('submitted_by_name', '') or '',
             form.get('created_at', '')[:10] if form.get('created_at') else ''
         ])
     
     csv_content = output.getvalue()
     output.close()
     
+    # Add BOM for Excel UTF-8 recognition
+    csv_with_bom = '\ufeff' + csv_content
+    
     return Response(
-        content=csv_content,
-        media_type="text/csv",
+        content=csv_with_bom,
+        media_type="text/csv; charset=utf-8",
         headers={"Content-Disposition": f"attachment; filename=suitability_forms_{start_date or 'all'}_{end_date or 'all'}.csv"}
     )
 
