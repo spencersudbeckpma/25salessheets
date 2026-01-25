@@ -104,7 +104,7 @@ const SuitabilityForm = ({ user }) => {
         agents: formData.agents.filter(a => a.trim() !== '')
       };
       
-      await axios.post(`${API}/suitability-forms`, submitData, {
+      await axios.post(`${API}/api/suitability-forms`, submitData, {
         headers: { Authorization: `Bearer ${token}` }
       });
       
