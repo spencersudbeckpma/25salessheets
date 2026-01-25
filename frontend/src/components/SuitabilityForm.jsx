@@ -703,13 +703,33 @@ const SuitabilityForm = ({ user }) => {
                 </div>
               )}
 
-              {/* Export Button */}
+              {/* Export Buttons */}
               {weeklyReport && weeklyReport.total_forms > 0 && (
-                <div className="flex justify-end">
-                  <Button onClick={handleExport} className="bg-emerald-600 hover:bg-emerald-700 text-white flex items-center gap-2">
-                    <Download size={16} />
-                    Export This Week's Report (CSV)
-                  </Button>
+                <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-lg p-4">
+                  <h4 className="font-semibold text-blue-900 mb-3 flex items-center gap-2">
+                    <Download size={18} />
+                    Export Options
+                  </h4>
+                  <div className="flex flex-col sm:flex-row gap-3">
+                    <Button 
+                      onClick={handleFridayReportExport} 
+                      className="flex-1 bg-blue-600 hover:bg-blue-700 text-white flex items-center justify-center gap-2 py-3"
+                    >
+                      <FileText size={18} />
+                      📋 Friday Report (By Agent)
+                    </Button>
+                    <Button 
+                      onClick={handleExport} 
+                      variant="outline"
+                      className="flex-1 border-blue-300 text-blue-700 hover:bg-blue-50 flex items-center justify-center gap-2 py-3"
+                    >
+                      <Download size={18} />
+                      Simple Export (CSV)
+                    </Button>
+                  </div>
+                  <p className="text-xs text-blue-600 mt-2">
+                    Friday Report includes summary stats, agent breakdown, and all forms organized by agent
+                  </p>
                 </div>
               )}
 
