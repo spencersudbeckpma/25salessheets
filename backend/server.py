@@ -5028,7 +5028,7 @@ async def get_friday_report_export(
         writer.writerow([f"--- {agent_name} ({len(agent_forms)} forms, {agent_sales} sales) ---"])
         writer.writerow([
             "Client Name", "Phone", "Address", "Annual Income", "Monthly Savings",
-            "Net Worth", "Sale Made", "Presentation Date", "Location", "Notes", "Results"
+            "Net Worth", "Sale Made", "Agents/Bankers Agent #", "Presentation Date", "Location", "Notes", "Results"
         ])
         
         # Agent's forms
@@ -5041,6 +5041,7 @@ async def get_friday_report_export(
                 savings_labels.get(form.get('monthly_savings', ''), form.get('monthly_savings', '')),
                 net_worth_labels.get(form.get('liquid_net_worth', ''), form.get('liquid_net_worth', '')),
                 "Yes" if form.get('sale_made') else "No",
+                ", ".join(form.get('agents', [])),
                 form.get('presentation_date', ''),
                 form.get('presentation_location', ''),
                 form.get('notes', ''),
