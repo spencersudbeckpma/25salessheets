@@ -4751,6 +4751,245 @@ async def get_team_members_goals(current_user: dict = Depends(get_current_user))
         "members": members_progress
     }
 
+# ==================== SUITABILITY FORMS ====================
+
+# Suitability Form configuration (can be updated without rebuilding)
+SUITABILITY_FORM_CONFIG = {
+    "income_ranges": [
+        {"value": "25k-50k", "label": "$25,000 - $50,000"},
+        {"value": "50k-75k", "label": "$50,000 - $75,000"},
+        {"value": "75k-100k", "label": "$75,000 - $100,000"},
+        {"value": "100k+", "label": "$100,000+"}
+    ],
+    "savings_ranges": [
+        {"value": "0-500", "label": "$0 - $500"},
+        {"value": "500-1000", "label": "$500 - $1,000"},
+        {"value": "1000+", "label": "$1,000+"}
+    ],
+    "net_worth_ranges": [
+        {"value": "0-50k", "label": "$0 - $50,000"},
+        {"value": "50k-250k", "label": "$50,000 - $250,000"},
+        {"value": "250k-500k", "label": "$250,000 - $500,000"},
+        {"value": "500k+", "label": "$500,000+"}
+    ]
+}
+
+class SuitabilityFormCreate(BaseModel):
+    client_name: str
+    client_phone: str
+    client_address: str
+    annual_income: str
+    monthly_savings: str
+    liquid_net_worth: str
+    sale_made: bool
+    agents: List[str]
+    presentation_date: str
+    presentation_location: str
+    notes: Optional[str] = ""
+
+@api_router.get("/suitability-forms/config")
+async def get_suitability_form_config(current_user: dict = Depends(get_current_user)):
+    """Get form configuration for dropdowns"""
+    return SUITABILITY_FORM_CONFIG
+
+@api_router.get("/suitability-forms")
+async def get_suitability_forms(
+    current_user: dict = Depends(get_current_user),
+    start_date: Optional[str] = None,
+    end_date: Optional[str] = None,
+    view_all: bool = False
+):
+    """Get suitability forms - users see their own, managers can see all"""
+    query = {}
+    
+    # Date filtering
+    if start_date and end_date:
+        query["presentation_date"] = {"$gte": start_date, "$lte": end_date}
+    
+    # Access control - users see their own, managers can see all with view_all flag
+    if not view_all or current_user['role'] == 'agent':
+        query["submitted_by"] = current_user['id']
+    elif current_user['role'] in ['state_manager', 'regional_manager', 'district_manager']:
+        # Managers can view all forms from their team
+        if view_all:
+            team_ids = await get_all_subordinate_ids(current_user['id'])
+            team_ids.append(current_user['id'])
+            query["submitted_by"] = {"$in": team_ids}
+    
+    forms = await db.suitability_forms.find(query, {"_id": 0}).sort("created_at", -1).to_list(1000)
+    return forms
+
+@api_router.post("/suitability-forms")
+async def create_suitability_form(form_data: SuitabilityFormCreate, current_user: dict = Depends(get_current_user)):
+    """Create a new suitability form"""
+    form_dict = {
+        "id": str(uuid.uuid4()),
+        **form_data.dict(),
+        "submitted_by": current_user['id'],
+        "submitted_by_name": current_user['name'],
+        "submitted_by_email": current_user['email'],
+        "created_at": datetime.now(timezone.utc).isoformat(),
+        "updated_at": datetime.now(timezone.utc).isoformat()
+    }
+    
+    await db.suitability_forms.insert_one(form_dict)
+    form_dict.pop('_id', None)
+    return {"message": "Suitability form submitted successfully", "form": form_dict}
+
+@api_router.put("/suitability-forms/{form_id}")
+async def update_suitability_form(form_id: str, form_data: dict, current_user: dict = Depends(get_current_user)):
+    """Update a suitability form"""
+    existing = await db.suitability_forms.find_one({"id": form_id})
+    if not existing:
+        raise HTTPException(status_code=404, detail="Form not found")
+    
+    # Only allow owner or managers to update
+    if existing['submitted_by'] != current_user['id'] and current_user['role'] not in ['state_manager', 'regional_manager', 'district_manager']:
+        raise HTTPException(status_code=403, detail="Not authorized to update this form")
+    
+    form_data['updated_at'] = datetime.now(timezone.utc).isoformat()
+    await db.suitability_forms.update_one({"id": form_id}, {"$set": form_data})
+    
+    updated = await db.suitability_forms.find_one({"id": form_id}, {"_id": 0})
+    return updated
+
+@api_router.delete("/suitability-forms/{form_id}")
+async def delete_suitability_form(form_id: str, current_user: dict = Depends(get_current_user)):
+    """Delete a suitability form"""
+    existing = await db.suitability_forms.find_one({"id": form_id})
+    if not existing:
+        raise HTTPException(status_code=404, detail="Form not found")
+    
+    # Only allow owner or managers to delete
+    if existing['submitted_by'] != current_user['id'] and current_user['role'] not in ['state_manager', 'regional_manager', 'district_manager']:
+        raise HTTPException(status_code=403, detail="Not authorized to delete this form")
+    
+    await db.suitability_forms.delete_one({"id": form_id})
+    return {"message": "Form deleted successfully"}
+
+@api_router.get("/suitability-forms/export")
+async def export_suitability_forms(
+    current_user: dict = Depends(get_current_user),
+    start_date: Optional[str] = None,
+    end_date: Optional[str] = None,
+    format: str = "csv"
+):
+    """Export suitability forms to CSV"""
+    query = {}
+    
+    if start_date and end_date:
+        query["presentation_date"] = {"$gte": start_date, "$lte": end_date}
+    
+    # Managers can export all, others export their own
+    if current_user['role'] in ['state_manager', 'regional_manager', 'district_manager']:
+        team_ids = await get_all_subordinate_ids(current_user['id'])
+        team_ids.append(current_user['id'])
+        query["submitted_by"] = {"$in": team_ids}
+    else:
+        query["submitted_by"] = current_user['id']
+    
+    forms = await db.suitability_forms.find(query, {"_id": 0}).sort("presentation_date", -1).to_list(10000)
+    
+    if not forms:
+        raise HTTPException(status_code=404, detail="No forms found for the specified criteria")
+    
+    # Build CSV
+    import io
+    import csv
+    
+    output = io.StringIO()
+    writer = csv.writer(output)
+    
+    # Header
+    writer.writerow([
+        "Client Name", "Phone", "Address", "Annual Income", "Monthly Savings",
+        "Liquid Net Worth", "Sale Made", "Agents", "Presentation Date",
+        "Presentation Location", "Notes", "Submitted By", "Submitted Date"
+    ])
+    
+    # Get labels for ranges
+    income_labels = {r['value']: r['label'] for r in SUITABILITY_FORM_CONFIG['income_ranges']}
+    savings_labels = {r['value']: r['label'] for r in SUITABILITY_FORM_CONFIG['savings_ranges']}
+    net_worth_labels = {r['value']: r['label'] for r in SUITABILITY_FORM_CONFIG['net_worth_ranges']}
+    
+    for form in forms:
+        writer.writerow([
+            form.get('client_name', ''),
+            form.get('client_phone', ''),
+            form.get('client_address', ''),
+            income_labels.get(form.get('annual_income', ''), form.get('annual_income', '')),
+            savings_labels.get(form.get('monthly_savings', ''), form.get('monthly_savings', '')),
+            net_worth_labels.get(form.get('liquid_net_worth', ''), form.get('liquid_net_worth', '')),
+            "Yes" if form.get('sale_made') else "No",
+            ", ".join(form.get('agents', [])),
+            form.get('presentation_date', ''),
+            form.get('presentation_location', ''),
+            form.get('notes', ''),
+            form.get('submitted_by_name', ''),
+            form.get('created_at', '')[:10] if form.get('created_at') else ''
+        ])
+    
+    csv_content = output.getvalue()
+    output.close()
+    
+    return Response(
+        content=csv_content,
+        media_type="text/csv",
+        headers={"Content-Disposition": f"attachment; filename=suitability_forms_{start_date or 'all'}_{end_date or 'all'}.csv"}
+    )
+
+@api_router.get("/suitability-forms/weekly-report")
+async def get_weekly_suitability_report(
+    current_user: dict = Depends(get_current_user),
+    week_offset: int = 0
+):
+    """Get weekly suitability forms report"""
+    # Calculate week boundaries
+    today = datetime.now(timezone.utc).date()
+    start_of_week = today - timedelta(days=today.weekday() + (week_offset * 7))
+    end_of_week = start_of_week + timedelta(days=6)
+    
+    start_date = start_of_week.isoformat()
+    end_date = end_of_week.isoformat()
+    
+    query = {
+        "presentation_date": {"$gte": start_date, "$lte": end_date}
+    }
+    
+    # Managers see all team forms
+    if current_user['role'] in ['state_manager', 'regional_manager', 'district_manager']:
+        team_ids = await get_all_subordinate_ids(current_user['id'])
+        team_ids.append(current_user['id'])
+        query["submitted_by"] = {"$in": team_ids}
+    else:
+        query["submitted_by"] = current_user['id']
+    
+    forms = await db.suitability_forms.find(query, {"_id": 0}).sort("presentation_date", -1).to_list(1000)
+    
+    # Calculate stats
+    total_forms = len(forms)
+    sales_made = sum(1 for f in forms if f.get('sale_made'))
+    
+    # Group by agent
+    by_agent = {}
+    for form in forms:
+        name = form.get('submitted_by_name', 'Unknown')
+        if name not in by_agent:
+            by_agent[name] = {"total": 0, "sales": 0}
+        by_agent[name]["total"] += 1
+        if form.get('sale_made'):
+            by_agent[name]["sales"] += 1
+    
+    return {
+        "week_start": start_date,
+        "week_end": end_date,
+        "total_forms": total_forms,
+        "sales_made": sales_made,
+        "conversion_rate": round((sales_made / total_forms * 100), 1) if total_forms > 0 else 0,
+        "by_agent": by_agent,
+        "forms": forms
+    }
+
 # Include the router in the main app
 app.include_router(api_router)
 
