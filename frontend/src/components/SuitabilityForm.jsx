@@ -914,6 +914,24 @@ const SuitabilityForm = ({ user }) => {
                 </div>
               </div>
 
+              <hr />
+
+              {/* Life Licensed Status */}
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <p className="text-sm text-gray-500">Life Licensed</p>
+                  <p className={`font-medium ${selectedForm.life_licensed !== false ? 'text-green-600' : 'text-red-600'}`}>
+                    {selectedForm.life_licensed !== false ? 'Yes' : 'No'}
+                  </p>
+                </div>
+                {selectedForm.life_licensed === false && selectedForm.regional_assigned && (
+                  <div>
+                    <p className="text-sm text-gray-500">Regional Assigned</p>
+                    <p className="font-medium text-blue-600">{selectedForm.regional_assigned}</p>
+                  </div>
+                )}
+              </div>
+
               {selectedForm.notes && (
                 <>
                   <hr />
