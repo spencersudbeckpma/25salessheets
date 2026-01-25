@@ -4980,12 +4980,13 @@ async def get_friday_report_export(
         agent_name = form.get('submitted_by_name', 'Unknown')
         by_agent[agent_name].append(form)
     
-    # Build CSV with agent sections
+    # Build CSV with agent sections - Excel friendly format
     import io
     import csv
     
     output = io.StringIO()
-    writer = csv.writer(output)
+    # Use excel dialect with proper quoting
+    writer = csv.writer(output, dialect='excel', quoting=csv.QUOTE_MINIMAL)
     
     # Get labels for ranges
     income_labels = {r['value']: r['label'] for r in SUITABILITY_FORM_CONFIG['income_ranges']}
@@ -4993,75 +4994,78 @@ async def get_friday_report_export(
     net_worth_labels = {r['value']: r['label'] for r in SUITABILITY_FORM_CONFIG['net_worth_ranges']}
     
     # Report Header
-    writer.writerow([f"FRIDAY SUITABILITY REPORT"])
-    writer.writerow([f"Week: {start_date} to {end_date}"])
-    writer.writerow([f"Generated: {datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M')} UTC"])
-    writer.writerow([])
+    writer.writerow(["FRIDAY SUITABILITY REPORT", "", "", "", "", "", "", "", "", "", "", ""])
+    writer.writerow([f"Week: {start_date} to {end_date}", "", "", "", "", "", "", "", "", "", "", ""])
+    writer.writerow([f"Generated: {datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M')} UTC", "", "", "", "", "", "", "", "", "", "", ""])
+    writer.writerow(["", "", "", "", "", "", "", "", "", "", "", ""])
     
     # Summary Section
     total_forms = len(forms)
     total_sales = sum(1 for f in forms if f.get('sale_made'))
     conversion_rate = round((total_sales / total_forms * 100), 1) if total_forms > 0 else 0
     
-    writer.writerow(["=== WEEKLY SUMMARY ==="])
-    writer.writerow(["Total Forms", total_forms])
-    writer.writerow(["Total Sales Made", total_sales])
-    writer.writerow(["Conversion Rate", f"{conversion_rate}%"])
-    writer.writerow(["Number of Agents", len(by_agent)])
-    writer.writerow([])
+    writer.writerow(["=== WEEKLY SUMMARY ===", "", "", "", "", "", "", "", "", "", "", ""])
+    writer.writerow(["Total Forms", str(total_forms), "", "", "", "", "", "", "", "", "", ""])
+    writer.writerow(["Total Sales Made", str(total_sales), "", "", "", "", "", "", "", "", "", ""])
+    writer.writerow(["Conversion Rate", f"{conversion_rate}%", "", "", "", "", "", "", "", "", "", ""])
+    writer.writerow(["Number of Agents", str(len(by_agent)), "", "", "", "", "", "", "", "", "", ""])
+    writer.writerow(["", "", "", "", "", "", "", "", "", "", "", ""])
     
     # Agent Summary Table
-    writer.writerow(["=== AGENT SUMMARY ==="])
-    writer.writerow(["Agent Name", "Forms Submitted", "Sales Made", "Conversion Rate"])
+    writer.writerow(["=== AGENT SUMMARY ===", "", "", "", "", "", "", "", "", "", "", ""])
+    writer.writerow(["Agent Name", "Forms Submitted", "Sales Made", "Conversion Rate", "", "", "", "", "", "", "", ""])
     for agent_name in sorted(by_agent.keys()):
         agent_forms = by_agent[agent_name]
         agent_sales = sum(1 for f in agent_forms if f.get('sale_made'))
         agent_rate = round((agent_sales / len(agent_forms) * 100), 1) if agent_forms else 0
-        writer.writerow([agent_name, len(agent_forms), agent_sales, f"{agent_rate}%"])
-    writer.writerow([])
+        writer.writerow([agent_name, str(len(agent_forms)), str(agent_sales), f"{agent_rate}%", "", "", "", "", "", "", "", ""])
+    writer.writerow(["", "", "", "", "", "", "", "", "", "", "", ""])
     
     # Detailed Forms by Agent
-    writer.writerow(["=== DETAILED FORMS BY AGENT ==="])
-    writer.writerow([])
+    writer.writerow(["=== DETAILED FORMS BY AGENT ===", "", "", "", "", "", "", "", "", "", "", ""])
+    writer.writerow(["", "", "", "", "", "", "", "", "", "", "", ""])
     
     for agent_name in sorted(by_agent.keys()):
         agent_forms = by_agent[agent_name]
         agent_sales = sum(1 for f in agent_forms if f.get('sale_made'))
         
         # Agent Header
-        writer.writerow([f"--- {agent_name} ({len(agent_forms)} forms, {agent_sales} sales) ---"])
+        writer.writerow([f"--- {agent_name} ({len(agent_forms)} forms, {agent_sales} sales) ---", "", "", "", "", "", "", "", "", "", "", ""])
         writer.writerow([
             "Client Name", "Phone", "Address", "Annual Income", "Monthly Savings",
-            "Net Worth", "Sale Made", "Agents/Bankers Agent #", "Presentation Date", "Location", "Notes", "Results"
+            "Net Worth", "Sale Made", "Agents/Bankers #", "Date", "Location", "Notes", "Results"
         ])
         
         # Agent's forms
         for form in agent_forms:
             writer.writerow([
-                form.get('client_name', ''),
-                form.get('client_phone', ''),
-                form.get('client_address', ''),
+                form.get('client_name', '') or '',
+                form.get('client_phone', '') or '',
+                form.get('client_address', '') or '',
                 income_labels.get(form.get('annual_income', ''), form.get('annual_income', '')),
                 savings_labels.get(form.get('monthly_savings', ''), form.get('monthly_savings', '')),
                 net_worth_labels.get(form.get('liquid_net_worth', ''), form.get('liquid_net_worth', '')),
                 "Yes" if form.get('sale_made') else "No",
-                ", ".join(form.get('agents', [])),
-                form.get('presentation_date', ''),
-                form.get('presentation_location', ''),
-                form.get('notes', ''),
-                form.get('results', '')
+                "; ".join(form.get('agents', [])) if form.get('agents') else '',
+                form.get('presentation_date', '') or '',
+                form.get('presentation_location', '') or '',
+                (form.get('notes', '') or '').replace('\n', ' ').replace('\r', ' '),
+                (form.get('results', '') or '').replace('\n', ' ').replace('\r', ' ')
             ])
         
-        writer.writerow([])  # Blank row between agents
+        writer.writerow(["", "", "", "", "", "", "", "", "", "", "", ""])  # Blank row between agents
     
     csv_content = output.getvalue()
     output.close()
     
+    # Add BOM for Excel UTF-8 recognition
+    csv_with_bom = '\ufeff' + csv_content
+    
     filename = f"Friday_Report_{start_date}_to_{end_date}.csv"
     
     return Response(
-        content=csv_content,
-        media_type="text/csv",
+        content=csv_with_bom,
+        media_type="text/csv; charset=utf-8",
         headers={"Content-Disposition": f"attachment; filename={filename}"}
     )
 
