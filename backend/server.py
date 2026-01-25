@@ -5034,10 +5034,10 @@ async def get_friday_report_export(
         agent_sales = sum(1 for f in agent_forms if f.get('sale_made'))
         
         # Agent Header
-        writer.writerow([f"--- {agent_name} ({len(agent_forms)} forms, {agent_sales} sales) ---", "", "", "", "", "", "", "", "", "", "", ""])
+        writer.writerow([f"--- {agent_name} ({len(agent_forms)} forms, {agent_sales} sales) ---", "", "", "", "", "", "", "", "", "", "", "", "", ""])
         writer.writerow([
             "Client Name", "Phone", "Address", "Annual Income", "Monthly Savings",
-            "Net Worth", "Sale Made", "Agents/Bankers #", "Date", "Location", "Notes", "Results"
+            "Net Worth", "Sale Made", "Agents/Bankers #", "Date", "Location", "Life Licensed", "Regional", "Notes", "Results"
         ])
         
         # Agent's forms
@@ -5053,6 +5053,8 @@ async def get_friday_report_export(
                 "; ".join(form.get('agents', [])) if form.get('agents') else '',
                 form.get('presentation_date', '') or '',
                 form.get('presentation_location', '') or '',
+                "Yes" if form.get('life_licensed', True) else "No",
+                form.get('regional_assigned', '') or '',
                 (form.get('notes', '') or '').replace('\n', ' ').replace('\r', ' '),
                 (form.get('results', '') or '').replace('\n', ' ').replace('\r', ' ')
             ])
