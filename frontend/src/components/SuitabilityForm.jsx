@@ -517,6 +517,75 @@ const SuitabilityForm = ({ user }) => {
                 </Button>
               </div>
 
+              {/* Life Licensed */}
+              <div className="bg-orange-50 rounded-lg p-4 space-y-4">
+                <h3 className="font-semibold text-gray-800 flex items-center gap-2">
+                  <FileText size={18} className="text-orange-600" />
+                  Are You Life Licensed?
+                </h3>
+                <div className="flex gap-4">
+                  <button
+                    type="button"
+                    onClick={() => setFormData(prev => ({ ...prev, life_licensed: true, regional_assigned: '' }))}
+                    className={`flex items-center gap-2 px-4 py-2 rounded-lg border-2 transition-all ${
+                      formData.life_licensed 
+                        ? 'bg-green-100 border-green-500 text-green-700' 
+                        : 'border-gray-300 text-gray-600 hover:border-green-300'
+                    }`}
+                    data-testid="licensed-yes-btn"
+                  >
+                    <CheckCircle size={18} />
+                    Yes
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setFormData(prev => ({ ...prev, life_licensed: false }))}
+                    className={`flex items-center gap-2 px-4 py-2 rounded-lg border-2 transition-all ${
+                      !formData.life_licensed 
+                        ? 'bg-red-100 border-red-500 text-red-700' 
+                        : 'border-gray-300 text-gray-600 hover:border-red-300'
+                    }`}
+                    data-testid="licensed-no-btn"
+                  >
+                    <XCircle size={18} />
+                    No
+                  </button>
+                </div>
+                
+                {/* Regional Selection - Only shows if not life licensed */}
+                {!formData.life_licensed && (
+                  <div className="mt-4 p-3 bg-orange-100 border border-orange-300 rounded-lg">
+                    <label className="block text-sm font-medium text-orange-800 mb-2">
+                      Select Regional Manager:
+                    </label>
+                    <div className="flex gap-3">
+                      <button
+                        type="button"
+                        onClick={() => setFormData(prev => ({ ...prev, regional_assigned: 'Colton' }))}
+                        className={`flex-1 py-2 px-4 rounded-lg border-2 font-medium transition-all ${
+                          formData.regional_assigned === 'Colton'
+                            ? 'bg-blue-600 border-blue-600 text-white'
+                            : 'border-gray-300 text-gray-700 hover:border-blue-400'
+                        }`}
+                      >
+                        Colton
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setFormData(prev => ({ ...prev, regional_assigned: 'Steve' }))}
+                        className={`flex-1 py-2 px-4 rounded-lg border-2 font-medium transition-all ${
+                          formData.regional_assigned === 'Steve'
+                            ? 'bg-blue-600 border-blue-600 text-white'
+                            : 'border-gray-300 text-gray-700 hover:border-blue-400'
+                        }`}
+                      >
+                        Steve
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+
               {/* Notes */}
               <div className="bg-gray-50 rounded-lg p-4">
                 <label className="block text-sm font-medium text-gray-700 mb-2">
