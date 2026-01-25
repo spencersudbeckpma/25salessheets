@@ -4939,6 +4939,127 @@ async def export_suitability_forms(
         headers={"Content-Disposition": f"attachment; filename=suitability_forms_{start_date or 'all'}_{end_date or 'all'}.csv"}
     )
 
+@api_router.get("/suitability-forms/friday-report")
+async def get_friday_report_export(
+    current_user: dict = Depends(get_current_user),
+    week_offset: int = 0
+):
+    """Export Friday Report - grouped by agent with summary stats"""
+    # Calculate week boundaries (Monday to Sunday)
+    today = datetime.now(timezone.utc).date()
+    start_of_week = today - timedelta(days=today.weekday() + (week_offset * 7))
+    end_of_week = start_of_week + timedelta(days=6)
+    
+    start_date = start_of_week.isoformat()
+    end_date = end_of_week.isoformat()
+    
+    query = {
+        "presentation_date": {"$gte": start_date, "$lte": end_date}
+    }
+    
+    # Managers see all team forms
+    if current_user['role'] in ['state_manager', 'regional_manager', 'district_manager']:
+        team_ids = await get_all_subordinates(current_user['id'])
+        query["submitted_by"] = {"$in": team_ids}
+    else:
+        query["submitted_by"] = current_user['id']
+    
+    forms = await db.suitability_forms.find(query, {"_id": 0}).sort([("submitted_by_name", 1), ("presentation_date", 1)]).to_list(10000)
+    
+    if not forms:
+        raise HTTPException(status_code=404, detail="No forms found for this week")
+    
+    # Group forms by agent
+    from collections import defaultdict
+    by_agent = defaultdict(list)
+    for form in forms:
+        agent_name = form.get('submitted_by_name', 'Unknown')
+        by_agent[agent_name].append(form)
+    
+    # Build CSV with agent sections
+    import io
+    import csv
+    
+    output = io.StringIO()
+    writer = csv.writer(output)
+    
+    # Get labels for ranges
+    income_labels = {r['value']: r['label'] for r in SUITABILITY_FORM_CONFIG['income_ranges']}
+    savings_labels = {r['value']: r['label'] for r in SUITABILITY_FORM_CONFIG['savings_ranges']}
+    net_worth_labels = {r['value']: r['label'] for r in SUITABILITY_FORM_CONFIG['net_worth_ranges']}
+    
+    # Report Header
+    writer.writerow([f"FRIDAY SUITABILITY REPORT"])
+    writer.writerow([f"Week: {start_date} to {end_date}"])
+    writer.writerow([f"Generated: {datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M')} UTC"])
+    writer.writerow([])
+    
+    # Summary Section
+    total_forms = len(forms)
+    total_sales = sum(1 for f in forms if f.get('sale_made'))
+    conversion_rate = round((total_sales / total_forms * 100), 1) if total_forms > 0 else 0
+    
+    writer.writerow(["=== WEEKLY SUMMARY ==="])
+    writer.writerow(["Total Forms", total_forms])
+    writer.writerow(["Total Sales Made", total_sales])
+    writer.writerow(["Conversion Rate", f"{conversion_rate}%"])
+    writer.writerow(["Number of Agents", len(by_agent)])
+    writer.writerow([])
+    
+    # Agent Summary Table
+    writer.writerow(["=== AGENT SUMMARY ==="])
+    writer.writerow(["Agent Name", "Forms Submitted", "Sales Made", "Conversion Rate"])
+    for agent_name in sorted(by_agent.keys()):
+        agent_forms = by_agent[agent_name]
+        agent_sales = sum(1 for f in agent_forms if f.get('sale_made'))
+        agent_rate = round((agent_sales / len(agent_forms) * 100), 1) if agent_forms else 0
+        writer.writerow([agent_name, len(agent_forms), agent_sales, f"{agent_rate}%"])
+    writer.writerow([])
+    
+    # Detailed Forms by Agent
+    writer.writerow(["=== DETAILED FORMS BY AGENT ==="])
+    writer.writerow([])
+    
+    for agent_name in sorted(by_agent.keys()):
+        agent_forms = by_agent[agent_name]
+        agent_sales = sum(1 for f in agent_forms if f.get('sale_made'))
+        
+        # Agent Header
+        writer.writerow([f"--- {agent_name} ({len(agent_forms)} forms, {agent_sales} sales) ---"])
+        writer.writerow([
+            "Client Name", "Phone", "Address", "Annual Income", "Monthly Savings",
+            "Net Worth", "Sale Made", "Presentation Date", "Location", "Notes", "Results"
+        ])
+        
+        # Agent's forms
+        for form in agent_forms:
+            writer.writerow([
+                form.get('client_name', ''),
+                form.get('client_phone', ''),
+                form.get('client_address', ''),
+                income_labels.get(form.get('annual_income', ''), form.get('annual_income', '')),
+                savings_labels.get(form.get('monthly_savings', ''), form.get('monthly_savings', '')),
+                net_worth_labels.get(form.get('liquid_net_worth', ''), form.get('liquid_net_worth', '')),
+                "Yes" if form.get('sale_made') else "No",
+                form.get('presentation_date', ''),
+                form.get('presentation_location', ''),
+                form.get('notes', ''),
+                form.get('results', '')
+            ])
+        
+        writer.writerow([])  # Blank row between agents
+    
+    csv_content = output.getvalue()
+    output.close()
+    
+    filename = f"Friday_Report_{start_date}_to_{end_date}.csv"
+    
+    return Response(
+        content=csv_content,
+        media_type="text/csv",
+        headers={"Content-Disposition": f"attachment; filename={filename}"}
+    )
+
 @api_router.get("/suitability-forms/weekly-report")
 async def get_weekly_suitability_report(
     current_user: dict = Depends(get_current_user),
