@@ -836,7 +836,7 @@ const SuitabilityForm = ({ user }) => {
                   </p>
                 </div>
                 <div>
-                  <p className="text-sm text-gray-500">Agent(s)</p>
+                  <p className="text-sm text-gray-500">Agents Associated / Bankers Agent #</p>
                   <p className="font-medium">{selectedForm.agents?.join(', ') || '-'}</p>
                 </div>
               </div>
