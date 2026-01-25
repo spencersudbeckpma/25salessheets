@@ -183,6 +183,32 @@ const SuitabilityForm = ({ user }) => {
     }
   };
 
+  const handleFridayReportExport = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      const url = `${API}/api/suitability-forms/friday-report?week_offset=${weekOffset}`;
+      
+      const response = await axios.get(url, {
+        headers: { Authorization: `Bearer ${token}` },
+        responseType: 'blob'
+      });
+      
+      const blob = new Blob([response.data], { type: 'text/csv' });
+      const downloadUrl = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = downloadUrl;
+      a.download = `Friday_Report_${weeklyReport?.week_start || 'week'}.csv`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      window.URL.revokeObjectURL(downloadUrl);
+      
+      toast.success('Friday Report downloaded!');
+    } catch (error) {
+      toast.error('No forms found for this week');
+    }
+  };
+
   const addAgentField = () => {
     setFormData(prev => ({ ...prev, agents: [...prev.agents, ''] }));
   };
