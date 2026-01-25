@@ -22,6 +22,8 @@ const SuitabilityForm = ({ user }) => {
   const [weeklyReport, setWeeklyReport] = useState(null);
   const [showViewModal, setShowViewModal] = useState(false);
   const [selectedForm, setSelectedForm] = useState(null);
+  const [editingResults, setEditingResults] = useState('');
+  const [savingResults, setSavingResults] = useState(false);
   
   const [formData, setFormData] = useState({
     client_name: '',
