@@ -478,7 +478,7 @@ const SuitabilityForm = ({ user }) => {
               <div className="bg-purple-50 rounded-lg p-4 space-y-4">
                 <h3 className="font-semibold text-gray-800 flex items-center gap-2">
                   <Users size={18} className="text-purple-600" />
-                  Agent(s) Associated
+                  Agents Associated / Bankers Agent Number
                 </h3>
                 {formData.agents.map((agent, index) => (
                   <div key={index} className="flex gap-2">
