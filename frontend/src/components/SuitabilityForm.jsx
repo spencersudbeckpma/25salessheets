@@ -36,6 +36,8 @@ const SuitabilityForm = ({ user }) => {
     agents: [''],
     presentation_date: new Date().toISOString().split('T')[0],
     presentation_location: '',
+    life_licensed: true,
+    regional_assigned: '',
     notes: ''
   });
 
