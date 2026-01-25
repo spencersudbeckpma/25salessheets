@@ -4785,6 +4785,8 @@ class SuitabilityFormCreate(BaseModel):
     agents: List[str]
     presentation_date: str
     presentation_location: str
+    life_licensed: bool = True
+    regional_assigned: Optional[str] = None
     notes: Optional[str] = ""
     results: Optional[str] = ""
 
