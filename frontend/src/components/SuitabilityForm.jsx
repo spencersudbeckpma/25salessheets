@@ -786,10 +786,10 @@ const SuitabilityForm = ({ user }) => {
                   <div className="flex flex-col sm:flex-row gap-3">
                     <Button 
                       onClick={handleFridayReportExport} 
-                      className="flex-1 bg-blue-600 hover:bg-blue-700 text-white flex items-center justify-center gap-2 py-3"
+                      className="flex-1 bg-green-600 hover:bg-green-700 text-white flex items-center justify-center gap-2 py-3"
                     >
                       <FileText size={18} />
-                      📋 Friday Report (By Agent)
+                      📊 Friday Report (Excel)
                     </Button>
                     <Button 
                       onClick={handleExport} 
@@ -801,7 +801,7 @@ const SuitabilityForm = ({ user }) => {
                     </Button>
                   </div>
                   <p className="text-xs text-blue-600 mt-2">
-                    Friday Report includes summary stats, agent breakdown, and all forms organized by agent
+                    Friday Report: Professional Excel format with formatting, colors, and organized by agent
                   </p>
                 </div>
               )}
