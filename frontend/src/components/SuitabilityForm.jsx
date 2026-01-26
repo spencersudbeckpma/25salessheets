@@ -197,11 +197,11 @@ const SuitabilityForm = ({ user }) => {
         responseType: 'blob'
       });
       
-      const blob = new Blob([response.data], { type: 'text/csv' });
+      const blob = new Blob([response.data], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
       const downloadUrl = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = downloadUrl;
-      a.download = `Friday_Report_${weeklyReport?.week_start || 'week'}.csv`;
+      a.download = `Friday_Report_${weeklyReport?.week_start || 'week'}.xlsx`;
       document.body.appendChild(a);
       a.click();
       a.remove();
