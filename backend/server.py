@@ -4952,7 +4952,12 @@ async def get_friday_report_export(
     current_user: dict = Depends(get_current_user),
     week_offset: int = 0
 ):
-    """Export Friday Report - grouped by agent with summary stats"""
+    """Export Friday Report - Professional Excel format grouped by agent"""
+    from openpyxl import Workbook
+    from openpyxl.styles import Font, Fill, PatternFill, Border, Side, Alignment
+    from openpyxl.utils import get_column_letter
+    import io
+    
     # Calculate week boundaries (Monday to Sunday)
     today = datetime.now(timezone.utc).date()
     start_of_week = today - timedelta(days=today.weekday() + (week_offset * 7))
@@ -4984,65 +4989,172 @@ async def get_friday_report_export(
         agent_name = form.get('submitted_by_name', 'Unknown')
         by_agent[agent_name].append(form)
     
-    # Build CSV with agent sections - Excel friendly format
-    import io
-    import csv
-    
-    output = io.StringIO()
-    # Use excel dialect with proper quoting
-    writer = csv.writer(output, dialect='excel', quoting=csv.QUOTE_MINIMAL)
-    
     # Get labels for ranges
     income_labels = {r['value']: r['label'] for r in SUITABILITY_FORM_CONFIG['income_ranges']}
     savings_labels = {r['value']: r['label'] for r in SUITABILITY_FORM_CONFIG['savings_ranges']}
     net_worth_labels = {r['value']: r['label'] for r in SUITABILITY_FORM_CONFIG['net_worth_ranges']}
     
-    # Report Header
-    writer.writerow(["FRIDAY SUITABILITY REPORT", "", "", "", "", "", "", "", "", "", "", ""])
-    writer.writerow([f"Week: {start_date} to {end_date}", "", "", "", "", "", "", "", "", "", "", ""])
-    writer.writerow([f"Generated: {datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M')} UTC", "", "", "", "", "", "", "", "", "", "", ""])
-    writer.writerow(["", "", "", "", "", "", "", "", "", "", "", ""])
+    # Create Excel workbook
+    wb = Workbook()
+    ws = wb.active
+    ws.title = "Friday Report"
+    
+    # Define styles
+    title_font = Font(name='Arial', size=18, bold=True, color='FFFFFF')
+    title_fill = PatternFill(start_color='1F4E79', end_color='1F4E79', fill_type='solid')
+    
+    header_font = Font(name='Arial', size=11, bold=True, color='FFFFFF')
+    header_fill = PatternFill(start_color='2E75B6', end_color='2E75B6', fill_type='solid')
+    
+    subheader_font = Font(name='Arial', size=11, bold=True)
+    subheader_fill = PatternFill(start_color='BDD7EE', end_color='BDD7EE', fill_type='solid')
+    
+    agent_header_font = Font(name='Arial', size=12, bold=True, color='FFFFFF')
+    agent_header_fill = PatternFill(start_color='548235', end_color='548235', fill_type='solid')
+    
+    data_font = Font(name='Arial', size=10)
+    
+    summary_label_font = Font(name='Arial', size=11, bold=True)
+    summary_value_font = Font(name='Arial', size=11)
+    
+    thin_border = Border(
+        left=Side(style='thin'),
+        right=Side(style='thin'),
+        top=Side(style='thin'),
+        bottom=Side(style='thin')
+    )
+    
+    # Set column widths
+    column_widths = [18, 14, 25, 16, 14, 16, 10, 20, 12, 15, 12, 12, 30, 30]
+    for i, width in enumerate(column_widths, 1):
+        ws.column_dimensions[get_column_letter(i)].width = width
+    
+    row = 1
+    
+    # Title Section
+    ws.merge_cells(f'A{row}:N{row}')
+    cell = ws.cell(row=row, column=1, value="FRIDAY SUITABILITY REPORT")
+    cell.font = title_font
+    cell.fill = title_fill
+    cell.alignment = Alignment(horizontal='center', vertical='center')
+    ws.row_dimensions[row].height = 30
+    row += 1
+    
+    ws.merge_cells(f'A{row}:N{row}')
+    cell = ws.cell(row=row, column=1, value=f"Week: {start_date} to {end_date}")
+    cell.font = Font(name='Arial', size=12, bold=True)
+    cell.alignment = Alignment(horizontal='center')
+    row += 1
+    
+    ws.merge_cells(f'A{row}:N{row}')
+    cell = ws.cell(row=row, column=1, value=f"Generated: {datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M')} UTC")
+    cell.font = Font(name='Arial', size=10, italic=True)
+    cell.alignment = Alignment(horizontal='center')
+    row += 2
     
     # Summary Section
     total_forms = len(forms)
     total_sales = sum(1 for f in forms if f.get('sale_made'))
     conversion_rate = round((total_sales / total_forms * 100), 1) if total_forms > 0 else 0
     
-    writer.writerow(["=== WEEKLY SUMMARY ===", "", "", "", "", "", "", "", "", "", "", ""])
-    writer.writerow(["Total Forms", str(total_forms), "", "", "", "", "", "", "", "", "", ""])
-    writer.writerow(["Total Sales Made", str(total_sales), "", "", "", "", "", "", "", "", "", ""])
-    writer.writerow(["Conversion Rate", f"{conversion_rate}%", "", "", "", "", "", "", "", "", "", ""])
-    writer.writerow(["Number of Agents", str(len(by_agent)), "", "", "", "", "", "", "", "", "", ""])
-    writer.writerow(["", "", "", "", "", "", "", "", "", "", "", ""])
+    ws.merge_cells(f'A{row}:D{row}')
+    cell = ws.cell(row=row, column=1, value="WEEKLY SUMMARY")
+    cell.font = header_font
+    cell.fill = header_fill
+    cell.alignment = Alignment(horizontal='center')
+    for col in range(1, 5):
+        ws.cell(row=row, column=col).border = thin_border
+        ws.cell(row=row, column=col).fill = header_fill
+    row += 1
+    
+    summary_data = [
+        ("Total Forms", total_forms),
+        ("Total Sales Made", total_sales),
+        ("Conversion Rate", f"{conversion_rate}%"),
+        ("Number of Agents", len(by_agent))
+    ]
+    
+    for label, value in summary_data:
+        ws.cell(row=row, column=1, value=label).font = summary_label_font
+        ws.cell(row=row, column=2, value=value).font = summary_value_font
+        ws.cell(row=row, column=1).border = thin_border
+        ws.cell(row=row, column=2).border = thin_border
+        row += 1
+    
+    row += 1
     
     # Agent Summary Table
-    writer.writerow(["=== AGENT SUMMARY ===", "", "", "", "", "", "", "", "", "", "", ""])
-    writer.writerow(["Agent Name", "Forms Submitted", "Sales Made", "Conversion Rate", "", "", "", "", "", "", "", ""])
+    ws.merge_cells(f'A{row}:D{row}')
+    cell = ws.cell(row=row, column=1, value="AGENT SUMMARY")
+    cell.font = header_font
+    cell.fill = header_fill
+    for col in range(1, 5):
+        ws.cell(row=row, column=col).border = thin_border
+        ws.cell(row=row, column=col).fill = header_fill
+    row += 1
+    
+    agent_headers = ["Agent Name", "Forms", "Sales", "Conv. Rate"]
+    for col, header in enumerate(agent_headers, 1):
+        cell = ws.cell(row=row, column=col, value=header)
+        cell.font = subheader_font
+        cell.fill = subheader_fill
+        cell.border = thin_border
+        cell.alignment = Alignment(horizontal='center')
+    row += 1
+    
     for agent_name in sorted(by_agent.keys()):
         agent_forms = by_agent[agent_name]
         agent_sales = sum(1 for f in agent_forms if f.get('sale_made'))
         agent_rate = round((agent_sales / len(agent_forms) * 100), 1) if agent_forms else 0
-        writer.writerow([agent_name, str(len(agent_forms)), str(agent_sales), f"{agent_rate}%", "", "", "", "", "", "", "", ""])
-    writer.writerow(["", "", "", "", "", "", "", "", "", "", "", ""])
+        
+        ws.cell(row=row, column=1, value=agent_name).font = data_font
+        ws.cell(row=row, column=2, value=len(agent_forms)).font = data_font
+        ws.cell(row=row, column=3, value=agent_sales).font = data_font
+        ws.cell(row=row, column=4, value=f"{agent_rate}%").font = data_font
+        
+        for col in range(1, 5):
+            ws.cell(row=row, column=col).border = thin_border
+            if col > 1:
+                ws.cell(row=row, column=col).alignment = Alignment(horizontal='center')
+        row += 1
+    
+    row += 2
     
     # Detailed Forms by Agent
-    writer.writerow(["=== DETAILED FORMS BY AGENT ===", "", "", "", "", "", "", "", "", "", "", ""])
-    writer.writerow(["", "", "", "", "", "", "", "", "", "", "", ""])
+    detail_headers = [
+        "Client Name", "Phone", "Address", "Annual Income", "Monthly Savings",
+        "Net Worth", "Sale", "Agents/Bankers #", "Date", "Location", 
+        "Licensed", "Regional", "Notes", "Results"
+    ]
     
     for agent_name in sorted(by_agent.keys()):
         agent_forms = by_agent[agent_name]
         agent_sales = sum(1 for f in agent_forms if f.get('sale_made'))
         
         # Agent Header
-        writer.writerow([f"--- {agent_name} ({len(agent_forms)} forms, {agent_sales} sales) ---", "", "", "", "", "", "", "", "", "", "", "", "", ""])
-        writer.writerow([
-            "Client Name", "Phone", "Address", "Annual Income", "Monthly Savings",
-            "Net Worth", "Sale Made", "Agents/Bankers #", "Date", "Location", "Life Licensed", "Regional", "Notes", "Results"
-        ])
+        ws.merge_cells(f'A{row}:N{row}')
+        cell = ws.cell(row=row, column=1, value=f"{agent_name} ({len(agent_forms)} forms, {agent_sales} sales)")
+        cell.font = agent_header_font
+        cell.fill = agent_header_fill
+        cell.alignment = Alignment(horizontal='left', vertical='center')
+        ws.row_dimensions[row].height = 22
+        for col in range(1, 15):
+            ws.cell(row=row, column=col).fill = agent_header_fill
+        row += 1
         
-        # Agent's forms
+        # Column Headers
+        for col, header in enumerate(detail_headers, 1):
+            cell = ws.cell(row=row, column=col, value=header)
+            cell.font = subheader_font
+            cell.fill = subheader_fill
+            cell.border = thin_border
+            cell.alignment = Alignment(horizontal='center', wrap_text=True)
+        ws.row_dimensions[row].height = 20
+        row += 1
+        
+        # Data rows
         for form in agent_forms:
-            writer.writerow([
+            data = [
                 form.get('client_name', '') or '',
                 form.get('client_phone', '') or '',
                 form.get('client_address', '') or '',
@@ -5057,21 +5169,34 @@ async def get_friday_report_export(
                 form.get('regional_assigned', '') or '',
                 (form.get('notes', '') or '').replace('\n', ' ').replace('\r', ' '),
                 (form.get('results', '') or '').replace('\n', ' ').replace('\r', ' ')
-            ])
+            ]
+            
+            for col, value in enumerate(data, 1):
+                cell = ws.cell(row=row, column=col, value=value)
+                cell.font = data_font
+                cell.border = thin_border
+                cell.alignment = Alignment(vertical='top', wrap_text=True)
+                
+                # Color sale column
+                if col == 7:
+                    if value == "Yes":
+                        cell.fill = PatternFill(start_color='C6EFCE', end_color='C6EFCE', fill_type='solid')
+                    else:
+                        cell.fill = PatternFill(start_color='FFC7CE', end_color='FFC7CE', fill_type='solid')
+            row += 1
         
-        writer.writerow(["", "", "", "", "", "", "", "", "", "", "", ""])  # Blank row between agents
+        row += 1  # Blank row between agents
     
-    csv_content = output.getvalue()
-    output.close()
+    # Save to bytes
+    output = io.BytesIO()
+    wb.save(output)
+    output.seek(0)
     
-    # Add BOM for Excel UTF-8 recognition
-    csv_with_bom = '\ufeff' + csv_content
-    
-    filename = f"Friday_Report_{start_date}_to_{end_date}.csv"
+    filename = f"Friday_Report_{start_date}_to_{end_date}.xlsx"
     
     return Response(
-        content=csv_with_bom,
-        media_type="text/csv; charset=utf-8",
+        content=output.getvalue(),
+        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
         headers={"Content-Disposition": f"attachment; filename={filename}"}
     )
 
