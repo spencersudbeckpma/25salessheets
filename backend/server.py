@@ -2805,6 +2805,21 @@ async def login(login_data: UserLogin):
     
     token = create_jwt_token(user['id'], user['email'])
     
+    # Get team branding if user has a team
+    branding = None
+    team_name = None
+    if user.get('team_id'):
+        team = await db.teams.find_one({"id": user['team_id']}, {"_id": 0})
+        if team:
+            team_name = team.get('name')
+            branding = team.get('branding', {
+                "logo_url": None,
+                "primary_color": "#1e40af",
+                "accent_color": "#3b82f6",
+                "display_name": None,
+                "tagline": None
+            })
+    
     return {
         "token": token,
         "user": {
@@ -2812,8 +2827,11 @@ async def login(login_data: UserLogin):
             "email": user['email'],
             "name": user['name'],
             "role": user['role'],
+            "team_id": user.get('team_id'),
+            "team_name": team_name,
             "manager_id": user.get('manager_id')
-        }
+        },
+        "branding": branding
     }
 
 class UserCreate(BaseModel):
