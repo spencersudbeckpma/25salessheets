@@ -735,8 +735,11 @@ async def admin_update_user(user_id: str, update_data: AdminUserUpdate, current_
     if update_data.name:
         update_dict["name"] = update_data.name
     if update_data.email:
-        # Check if email is already taken by another user
-        existing = await db.users.find_one({"email": update_data.email, "id": {"$ne": user_id}})
+        # Check if email is already taken by another user (case-insensitive)
+        existing = await db.users.find_one({
+            "email": {"$regex": f"^{update_data.email}$", "$options": "i"},
+            "id": {"$ne": user_id}
+        })
         if existing:
             raise HTTPException(status_code=400, detail="Email already in use by another user")
         update_dict["email"] = update_data.email
