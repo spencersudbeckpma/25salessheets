@@ -1387,7 +1387,7 @@ const AdminPanel = ({ user }) => {
                     <SelectValue placeholder="Select manager..." />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">None (set later in Team Mgmt)</SelectItem>
+                    <SelectItem value="none">None (set later in Team Mgmt)</SelectItem>
                     {getPotentialManagers().map(manager => (
                       <SelectItem key={manager.id} value={manager.id}>
                         {manager.name} ({manager.role?.replace('_', ' ')})
