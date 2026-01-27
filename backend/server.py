@@ -2268,6 +2268,8 @@ async def login(login_data: UserLogin):
     else:
         # Try to find by username
         user = await db.users.find_one({"username": login_identifier}, {"_id": 0})
+    
+    logging.info(f"Login attempt for: {login_identifier}, user found: {user is not None}")
         
     if not user:
         raise HTTPException(status_code=401, detail="Invalid credentials")
@@ -2276,7 +2278,10 @@ async def login(login_data: UserLogin):
     if user.get('status') == 'archived':
         raise HTTPException(status_code=403, detail="Account is archived. Please contact your administrator.")
     
-    if not verify_password(login_data.password, user['password_hash']):
+    password_valid = verify_password(login_data.password, user['password_hash'])
+    logging.info(f"Password valid: {password_valid}")
+    
+    if not password_valid:
         raise HTTPException(status_code=401, detail="Invalid credentials")
     
     token = create_jwt_token(user['id'], user['email'])
