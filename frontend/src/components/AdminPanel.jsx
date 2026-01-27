@@ -1296,16 +1296,6 @@ const AdminPanel = ({ user }) => {
                           )}
                         </div>
                       )}
-                                    placeholder="Paste team ID here..."
-                                    className="text-xs h-8"
-                                    onChange={(e) => setAssignToTeamId(e.target.value)}
-                                  />
-                                </div>
-                              </div>
-                            </div>
-                          )}
-                        </div>
-                      )}
                       
                       {/* Selected team indicator */}
                       {assignToTeamId && (
