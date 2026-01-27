@@ -214,6 +214,51 @@ const AdminPanel = ({ user }) => {
     }
   };
 
+  // Diagnostics functions
+  const runDiagnoseInterviews = async () => {
+    setDiagnosticsLoading(true);
+    setDiagnosticsData(null);
+    setFixResult(null);
+    
+    try {
+      const res = await axios.get(`${API}/api/admin/diagnose-interviews`, { headers });
+      setDiagnosticsData(res.data);
+      toast.success('Diagnosis complete');
+    } catch (error) {
+      toast.error(error.response?.data?.detail || 'Failed to run diagnostics');
+    } finally {
+      setDiagnosticsLoading(false);
+    }
+  };
+
+  const runFixOrphanedInterviews = async () => {
+    if (!window.confirm(
+      'This will fix orphaned interviews by reassigning them to each team\'s State Manager.\n\n' +
+      '✅ Team Sudbeck will NOT be affected\n' +
+      '✅ Original interviewer_id will be preserved for audit\n' +
+      '✅ Only interviews with deleted interviewers will be fixed\n\n' +
+      'Continue?'
+    )) {
+      return;
+    }
+    
+    setDiagnosticsLoading(true);
+    setFixResult(null);
+    
+    try {
+      const res = await axios.post(`${API}/api/admin/fix-orphaned-interviews`, {}, { headers });
+      setFixResult(res.data);
+      toast.success(`Fixed ${res.data.fixed_total} orphaned interviews`);
+      
+      // Re-run diagnostics to show updated state
+      await runDiagnoseInterviews();
+    } catch (error) {
+      toast.error(error.response?.data?.detail || 'Failed to fix interviews');
+    } finally {
+      setDiagnosticsLoading(false);
+    }
+  };
+
   const handleCreateTeam = async () => {
     if (!newTeamName.trim()) {
       toast.error('Please enter a team name');
