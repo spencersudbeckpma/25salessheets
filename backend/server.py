@@ -450,8 +450,8 @@ async def admin_create_user(user_data: AdminUserCreate, current_user: dict = Dep
     if not team:
         raise HTTPException(status_code=404, detail="Team not found")
     
-    # Check if email already exists
-    existing = await db.users.find_one({"email": user_data.email})
+    # Check if email already exists (case-insensitive)
+    existing = await db.users.find_one({"email": {"$regex": f"^{user_data.email}$", "$options": "i"}})
     if existing:
         raise HTTPException(status_code=400, detail="Email already registered")
     
