@@ -57,6 +57,11 @@ const AdminPanel = ({ user }) => {
   const [showRepairModal, setShowRepairModal] = useState(false);
   const [selectedTeamForRepair, setSelectedTeamForRepair] = useState(null);
   const [managerAssignments, setManagerAssignments] = useState({});
+  
+  // Diagnostics states
+  const [diagnosticsData, setDiagnosticsData] = useState(null);
+  const [diagnosticsLoading, setDiagnosticsLoading] = useState(false);
+  const [fixResult, setFixResult] = useState(null);
 
   const token = localStorage.getItem('token');
   const headers = { Authorization: `Bearer ${token}` };
