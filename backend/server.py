@@ -142,6 +142,7 @@ class Invite(BaseModel):
     email: EmailStr
     role: str
     manager_id: str
+    team_id: Optional[str] = None  # Multi-tenancy support
     status: str = "pending"  # pending, accepted
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
