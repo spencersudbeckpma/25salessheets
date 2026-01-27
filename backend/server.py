@@ -121,6 +121,7 @@ class NewFaceCustomer(BaseModel):
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
     user_id: str
     user_name: str
+    team_id: Optional[str] = None  # Multi-tenancy support
     date: str  # YYYY-MM-DD format
     customer_name: str
     county: str
