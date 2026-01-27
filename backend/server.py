@@ -220,9 +220,9 @@ async def get_all_subordinates(user_id: str, team_id: str = None) -> List[str]:
     return list(set(subordinates))
 
 def require_super_admin(current_user: dict):
-    """Check if user is super_admin or state_manager (admin privileges)"""
-    if current_user.get('role') not in ['super_admin', 'state_manager']:
-        raise HTTPException(status_code=403, detail="Admin access required")
+    """Check if user is super_admin ONLY - for team management operations"""
+    if current_user.get('role') != 'super_admin':
+        raise HTTPException(status_code=403, detail="Super admin access required")
 
 # ==================== ADMIN TEAM MANAGEMENT ====================
 
