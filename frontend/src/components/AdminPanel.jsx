@@ -152,68 +152,28 @@ const AdminPanel = ({ user }) => {
 
   // Repair ALL teams at once (auto-assign to state_manager)
   const repairAllTeams = async () => {
-    const excludeTeams = ['Team Sudbeck'];
-    const teamsToRepair = teams.filter(t => !excludeTeams.includes(t.name));
+    if (!window.confirm('This will automatically repair manager_id relationships for all teams (except Team Sudbeck). Continue?')) {
+      return;
+    }
     
-    let totalRepaired = 0;
-    let errors = [];
-
     setRepairLoading(prev => ({ ...prev, all: true }));
 
-    for (const team of teamsToRepair) {
-      try {
-        // Fetch broken hierarchy
-        const res = await axios.get(`${API}/api/admin/teams/${team.id}/broken-hierarchy`, { headers });
-        const data = res.data;
-        
-        if (data.broken_count > 0) {
-          // Find state manager for this team
-          const stateManager = data.potential_managers?.find(m => m.role === 'state_manager');
-          
-          if (stateManager) {
-            // Build repairs - assign all broken regional managers to state manager
-            // For district managers, find their regional manager, etc.
-            const repairs = data.broken_users.map(user => {
-              // Smart assignment based on role
-              let targetManager = stateManager;
-              if (user.role === 'district_manager') {
-                // Try to find a regional manager
-                const regionalManager = data.potential_managers?.find(m => m.role === 'regional_manager');
-                if (regionalManager) targetManager = regionalManager;
-              } else if (user.role === 'agent') {
-                // Try to find a district manager
-                const districtManager = data.potential_managers?.find(m => m.role === 'district_manager');
-                if (districtManager) targetManager = districtManager;
-              }
-              return {
-                user_id: user.id,
-                manager_id: targetManager.id
-              };
-            });
-
-            const repairRes = await axios.post(`${API}/api/admin/repair-manager-ids`, repairs, { headers });
-            totalRepaired += repairRes.data.results.length;
-          } else {
-            errors.push(`${team.name}: No state manager found`);
-          }
-        }
-      } catch (error) {
-        errors.push(`${team.name}: ${error.response?.data?.detail || error.message}`);
-      }
+    try {
+      const res = await axios.post(`${API}/api/admin/auto-repair-all-teams`, {}, { headers });
+      const data = res.data;
+      
+      toast.success(`${data.message}`);
+      
+      // Log details
+      console.log('Repair results:', data.details);
+      
+      // Refresh all hierarchy data
+      await fetchAllBrokenHierarchies();
+    } catch (error) {
+      toast.error(error.response?.data?.detail || 'Failed to repair teams');
+    } finally {
+      setRepairLoading(prev => ({ ...prev, all: false }));
     }
-
-    setRepairLoading(prev => ({ ...prev, all: false }));
-    
-    if (errors.length > 0) {
-      toast.error(`Completed with errors: ${errors.join(', ')}`);
-    } else if (totalRepaired > 0) {
-      toast.success(`Successfully repaired ${totalRepaired} users across all teams`);
-    } else {
-      toast.success('All teams have correct hierarchies - no repairs needed!');
-    }
-
-    // Refresh all hierarchy data
-    await fetchAllBrokenHierarchies();
   };
 
   const handleCreateTeam = async () => {
