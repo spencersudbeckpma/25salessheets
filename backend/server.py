@@ -5069,7 +5069,12 @@ async def get_suitability_forms(
     view_all: bool = False
 ):
     """Get suitability forms - users see their own, managers can see all"""
+    team_id = current_user.get('team_id')
     query = {}
+    
+    # Team filtering for multi-tenancy
+    if team_id:
+        query["team_id"] = team_id
     
     # Date filtering
     if start_date and end_date:
@@ -5079,9 +5084,9 @@ async def get_suitability_forms(
     if not view_all or current_user['role'] == 'agent':
         query["submitted_by"] = current_user['id']
     elif current_user['role'] in ['state_manager', 'regional_manager', 'district_manager']:
-        # Managers can view all forms from their team
+        # Managers can view all forms from their team (scoped to team)
         if view_all:
-            team_ids = await get_all_subordinates(current_user['id'])
+            team_ids = await get_all_subordinates(current_user['id'], team_id)
             team_ids.append(current_user['id'])
             query["submitted_by"] = {"$in": team_ids}
     
@@ -5093,6 +5098,7 @@ async def create_suitability_form(form_data: SuitabilityFormCreate, current_user
     """Create a new suitability form"""
     form_dict = {
         "id": str(uuid.uuid4()),
+        "team_id": current_user.get('team_id'),  # Multi-tenancy
         **form_data.dict(),
         "submitted_by": current_user['id'],
         "submitted_by_name": current_user['name'],
