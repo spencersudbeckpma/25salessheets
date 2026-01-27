@@ -5294,20 +5294,6 @@ async def health_check():
         logger.error(f"Health check failed: {str(e)}")
         raise HTTPException(status_code=503, detail="Service unavailable")
 
-# Also add health check to api_router for /api/health access
-@api_router.get("/health")
-async def api_health_check():
-    """Health check endpoint accessible via /api/health"""
-    try:
-        await db.command('ping')
-        return {
-            "status": "healthy",
-            "service": "crm-sales-tracker-backend",
-            "database": "connected"
-        }
-    except Exception as e:
-        raise HTTPException(status_code=503, detail="Service unavailable")
-
 # Configure logging
 logging.basicConfig(
     level=logging.INFO,
