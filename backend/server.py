@@ -5251,6 +5251,20 @@ async def get_weekly_suitability_report(
         "forms": forms
     }
 
+# Health check endpoint accessible via /api/health
+@api_router.get("/health")
+async def api_health_check():
+    """Health check endpoint accessible via /api/health"""
+    try:
+        await db.command('ping')
+        return {
+            "status": "healthy",
+            "service": "crm-sales-tracker-backend",
+            "database": "connected"
+        }
+    except Exception as e:
+        raise HTTPException(status_code=503, detail="Service unavailable")
+
 # Include the router in the main app
 app.include_router(api_router)
 
