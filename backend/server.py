@@ -3004,25 +3004,31 @@ async def get_recruits(current_user: dict = Depends(get_current_user)):
     if current_user['role'] not in ['state_manager', 'regional_manager', 'district_manager']:
         raise HTTPException(status_code=403, detail="Only managers can access recruiting")
     
+    team_id = current_user.get('team_id')
+    
     if current_user['role'] == 'regional_manager':
-        # Regional Manager sees their own recruits + their District Managers' recruits
-        subordinates = await get_all_subordinates(current_user['id'])
-        subordinate_ids = [s['id'] for s in subordinates]
+        # Regional Manager sees their own recruits + their District Managers' recruits (scoped to team)
+        subordinates = await get_all_subordinates(current_user['id'], team_id)
+        subordinate_ids = subordinates  # get_all_subordinates returns list of IDs
         subordinate_ids.append(current_user['id'])  # Include self
         
         # Find recruits where rm_id matches OR dm_id is one of the subordinates
-        recruits = await db.recruits.find({
-            "$or": [
-                {"rm_id": current_user['id']},
-                {"dm_id": {"$in": subordinate_ids}}
-            ]
-        }, {"_id": 0}).sort("created_at", -1).to_list(1000)
+        query = {"$or": [{"rm_id": current_user['id']}, {"dm_id": {"$in": subordinate_ids}}]}
+        if team_id:
+            query["team_id"] = team_id
+        recruits = await db.recruits.find(query, {"_id": 0}).sort("created_at", -1).to_list(1000)
     elif current_user['role'] == 'district_manager':
         # District Manager only sees their own recruits (assigned to them as DM)
-        recruits = await db.recruits.find({"dm_id": current_user['id']}, {"_id": 0}).sort("created_at", -1).to_list(1000)
+        query = {"dm_id": current_user['id']}
+        if team_id:
+            query["team_id"] = team_id
+        recruits = await db.recruits.find(query, {"_id": 0}).sort("created_at", -1).to_list(1000)
     else:
-        # State Manager sees all
-        recruits = await db.recruits.find({}, {"_id": 0}).sort("created_at", -1).to_list(1000)
+        # State Manager sees all (within team)
+        query = {}
+        if team_id:
+            query["team_id"] = team_id
+        recruits = await db.recruits.find(query, {"_id": 0}).sort("created_at", -1).to_list(1000)
     return recruits
 
 @api_router.post("/recruiting")
