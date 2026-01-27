@@ -224,8 +224,10 @@ class TestLeaderboardWithTeamScope:
         response = requests.get(f"{BASE_URL}/api/leaderboard/weekly", headers=headers)
         assert response.status_code == 200
         leaderboard = response.json()
-        assert isinstance(leaderboard, list)
-        print(f"✓ Leaderboard API returned {len(leaderboard)} entries")
+        # Leaderboard returns a dict with categories
+        assert isinstance(leaderboard, dict)
+        assert "premium" in leaderboard or "presentations" in leaderboard
+        print(f"✓ Leaderboard API returned data with categories")
 
 
 class TestGoalsWithTeamScope:
