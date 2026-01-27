@@ -298,15 +298,29 @@ async def delete_team(team_id: str, current_user: dict = Depends(get_current_use
 
 @api_router.get("/admin/users")
 async def get_all_users_admin(current_user: dict = Depends(get_current_user)):
-    """Get all users with team info (super_admin only)"""
+    """Get all users with team info and subordinate counts (super_admin only)"""
     require_super_admin(current_user)
     
     users = await db.users.find({}, {"_id": 0, "password_hash": 0}).to_list(10000)
     teams = await db.teams.find({}, {"_id": 0}).to_list(1000)
     team_map = {t['id']: t['name'] for t in teams}
     
+    # Build a map of manager_id -> count of direct reports
+    subordinate_counts = {}
+    for user in users:
+        manager_id = user.get('manager_id')
+        if manager_id:
+            subordinate_counts[manager_id] = subordinate_counts.get(manager_id, 0) + 1
+    
     for user in users:
         user['team_name'] = team_map.get(user.get('team_id'), 'Unassigned')
+        user['subordinate_count'] = subordinate_counts.get(user['id'], 0)
+        # Get manager name
+        if user.get('manager_id'):
+            manager = next((u for u in users if u['id'] == user.get('manager_id')), None)
+            user['manager_name'] = manager['name'] if manager else 'Unknown'
+        else:
+            user['manager_name'] = None
     
     return users
 
