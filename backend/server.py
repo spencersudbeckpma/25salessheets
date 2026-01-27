@@ -2396,25 +2396,27 @@ async def get_team_members(current_user: dict = Depends(get_current_user)):
 @api_router.get("/team/all-members")
 async def get_all_team_members(current_user: dict = Depends(get_current_user)):
     """Get ALL team members in the hierarchy (for NPA/SNA tracker dropdowns)"""
+    team_id = current_user.get('team_id')
+    
     if current_user['role'] == 'state_manager':
-        # State manager sees everyone except other state managers
-        members = await db.users.find(
-            {"role": {"$ne": "state_manager"}, "$or": [{"status": "active"}, {"status": {"$exists": False}}]},
-            {"_id": 0, "password_hash": 0}
-        ).to_list(1000)
+        # State manager sees everyone in their team except other state managers
+        query = {"role": {"$ne": "state_manager"}, "$or": [{"status": "active"}, {"status": {"$exists": False}}]}
+        if team_id:
+            query["team_id"] = team_id
+        members = await db.users.find(query, {"_id": 0, "password_hash": 0}).to_list(1000)
     elif current_user['role'] == 'regional_manager':
-        # Regional manager sees their subordinates
-        subordinate_ids = await get_all_subordinates(current_user['id'])
+        # Regional manager sees their subordinates (scoped to team)
+        subordinate_ids = await get_all_subordinates(current_user['id'], team_id)
         members = await db.users.find(
             {"id": {"$in": subordinate_ids}, "$or": [{"status": "active"}, {"status": {"$exists": False}}]},
             {"_id": 0, "password_hash": 0}
         ).to_list(1000)
     else:
         # District manager sees their direct reports
-        members = await db.users.find(
-            {"manager_id": current_user['id'], "$or": [{"status": "active"}, {"status": {"$exists": False}}]},
-            {"_id": 0, "password_hash": 0}
-        ).to_list(1000)
+        query = {"manager_id": current_user['id'], "$or": [{"status": "active"}, {"status": {"$exists": False}}]}
+        if team_id:
+            query["team_id"] = team_id
+        members = await db.users.find(query, {"_id": 0, "password_hash": 0}).to_list(1000)
     
     return members
 
