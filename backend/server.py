@@ -2790,6 +2790,8 @@ async def delete_all_user_activities(user_id: str, current_user: dict = Depends(
 async def get_leaderboard(period: str, current_user: dict = Depends(get_current_user), user_date: str = None):
     from datetime import timedelta
     
+    team_id = current_user.get('team_id')
+    
     # Use Central Time for date calculations
     if user_date:
         today = datetime.strptime(user_date, '%Y-%m-%d').date()
@@ -2811,7 +2813,7 @@ async def get_leaderboard(period: str, current_user: dict = Depends(get_current_
     else:
         raise HTTPException(status_code=400, detail="Invalid period")
     
-    # Get ALL users in the organization (find the root state manager)
+    # Get ALL users in the organization (find the root state manager), scoped to team
     # First, traverse up to find the top-level manager
     current_manager = current_user
     while current_manager.get('manager_id'):
@@ -2821,18 +2823,18 @@ async def get_leaderboard(period: str, current_user: dict = Depends(get_current_
         else:
             break
     
-    # Now get all users under the top manager (entire organization)
-    all_user_ids = await get_all_subordinates(current_manager['id'])
+    # Now get all users under the top manager (entire organization), scoped to team
+    all_user_ids = await get_all_subordinates(current_manager['id'], team_id)
     
     # Get all users info
     users = await db.users.find({"id": {"$in": all_user_ids}}, {"_id": 0, "password_hash": 0}).to_list(1000)
     user_dict = {u['id']: u for u in users}
     
-    # Get all activities for the period for the ENTIRE organization
-    activities = await db.activities.find({
-        "user_id": {"$in": all_user_ids},
-        "date": {"$gte": start_date.isoformat()}
-    }, {"_id": 0}).to_list(10000)
+    # Get all activities for the period for the ENTIRE organization (scoped to team)
+    act_query = {"user_id": {"$in": all_user_ids}, "date": {"$gte": start_date.isoformat()}}
+    if team_id:
+        act_query["team_id"] = team_id
+    activities = await db.activities.find(act_query, {"_id": 0}).to_list(10000)
     
     # Aggregate by user
     user_stats = {}
