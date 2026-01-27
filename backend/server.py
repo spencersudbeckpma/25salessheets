@@ -3060,6 +3060,7 @@ async def create_recruit(recruit_data: dict, current_user: dict = Depends(get_cu
     
     recruit = {
         "id": str(uuid.uuid4()),
+        "team_id": current_user.get('team_id'),  # Multi-tenancy
         "name": recruit_data.get('name', ''),
         "phone": recruit_data.get('phone', ''),
         "email": recruit_data.get('email', ''),
