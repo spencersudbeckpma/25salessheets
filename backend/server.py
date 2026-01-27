@@ -2248,6 +2248,7 @@ async def update_activity(date: str, activity_data: ActivityCreate, current_user
     update_data = activity_data.model_dump()
     update_data['edited_by'] = current_user['id']
     update_data['edited_at'] = datetime.now(timezone.utc).isoformat()
+    update_data['team_id'] = current_user.get('team_id')  # Multi-tenancy
     
     if existing:
         await db.activities.update_one({"user_id": current_user['id'], "date": date}, {"$set": update_data})
@@ -2256,6 +2257,7 @@ async def update_activity(date: str, activity_data: ActivityCreate, current_user
         data_dict = activity_data.model_dump()
         activity = Activity(
             user_id=current_user['id'],
+            team_id=current_user.get('team_id'),  # Multi-tenancy
             date=date,
             contacts=data_dict['contacts'],
             appointments=data_dict['appointments'],
