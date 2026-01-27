@@ -1205,30 +1205,36 @@ const AdminPanel = ({ user }) => {
                     <div className="bg-slate-50 p-4 rounded-lg space-y-3">
                       <h4 className="font-medium text-slate-800">Assign Selected Users To:</h4>
                       
-                      {/* Quick assign to Team Sudbeck (default team) */}
-                      {(() => {
-                        const teamSubdeck = teams.find(t => t.name === 'Team Sudbeck' || t.settings?.is_default);
-                        if (teamSubdeck) {
-                          return (
-                            <div className="bg-blue-50 border border-blue-200 p-3 rounded-lg">
-                              <Button
-                                onClick={() => {
-                                  setAssignToTeamId(teamSubdeck.id);
-                                  toast.success(`Selected Team Sudbeck (ID: ${teamSubdeck.id})`);
-                                }}
-                                className="bg-blue-600 hover:bg-blue-700 w-full"
-                              >
-                                Quick Select: Team Sudbeck (Default Team)
-                              </Button>
-                            </div>
-                          );
-                        }
-                        return null;
-                      })()}
+                      {/* Quick assign to Team Sudbeck (default team) - always show */}
+                      <div className="bg-blue-50 border border-blue-200 p-3 rounded-lg">
+                        <p className="text-blue-800 text-sm mb-2">
+                          <strong>Quick Action:</strong> Assign all selected users to Team Sudbeck
+                        </p>
+                        <Button
+                          onClick={() => {
+                            // Find Team Sudbeck by name or default flag
+                            const teamSud = teams.find(t => 
+                              t.name?.toLowerCase().includes('sudbeck') || 
+                              t.settings?.is_default === true
+                            );
+                            if (teamSud) {
+                              setAssignToTeamId(teamSud.id);
+                              toast.success(`Selected: ${teamSud.name} (ID: ${teamSud.id})`);
+                            } else {
+                              // Show available teams for debugging
+                              const teamNames = teams.map(t => t.name).join(', ');
+                              toast.error(`Team Sudbeck not found. Available: ${teamNames}`);
+                            }
+                          }}
+                          className="bg-blue-600 hover:bg-blue-700 w-full"
+                        >
+                          Quick Select: Team Sudbeck (Default Team)
+                        </Button>
+                      </div>
                       
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                         <div>
-                          <Label htmlFor="assign-team" className="text-sm text-slate-600 mb-1 block">Team (required)</Label>
+                          <Label htmlFor="assign-team" className="text-sm text-slate-600 mb-1 block">Team (required) - {teams.length} teams available</Label>
                           <Select value={assignToTeamId} onValueChange={setAssignToTeamId}>
                             <SelectTrigger id="assign-team">
                               <SelectValue placeholder="Select team..." />
