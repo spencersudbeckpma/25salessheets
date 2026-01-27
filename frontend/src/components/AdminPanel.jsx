@@ -246,6 +246,20 @@ const AdminPanel = ({ user }) => {
     }
   };
 
+  const handleDeleteUser = async (userId, userName) => {
+    if (!window.confirm(`Are you sure you want to DELETE "${userName}"? This will also delete all their activity data. This action cannot be undone.`)) {
+      return;
+    }
+    
+    try {
+      await axios.delete(`${API}/api/admin/users/${userId}`, { headers });
+      toast.success(`User "${userName}" deleted successfully`);
+      fetchData();
+    } catch (error) {
+      toast.error(error.response?.data?.detail || 'Failed to delete user');
+    }
+  };
+
   // Get potential managers for selected team and role
   const getPotentialManagers = () => {
     if (!newUserForm.team_id || !newUserForm.role) return [];
