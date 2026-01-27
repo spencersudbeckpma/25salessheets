@@ -82,3 +82,7 @@ frontend/node_modules/.cache/default-development/0.pack
 
 # Note: .env files are committed with placeholder values
 # Production values are injected by Kubernetes at runtime
+-e 
+# Environment files
+*.env
+*.env.*

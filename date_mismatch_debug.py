@@ -19,7 +19,7 @@ import os
 from pytz import timezone as pytz_timezone
 
 # Configuration
-BACKEND_URL = "https://team-npa-system.preview.emergentagent.com/api"
+BACKEND_URL = "https://pma-teams.preview.emergentagent.com/api"
 
 class Colors:
     GREEN = '\033[92m'
