@@ -476,6 +476,15 @@ const AdminPanel = ({ user }) => {
           <Wrench className="w-4 h-4 mr-2" />
           Repair Hierarchy
         </Button>
+        <Button
+          variant={activeTab === 'diagnostics' ? 'default' : 'ghost'}
+          onClick={() => setActiveTab('diagnostics')}
+          className={activeTab === 'diagnostics' ? 'bg-purple-600 text-white' : 'text-purple-600 border-purple-200'}
+          data-testid="diagnostics-tab"
+        >
+          <Search className="w-4 h-4 mr-2" />
+          Diagnostics
+        </Button>
       </div>
 
       {/* Teams Tab */}
