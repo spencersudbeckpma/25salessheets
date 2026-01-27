@@ -671,6 +671,31 @@ async def get_broken_hierarchy_users(team_id: str, current_user: dict = Depends(
         "potential_managers": potential_managers
     }
 
+@api_router.delete("/admin/users/{user_id}")
+async def admin_delete_user(user_id: str, current_user: dict = Depends(get_current_user)):
+    """
+    Delete a user (super_admin only). 
+    Use this to remove duplicate users or clean up bad data.
+    """
+    require_super_admin(current_user)
+    
+    user = await db.users.find_one({"id": user_id}, {"_id": 0})
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    # Prevent deleting yourself
+    if user_id == current_user['id']:
+        raise HTTPException(status_code=400, detail="Cannot delete yourself")
+    
+    # Delete user and their activities
+    await db.users.delete_one({"id": user_id})
+    deleted_activities = await db.activities.delete_many({"user_id": user_id})
+    
+    return {
+        "message": f"User '{user.get('name')}' deleted successfully",
+        "activities_deleted": deleted_activities.deleted_count
+    }
+
 @api_router.post("/admin/auto-repair-all-teams")
 async def auto_repair_all_teams(current_user: dict = Depends(get_current_user)):
     """
