@@ -1208,7 +1208,6 @@ const AdminPanel = ({ user }) => {
                                 <SelectItem key={team.id} value={team.id}>
                                   {team.name}
                                 </SelectItem>
-                                </SelectItem>
                               ))}
                             </SelectContent>
                           </Select>
