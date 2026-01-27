@@ -1010,15 +1010,16 @@ const TeamManagement = ({ user }) => {
           </TabsContent>
 
 
-          {user.role === 'state_manager' && (
+          {/* All Users Tab - Now restricted to managers showing only their downline */}
+          {['state_manager', 'regional_manager', 'district_manager'].includes(user.role) && (
           <TabsContent value="all-users" className="space-y-6" data-testid="all-users-content">
             <div className="bg-blue-50 p-6 rounded-lg border border-blue-200">
-              <h3 className="font-semibold text-lg mb-4">All Active Users</h3>
+              <h3 className="font-semibold text-lg mb-4">My Team Users</h3>
               <p className="text-sm text-gray-600 mb-4">
-                View all active users in the organization with their usernames and roles.
+                View users in your team hierarchy with their usernames and roles.
               </p>
               <Button onClick={fetchActiveUsers} className="mb-4">
-                Load All Users
+                Load My Team
               </Button>
             </div>
 
@@ -1056,7 +1057,7 @@ const TeamManagement = ({ user }) => {
                   </tbody>
                 </table>
                 <div className="mt-4 text-sm text-gray-500">
-                  Total: {activeUsers.length} active users
+                  Total: {activeUsers.length} users in your hierarchy
                 </div>
               </div>
             )}
