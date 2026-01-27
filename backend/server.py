@@ -490,6 +490,7 @@ async def create_new_face_customer(customer: NewFaceCustomerCreate, current_user
         "id": str(uuid.uuid4()),
         "user_id": current_user['id'],
         "user_name": current_user['name'],
+        "team_id": current_user.get('team_id'),  # Multi-tenancy
         "date": customer.date,
         "customer_name": customer.customer_name,
         "county": customer.county,
