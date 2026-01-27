@@ -180,17 +180,35 @@ async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(s
     user = await db.users.find_one({"id": payload['user_id']}, {"_id": 0})
     if not user:
         raise HTTPException(status_code=401, detail="User not found")
+    
+    # Super admins can access without team assignment
+    if user.get('role') == 'super_admin':
+        return user
+    
+    # Regular users MUST have a team assigned
+    if not user.get('team_id'):
+        raise HTTPException(
+            status_code=403, 
+            detail="Access denied. Your account has not been assigned to a team yet. Please contact your administrator."
+        )
+    
     return user
 
-async def get_all_subordinates(user_id: str) -> List[str]:
-    """Get all subordinates recursively (exclude archived)"""
+async def get_team_filter(user: dict) -> dict:
+    """Get the team filter for queries based on user's team"""
+    if user.get('role') == 'super_admin':
+        return {}  # Super admins see all data (used for admin panel only)
+    return {"team_id": user.get('team_id')}
+
+async def get_all_subordinates(user_id: str, team_id: str = None) -> List[str]:
+    """Get all subordinates recursively (exclude archived), scoped to team"""
     subordinates = [user_id]
-    direct_reports = await db.users.find(
-        {"manager_id": user_id, "$or": [{"status": "active"}, {"status": {"$exists": False}}]},
-        {"_id": 0}
-    ).to_list(1000)
+    query = {"manager_id": user_id, "$or": [{"status": "active"}, {"status": {"$exists": False}}]}
+    if team_id:
+        query["team_id"] = team_id
+    direct_reports = await db.users.find(query, {"_id": 0}).to_list(1000)
     for report in direct_reports:
-        sub_list = await get_all_subordinates(report['id'])
+        sub_list = await get_all_subordinates(report['id'], team_id)
         subordinates.extend(sub_list)
     return list(set(subordinates))
 
