@@ -1015,8 +1015,11 @@ async def diagnose_unassigned_users(current_user: dict = Depends(get_current_use
         {"_id": 0, "password_hash": 0}
     ).to_list(1000)
     
-    # Get all teams for reference
-    all_teams = await db.teams.find({}, {"_id": 0, "id": 1, "name": 1}).to_list(100)
+    # Get all teams for reference - include all fields to debug visibility issues
+    all_teams = await db.teams.find({}, {"_id": 0}).to_list(100)
+    
+    # Sort teams alphabetically by name for easier finding
+    all_teams_sorted = sorted(all_teams, key=lambda t: t.get('name', '').lower())
     
     return {
         "unassigned_count": len(unassigned_users),
@@ -1031,7 +1034,8 @@ async def diagnose_unassigned_users(current_user: dict = Depends(get_current_use
             }
             for u in unassigned_users
         ],
-        "available_teams": all_teams,
+        "available_teams": [{"id": t.get('id'), "name": t.get('name')} for t in all_teams_sorted],
+        "all_teams_debug": all_teams_sorted,  # Full team data for debugging
         "message": "These users cannot access the app until assigned to a team. Use /admin/fix-unassigned-users to assign them."
     }
 
