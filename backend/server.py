@@ -525,23 +525,27 @@ async def get_all_new_face_customers(current_user: dict = Depends(get_current_us
     if current_user['role'] not in ['state_manager', 'regional_manager', 'district_manager']:
         raise HTTPException(status_code=403, detail="Access denied")
     
-    # Get all team members recursively (exclude archived)
+    team_id = current_user.get('team_id')
+    
+    # Get all team members recursively (exclude archived), scoped to team
     async def get_all_team_ids(user_id: str):
         ids = [user_id]
-        subordinates = await db.users.find(
-            {"manager_id": user_id, "$or": [{"status": "active"}, {"status": {"$exists": False}}]},
-            {"_id": 0, "id": 1}
-        ).to_list(1000)
+        query = {"manager_id": user_id, "$or": [{"status": "active"}, {"status": {"$exists": False}}]}
+        if team_id:
+            query["team_id"] = team_id
+        subordinates = await db.users.find(query, {"_id": 0, "id": 1}).to_list(1000)
         for sub in subordinates:
             ids.extend(await get_all_team_ids(sub['id']))
         return ids
     
     team_ids = await get_all_team_ids(current_user['id'])
     
-    customers = await db.new_face_customers.find(
-        {"user_id": {"$in": team_ids}},
-        {"_id": 0}
-    ).sort("date", -1).to_list(10000)
+    # Filter by team_id for data isolation
+    query = {"user_id": {"$in": team_ids}}
+    if team_id:
+        query["team_id"] = team_id
+    
+    customers = await db.new_face_customers.find(query, {"_id": 0}).sort("date", -1).to_list(10000)
     
     return customers
 
