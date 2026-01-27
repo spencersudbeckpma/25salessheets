@@ -505,6 +505,172 @@ async def get_team_users(team_id: str, current_user: dict = Depends(get_current_
     
     return users
 
+@api_router.get("/admin/teams/{team_id}/hierarchy")
+async def get_team_hierarchy(team_id: str, current_user: dict = Depends(get_current_user)):
+    """Get the full hierarchy tree for a specific team (super_admin only)"""
+    require_super_admin(current_user)
+    
+    # Get all users in this team
+    users = await db.users.find(
+        {"team_id": team_id, "$or": [{"status": "active"}, {"status": {"$exists": False}}]},
+        {"_id": 0, "password_hash": 0}
+    ).to_list(1000)
+    
+    # Build hierarchy tree
+    user_map = {u['id']: u for u in users}
+    
+    # Find state managers (top of hierarchy - no manager_id or manager not in team)
+    roots = []
+    for u in users:
+        manager_id = u.get('manager_id')
+        if not manager_id or manager_id not in user_map:
+            roots.append(u)
+    
+    # Build children map
+    children_map = {}
+    for u in users:
+        manager_id = u.get('manager_id')
+        if manager_id and manager_id in user_map:
+            if manager_id not in children_map:
+                children_map[manager_id] = []
+            children_map[manager_id].append(u)
+    
+    def build_tree(user):
+        node = {
+            "id": user['id'],
+            "name": user.get('name', 'Unknown'),
+            "email": user.get('email', ''),
+            "role": user.get('role', 'unknown'),
+            "manager_id": user.get('manager_id'),
+            "children": []
+        }
+        if user['id'] in children_map:
+            for child in children_map[user['id']]:
+                node['children'].append(build_tree(child))
+        return node
+    
+    hierarchy = [build_tree(root) for root in roots]
+    
+    return {
+        "team_id": team_id,
+        "total_users": len(users),
+        "roots_count": len(roots),
+        "hierarchy": hierarchy
+    }
+
+class ManagerIdRepairRequest(BaseModel):
+    user_id: str
+    manager_id: str
+
+@api_router.post("/admin/repair-manager-ids")
+async def repair_manager_ids_batch(repairs: List[ManagerIdRepairRequest], current_user: dict = Depends(get_current_user)):
+    """
+    Batch repair manager_id for multiple users (super_admin only).
+    This is a ONE-TIME fix for users created before the manager_id bug was fixed.
+    """
+    require_super_admin(current_user)
+    
+    results = []
+    for repair in repairs:
+        # Verify user exists
+        user = await db.users.find_one({"id": repair.user_id})
+        if not user:
+            results.append({"user_id": repair.user_id, "status": "error", "message": "User not found"})
+            continue
+        
+        # Verify manager exists (if provided)
+        if repair.manager_id:
+            manager = await db.users.find_one({"id": repair.manager_id})
+            if not manager:
+                results.append({"user_id": repair.user_id, "status": "error", "message": "Manager not found"})
+                continue
+        
+        # Update the manager_id
+        await db.users.update_one(
+            {"id": repair.user_id},
+            {"$set": {"manager_id": repair.manager_id if repair.manager_id else None}}
+        )
+        results.append({
+            "user_id": repair.user_id,
+            "user_name": user.get('name'),
+            "status": "success",
+            "new_manager_id": repair.manager_id
+        })
+    
+    return {
+        "message": f"Processed {len(repairs)} manager_id repairs",
+        "results": results
+    }
+
+@api_router.get("/admin/teams/{team_id}/broken-hierarchy")
+async def get_broken_hierarchy_users(team_id: str, current_user: dict = Depends(get_current_user)):
+    """
+    Find users in a team with broken hierarchy (missing or invalid manager_id).
+    This helps identify users that need manager_id repair.
+    (super_admin only)
+    """
+    require_super_admin(current_user)
+    
+    # Get team info
+    team = await db.teams.find_one({"id": team_id}, {"_id": 0})
+    if not team:
+        raise HTTPException(status_code=404, detail="Team not found")
+    
+    # Get all users in this team
+    users = await db.users.find(
+        {"team_id": team_id, "$or": [{"status": "active"}, {"status": {"$exists": False}}]},
+        {"_id": 0, "password_hash": 0}
+    ).to_list(1000)
+    
+    user_ids = {u['id'] for u in users}
+    
+    broken_users = []
+    for u in users:
+        role = u.get('role', '')
+        manager_id = u.get('manager_id')
+        
+        # State managers don't need a manager_id (they're at the top)
+        if role == 'state_manager':
+            continue
+        
+        # All other roles should have a valid manager_id pointing to someone in the same team
+        if not manager_id:
+            broken_users.append({
+                "id": u['id'],
+                "name": u.get('name'),
+                "email": u.get('email'),
+                "role": role,
+                "issue": "Missing manager_id"
+            })
+        elif manager_id not in user_ids:
+            broken_users.append({
+                "id": u['id'],
+                "name": u.get('name'),
+                "email": u.get('email'),
+                "role": role,
+                "manager_id": manager_id,
+                "issue": "manager_id points to user not in this team"
+            })
+    
+    # Get potential managers for fixing
+    potential_managers = []
+    for u in users:
+        if u.get('role') in ['state_manager', 'regional_manager', 'district_manager']:
+            potential_managers.append({
+                "id": u['id'],
+                "name": u.get('name'),
+                "role": u.get('role')
+            })
+    
+    return {
+        "team_name": team.get('name'),
+        "team_id": team_id,
+        "total_users": len(users),
+        "broken_count": len(broken_users),
+        "broken_users": broken_users,
+        "potential_managers": potential_managers
+    }
+
 # ==================== END ADMIN TEAM MANAGEMENT ====================
 
 # Authentication Routes
