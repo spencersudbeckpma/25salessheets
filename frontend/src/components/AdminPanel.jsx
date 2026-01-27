@@ -1445,7 +1445,7 @@ const AdminPanel = ({ user }) => {
                   <SelectValue placeholder="Keep current role..." />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">Keep current role</SelectItem>
+                  <SelectItem value="keep_current">Keep current role</SelectItem>
                   <SelectItem value="state_manager">State Manager</SelectItem>
                   <SelectItem value="regional_manager">Regional Manager</SelectItem>
                   <SelectItem value="district_manager">District Manager</SelectItem>
