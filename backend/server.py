@@ -696,6 +696,52 @@ async def admin_delete_user(user_id: str, current_user: dict = Depends(get_curre
         "activities_deleted": deleted_activities.deleted_count
     }
 
+class AdminUserUpdate(BaseModel):
+    name: str = None
+    email: str = None
+    role: str = None
+    team_id: str = None
+    manager_id: str = None
+
+@api_router.put("/admin/users/{user_id}")
+async def admin_update_user(user_id: str, update_data: AdminUserUpdate, current_user: dict = Depends(get_current_user)):
+    """
+    Update user details (super_admin only).
+    Can update name, email, role, team_id, or manager_id.
+    """
+    require_super_admin(current_user)
+    
+    user = await db.users.find_one({"id": user_id}, {"_id": 0})
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    # Build update dict with only provided fields
+    update_dict = {}
+    if update_data.name:
+        update_dict["name"] = update_data.name
+    if update_data.email:
+        # Check if email is already taken by another user
+        existing = await db.users.find_one({"email": update_data.email, "id": {"$ne": user_id}})
+        if existing:
+            raise HTTPException(status_code=400, detail="Email already in use by another user")
+        update_dict["email"] = update_data.email
+    if update_data.role:
+        update_dict["role"] = update_data.role
+    if update_data.team_id:
+        update_dict["team_id"] = update_data.team_id
+    if update_data.manager_id is not None:
+        update_dict["manager_id"] = update_data.manager_id if update_data.manager_id else None
+    
+    if not update_dict:
+        raise HTTPException(status_code=400, detail="No fields to update")
+    
+    await db.users.update_one({"id": user_id}, {"$set": update_dict})
+    
+    return {
+        "message": f"User '{user.get('name')}' updated successfully",
+        "updated_fields": list(update_dict.keys())
+    }
+
 @api_router.post("/admin/auto-repair-all-teams")
 async def auto_repair_all_teams(current_user: dict = Depends(get_current_user)):
     """
