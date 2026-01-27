@@ -508,8 +508,8 @@ const Recruiting = ({ user }) => {
     </div>
   );
 
-  // Check if user has access (State Manager, Regional Manager, or District Manager)
-  if (!['state_manager', 'regional_manager', 'district_manager'].includes(user.role)) {
+  // Check if user has access (super_admin, State Manager, Regional Manager, or District Manager)
+  if (!['super_admin', 'state_manager', 'regional_manager', 'district_manager'].includes(user.role)) {
     return (
       <Card className="shadow-lg">
         <CardContent className="p-8 text-center text-slate-500">
