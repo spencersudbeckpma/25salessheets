@@ -339,8 +339,10 @@ async def remove_user_from_team(user_id: str, current_user: dict = Depends(get_c
 
 @api_router.post("/admin/migrate-to-teams")
 async def migrate_existing_data_to_teams(current_user: dict = Depends(get_current_user)):
-    """One-time migration: Create default team and assign all existing data (super_admin only)"""
-    require_super_admin(current_user)
+    """One-time migration: Create default team and assign all existing data (super_admin or state_manager)"""
+    # Allow both super_admin and state_manager to run migration (state_manager is the admin in this system)
+    if current_user.get('role') not in ['super_admin', 'state_manager']:
+        raise HTTPException(status_code=403, detail="Admin access required (super_admin or state_manager)")
     
     # Check if default team exists
     default_team = await db.teams.find_one({"name": "Team Sudbeck"})
