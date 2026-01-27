@@ -238,6 +238,13 @@ class TeamCreate(BaseModel):
     name: str
     settings: Optional[Dict[str, Any]] = {}
 
+class TeamBrandingUpdate(BaseModel):
+    logo_url: Optional[str] = None
+    primary_color: Optional[str] = None
+    accent_color: Optional[str] = None
+    display_name: Optional[str] = None
+    tagline: Optional[str] = None
+
 class UserTeamAssignment(BaseModel):
     user_id: str
     team_id: str
