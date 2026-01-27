@@ -40,6 +40,17 @@ const AdminPanel = ({ user }) => {
     manager_id: ''
   });
   
+  // Edit user modal
+  const [showEditUserModal, setShowEditUserModal] = useState(false);
+  const [editUserForm, setEditUserForm] = useState({
+    id: '',
+    name: '',
+    email: '',
+    role: '',
+    team_id: '',
+    manager_id: ''
+  });
+  
   // Hierarchy repair states
   const [hierarchyData, setHierarchyData] = useState({});
   const [repairLoading, setRepairLoading] = useState({});
