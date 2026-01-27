@@ -544,7 +544,7 @@ async def get_new_face_customers_by_date(date: str, current_user: dict = Depends
 @api_router.get("/new-face-customers/all")
 async def get_all_new_face_customers(current_user: dict = Depends(get_current_user)):
     """Get all new face customers from entire team (Managers only)"""
-    if current_user['role'] not in ['state_manager', 'regional_manager', 'district_manager']:
+    if current_user['role'] not in ['super_admin', 'state_manager', 'regional_manager', 'district_manager']:
         raise HTTPException(status_code=403, detail="Access denied")
     
     team_id = current_user.get('team_id')
@@ -580,7 +580,7 @@ async def delete_new_face_customer(customer_id: str, current_user: dict = Depend
         raise HTTPException(status_code=404, detail="Customer not found")
     
     # Only owner or managers can delete
-    if customer['user_id'] != current_user['id'] and current_user['role'] not in ['state_manager', 'regional_manager', 'district_manager']:
+    if customer['user_id'] != current_user['id'] and current_user['role'] not in ['super_admin', 'state_manager', 'regional_manager', 'district_manager']:
         raise HTTPException(status_code=403, detail="Access denied")
     
     await db.new_face_customers.delete_one({"id": customer_id})
@@ -866,7 +866,7 @@ async def get_manager_hierarchy_report(manager_id: str, period: str, current_use
     quarter: Optional - specific quarter for quarterly reports in YYYY-Q1 format
     year: Optional - specific year for yearly reports in YYYY format
     """
-    if current_user['role'] not in ['state_manager', 'regional_manager', 'district_manager']:
+    if current_user['role'] not in ['super_admin', 'state_manager', 'regional_manager', 'district_manager']:
         raise HTTPException(status_code=403, detail="Only Managers can access hierarchy reports")
     
     # Verify the requested manager is in current user's hierarchy
@@ -1039,7 +1039,7 @@ async def get_available_managers(current_user: dict = Depends(get_current_user))
     Get list of managers available for individual reporting.
     Returns all users under the current user's hierarchy.
     """
-    if current_user['role'] not in ['state_manager', 'regional_manager', 'district_manager']:
+    if current_user['role'] not in ['super_admin', 'state_manager', 'regional_manager', 'district_manager']:
         raise HTTPException(status_code=403, detail="Only Managers can access manager list")
     
     # Helper function to get all subordinates recursively (exclude archived)
@@ -1080,7 +1080,7 @@ async def get_daily_report(report_type: str, date: str, current_user: dict = Dep
     user_id: Optional - specific user ID for individual reports (defaults to all team members)
     Returns JSON data for on-screen viewing
     """
-    if current_user['role'] not in ['state_manager', 'regional_manager', 'district_manager']:
+    if current_user['role'] not in ['super_admin', 'state_manager', 'regional_manager', 'district_manager']:
         raise HTTPException(status_code=403, detail="Only Managers (State, Regional, District) can access daily reports")
     
     # Validate date format - keep it simple like other endpoints
@@ -1258,7 +1258,7 @@ async def get_period_report(report_type: str, period: str, current_user: dict = 
     week_start, week_end: Optional - specific week range in YYYY-MM-DD format (defaults to current week)
     Returns JSON data for on-screen viewing
     """
-    if current_user['role'] not in ['state_manager', 'regional_manager', 'district_manager']:
+    if current_user['role'] not in ['super_admin', 'state_manager', 'regional_manager', 'district_manager']:
         raise HTTPException(status_code=403, detail="Only Managers (State, Regional, District) can access period reports")
     
     # Use Central Time for date calculations
@@ -1504,7 +1504,7 @@ async def download_period_report_excel(report_type: str, period: str, current_us
     from io import BytesIO
     from fastapi.responses import StreamingResponse
     
-    if current_user['role'] not in ['state_manager', 'regional_manager', 'district_manager']:
+    if current_user['role'] not in ['super_admin', 'state_manager', 'regional_manager', 'district_manager']:
         raise HTTPException(status_code=403, detail="Only Managers (State, Regional, District) can download period reports")
     
     # Get the report data with all parameters
@@ -1710,7 +1710,7 @@ async def download_daily_report_excel(report_type: str, date: str, current_user:
     from io import BytesIO
     from fastapi.responses import StreamingResponse
     
-    if current_user['role'] not in ['state_manager', 'regional_manager', 'district_manager']:
+    if current_user['role'] not in ['super_admin', 'state_manager', 'regional_manager', 'district_manager']:
         raise HTTPException(status_code=403, detail="Only Managers (State, Regional, District) can download daily reports")
     
     # Get the report data with all parameters
@@ -2056,7 +2056,7 @@ class UserCreate(BaseModel):
 @api_router.post("/auth/create-user")
 async def create_user_directly(user_data: UserCreate, current_user: dict = Depends(get_current_user)):
     """Create a new user directly with password (managers only)"""
-    if current_user['role'] not in ['state_manager', 'regional_manager', 'district_manager']:
+    if current_user['role'] not in ['super_admin', 'state_manager', 'regional_manager', 'district_manager']:
         raise HTTPException(status_code=403, detail="Only managers can create users")
     
     # Check if email already exists
@@ -3111,7 +3111,7 @@ async def create_recruit(recruit_data: dict, current_user: dict = Depends(get_cu
 @api_router.put("/recruiting/{recruit_id}")
 async def update_recruit(recruit_id: str, recruit_data: dict, current_user: dict = Depends(get_current_user)):
     """Update a recruit (State Manager, Regional Manager or District Manager for their own recruits)"""
-    if current_user['role'] not in ['state_manager', 'regional_manager', 'district_manager']:
+    if current_user['role'] not in ['super_admin', 'state_manager', 'regional_manager', 'district_manager']:
         raise HTTPException(status_code=403, detail="Only managers can manage recruiting")
     
     existing = await db.recruits.find_one({"id": recruit_id})
@@ -3154,7 +3154,7 @@ async def update_recruit(recruit_id: str, recruit_data: dict, current_user: dict
 @api_router.delete("/recruiting/{recruit_id}")
 async def delete_recruit(recruit_id: str, current_user: dict = Depends(get_current_user)):
     """Delete a recruit (State Manager, Regional Manager or District Manager for their own recruits)"""
-    if current_user['role'] not in ['state_manager', 'regional_manager', 'district_manager']:
+    if current_user['role'] not in ['super_admin', 'state_manager', 'regional_manager', 'district_manager']:
         raise HTTPException(status_code=403, detail="Only managers can manage recruiting")
     
     existing = await db.recruits.find_one({"id": recruit_id})
@@ -3181,7 +3181,7 @@ async def delete_recruit(recruit_id: str, current_user: dict = Depends(get_curre
 async def get_interviews(current_user: dict = Depends(get_current_user)):
     """Get all interviews - State Manager sees all, Regional sees own + their DMs, District sees own only. 
     Also includes interviews shared with the current user. Excludes archived."""
-    if current_user['role'] not in ['state_manager', 'regional_manager', 'district_manager']:
+    if current_user['role'] not in ['super_admin', 'state_manager', 'regional_manager', 'district_manager']:
         raise HTTPException(status_code=403, detail="Only managers can access interviews")
     
     team_id = current_user.get('team_id')
@@ -3234,7 +3234,7 @@ async def get_interviews(current_user: dict = Depends(get_current_user)):
 @api_router.get("/interviews/stats")
 async def get_interview_stats(current_user: dict = Depends(get_current_user)):
     """Get interview statistics - includes ALL interviews (even archived) to preserve totals"""
-    if current_user['role'] not in ['state_manager', 'regional_manager', 'district_manager']:
+    if current_user['role'] not in ['super_admin', 'state_manager', 'regional_manager', 'district_manager']:
         raise HTTPException(status_code=403, detail="Only managers can access interviews")
     
     from datetime import datetime, timedelta
@@ -3420,7 +3420,7 @@ async def get_interview_regional_breakdown(current_user: dict = Depends(get_curr
 @api_router.post("/interviews")
 async def create_interview(interview_data: dict, current_user: dict = Depends(get_current_user)):
     """Create a new interview (1st interview submission)"""
-    if current_user['role'] not in ['state_manager', 'regional_manager', 'district_manager']:
+    if current_user['role'] not in ['super_admin', 'state_manager', 'regional_manager', 'district_manager']:
         raise HTTPException(status_code=403, detail="Only managers can conduct interviews")
     
     from uuid import uuid4
@@ -3476,7 +3476,7 @@ async def create_interview(interview_data: dict, current_user: dict = Depends(ge
 @api_router.put("/interviews/{interview_id}")
 async def update_interview(interview_id: str, interview_data: dict, current_user: dict = Depends(get_current_user)):
     """Update an interview"""
-    if current_user['role'] not in ['state_manager', 'regional_manager', 'district_manager']:
+    if current_user['role'] not in ['super_admin', 'state_manager', 'regional_manager', 'district_manager']:
         raise HTTPException(status_code=403, detail="Only managers can update interviews")
     
     existing = await db.interviews.find_one({"id": interview_id})
@@ -3584,7 +3584,7 @@ async def add_interview_to_recruiting(interview_id: str, current_user: dict = De
 @api_router.post("/interviews/{interview_id}/share")
 async def share_interview(interview_id: str, share_data: dict, current_user: dict = Depends(get_current_user)):
     """Share an interview with specific team members"""
-    if current_user['role'] not in ['state_manager', 'regional_manager', 'district_manager']:
+    if current_user['role'] not in ['super_admin', 'state_manager', 'regional_manager', 'district_manager']:
         raise HTTPException(status_code=403, detail="Only managers can share interviews")
     
     existing = await db.interviews.find_one({"id": interview_id})
@@ -3796,7 +3796,7 @@ NPA_GOAL = 1000
 @api_router.get("/npa-tracker")
 async def get_npa_agents(current_user: dict = Depends(get_current_user)):
     """Get all manually added NPA agents and their progress"""
-    if current_user['role'] not in ['state_manager', 'regional_manager', 'district_manager']:
+    if current_user['role'] not in ['super_admin', 'state_manager', 'regional_manager', 'district_manager']:
         raise HTTPException(status_code=403, detail="Only managers can access NPA tracker")
     
     team_id = current_user.get('team_id')
@@ -3880,7 +3880,7 @@ async def get_npa_agents(current_user: dict = Depends(get_current_user)):
 @api_router.post("/npa-tracker")
 async def add_npa_agent(data: dict, current_user: dict = Depends(get_current_user)):
     """Add a new agent to NPA tracking"""
-    if current_user['role'] not in ['state_manager', 'regional_manager', 'district_manager']:
+    if current_user['role'] not in ['super_admin', 'state_manager', 'regional_manager', 'district_manager']:
         raise HTTPException(status_code=403, detail="Only managers can add NPA agents")
     
     npa_agent = {
@@ -3912,7 +3912,7 @@ async def add_npa_agent(data: dict, current_user: dict = Depends(get_current_use
 @api_router.put("/npa-tracker/{agent_id}")
 async def update_npa_agent(agent_id: str, data: dict, current_user: dict = Depends(get_current_user)):
     """Update an NPA agent's information or premium"""
-    if current_user['role'] not in ['state_manager', 'regional_manager', 'district_manager']:
+    if current_user['role'] not in ['super_admin', 'state_manager', 'regional_manager', 'district_manager']:
         raise HTTPException(status_code=403, detail="Only managers can update NPA agents")
     
     existing = await db.npa_agents.find_one({"id": agent_id})
@@ -4056,7 +4056,7 @@ class UserReassignment(BaseModel):
 async def reassign_user(user_id: str, reassignment: UserReassignment, current_user: dict = Depends(get_current_user)):
     """Reassign a user's role and/or manager (for promotions/transfers)"""
     # Only managers can reassign
-    if current_user['role'] not in ['state_manager', 'regional_manager', 'district_manager']:
+    if current_user['role'] not in ['super_admin', 'state_manager', 'regional_manager', 'district_manager']:
         raise HTTPException(status_code=403, detail="Only managers can reassign team members")
     
     user = await db.users.find_one({"id": user_id}, {"_id": 0})
@@ -4159,7 +4159,7 @@ async def get_archived_users(current_user: dict = Depends(get_current_user)):
 @api_router.get("/users/active/list")
 async def get_active_users_for_reassignment(current_user: dict = Depends(get_current_user)):
     """Get all active users for team reorganization"""
-    if current_user['role'] not in ['state_manager', 'regional_manager', 'district_manager']:
+    if current_user['role'] not in ['super_admin', 'state_manager', 'regional_manager', 'district_manager']:
         raise HTTPException(status_code=403, detail="Only managers can access this")
     
     # Get all active users (or users without status field - default to active)
@@ -4240,7 +4240,7 @@ async def get_personal_averages(current_user: dict = Depends(get_current_user)):
 @api_router.get("/analytics/team-averages")
 async def get_team_averages(current_user: dict = Depends(get_current_user)):
     """Get team averages for managers"""
-    if current_user['role'] not in ['state_manager', 'regional_manager', 'district_manager']:
+    if current_user['role'] not in ['super_admin', 'state_manager', 'regional_manager', 'district_manager']:
         raise HTTPException(status_code=403, detail="Only managers can access team analytics")
     
     from datetime import timedelta
@@ -4313,7 +4313,7 @@ async def get_team_averages(current_user: dict = Depends(get_current_user)):
 @api_router.get("/analytics/individual-member-averages")
 async def get_individual_member_averages(current_user: dict = Depends(get_current_user), period: str = "last_4_weeks"):
     """Get individual averages for each team member"""
-    if current_user['role'] not in ['state_manager', 'regional_manager', 'district_manager']:
+    if current_user['role'] not in ['super_admin', 'state_manager', 'regional_manager', 'district_manager']:
         raise HTTPException(status_code=403, detail="Only managers can access this")
     
     from datetime import timedelta
@@ -4389,7 +4389,7 @@ async def get_individual_member_averages(current_user: dict = Depends(get_curren
 @api_router.get("/analytics/manager-team-averages")
 async def get_manager_team_averages(current_user: dict = Depends(get_current_user), period: str = "last_4_weeks"):
     """Get average performance for each direct report manager's team"""
-    if current_user['role'] not in ['state_manager', 'regional_manager', 'district_manager']:
+    if current_user['role'] not in ['super_admin', 'state_manager', 'regional_manager', 'district_manager']:
         raise HTTPException(status_code=403, detail="Only managers can access this")
     
     from datetime import timedelta
@@ -4497,7 +4497,7 @@ async def get_manager_team_averages(current_user: dict = Depends(get_current_use
 @api_router.get("/analytics/manager-subordinates")
 async def get_manager_subordinate_averages(manager_id: str, period: str, current_user: dict = Depends(get_current_user)):
     """Get subordinate managers for a specific manager (for hierarchy drill-down)"""
-    if current_user['role'] not in ['state_manager', 'regional_manager', 'district_manager']:
+    if current_user['role'] not in ['super_admin', 'state_manager', 'regional_manager', 'district_manager']:
         raise HTTPException(status_code=403, detail="Only managers can access this")
     
     from datetime import timedelta
@@ -4856,7 +4856,7 @@ async def get_individual_goal_progress(current_user: dict = Depends(get_current_
 @api_router.post("/goals/team")
 async def set_team_goals(goals: TeamGoalSettings, current_user: dict = Depends(get_current_user)):
     """Set team premium goals (managers only)"""
-    if current_user['role'] not in ['state_manager', 'regional_manager', 'district_manager']:
+    if current_user['role'] not in ['super_admin', 'state_manager', 'regional_manager', 'district_manager']:
         raise HTTPException(status_code=403, detail="Only managers can set team goals")
     
     goal_data = {
@@ -4879,7 +4879,7 @@ async def set_team_goals(goals: TeamGoalSettings, current_user: dict = Depends(g
 @api_router.get("/goals/team/progress")
 async def get_team_goal_progress(current_user: dict = Depends(get_current_user)):
     """Get team goal progress (managers only)"""
-    if current_user['role'] not in ['state_manager', 'regional_manager', 'district_manager']:
+    if current_user['role'] not in ['super_admin', 'state_manager', 'regional_manager', 'district_manager']:
         raise HTTPException(status_code=403, detail="Only managers can view team goals")
     
     central_tz = pytz_timezone('America/Chicago')
@@ -4968,7 +4968,7 @@ async def get_team_goal_progress(current_user: dict = Depends(get_current_user))
 @api_router.get("/goals/team/members")
 async def get_team_members_goals(current_user: dict = Depends(get_current_user)):
     """Get all team members' individual goals and progress (managers only)"""
-    if current_user['role'] not in ['state_manager', 'regional_manager', 'district_manager']:
+    if current_user['role'] not in ['super_admin', 'state_manager', 'regional_manager', 'district_manager']:
         raise HTTPException(status_code=403, detail="Only managers can view team member goals")
     
     central_tz = pytz_timezone('America/Chicago')
@@ -5113,7 +5113,7 @@ async def get_suitability_forms(
     # Access control - users see their own, managers can see all with view_all flag
     if not view_all or current_user['role'] == 'agent':
         query["submitted_by"] = current_user['id']
-    elif current_user['role'] in ['state_manager', 'regional_manager', 'district_manager']:
+    elif current_user['role'] in ['super_admin', 'state_manager', 'regional_manager', 'district_manager']:
         # Managers can view all forms from their team (scoped to team)
         if view_all:
             team_ids = await get_all_subordinates(current_user['id'], team_id)
@@ -5149,7 +5149,7 @@ async def update_suitability_form(form_id: str, form_data: dict, current_user: d
         raise HTTPException(status_code=404, detail="Form not found")
     
     # Only allow owner or managers to update
-    if existing['submitted_by'] != current_user['id'] and current_user['role'] not in ['state_manager', 'regional_manager', 'district_manager']:
+    if existing['submitted_by'] != current_user['id'] and current_user['role'] not in ['super_admin', 'state_manager', 'regional_manager', 'district_manager']:
         raise HTTPException(status_code=403, detail="Not authorized to update this form")
     
     form_data['updated_at'] = datetime.now(timezone.utc).isoformat()
@@ -5166,7 +5166,7 @@ async def delete_suitability_form(form_id: str, current_user: dict = Depends(get
         raise HTTPException(status_code=404, detail="Form not found")
     
     # Only allow owner or managers to delete
-    if existing['submitted_by'] != current_user['id'] and current_user['role'] not in ['state_manager', 'regional_manager', 'district_manager']:
+    if existing['submitted_by'] != current_user['id'] and current_user['role'] not in ['super_admin', 'state_manager', 'regional_manager', 'district_manager']:
         raise HTTPException(status_code=403, detail="Not authorized to delete this form")
     
     await db.suitability_forms.delete_one({"id": form_id})
@@ -5186,7 +5186,7 @@ async def export_suitability_forms(
         query["presentation_date"] = {"$gte": start_date, "$lte": end_date}
     
     # Managers can export all, others export their own
-    if current_user['role'] in ['state_manager', 'regional_manager', 'district_manager']:
+    if current_user['role'] in ['super_admin', 'state_manager', 'regional_manager', 'district_manager']:
         team_ids = await get_all_subordinates(current_user['id'])
         query["submitted_by"] = {"$in": team_ids}
     else:
@@ -5273,7 +5273,7 @@ async def get_friday_report_export(
     }
     
     # Managers see all team forms
-    if current_user['role'] in ['state_manager', 'regional_manager', 'district_manager']:
+    if current_user['role'] in ['super_admin', 'state_manager', 'regional_manager', 'district_manager']:
         team_ids = await get_all_subordinates(current_user['id'])
         query["submitted_by"] = {"$in": team_ids}
     else:
@@ -5521,7 +5521,7 @@ async def get_weekly_suitability_report(
     }
     
     # Managers see all team forms
-    if current_user['role'] in ['state_manager', 'regional_manager', 'district_manager']:
+    if current_user['role'] in ['super_admin', 'state_manager', 'regional_manager', 'district_manager']:
         team_ids = await get_all_subordinates(current_user['id'])
         query["submitted_by"] = {"$in": team_ids}
     else:
