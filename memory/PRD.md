@@ -1,64 +1,57 @@
 # Team Sudbeck Sales Tracker - Product Requirements Document
 
 ## Overview
-A comprehensive sales tracking application for insurance agencies, enabling team management, activity tracking, reporting, and agent progress monitoring. **Now with multi-tenancy support.**
+A comprehensive sales tracking application for insurance agencies, enabling team management, activity tracking, reporting, and agent progress monitoring. **Now with multi-tenancy support and strict data isolation.**
 
 ## Core Features
 
 ### 1. User Management & Authentication
 - JWT-based authentication
-- Role-based access: State Manager, Regional Manager, District Manager, Agent
+- Role-based access: super_admin, State Manager, Regional Manager, District Manager, Agent
 - Hierarchical team structure
 - **Multi-tenancy: Users must be assigned to a team to access the app**
 
-### 2. Multi-Tenancy (NEW - Jan 2026)
+### 2. Multi-Tenancy (Jan 2026 - COMPLETE)
 - **Team-based data isolation**: All data scoped by `team_id`
-- **Admin Panel**: State Managers can create teams and assign users
+- **Admin Panel**: Super Admin ONLY can create teams and assign users across teams
 - **Migration completed**: All existing data migrated to "Team Sudbeck"
 - **Team hierarchy**: Each team has independent hierarchies
 - **Data collections with team_id**: users, activities, interviews, suitability_forms, npa_agents, new_face_customers, recruits, team_goals, goals, invites
 
-### 3. Daily Activity Tracking
+### 3. Role-Based Access Control (Jan 27, 2026 - COMPLETE)
+#### Acceptance Criteria VERIFIED:
+- **super_admin**: Can see ALL teams/users ONLY in Admin tab
+- **state_manager**: Can see ONLY their own team, ONLY their hierarchy (downline), NO "All Users" view
+- **regional_manager / district_manager**: Same team-only + downline-only restrictions
+
+### 4. Daily Activity Tracking
 - Track: Contacts, Appointments, Presentations, Referrals, Testimonials, Apps, Sales, Premium
 - New Face Sold and Bankers Premium tracking
 
-### 4. Reports & Analytics
+### 5. Reports & Analytics
 - Daily, Weekly, Monthly, Quarterly, Yearly reports
 - Team View with hierarchical data rollup
 - Leaderboard (organization-wide, team-scoped)
 - Analytics dashboard
 
-### 5. SNA Tracker (State/New Agent)
+### 6. SNA Tracker (State/New Agent)
 - Automatic tracking from first production entry
 - 90-day tracking period, $30,000 premium goal
-- Shows: Active, On Pace, Behind Pace, Graduated/Completed
-- Manual exclude/remove feature for managers
 
-### 6. NPA Tracker (New Producing Agent)
+### 7. NPA Tracker (New Producing Agent)
 - Track agents toward $1,000 premium goal
 - Select Team Member: Links to existing user, auto-calculates premium
-- Manual Entry: For external agents not in the system
-- Shows progress percentage, upline information
 
-### 7. Interviews Feature
+### 8. Interviews Feature
 - Regional Breakdown view with stats by region
 - Share functionality with team members
-- 2nd Interview Answers field for Moving Forward candidates
 
-### 8. Suitability Form
+### 9. Suitability Form
 - Complete form for client suitability assessments
-- Life Licensed field with Regional Manager assignment
 - Weekly Report view with export to Excel (.xlsx)
-- Manager notes/results field
 
-### 9. PMA Bonuses
-- Bonus tracking and calculation
-
-### 10. DocuSphere
-- Document management
-
-### 11. Recruiting
-- Team member recruitment pipeline tracking
+### 10. PMA Bonuses & DocuSphere
+- Bonus tracking and document management
 
 ## Technical Architecture
 
@@ -75,18 +68,14 @@ A comprehensive sales tracking application for insurance agencies, enabling team
 - Axios for API calls
 
 ### Key Files
-- `backend/server.py` - Main backend file (~5500 lines)
+- `backend/server.py` - Main backend file (~5700 lines)
 - `frontend/src/components/Dashboard.jsx` - Main dashboard with tabs
-- `frontend/src/components/AdminPanel.jsx` - Team/User management (NEW)
-- `frontend/src/components/Reports.jsx` - Reports & tracking tabs
-- `frontend/src/components/NPATracker.jsx` - NPA tracker component
-- `frontend/src/components/SNATracker.jsx` - SNA tracker component
-- `frontend/src/components/Interviews.jsx` - Interview management
-- `frontend/src/components/SuitabilityForm.jsx` - Suitability form feature
+- `frontend/src/components/AdminPanel.jsx` - Team/User management (super_admin only)
+- `frontend/src/components/TeamManagement.jsx` - Team-scoped management (managers)
 
 ## Database Collections
 
-### teams (NEW)
+### teams
 ```json
 {
   "id": "string (UUID)",
@@ -102,56 +91,60 @@ A comprehensive sales tracking application for insurance agencies, enabling team
   "id": "string (UUID)",
   "email": "string",
   "name": "string",
-  "role": "state_manager|regional_manager|district_manager|agent",
-  "team_id": "string (UUID) - required for non-admin access",
+  "role": "super_admin|state_manager|regional_manager|district_manager|agent",
+  "team_id": "string (UUID) - required for non-super_admin access",
   "manager_id": "string (UUID)",
   "status": "active|archived"
 }
 ```
 
-### activities
-```json
-{
-  "id": "string",
-  "user_id": "string",
-  "team_id": "string",
-  "date": "YYYY-MM-DD",
-  "contacts": "float",
-  "appointments": "float",
-  "presentations": "float",
-  "referrals": "int",
-  "testimonials": "int",
-  "sales": "int",
-  "new_face_sold": "float",
-  "premium": "float"
-}
-```
-
-### All other collections now include `team_id` field
-
 ## What's Been Implemented
 
-### January 2026
-- [x] **Multi-Tenancy Refactor** (Complete)
-  - [x] Team model and admin endpoints
-  - [x] Migration endpoint to assign existing data to Team Sudbeck
-  - [x] All data queries scoped by team_id
-  - [x] Admin Panel for team/user management
-  - [x] 58 users and all data migrated to Team Sudbeck
-- [x] NPA Tracker with automatic premium calculation
-- [x] SNA Tracker automatic tracking
-- [x] Interview Regional Breakdown
-- [x] Interview Share feature
-- [x] 2nd Interview Answers field
-- [x] Suitability Form with Excel export
-- [x] Reports tabs redesign
+### January 27, 2026 - Hierarchy & Scoping Fix (COMPLETE)
+- [x] **Backend enforcement** for team_id and role-based hierarchy filtering
+  - [x] `/users/active/list` - Now filters by team_id + hierarchy for non-super_admin
+  - [x] `/users/archived/list` - Now filters by team_id for non-super_admin
+  - [x] `/reports/managers` - Now scoped to team hierarchy
+- [x] **Hierarchy repair/backfill endpoints** for broken manager_id
+  - [x] `GET /admin/teams/{team_id}/hierarchy` - View hierarchy tree
+  - [x] `GET /admin/teams/{team_id}/broken-hierarchy` - Detect broken relationships
+  - [x] `POST /admin/repair-manager-ids` - Batch repair manager_id
+- [x] **Frontend updates**
+  - [x] Renamed "All Users" tab to "My Team" in TeamManagement
+  - [x] Scoped to managers (state_manager, regional_manager, district_manager)
+  - [x] Removed cross-team visibility
+
+### January 2026 - Multi-Tenancy Refactor (COMPLETE)
+- [x] Team model and admin endpoints
+- [x] Migration endpoint to assign existing data to Team Sudbeck
+- [x] All data queries scoped by team_id
+- [x] Admin Panel for team/user management
+- [x] 4 new teams created (Gaines, Koch, Quick, Graham)
+- [x] 120+ users added with hierarchies
+
+## Admin API Endpoints
+
+### Team Management (super_admin only)
+- `GET /api/admin/teams` - List all teams
+- `POST /api/admin/teams` - Create team
+- `PUT /api/admin/teams/{team_id}` - Update team
+- `DELETE /api/admin/teams/{team_id}` - Delete team (only if empty)
+- `GET /api/admin/teams/{team_id}/users` - Get team users
+- `GET /api/admin/teams/{team_id}/hierarchy` - Get hierarchy tree
+- `GET /api/admin/teams/{team_id}/broken-hierarchy` - Find broken hierarchy
+
+### User Management (super_admin only)
+- `GET /api/admin/users` - List all users with team info
+- `POST /api/admin/users` - Create user in team
+- `POST /api/admin/users/assign-team` - Assign user to team
+- `POST /api/admin/repair-manager-ids` - Batch repair manager_id
+
+## Test Credentials
+- **Super Admin**: admin@pmagent.net / Admin2026
+- **Team Sudbeck SM**: spencer.sudbeck@pmagent.net / Bizlink25
+- **Team Quick SM**: sean.quick@pmagent.net / PMA2026
 
 ## Backlog / Future Tasks
-
-### P0 (High Priority)
-- [x] Multi-tenancy refactor - COMPLETE
-- [x] Restrict team management to super_admin only - COMPLETE
-- [x] Deploy to production - READY (passed deployment check)
 
 ### P1 (Medium Priority)
 - [ ] Code refactoring - break down server.py into modules (routes/, models/)
@@ -160,21 +153,8 @@ A comprehensive sales tracking application for insurance agencies, enabling team
 - [ ] Add more analytics and reporting features
 - [ ] Performance optimizations for large teams
 
-## Test Credentials
-- **State Manager**: spencer.sudbeck@pmagent.net / Bizlink25
-
 ## Architecture Notes
 - Multi-tenancy uses `team_id` field on all data collections
-- State Managers have admin privileges (can manage teams, assign users)
-- Users without team_id cannot access the app (except state_managers)
-- `get_all_subordinates()` now accepts optional `team_id` parameter for scoping
-- Migration endpoint: `POST /api/admin/migrate-to-teams`
-
-## Admin API Endpoints
-- `GET /api/admin/teams` - List all teams
-- `POST /api/admin/teams` - Create team
-- `PUT /api/admin/teams/{team_id}` - Update team
-- `DELETE /api/admin/teams/{team_id}` - Delete team (only if empty)
-- `GET /api/admin/users` - List all users with team info
-- `POST /api/admin/users/assign-team` - Assign user to team
-- `POST /api/admin/migrate-to-teams` - Run data migration
+- Super Admin has global access but is NOT assigned to any team
+- State Managers have admin privileges within their team ONLY
+- `get_all_subordinates()` accepts `team_id` parameter for scoping
