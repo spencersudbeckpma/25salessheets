@@ -475,20 +475,31 @@ const AdminPanel = ({ user }) => {
                         )}
                       </td>
                       <td className="px-4 py-3">
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => {
-                            setSelectedUser(u);
-                            setSelectedTeamForAssignment(u.team_id || '');
-                            setSelectedRoleForAssignment(u.role || '');
-                            setShowAssignUserModal(true);
-                          }}
-                          data-testid={`assign-user-btn-${u.id}`}
-                        >
-                          <UserCog className="w-3 h-3 mr-1" />
-                          Edit
-                        </Button>
+                        <div className="flex gap-1">
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => {
+                              setSelectedUser(u);
+                              setSelectedTeamForAssignment(u.team_id || '');
+                              setSelectedRoleForAssignment(u.role || '');
+                              setShowAssignUserModal(true);
+                            }}
+                            data-testid={`assign-user-btn-${u.id}`}
+                          >
+                            <UserCog className="w-3 h-3 mr-1" />
+                            Edit
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="text-red-600 hover:bg-red-50 hover:text-red-700"
+                            onClick={() => handleDeleteUser(u.id, u.name)}
+                            data-testid={`delete-user-btn-${u.id}`}
+                          >
+                            <Trash2 className="w-3 h-3" />
+                          </Button>
+                        </div>
                       </td>
                     </tr>
                   ))}
