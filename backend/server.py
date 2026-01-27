@@ -2468,10 +2468,17 @@ async def login(login_data: UserLogin):
     
     # Check if it looks like an email (contains @)
     if '@' in login_identifier:
-        user = await db.users.find_one({"email": login_identifier}, {"_id": 0})
+        # Case-insensitive email lookup
+        user = await db.users.find_one(
+            {"email": {"$regex": f"^{login_identifier}$", "$options": "i"}},
+            {"_id": 0}
+        )
     else:
-        # Try to find by username
-        user = await db.users.find_one({"username": login_identifier}, {"_id": 0})
+        # Try to find by username (case-insensitive)
+        user = await db.users.find_one(
+            {"username": {"$regex": f"^{login_identifier}$", "$options": "i"}},
+            {"_id": 0}
+        )
     
     logging.info(f"Login attempt for: {login_identifier}, user found: {user is not None}")
         
