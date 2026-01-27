@@ -907,19 +907,6 @@ const AdminPanel = ({ user }) => {
                 );
               })}
           </div>
-
-          {/* Team Sudbeck (protected) */}
-          <Card className="bg-slate-50 border-slate-200 opacity-60">
-            <CardHeader className="pb-2">
-              <CardTitle className="text-lg flex items-center gap-2 text-slate-500">
-                <Shield className="w-5 h-5" />
-                Team Sudbeck (Protected)
-              </CardTitle>
-              <CardDescription>
-                This team is protected and will not be modified by the repair tool.
-              </CardDescription>
-            </CardHeader>
-          </Card>
         </div>
       )}
 
@@ -942,7 +929,7 @@ const AdminPanel = ({ user }) => {
               <div className="bg-white rounded-lg p-4 border border-purple-200 mb-4">
                 <h4 className="font-medium text-slate-800 mb-2">Safety Guarantees:</h4>
                 <ul className="text-sm text-slate-600 space-y-1">
-                  <li>✅ Team Sudbeck will NOT be affected</li>
+                  <li>✅ Original data is preserved for audit trail</li>
                   <li>✅ Original data is preserved for audit trail</li>
                   <li>✅ Only orphaned records (with deleted owners) are modified</li>
                   <li>✅ team_id is never changed</li>
