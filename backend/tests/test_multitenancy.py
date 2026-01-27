@@ -202,8 +202,13 @@ class TestTeamScopedData:
         response = requests.get(f"{BASE_URL}/api/npa-tracker", headers=headers)
         assert response.status_code == 200
         data = response.json()
-        assert isinstance(data, list)
-        print(f"✓ NPA Tracker API returned {len(data)} records")
+        # NPA tracker returns dict with achieved, active, and goal keys
+        assert isinstance(data, dict)
+        assert "achieved" in data
+        assert "active" in data
+        assert "goal" in data
+        total_records = len(data.get("achieved", [])) + len(data.get("active", []))
+        print(f"✓ NPA Tracker API returned {total_records} records (achieved: {len(data.get('achieved', []))}, active: {len(data.get('active', []))})")
     
     def test_interviews_api(self, headers):
         """Test /api/interviews returns data scoped to team"""
