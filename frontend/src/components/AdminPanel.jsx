@@ -1107,7 +1107,7 @@ const AdminPanel = ({ user }) => {
                 This is the cause of Access denied - not assigned to team errors.
               </CardDescription>
             </CardHeader>
-            <CardContent className="space-y-3">
+            <CardContent>
               <Button
                 onClick={runDiagnoseUnassignedUsers}
                 disabled={unassignedLoading}
@@ -1117,30 +1117,6 @@ const AdminPanel = ({ user }) => {
                 {unassignedLoading ? <RefreshCw className="w-4 h-4 mr-2 animate-spin" /> : <Search className="w-4 h-4 mr-2" />}
                 Find Unassigned Users
               </Button>
-              
-              {/* Quick fix: Create Team Sudbeck if it doesn't exist */}
-              {unassignedData && !unassignedData.available_teams?.some(t => t.name?.toLowerCase().includes('sudbeck')) && (
-                <div className="bg-yellow-50 border border-yellow-300 p-3 rounded-lg">
-                  <p className="text-yellow-800 text-sm mb-2">
-                    <strong>Team Sudbeck not found!</strong> Would you like to create it?
-                  </p>
-                  <Button
-                    onClick={async () => {
-                      try {
-                        await axios.post(`${API}/api/admin/teams`, { name: 'Team Sudbeck' }, { headers });
-                        toast.success('Team Sudbeck created successfully');
-                        runDiagnoseUnassignedUsers(); // Refresh to show the new team
-                      } catch (error) {
-                        toast.error(error.response?.data?.detail || 'Failed to create team');
-                      }
-                    }}
-                    variant="outline"
-                    className="border-yellow-500 text-yellow-700 hover:bg-yellow-100"
-                  >
-                    Create Team Sudbeck
-                  </Button>
-                </div>
-              )}
             </CardContent>
           </Card>
 
