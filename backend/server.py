@@ -2460,6 +2460,8 @@ async def get_week_dates(current_user: dict = Depends(get_current_user)):
 async def get_team_hierarchy(period: str, current_user: dict = Depends(get_current_user), user_date: str = None):
     from datetime import timedelta
     
+    team_id = current_user.get('team_id')
+    
     # Use Central Time for date calculations
     if user_date:
         today = datetime.strptime(user_date, '%Y-%m-%d').date()
@@ -2483,14 +2485,11 @@ async def get_team_hierarchy(period: str, current_user: dict = Depends(get_curre
         if not user:
             return None
         
-        # Get user's own stats for the specified period
-        activities = await db.activities.find({
-            "user_id": user_id,
-            "date": {"$gte": start_date.isoformat()}
-        }, {"_id": 0}).to_list(1000)
-        
-        # Debug logging
-        print(f"DEBUG build_hierarchy: User={user.get('name')} | Activities found={len(activities)} | Period={period} | Start date={start_date.isoformat()}")
+        # Get user's own stats for the specified period (scoped to team)
+        act_query = {"user_id": user_id, "date": {"$gte": start_date.isoformat()}}
+        if team_id:
+            act_query["team_id"] = team_id
+        activities = await db.activities.find(act_query, {"_id": 0}).to_list(1000)
         
         own_stats = {
             "contacts": sum(a['contacts'] for a in activities),
@@ -2503,13 +2502,11 @@ async def get_team_hierarchy(period: str, current_user: dict = Depends(get_curre
             "premium": sum(a['premium'] for a in activities)
         }
         
-        print(f"DEBUG own_stats: Contacts={own_stats['contacts']}, Appointments={own_stats['appointments']}, Premium={own_stats['premium']}")
-        
-        # Get subordinates and build their hierarchies (exclude archived users)
-        subordinates = await db.users.find(
-            {"manager_id": user_id, "$or": [{"status": "active"}, {"status": {"$exists": False}}]},
-            {"_id": 0}
-        ).to_list(1000)
+        # Get subordinates and build their hierarchies (exclude archived users, scoped to team)
+        sub_query = {"manager_id": user_id, "$or": [{"status": "active"}, {"status": {"$exists": False}}]}
+        if team_id:
+            sub_query["team_id"] = team_id
+        subordinates = await db.users.find(sub_query, {"_id": 0}).to_list(1000)
         children = []
         
         # Initialize rolled up stats with own stats
@@ -2530,7 +2527,6 @@ async def get_team_hierarchy(period: str, current_user: dict = Depends(get_curre
             if child_hierarchy:
                 children.append(child_hierarchy)
                 # Add child's rolled up stats to parent's rolled up stats
-                print(f"DEBUG rollup: Adding child {child_hierarchy.get('name')} stats - Contacts={child_hierarchy['stats']['contacts']}")
                 rolled_up_stats["contacts"] += child_hierarchy["stats"]["contacts"]
                 rolled_up_stats["appointments"] += child_hierarchy["stats"]["appointments"]
                 rolled_up_stats["presentations"] += child_hierarchy["stats"]["presentations"]
@@ -2539,8 +2535,6 @@ async def get_team_hierarchy(period: str, current_user: dict = Depends(get_curre
                 rolled_up_stats["sales"] += child_hierarchy["stats"]["sales"]
                 rolled_up_stats["new_face_sold"] += child_hierarchy["stats"]["new_face_sold"]
                 rolled_up_stats["premium"] += child_hierarchy["stats"]["premium"]
-        
-        print(f"DEBUG final rolled_up_stats for {user.get('name')}: Contacts={rolled_up_stats['contacts']}, Premium={rolled_up_stats['premium']}")
         
         return {
             **user,
@@ -2552,9 +2546,11 @@ async def get_team_hierarchy(period: str, current_user: dict = Depends(get_curre
     return hierarchy
 
 @api_router.get("/users/team-members")
-async def get_all_team_members(current_user: dict = Depends(get_current_user)):
-    subordinate_ids = await get_all_subordinates(current_user['id'])
-    subordinate_ids.remove(current_user['id'])  # Remove self
+async def get_all_team_members_alt(current_user: dict = Depends(get_current_user)):
+    team_id = current_user.get('team_id')
+    subordinate_ids = await get_all_subordinates(current_user['id'], team_id)
+    if current_user['id'] in subordinate_ids:
+        subordinate_ids.remove(current_user['id'])  # Remove self
     
     members = await db.users.find({"id": {"$in": subordinate_ids}}, {"_id": 0, "password_hash": 0}).to_list(1000)
     return members
