@@ -824,6 +824,191 @@ const AdminPanel = ({ user }) => {
         </div>
       )}
 
+      {/* Diagnostics Tab */}
+      {activeTab === 'diagnostics' && (
+        <div className="space-y-6" data-testid="diagnostics-tab-content">
+          {/* Header */}
+          <Card className="bg-purple-50 border-purple-200">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-purple-800">
+                <Search className="w-5 h-5" />
+                Data Diagnostics
+              </CardTitle>
+              <CardDescription className="text-purple-700">
+                Diagnose and fix data integrity issues. These tools help recover orphaned records 
+                when users are deleted but their data remains.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="bg-white rounded-lg p-4 border border-purple-200 mb-4">
+                <h4 className="font-medium text-slate-800 mb-2">Safety Guarantees:</h4>
+                <ul className="text-sm text-slate-600 space-y-1">
+                  <li>✅ Team Sudbeck will NOT be affected</li>
+                  <li>✅ Original data is preserved for audit trail</li>
+                  <li>✅ Only orphaned records (with deleted owners) are modified</li>
+                  <li>✅ team_id is never changed</li>
+                </ul>
+              </div>
+              <div className="flex flex-col sm:flex-row gap-3">
+                <Button
+                  onClick={runDiagnoseInterviews}
+                  disabled={diagnosticsLoading}
+                  className="bg-purple-600 hover:bg-purple-700"
+                  data-testid="diagnose-interviews-btn"
+                >
+                  {diagnosticsLoading ? <RefreshCw className="w-4 h-4 mr-2 animate-spin" /> : <Search className="w-4 h-4 mr-2" />}
+                  Diagnose Interviews
+                </Button>
+                <Button
+                  onClick={runFixOrphanedInterviews}
+                  disabled={diagnosticsLoading || !diagnosticsData || diagnosticsData.orphaned_total === 0}
+                  variant="outline"
+                  className="border-red-300 text-red-700 hover:bg-red-50"
+                  data-testid="fix-interviews-btn"
+                >
+                  {diagnosticsLoading ? <RefreshCw className="w-4 h-4 mr-2 animate-spin" /> : <Wrench className="w-4 h-4 mr-2" />}
+                  Fix Orphaned Interviews
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Diagnostics Results */}
+          {diagnosticsData && (
+            <Card data-testid="diagnostics-results">
+              <CardHeader>
+                <CardTitle className="text-lg">Interview Diagnostics Results</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {/* Summary */}
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                  <div className="bg-blue-50 p-4 rounded-lg text-center">
+                    <div className="text-2xl font-bold text-blue-800">{diagnosticsData.total_interviews}</div>
+                    <div className="text-sm text-blue-600">Total Interviews</div>
+                  </div>
+                  <div className={`p-4 rounded-lg text-center ${diagnosticsData.orphaned_total > 0 ? 'bg-red-50' : 'bg-green-50'}`}>
+                    <div className={`text-2xl font-bold ${diagnosticsData.orphaned_total > 0 ? 'text-red-800' : 'text-green-800'}`}>
+                      {diagnosticsData.orphaned_total}
+                    </div>
+                    <div className={`text-sm ${diagnosticsData.orphaned_total > 0 ? 'text-red-600' : 'text-green-600'}`}>
+                      Orphaned Interviews
+                    </div>
+                  </div>
+                </div>
+
+                {/* Interviews by Team */}
+                <div>
+                  <h4 className="font-medium text-slate-800 mb-2">Interviews by Team:</h4>
+                  <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
+                    {Object.entries(diagnosticsData.interviews_by_team || {}).map(([team, count]) => (
+                      <div key={team} className="bg-slate-50 px-3 py-2 rounded flex justify-between">
+                        <span className="text-slate-700">{team}</span>
+                        <span className="font-medium">{count}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Orphaned by Team */}
+                {diagnosticsData.orphaned_total > 0 && (
+                  <div>
+                    <h4 className="font-medium text-red-800 mb-2">Orphaned by Team:</h4>
+                    <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
+                      {Object.entries(diagnosticsData.orphaned_by_team || {}).map(([team, count]) => (
+                        <div key={team} className="bg-red-50 px-3 py-2 rounded flex justify-between">
+                          <span className="text-red-700">{team}</span>
+                          <span className="font-medium text-red-800">{count}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Orphaned Interview Details */}
+                {diagnosticsData.orphaned_interviews && diagnosticsData.orphaned_interviews.length > 0 && (
+                  <div>
+                    <h4 className="font-medium text-red-800 mb-2">Orphaned Interview Details (first 50):</h4>
+                    <div className="max-h-60 overflow-y-auto border rounded">
+                      <table className="w-full text-sm">
+                        <thead className="bg-slate-100 sticky top-0">
+                          <tr>
+                            <th className="px-3 py-2 text-left">Candidate</th>
+                            <th className="px-3 py-2 text-left">Team</th>
+                            <th className="px-3 py-2 text-left">Date</th>
+                            <th className="px-3 py-2 text-left">Issue</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y">
+                          {diagnosticsData.orphaned_interviews.map((interview, idx) => (
+                            <tr key={idx} className="hover:bg-slate-50">
+                              <td className="px-3 py-2">{interview.candidate_name}</td>
+                              <td className="px-3 py-2">{interview.team_name}</td>
+                              <td className="px-3 py-2">{interview.interview_date?.split('T')[0]}</td>
+                              <td className="px-3 py-2 text-red-600 text-xs">{interview.issue}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                )}
+
+                {diagnosticsData.orphaned_total === 0 && (
+                  <div className="bg-green-50 p-4 rounded-lg text-center">
+                    <CheckCircle2 className="w-8 h-8 text-green-600 mx-auto mb-2" />
+                    <div className="text-green-800 font-medium">All interviews are healthy!</div>
+                    <div className="text-green-600 text-sm">No orphaned interviews found.</div>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Fix Results */}
+          {fixResult && (
+            <Card className="border-green-200 bg-green-50" data-testid="fix-results">
+              <CardHeader>
+                <CardTitle className="text-lg text-green-800 flex items-center gap-2">
+                  <CheckCircle2 className="w-5 h-5" />
+                  Fix Results
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                  <div className="bg-white p-4 rounded-lg text-center border border-green-200">
+                    <div className="text-2xl font-bold text-green-800">{fixResult.fixed_total}</div>
+                    <div className="text-sm text-green-600">Fixed</div>
+                  </div>
+                  <div className="bg-white p-4 rounded-lg text-center border border-slate-200">
+                    <div className="text-2xl font-bold text-slate-800">{fixResult.skipped_team_sudbeck}</div>
+                    <div className="text-sm text-slate-600">Skipped (Sudbeck)</div>
+                  </div>
+                </div>
+
+                {/* Fixed by Team */}
+                {Object.keys(fixResult.fixed_by_team || {}).length > 0 && (
+                  <div>
+                    <h4 className="font-medium text-green-800 mb-2">Fixed by Team:</h4>
+                    <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
+                      {Object.entries(fixResult.fixed_by_team).map(([team, count]) => (
+                        <div key={team} className="bg-white px-3 py-2 rounded border border-green-200 flex justify-between">
+                          <span className="text-green-700">{team}</span>
+                          <span className="font-medium text-green-800">{count}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                <div className="text-sm text-green-700 bg-white p-3 rounded border border-green-200">
+                  <strong>Audit Trail:</strong> {fixResult.audit_trail}
+                </div>
+              </CardContent>
+            </Card>
+          )}
+        </div>
+      )}
+
       {/* Create Team Modal */}
       <Dialog open={showNewTeamModal} onOpenChange={setShowNewTeamModal}>
         <DialogContent data-testid="create-team-modal">
