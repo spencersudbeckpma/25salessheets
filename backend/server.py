@@ -264,6 +264,36 @@ async def get_all_teams(current_user: dict = Depends(get_current_user)):
     
     return teams
 
+@api_router.get("/admin/default-team")
+async def get_default_team(current_user: dict = Depends(get_current_user)):
+    """Get the default team (Team Sudbeck) directly from database (super_admin only)"""
+    require_super_admin(current_user)
+    
+    # Try multiple ways to find Team Sudbeck
+    default_team = await db.teams.find_one(
+        {"$or": [
+            {"name": "Team Sudbeck"},
+            {"name": {"$regex": "sudbeck", "$options": "i"}},
+            {"settings.is_default": True}
+        ]},
+        {"_id": 0}
+    )
+    
+    if default_team:
+        return {
+            "found": True,
+            "team": default_team,
+            "message": f"Found default team: {default_team.get('name')} (ID: {default_team.get('id')})"
+        }
+    
+    # If not found, list all teams for debugging
+    all_teams = await db.teams.find({}, {"_id": 0, "id": 1, "name": 1, "settings": 1}).to_list(100)
+    return {
+        "found": False,
+        "all_teams": all_teams,
+        "message": "Default team not found. See all_teams for available teams."
+    }
+
 @api_router.post("/admin/teams")
 async def create_team(team_data: TeamCreate, current_user: dict = Depends(get_current_user)):
     """Create a new team (super_admin only)"""
