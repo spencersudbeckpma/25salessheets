@@ -9,7 +9,7 @@ import { Label } from './ui/label';
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
 
-const Login = ({ setUser }) => {
+const Login = ({ setUser, setBranding }) => {
   const [isLogin, setIsLogin] = useState(true);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -43,11 +43,16 @@ const Login = ({ setUser }) => {
 
     try {
       if (isLogin) {
-        // Debug logging
-        console.log('Login attempt with:', { email, passwordLength: password.length });
         const response = await axios.post(`${API}/auth/login`, { email, password });
         localStorage.setItem('token', response.data.token);
         setUser(response.data.user);
+        // Set branding from login response
+        if (setBranding && response.data.branding) {
+          setBranding({
+            branding: response.data.branding,
+            team_name: response.data.user.team_name
+          });
+        }
         toast.success('Login successful!');
       } else {
         const response = await axios.post(`${API}/auth/register`, {
@@ -69,21 +74,19 @@ const Login = ({ setUser }) => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 p-4">
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-100 via-slate-50 to-gray-100 p-4">
       <Card className="w-full max-w-md shadow-lg" data-testid="login-card">
         <CardHeader className="space-y-3">
           <div className="flex justify-center mb-2">
-            <img 
-              src="/team-sudbeck-logo.jpg" 
-              alt="Team Sudbeck Logo" 
-              className="h-24 w-auto object-contain"
-            />
+            <div className="h-16 w-16 bg-gradient-to-br from-blue-600 to-indigo-700 rounded-xl flex items-center justify-center shadow-lg">
+              <span className="text-2xl font-bold text-white">PMA</span>
+            </div>
           </div>
-          <CardTitle className="text-2xl font-bold text-center" data-testid="login-title">
+          <CardTitle className="text-2xl font-bold text-center text-slate-800" data-testid="login-title">
             {isLogin ? 'Welcome Back' : 'Create Account'}
           </CardTitle>
-          <CardDescription className="text-center" data-testid="login-description">
-            {isLogin ? 'Login to Team Sudbeck Sales Tracker' : 'Register for Team Sudbeck Sales Tracker'}
+          <CardDescription className="text-center text-slate-500" data-testid="login-description">
+            {isLogin ? 'Sign in to your account' : 'Register for access'}
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -177,7 +180,7 @@ const Login = ({ setUser }) => {
             <Button
               type="submit"
               data-testid="submit-btn"
-              className="w-full"
+              className="w-full bg-slate-800 hover:bg-slate-700"
               disabled={loading}
             >
               {loading ? 'Please wait...' : isLogin ? 'Login' : 'Register'}
@@ -188,7 +191,7 @@ const Login = ({ setUser }) => {
             <button
               type="button"
               data-testid="toggle-mode-btn"
-              className="text-sm text-blue-600 hover:underline"
+              className="text-sm text-slate-600 hover:underline"
               onClick={() => {
                 setIsLogin(!isLogin);
                 setInviteData(null);
