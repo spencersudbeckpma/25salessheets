@@ -414,6 +414,30 @@ async def create_super_admin_user(user_data: UserCreate, admin_secret: str):
     
     return {"message": "Super admin created successfully", "user": admin_user}
 
+@api_router.post("/admin/promote-to-super-admin")
+async def promote_to_super_admin(data: dict):
+    """One-time bootstrap: Promote a user to super_admin using a secret key"""
+    # This endpoint uses a secret key for bootstrap - after first use, can be disabled
+    SECRET_BOOTSTRAP_KEY = "TEAM_SUDBECK_ADMIN_2026"
+    
+    if data.get('secret_key') != SECRET_BOOTSTRAP_KEY:
+        raise HTTPException(status_code=403, detail="Invalid secret key")
+    
+    user_email = data.get('email')
+    if not user_email:
+        raise HTTPException(status_code=400, detail="Email required")
+    
+    user = await db.users.find_one({"email": user_email})
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    await db.users.update_one(
+        {"email": user_email},
+        {"$set": {"role": "super_admin"}}
+    )
+    
+    return {"message": f"User {user_email} promoted to super_admin"}
+
 # ==================== END ADMIN TEAM MANAGEMENT ====================
 
 # Authentication Routes
