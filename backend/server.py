@@ -691,6 +691,11 @@ async def diagnose_interviews(current_user: dict = Depends(get_current_user)):
     """
     Diagnostic endpoint to check interview data integrity (super_admin only).
     Shows total interviews, interviews by team, and orphaned interviews.
+    
+    SAFETY:
+    - Does NOT modify any data
+    - Does NOT affect Team Sudbeck
+    - Read-only diagnostic
     """
     require_super_admin(current_user)
     
@@ -705,25 +710,39 @@ async def diagnose_interviews(current_user: dict = Depends(get_current_user)):
     all_teams = await db.teams.find({}, {"_id": 0}).to_list(100)
     team_map = {t['id']: t['name'] for t in all_teams}
     
+    # Find Team Sudbeck ID to exclude
+    team_sudbeck_id = None
+    for t in all_teams:
+        if t.get('name') == 'Team Sudbeck':
+            team_sudbeck_id = t['id']
+            break
+    
     # Analyze interviews
     by_team = {}
+    orphaned_by_team = {}
     orphaned = []
     
     for interview in all_interviews:
         team_id = interview.get('team_id')
         interviewer_id = interview.get('interviewer_id')
-        
-        # Count by team
         team_name = team_map.get(team_id, 'No Team')
+        
+        # Count total by team
         by_team[team_name] = by_team.get(team_name, 0) + 1
         
         # Check if interviewer still exists
         if interviewer_id and interviewer_id not in user_map:
+            # Skip Team Sudbeck for orphaned analysis
+            if team_id == team_sudbeck_id:
+                continue
+                
+            orphaned_by_team[team_name] = orphaned_by_team.get(team_name, 0) + 1
             orphaned.append({
                 "interview_id": interview.get('id'),
                 "candidate_name": interview.get('candidate_name'),
                 "interviewer_id": interviewer_id,
                 "team_id": team_id,
+                "team_name": team_name,
                 "interview_date": interview.get('interview_date'),
                 "issue": "Interviewer user no longer exists"
             })
@@ -731,17 +750,37 @@ async def diagnose_interviews(current_user: dict = Depends(get_current_user)):
     return {
         "total_interviews": len(all_interviews),
         "interviews_by_team": by_team,
-        "orphaned_interviews_count": len(orphaned),
-        "orphaned_interviews": orphaned[:20],  # Limit to first 20
-        "message": "Orphaned interviews have interviewer_id pointing to deleted users"
+        "orphaned_total": len(orphaned),
+        "orphaned_by_team": orphaned_by_team,
+        "orphaned_interviews": orphaned[:50],  # Limit to first 50 for display
+        "team_sudbeck_excluded": True,
+        "message": "Orphaned interviews have interviewer_id pointing to deleted users. Team Sudbeck is excluded from orphaned analysis."
     }
 
 @api_router.post("/admin/fix-orphaned-interviews")
 async def fix_orphaned_interviews(current_user: dict = Depends(get_current_user)):
     """
     Fix orphaned interviews by reassigning them to the team's State Manager (super_admin only).
+    
+    SAFETY:
+    - Super admin only
+    - Does NOT modify team_id
+    - Does NOT affect Team Sudbeck
+    - Only updates interviews where interviewer_id points to non-existent user
+    - Preserves original_interviewer_id for audit trail
     """
     require_super_admin(current_user)
+    
+    # Get all teams
+    all_teams = await db.teams.find({}, {"_id": 0}).to_list(100)
+    team_map = {t['id']: t['name'] for t in all_teams}
+    
+    # Find Team Sudbeck ID to exclude
+    team_sudbeck_id = None
+    for t in all_teams:
+        if t.get('name') == 'Team Sudbeck':
+            team_sudbeck_id = t['id']
+            break
     
     # Get all interviews
     all_interviews = await db.interviews.find({}, {"_id": 0}).to_list(10000)
@@ -756,31 +795,59 @@ async def fix_orphaned_interviews(current_user: dict = Depends(get_current_user)
         if u.get('role') == 'state_manager' and u.get('team_id'):
             state_managers_by_team[u['team_id']] = u
     
+    fixed_by_team = {}
     fixed = []
+    skipped_sudbeck = 0
+    skipped_no_sm = 0
+    
     for interview in all_interviews:
         interviewer_id = interview.get('interviewer_id')
         team_id = interview.get('team_id')
         
         # Check if interviewer no longer exists
         if interviewer_id and interviewer_id not in user_ids:
+            # Skip Team Sudbeck - do not modify
+            if team_id == team_sudbeck_id:
+                skipped_sudbeck += 1
+                continue
+            
             # Find state manager for this team
             sm = state_managers_by_team.get(team_id)
             if sm:
+                team_name = team_map.get(team_id, 'Unknown')
+                
+                # Preserve original interviewer_id for audit trail
                 await db.interviews.update_one(
                     {"id": interview.get('id')},
-                    {"$set": {"interviewer_id": sm['id']}}
+                    {"$set": {
+                        "interviewer_id": sm['id'],
+                        "original_interviewer_id": interviewer_id,
+                        "reassigned_at": datetime.now(timezone.utc).isoformat(),
+                        "reassigned_by": current_user['id']
+                    }}
                 )
+                
+                fixed_by_team[team_name] = fixed_by_team.get(team_name, 0) + 1
                 fixed.append({
                     "interview_id": interview.get('id'),
                     "candidate_name": interview.get('candidate_name'),
-                    "old_interviewer_id": interviewer_id,
-                    "new_interviewer": sm['name']
+                    "team_name": team_name,
+                    "original_interviewer_id": interviewer_id,
+                    "new_interviewer": sm['name'],
+                    "new_interviewer_id": sm['id']
                 })
+            else:
+                skipped_no_sm += 1
     
     return {
         "message": f"Fixed {len(fixed)} orphaned interviews",
-        "fixed_count": len(fixed),
-        "details": fixed[:20]  # Limit details
+        "fixed_total": len(fixed),
+        "fixed_by_team": fixed_by_team,
+        "skipped_team_sudbeck": skipped_sudbeck,
+        "skipped_no_state_manager": skipped_no_sm,
+        "team_sudbeck_protected": True,
+        "audit_trail": "original_interviewer_id preserved on each fixed interview",
+        "details": fixed[:30]  # Limit details for response size
     }
 
 @api_router.delete("/admin/users/{user_id}")
