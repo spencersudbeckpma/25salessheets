@@ -989,6 +989,106 @@ async def admin_update_user(user_id: str, update_data: AdminUserUpdate, current_
         "updated_fields": list(update_dict.keys())
     }
 
+@api_router.get("/admin/diagnose-unassigned-users")
+async def diagnose_unassigned_users(current_user: dict = Depends(get_current_user)):
+    """
+    Find all users who don't have a team_id assigned (super_admin only).
+    These users will get the "Access denied - not assigned to team" error.
+    
+    SAFETY:
+    - Does NOT modify any data
+    - Read-only diagnostic
+    """
+    require_super_admin(current_user)
+    
+    # Find users without team_id or with null/empty team_id
+    unassigned_users = await db.users.find(
+        {
+            "$or": [
+                {"team_id": {"$exists": False}},
+                {"team_id": None},
+                {"team_id": ""},
+                {"team_id": "None"}
+            ],
+            "role": {"$nin": ["super_admin"]}  # super_admin doesn't need a team
+        },
+        {"_id": 0, "password_hash": 0}
+    ).to_list(1000)
+    
+    # Get all teams for reference
+    all_teams = await db.teams.find({}, {"_id": 0, "id": 1, "name": 1}).to_list(100)
+    
+    return {
+        "unassigned_count": len(unassigned_users),
+        "unassigned_users": [
+            {
+                "id": u.get('id'),
+                "email": u.get('email'),
+                "name": u.get('name'),
+                "role": u.get('role'),
+                "status": u.get('status', 'active'),
+                "current_team_id": u.get('team_id')
+            }
+            for u in unassigned_users
+        ],
+        "available_teams": all_teams,
+        "message": "These users cannot access the app until assigned to a team. Use /admin/fix-unassigned-users to assign them."
+    }
+
+class BulkTeamAssignment(BaseModel):
+    user_ids: List[str]
+    team_id: str
+    set_manager_id: Optional[str] = None  # Optional: also set their manager
+
+@api_router.post("/admin/fix-unassigned-users")
+async def fix_unassigned_users(assignment: BulkTeamAssignment, current_user: dict = Depends(get_current_user)):
+    """
+    Bulk assign team_id to users who don't have one (super_admin only).
+    Optionally also sets their manager_id.
+    
+    SAFETY:
+    - Only updates users in the provided list
+    - Validates team exists before assignment
+    """
+    require_super_admin(current_user)
+    
+    # Validate team exists
+    team = await db.teams.find_one({"id": assignment.team_id}, {"_id": 0})
+    if not team:
+        raise HTTPException(status_code=404, detail="Team not found")
+    
+    # Validate manager if provided
+    if assignment.set_manager_id:
+        manager = await db.users.find_one({"id": assignment.set_manager_id}, {"_id": 0})
+        if not manager:
+            raise HTTPException(status_code=404, detail="Manager not found")
+    
+    results = []
+    for user_id in assignment.user_ids:
+        user = await db.users.find_one({"id": user_id}, {"_id": 0})
+        if not user:
+            results.append({"user_id": user_id, "status": "error", "message": "User not found"})
+            continue
+        
+        update_data = {"team_id": assignment.team_id}
+        if assignment.set_manager_id:
+            update_data["manager_id"] = assignment.set_manager_id
+        
+        await db.users.update_one({"id": user_id}, {"$set": update_data})
+        results.append({
+            "user_id": user_id,
+            "email": user.get('email'),
+            "status": "success",
+            "assigned_to_team": team.get('name')
+        })
+    
+    success_count = len([r for r in results if r['status'] == 'success'])
+    
+    return {
+        "message": f"Assigned {success_count} of {len(assignment.user_ids)} users to team '{team.get('name')}'",
+        "results": results
+    }
+
 @api_router.post("/admin/auto-repair-all-teams")
 async def auto_repair_all_teams(current_user: dict = Depends(get_current_user)):
     """
