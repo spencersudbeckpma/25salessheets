@@ -82,7 +82,7 @@ class TestTeamMembersAndHierarchy:
     
     def test_get_hierarchy(self, headers):
         """Verify hierarchy API returns data"""
-        response = requests.get(f"{BASE_URL}/api/team/hierarchy", headers=headers)
+        response = requests.get(f"{BASE_URL}/api/team/hierarchy/weekly", headers=headers)
         assert response.status_code == 200
         hierarchy = response.json()
         assert isinstance(hierarchy, list)
