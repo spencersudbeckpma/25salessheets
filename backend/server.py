@@ -3887,7 +3887,7 @@ async def delete_recruit(recruit_id: str, current_user: dict = Depends(get_curre
 
 @api_router.get("/interviews")
 async def get_interviews(current_user: dict = Depends(get_current_user)):
-    """Get all interviews - State Manager sees all, Regional sees own + their DMs, District sees own only. 
+    """Get all interviews - State Manager sees all in team, Regional sees own + their subordinates', District sees own only. 
     Also includes interviews shared with the current user. Excludes archived."""
     if current_user['role'] not in ['super_admin', 'state_manager', 'regional_manager', 'district_manager']:
         raise HTTPException(status_code=403, detail="Only managers can access interviews")
@@ -3901,18 +3901,26 @@ async def get_interviews(current_user: dict = Depends(get_current_user)):
     # Query for interviews shared with current user
     shared_with_filter = {"shared_with": current_user['id']}
     
-    if current_user['role'] == 'state_manager':
+    if current_user['role'] == 'super_admin':
+        # Super admin sees all interviews
+        query = {"$and": [archived_filter]}
+        interviews = await db.interviews.find(query, {"_id": 0}).sort("created_at", -1).to_list(1000)
+    elif current_user['role'] == 'state_manager':
+        # State manager sees ALL interviews in their team
         query = {"$and": [archived_filter]}
         if team_id:
             query["$and"].append(team_filter)
         interviews = await db.interviews.find(query, {"_id": 0}).sort("created_at", -1).to_list(1000)
     elif current_user['role'] == 'regional_manager':
-        # Regional managers see their own interviews + their direct reports' + shared with them
+        # Regional managers see their OWN interviews + their subordinates' + shared with them
         subordinate_ids = await get_all_subordinates(current_user['id'], team_id)
+        # IMPORTANT: Include self in the list
+        all_ids = list(set(subordinate_ids))
+        all_ids.append(current_user['id'])
         
         query = {"$and": [
             {"$or": [
-                {"interviewer_id": {"$in": subordinate_ids}},
+                {"interviewer_id": {"$in": all_ids}},
                 shared_with_filter
             ]},
             archived_filter
