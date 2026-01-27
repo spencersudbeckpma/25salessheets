@@ -4742,6 +4742,7 @@ async def set_individual_goals(goals: GoalSettings, current_user: dict = Depends
     """Set individual premium goals for the year"""
     goal_data = {
         "user_id": current_user['id'],
+        "team_id": current_user.get('team_id'),  # Multi-tenancy
         "year": datetime.now(pytz_timezone('America/Chicago')).year,
         "goal_premium": goals.goal_premium,
         "stretch_goal_premium": goals.stretch_goal_premium,
@@ -4763,6 +4764,7 @@ async def get_individual_goal_progress(current_user: dict = Depends(get_current_
     central_tz = pytz_timezone('America/Chicago')
     today = datetime.now(central_tz).date()
     current_year = today.year
+    team_id = current_user.get('team_id')
     
     # Get goals for current year
     goal = await db.goals.find_one(
@@ -4776,12 +4778,12 @@ async def get_individual_goal_progress(current_user: dict = Depends(get_current_
             "message": "No goals set for this year"
         }
     
-    # Get YTD premium
+    # Get YTD premium (scoped to team)
     year_start = today.replace(month=1, day=1)
-    activities = await db.activities.find({
-        "user_id": current_user['id'],
-        "date": {"$gte": year_start.isoformat()}
-    }, {"_id": 0}).to_list(10000)
+    act_query = {"user_id": current_user['id'], "date": {"$gte": year_start.isoformat()}}
+    if team_id:
+        act_query["team_id"] = team_id
+    activities = await db.activities.find(act_query, {"_id": 0}).to_list(10000)
     
     ytd_premium = sum(a.get('premium', 0) for a in activities)
     
