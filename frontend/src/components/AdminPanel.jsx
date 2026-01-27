@@ -1220,59 +1220,58 @@ const AdminPanel = ({ user }) => {
                     <div className="bg-slate-50 p-4 rounded-lg space-y-3">
                       <h4 className="font-medium text-slate-800">Assign Selected Users To:</h4>
                       
-                      {/* Quick assign to Team Sudbeck (default team) - always show */}
-                      <div className="bg-blue-50 border border-blue-200 p-3 rounded-lg">
-                        <p className="text-blue-800 text-sm mb-2">
-                          <strong>Quick Action:</strong> Assign all selected users to Team Sudbeck
-                        </p>
-                        {(() => {
-                          const teamSud = teams.find(t => 
-                            t.name?.toLowerCase().includes('sudbeck') || 
-                            t.settings?.is_default === true
-                          );
-                          if (teamSud) {
-                            return (
+                      {/* Default Team Info from dedicated API */}
+                      {defaultTeamData && (
+                        <div className={`p-3 rounded-lg border ${defaultTeamData.found ? 'bg-green-50 border-green-300' : 'bg-yellow-50 border-yellow-300'}`}>
+                          {defaultTeamData.found ? (
+                            <>
+                              <p className="text-green-800 text-sm mb-2">
+                                <strong>Default Team Found:</strong> {defaultTeamData.team?.name} (ID: {defaultTeamData.team?.id})
+                              </p>
                               <Button
                                 onClick={() => {
-                                  setAssignToTeamId(teamSud.id);
-                                  toast.success(`Selected: ${teamSud.name}`);
+                                  setAssignToTeamId(defaultTeamData.team.id);
+                                  toast.success(`Selected: ${defaultTeamData.team.name}`);
                                 }}
-                                className="bg-blue-600 hover:bg-blue-700 w-full"
+                                className="bg-green-600 hover:bg-green-700 w-full"
                               >
-                                Select Team Sudbeck ({teamSud.name})
+                                Use Default Team: {defaultTeamData.team?.name}
                               </Button>
-                            );
-                          } else {
-                            return (
-                              <div className="space-y-2">
-                                <p className="text-red-600 text-sm">Team Sudbeck not found in database!</p>
-                                <Button
-                                  onClick={async () => {
-                                    try {
-                                      const res = await axios.post(`${API}/api/admin/teams`, { 
-                                        name: 'Team Sudbeck',
-                                        settings: { is_default: true }
-                                      }, { headers });
-                                      toast.success('Team Sudbeck created successfully!');
-                                      await fetchData(); // Refresh teams list
-                                    } catch (error) {
-                                      if (error.response?.data?.detail?.includes('already exists')) {
-                                        toast.error('Team already exists - refreshing...');
-                                        await fetchData();
-                                      } else {
-                                        toast.error(error.response?.data?.detail || 'Failed to create team');
-                                      }
-                                    }
-                                  }}
-                                  className="bg-green-600 hover:bg-green-700 w-full"
-                                >
-                                  Create Team Sudbeck Now
-                                </Button>
-                              </div>
-                            );
-                          }
-                        })()}
-                      </div>
+                            </>
+                          ) : (
+                            <>
+                              <p className="text-yellow-800 text-sm mb-2">
+                                <strong>No default team found.</strong> Available teams: {defaultTeamData.all_teams?.map(t => t.name).join(', ')}
+                              </p>
+                              <Button
+                                onClick={async () => {
+                                  try {
+                                    await axios.post(`${API}/api/admin/teams`, { 
+                                      name: 'Team Sudbeck',
+                                      settings: { is_default: true }
+                                    }, { headers });
+                                    toast.success('Team Sudbeck created!');
+                                    await fetchData();
+                                    await runDiagnoseUnassignedUsers();
+                                  } catch (error) {
+                                    toast.error(error.response?.data?.detail || 'Failed to create team');
+                                  }
+                                }}
+                                className="bg-yellow-600 hover:bg-yellow-700 w-full"
+                              >
+                                Create Team Sudbeck
+                              </Button>
+                            </>
+                          )}
+                        </div>
+                      )}
+                      
+                      {/* Selected team indicator */}
+                      {assignToTeamId && (
+                        <div className="bg-blue-100 p-2 rounded text-blue-800 text-sm">
+                          <strong>Selected Team ID:</strong> {assignToTeamId}
+                        </div>
+                      )}
                       
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                         <div>
