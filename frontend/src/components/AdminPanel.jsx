@@ -992,6 +992,87 @@ const AdminPanel = ({ user }) => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Edit User Modal */}
+      <Dialog open={showEditUserModal} onOpenChange={setShowEditUserModal}>
+        <DialogContent className="max-w-md" data-testid="edit-user-modal">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Pencil className="w-5 h-5 text-blue-600" />
+              Edit User Details
+            </DialogTitle>
+            <DialogDescription>
+              Update user name, email, or other details. Changes take effect immediately.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label>Name</Label>
+              <Input
+                value={editUserForm.name}
+                onChange={(e) => setEditUserForm({...editUserForm, name: e.target.value})}
+                placeholder="Full Name"
+                data-testid="edit-user-name"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Email / Username</Label>
+              <Input
+                value={editUserForm.email}
+                onChange={(e) => setEditUserForm({...editUserForm, email: e.target.value})}
+                placeholder="email@example.com"
+                data-testid="edit-user-email"
+              />
+              <p className="text-xs text-slate-500">
+                Format: First.Last@pmagent.net (capitalized)
+              </p>
+            </div>
+            <div className="space-y-2">
+              <Label>Role</Label>
+              <Select 
+                value={editUserForm.role} 
+                onValueChange={(val) => setEditUserForm({...editUserForm, role: val})}
+              >
+                <SelectTrigger data-testid="edit-user-role">
+                  <SelectValue placeholder="Select role..." />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="state_manager">State Manager</SelectItem>
+                  <SelectItem value="regional_manager">Regional Manager</SelectItem>
+                  <SelectItem value="district_manager">District Manager</SelectItem>
+                  <SelectItem value="agent">Agent</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label>Team</Label>
+              <Select 
+                value={editUserForm.team_id} 
+                onValueChange={(val) => setEditUserForm({...editUserForm, team_id: val})}
+              >
+                <SelectTrigger data-testid="edit-user-team">
+                  <SelectValue placeholder="Select team..." />
+                </SelectTrigger>
+                <SelectContent>
+                  {teams.map(team => (
+                    <SelectItem key={team.id} value={team.id}>
+                      {team.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowEditUserModal(false)}>
+              Cancel
+            </Button>
+            <Button onClick={handleUpdateUser} className="bg-blue-600 hover:bg-blue-700" data-testid="confirm-edit-user">
+              Save Changes
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
