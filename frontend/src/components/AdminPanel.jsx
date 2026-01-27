@@ -879,6 +879,82 @@ const AdminPanel = ({ user }) => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Repair Hierarchy Modal */}
+      <Dialog open={showRepairModal} onOpenChange={setShowRepairModal}>
+        <DialogContent className="max-w-lg" data-testid="repair-hierarchy-modal">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Wrench className="w-5 h-5 text-orange-600" />
+              Repair Hierarchy - {selectedTeamForRepair?.name}
+            </DialogTitle>
+            <DialogDescription>
+              Assign managers to users with broken relationships. This will ONLY update manager_id.
+            </DialogDescription>
+          </DialogHeader>
+          
+          {selectedTeamForRepair && hierarchyData[selectedTeamForRepair.id] && (
+            <div className="space-y-4 py-4 max-h-96 overflow-y-auto">
+              {hierarchyData[selectedTeamForRepair.id].broken_users?.map(user => (
+                <div key={user.id} className="p-3 bg-slate-50 rounded-lg border">
+                  <div className="font-medium text-slate-800">{user.name}</div>
+                  <div className="text-xs text-slate-500 mb-2">
+                    {user.role?.replace('_', ' ').toUpperCase()} • {user.issue}
+                  </div>
+                  <div className="space-y-1">
+                    <Label className="text-xs">Assign to Manager:</Label>
+                    <Select
+                      value={managerAssignments[user.id] || ''}
+                      onValueChange={(val) => setManagerAssignments(prev => ({ ...prev, [user.id]: val }))}
+                    >
+                      <SelectTrigger className="h-8 text-sm" data-testid={`assign-manager-${user.id}`}>
+                        <SelectValue placeholder="Select manager..." />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {hierarchyData[selectedTeamForRepair.id].potential_managers
+                          ?.filter(m => {
+                            // Filter based on role hierarchy
+                            const validManagers = {
+                              'regional_manager': ['state_manager'],
+                              'district_manager': ['state_manager', 'regional_manager'],
+                              'agent': ['district_manager', 'regional_manager']
+                            };
+                            return validManagers[user.role]?.includes(m.role) || m.role === 'state_manager';
+                          })
+                          .map(manager => (
+                            <SelectItem key={manager.id} value={manager.id}>
+                              {manager.name} ({manager.role?.replace('_', ' ')})
+                            </SelectItem>
+                          ))
+                        }
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+          
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowRepairModal(false)}>
+              Cancel
+            </Button>
+            <Button
+              onClick={() => repairTeamHierarchy(selectedTeamForRepair?.id)}
+              disabled={repairLoading[selectedTeamForRepair?.id]}
+              className="bg-orange-600 hover:bg-orange-700"
+              data-testid="confirm-repair-btn"
+            >
+              {repairLoading[selectedTeamForRepair?.id] ? (
+                <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
+              ) : (
+                <Wrench className="w-4 h-4 mr-2" />
+              )}
+              Apply Repairs
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
