@@ -211,7 +211,7 @@ const Dashboard = ({ user, setUser }) => {
             </TabsContent>
           )}
 
-          {user.role === 'state_manager' && (
+          {user.role === 'super_admin' && (
             <TabsContent value="admin" data-testid="admin-content" className="mt-4 md:mt-6">
               <AdminPanel user={user} />
             </TabsContent>
