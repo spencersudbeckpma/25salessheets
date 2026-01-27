@@ -408,7 +408,8 @@ async def create_super_admin_user(user_data: UserCreate, admin_secret: str):
     if admin_secret != os.environ.get('JWT_SECRET_KEY', 'your-super-secret-jwt-key-change-in-production'):
         raise HTTPException(status_code=403, detail="Invalid admin secret")
     
-    existing = await db.users.find_one({"email": user_data.email})
+    # Case-insensitive email check
+    existing = await db.users.find_one({"email": {"$regex": f"^{user_data.email}$", "$options": "i"}})
     if existing:
         raise HTTPException(status_code=400, detail="Email already exists")
     
