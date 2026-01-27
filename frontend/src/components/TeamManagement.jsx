@@ -1024,42 +1024,72 @@ const TeamManagement = ({ user }) => {
             </div>
 
             {activeUsers.length > 0 && (
-              <div className="overflow-x-auto">
-                <table className="w-full border-collapse">
-                  <thead>
-                    <tr className="bg-gray-100">
-                      <th className="border p-3 text-left font-semibold">#</th>
-                      <th className="border p-3 text-left font-semibold">Name</th>
-                      <th className="border p-3 text-left font-semibold">Username/Email</th>
-                      <th className="border p-3 text-left font-semibold">Role</th>
-                      <th className="border p-3 text-left font-semibold">Manager</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {activeUsers.map((member, index) => (
-                      <tr key={member.id} className="hover:bg-gray-50">
-                        <td className="border p-3">{index + 1}</td>
-                        <td className="border p-3 font-medium">{member.name}</td>
-                        <td className="border p-3 text-blue-600">{member.email}</td>
-                        <td className="border p-3">
-                          <span className={`px-2 py-1 rounded text-xs font-medium ${
-                            member.role === 'state_manager' ? 'bg-purple-100 text-purple-800' :
-                            member.role === 'regional_manager' ? 'bg-blue-100 text-blue-800' :
-                            member.role === 'district_manager' ? 'bg-green-100 text-green-800' :
-                            'bg-gray-100 text-gray-800'
-                          }`}>
-                            {member.role.replace('_', ' ').toUpperCase()}
-                          </span>
-                        </td>
-                        <td className="border p-3 text-gray-600">{member.manager_name || '-'}</td>
+              <>
+                {/* Mobile Card View */}
+                <div className="md:hidden space-y-3">
+                  {activeUsers.map((member, index) => (
+                    <div key={member.id} className="border rounded-lg p-4 bg-white shadow-sm">
+                      <div className="flex justify-between items-start mb-2">
+                        <div>
+                          <div className="font-semibold text-gray-900">{member.name}</div>
+                          <div className="text-sm text-blue-600">{member.email}</div>
+                        </div>
+                        <span className={`px-2 py-1 rounded text-xs font-medium ${
+                          member.role === 'state_manager' ? 'bg-purple-100 text-purple-800' :
+                          member.role === 'regional_manager' ? 'bg-blue-100 text-blue-800' :
+                          member.role === 'district_manager' ? 'bg-green-100 text-green-800' :
+                          'bg-gray-100 text-gray-800'
+                        }`}>
+                          {member.role.replace('_', ' ').toUpperCase()}
+                        </span>
+                      </div>
+                      <div className="text-sm text-gray-500 flex items-center gap-1">
+                        <span>Reports to:</span>
+                        <span className="font-medium text-gray-700">{member.manager_name || 'None (Top Level)'}</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Desktop Table View */}
+                <div className="hidden md:block overflow-x-auto">
+                  <table className="w-full border-collapse">
+                    <thead>
+                      <tr className="bg-gray-100">
+                        <th className="border p-3 text-left font-semibold">#</th>
+                        <th className="border p-3 text-left font-semibold">Name</th>
+                        <th className="border p-3 text-left font-semibold">Username/Email</th>
+                        <th className="border p-3 text-left font-semibold">Role</th>
+                        <th className="border p-3 text-left font-semibold">Manager</th>
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
+                    </thead>
+                    <tbody>
+                      {activeUsers.map((member, index) => (
+                        <tr key={member.id} className="hover:bg-gray-50">
+                          <td className="border p-3">{index + 1}</td>
+                          <td className="border p-3 font-medium">{member.name}</td>
+                          <td className="border p-3 text-blue-600">{member.email}</td>
+                          <td className="border p-3">
+                            <span className={`px-2 py-1 rounded text-xs font-medium ${
+                              member.role === 'state_manager' ? 'bg-purple-100 text-purple-800' :
+                              member.role === 'regional_manager' ? 'bg-blue-100 text-blue-800' :
+                              member.role === 'district_manager' ? 'bg-green-100 text-green-800' :
+                              'bg-gray-100 text-gray-800'
+                            }`}>
+                              {member.role.replace('_', ' ').toUpperCase()}
+                            </span>
+                          </td>
+                          <td className="border p-3 text-gray-600">{member.manager_name || '-'}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+                
                 <div className="mt-4 text-sm text-gray-500">
                   Total: {activeUsers.length} users in your hierarchy
                 </div>
-              </div>
+              </>
             )}
           </TabsContent>
           )}
