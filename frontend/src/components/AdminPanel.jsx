@@ -930,7 +930,6 @@ const AdminPanel = ({ user }) => {
                 <h4 className="font-medium text-slate-800 mb-2">Safety Guarantees:</h4>
                 <ul className="text-sm text-slate-600 space-y-1">
                   <li>✅ Original data is preserved for audit trail</li>
-                  <li>✅ Original data is preserved for audit trail</li>
                   <li>✅ Only orphaned records (with deleted owners) are modified</li>
                   <li>✅ team_id is never changed</li>
                 </ul>
