@@ -234,6 +234,7 @@ class UserTeamAssignment(BaseModel):
     user_id: str
     team_id: str
     role: Optional[str] = None
+    manager_id: Optional[str] = None
 
 @api_router.get("/admin/teams")
 async def get_all_teams(current_user: dict = Depends(get_current_user)):
