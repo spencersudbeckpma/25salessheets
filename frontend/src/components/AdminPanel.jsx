@@ -520,6 +520,16 @@ const AdminPanel = ({ user }) => {
                           <Button
                             size="sm"
                             variant="outline"
+                            onClick={() => openEditUserModal(u)}
+                            data-testid={`edit-user-btn-${u.id}`}
+                            title="Edit user details"
+                          >
+                            <Pencil className="w-3 h-3 mr-1" />
+                            Edit
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="outline"
                             onClick={() => {
                               setSelectedUser(u);
                               setSelectedTeamForAssignment(u.team_id || '');
@@ -527,9 +537,9 @@ const AdminPanel = ({ user }) => {
                               setShowAssignUserModal(true);
                             }}
                             data-testid={`assign-user-btn-${u.id}`}
+                            title="Reassign team/role"
                           >
-                            <UserCog className="w-3 h-3 mr-1" />
-                            Edit
+                            <UserCog className="w-3 h-3" />
                           </Button>
                           <Button
                             size="sm"
@@ -537,6 +547,7 @@ const AdminPanel = ({ user }) => {
                             className="text-red-600 hover:bg-red-50 hover:text-red-700"
                             onClick={() => handleDeleteUser(u.id, u.name)}
                             data-testid={`delete-user-btn-${u.id}`}
+                            title="Delete user"
                           >
                             <Trash2 className="w-3 h-3" />
                           </Button>
