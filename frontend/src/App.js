@@ -4,6 +4,7 @@ import axios from 'axios';
 import Login from './components/Login';
 import Dashboard from './components/Dashboard';
 import { Toaster } from './components/ui/sonner';
+import { BrandingProvider } from './contexts/BrandingContext';
 import './App.css';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
@@ -11,6 +12,7 @@ const API = `${BACKEND_URL}/api`;
 
 function App() {
   const [user, setUser] = useState(null);
+  const [branding, setBranding] = useState(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -21,6 +23,13 @@ function App() {
       })
         .then(res => {
           setUser(res.data);
+          // Fetch branding after getting user
+          return axios.get(`${API}/auth/branding`, {
+            headers: { Authorization: `Bearer ${token}` }
+          });
+        })
+        .then(res => {
+          setBranding(res.data);
           setLoading(false);
         })
         .catch(() => {
@@ -41,21 +50,21 @@ function App() {
   }
 
   return (
-    <>
+    <BrandingProvider>
       <BrowserRouter>
         <Routes>
           <Route
             path="/login"
-            element={user ? <Navigate to="/" /> : <Login setUser={setUser} />}
+            element={user ? <Navigate to="/" /> : <Login setUser={setUser} setBranding={setBranding} />}
           />
           <Route
             path="/*"
-            element={user ? <Dashboard user={user} setUser={setUser} /> : <Navigate to="/login" />}
+            element={user ? <Dashboard user={user} setUser={setUser} branding={branding} setBranding={setBranding} /> : <Navigate to="/login" />}
           />
         </Routes>
       </BrowserRouter>
       <Toaster position="top-right" />
-    </>
+    </BrandingProvider>
   );
 }
 
