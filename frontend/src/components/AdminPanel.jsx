@@ -1400,14 +1400,9 @@ const AdminPanel = ({ user }) => {
                   <SelectValue placeholder="Select team..." />
                 </SelectTrigger>
                 <SelectContent>
-                  {teams.filter(t => !t.settings?.is_default || t.name !== 'Team Sudbeck').map(team => (
+                  {teams.map(team => (
                     <SelectItem key={team.id} value={team.id}>
                       {team.name}
-                    </SelectItem>
-                  ))}
-                  {teams.filter(t => t.settings?.is_default).map(team => (
-                    <SelectItem key={team.id} value={team.id}>
-                      {team.name} (Default)
                     </SelectItem>
                   ))}
                 </SelectContent>
