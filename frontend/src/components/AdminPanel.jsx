@@ -1087,19 +1087,46 @@ const AdminPanel = ({ user }) => {
               </CardTitle>
               <CardDescription className="text-orange-700">
                 Find and fix users who cannot access the app because they do not have a team assigned.
-                This is the cause of Access denied - not assigned to team errors.
               </CardDescription>
             </CardHeader>
-            <CardContent>
-              <Button
-                onClick={runDiagnoseUnassignedUsers}
-                disabled={unassignedLoading}
-                className="bg-orange-600 hover:bg-orange-700"
-                data-testid="diagnose-unassigned-btn"
-              >
-                {unassignedLoading ? <RefreshCw className="w-4 h-4 mr-2 animate-spin" /> : <Search className="w-4 h-4 mr-2" />}
-                Find Unassigned Users
-              </Button>
+            <CardContent className="space-y-3">
+              <div className="flex flex-wrap gap-2">
+                <Button
+                  onClick={runDiagnoseUnassignedUsers}
+                  disabled={unassignedLoading}
+                  className="bg-orange-600 hover:bg-orange-700"
+                  data-testid="diagnose-unassigned-btn"
+                >
+                  {unassignedLoading ? <RefreshCw className="w-4 h-4 mr-2 animate-spin" /> : <Search className="w-4 h-4 mr-2" />}
+                  Find Unassigned Users
+                </Button>
+                
+                {/* Fix missing Team Sudbeck record */}
+                <Button
+                  onClick={async () => {
+                    try {
+                      const res = await axios.post(`${API}/api/admin/create-missing-team-record`, {}, { headers });
+                      if (res.data.created?.length > 0) {
+                        toast.success(`Created team record: ${res.data.created.map(t => t.name).join(', ')}`);
+                        await fetchData(); // Refresh teams list
+                      } else {
+                        toast.info(res.data.message);
+                      }
+                    } catch (error) {
+                      toast.error(error.response?.data?.detail || 'Failed to create team record');
+                    }
+                  }}
+                  variant="outline"
+                  className="border-blue-400 text-blue-700 hover:bg-blue-50"
+                >
+                  <Wrench className="w-4 h-4 mr-2" />
+                  Recover Team Sudbeck Record
+                </Button>
+              </div>
+              
+              <p className="text-xs text-orange-700">
+                If Team Sudbeck is missing from dropdowns, click "Recover Team Sudbeck Record" first.
+              </p>
             </CardContent>
           </Card>
 
