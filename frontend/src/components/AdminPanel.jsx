@@ -69,7 +69,6 @@ const AdminPanel = ({ user }) => {
   const [selectedUnassignedUsers, setSelectedUnassignedUsers] = useState([]);
   const [assignToTeamId, setAssignToTeamId] = useState('');
   const [assignManagerId, setAssignManagerId] = useState('');
-  const [defaultTeamData, setDefaultTeamData] = useState(null);
 
   const token = localStorage.getItem('token');
   const headers = { Authorization: `Bearer ${token}` };
