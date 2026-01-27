@@ -1064,15 +1064,16 @@ const TeamManagement = ({ user }) => {
           </TabsContent>
           )}
 
-          {user.role === 'state_manager' && (
+          {/* Reorganize Tab - Available to managers, but scoped to their team */}
+          {['state_manager', 'regional_manager', 'district_manager'].includes(user.role) && (
           <TabsContent value="reorganize" className="space-y-6" data-testid="reorganize-content">
             <div className="bg-purple-50 p-6 rounded-lg border border-purple-200">
               <h3 className="font-semibold text-lg mb-4">Reorganize Team</h3>
               <p className="text-sm text-gray-600 mb-4">
-                Change team members' roles or reassign them to different managers. All historical data will be preserved.
+                Change team members' roles or reassign them to different managers within your hierarchy. All historical data will be preserved.
               </p>
               <Button onClick={() => { fetchActiveUsers(); fetchAvailableManagers(); }} className="mb-4">
-                Load Active Users
+                Load My Team
               </Button>
             </div>
 
