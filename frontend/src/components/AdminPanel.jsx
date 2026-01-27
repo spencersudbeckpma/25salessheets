@@ -361,7 +361,7 @@ const AdminPanel = ({ user }) => {
       </div>
 
       {/* Tab Navigation */}
-      <div className="flex gap-2 border-b border-slate-200 pb-2">
+      <div className="flex gap-2 border-b border-slate-200 pb-2 overflow-x-auto">
         <Button
           variant={activeTab === 'teams' ? 'default' : 'ghost'}
           onClick={() => setActiveTab('teams')}
@@ -379,6 +379,15 @@ const AdminPanel = ({ user }) => {
         >
           <Users className="w-4 h-4 mr-2" />
           Users ({users.length})
+        </Button>
+        <Button
+          variant={activeTab === 'repair' ? 'default' : 'ghost'}
+          onClick={() => setActiveTab('repair')}
+          className={activeTab === 'repair' ? 'bg-orange-600 text-white' : 'text-orange-600 border-orange-200'}
+          data-testid="repair-tab"
+        >
+          <Wrench className="w-4 h-4 mr-2" />
+          Repair Hierarchy
         </Button>
       </div>
 
