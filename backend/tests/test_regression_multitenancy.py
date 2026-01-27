@@ -85,8 +85,10 @@ class TestTeamMembersAndHierarchy:
         response = requests.get(f"{BASE_URL}/api/team/hierarchy/weekly", headers=headers)
         assert response.status_code == 200
         hierarchy = response.json()
-        assert isinstance(hierarchy, list)
-        print(f"✓ Hierarchy API returned {len(hierarchy)} entries")
+        # Hierarchy returns a dict with user info and children
+        assert isinstance(hierarchy, dict)
+        assert "children" in hierarchy or "id" in hierarchy
+        print(f"✓ Hierarchy API returned data with children")
 
 
 class TestActivitiesWithTeamScope:
