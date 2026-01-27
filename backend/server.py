@@ -2215,13 +2215,14 @@ async def forgot_password(forgot_request: ForgotPasswordRequest):
 # Activity Routes
 @api_router.post("/activities")
 async def create_activity(activity_data: ActivityCreate, current_user: dict = Depends(get_current_user)):
-    # Check if activity exists for date
+    # Check if activity exists for date (scoped to user)
     existing = await db.activities.find_one({"user_id": current_user['id'], "date": activity_data.date})
     if existing:
         raise HTTPException(status_code=400, detail="Activity already exists for this date")
     
     activity = Activity(
         user_id=current_user['id'],
+        team_id=current_user.get('team_id'),  # Multi-tenancy
         date=activity_data.date,
         contacts=activity_data.contacts,
         appointments=activity_data.appointments,
