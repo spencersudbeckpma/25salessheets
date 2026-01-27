@@ -114,10 +114,8 @@ const AdminPanel = ({ user }) => {
   // Fetch broken hierarchies for all teams
   const fetchAllBrokenHierarchies = async () => {
     setRepairLoading(prev => ({ ...prev, all: true }));
-    const excludeTeams = ['Team Sudbeck']; // Don't touch default team
-    const teamsToCheck = teams.filter(t => !excludeTeams.includes(t.name));
-    
-    for (const team of teamsToCheck) {
+    // Include ALL teams - no exclusions
+    for (const team of teams) {
       await fetchBrokenHierarchy(team.id);
     }
     setRepairLoading(prev => ({ ...prev, all: false }));
