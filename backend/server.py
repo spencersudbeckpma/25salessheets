@@ -506,7 +506,7 @@ async def get_team_users(team_id: str, current_user: dict = Depends(get_current_
     return users
 
 @api_router.get("/admin/teams/{team_id}/hierarchy")
-async def get_team_hierarchy(team_id: str, current_user: dict = Depends(get_current_user)):
+async def get_admin_team_hierarchy(team_id: str, current_user: dict = Depends(get_current_user)):
     """Get the full hierarchy tree for a specific team (super_admin only)"""
     require_super_admin(current_user)
     
