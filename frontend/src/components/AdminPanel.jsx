@@ -1125,7 +1125,7 @@ const AdminPanel = ({ user }) => {
               </div>
               
               <p className="text-xs text-orange-700">
-                If Team Sudbeck is missing from dropdowns, click "Recover Team Sudbeck Record" first.
+                If Team Sudbeck is missing from dropdowns, click the Recover button first.
               </p>
             </CardContent>
           </Card>
