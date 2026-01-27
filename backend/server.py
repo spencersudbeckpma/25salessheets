@@ -418,9 +418,9 @@ async def create_super_admin_user(user_data: UserCreate, admin_secret: str):
 async def promote_to_super_admin(data: dict):
     """One-time bootstrap: Promote a user to super_admin using a secret key"""
     # This endpoint uses a secret key for bootstrap - after first use, can be disabled
-    SECRET_BOOTSTRAP_KEY = "TEAM_SUDBECK_ADMIN_2026"
+    SECRET_BOOTSTRAP_KEY = os.environ.get('SECRET_BOOTSTRAP_KEY', '')
     
-    if data.get('secret_key') != SECRET_BOOTSTRAP_KEY:
+    if not SECRET_BOOTSTRAP_KEY or data.get('secret_key') != SECRET_BOOTSTRAP_KEY:
         raise HTTPException(status_code=403, detail="Invalid secret key")
     
     user_email = data.get('email')
