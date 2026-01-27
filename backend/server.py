@@ -267,61 +267,31 @@ async def get_all_teams(current_user: dict = Depends(get_current_user)):
 @api_router.post("/admin/create-missing-team-record")
 async def create_missing_team_record(current_user: dict = Depends(get_current_user)):
     """
-    Find orphaned team_ids (referenced by users but no team record exists) and create team records for them.
-    This fixes the case where Team Sudbeck's ID exists in users but no team record was created.
+    Create Team Sudbeck if it doesn't exist. This is a one-time bootstrap for legacy data.
     (super_admin only)
     """
     require_super_admin(current_user)
     
-    # Get all team_ids referenced by users
-    all_team_ids_in_use = await db.users.distinct("team_id")
+    # Check if Team Sudbeck already exists
+    existing = await db.teams.find_one({"name": "Team Sudbeck"})
+    if existing:
+        return {"message": "Team Sudbeck already exists", "team": {"id": existing.get('id'), "name": existing.get('name')}, "created": False}
     
-    # Get all existing team records
-    existing_teams = await db.teams.find({}, {"_id": 0, "id": 1}).to_list(100)
-    existing_team_ids = {t.get('id') for t in existing_teams}
+    # Create Team Sudbeck
+    new_team = {
+        "id": str(uuid.uuid4()),
+        "name": "Team Sudbeck",
+        "created_at": datetime.now(timezone.utc).isoformat(),
+        "settings": {"is_default": True}
+    }
     
-    # Find orphaned team_ids (in use but no record)
-    orphaned = []
-    for tid in all_team_ids_in_use:
-        if tid and tid not in existing_team_ids:
-            count = await db.users.count_documents({"team_id": tid})
-            orphaned.append({"team_id": tid, "user_count": count})
-    
-    if not orphaned:
-        return {"message": "No orphaned team_ids found. All teams have records.", "created": []}
-    
-    # Sort by user count - largest is likely Team Sudbeck
-    orphaned.sort(key=lambda x: x['user_count'], reverse=True)
-    
-    created = []
-    for idx, orph in enumerate(orphaned):
-        # Name the largest one "Team Sudbeck", others get generic names
-        team_name = "Team Sudbeck" if idx == 0 else f"Recovered Team {idx + 1}"
-        
-        # Check if name already exists
-        existing_name = await db.teams.find_one({"name": team_name})
-        if existing_name:
-            team_name = f"{team_name} ({orph['team_id'][:8]})"
-        
-        # Create the team record with the EXISTING ID
-        new_team = {
-            "id": orph['team_id'],  # Use the existing ID that users reference
-            "name": team_name,
-            "created_at": datetime.now(timezone.utc).isoformat(),
-            "settings": {"is_default": idx == 0}  # First one (largest) is default
-        }
-        
-        await db.teams.insert_one(new_team)
-        new_team.pop('_id', None)
-        created.append({
-            "team_id": orph['team_id'],
-            "name": team_name,
-            "user_count": orph['user_count']
-        })
+    await db.teams.insert_one(new_team)
+    new_team.pop('_id', None)
     
     return {
-        "message": f"Created {len(created)} missing team record(s)",
-        "created": created
+        "message": "Team Sudbeck created successfully",
+        "team": new_team,
+        "created": True
     }
 
 @api_router.get("/admin/debug-teams")
