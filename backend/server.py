@@ -2834,6 +2834,35 @@ async def login(login_data: UserLogin):
         "branding": branding
     }
 
+@api_router.get("/auth/branding")
+async def get_user_branding(current_user: dict = Depends(get_current_user)):
+    """Get branding for the current user's team"""
+    team_id = current_user.get('team_id')
+    
+    if not team_id:
+        return {
+            "branding": None,
+            "team_name": None
+        }
+    
+    team = await db.teams.find_one({"id": team_id}, {"_id": 0})
+    if not team:
+        return {
+            "branding": None,
+            "team_name": None
+        }
+    
+    return {
+        "team_name": team.get('name'),
+        "branding": team.get('branding', {
+            "logo_url": None,
+            "primary_color": "#1e40af",
+            "accent_color": "#3b82f6",
+            "display_name": None,
+            "tagline": None
+        })
+    }
+
 class UserCreate(BaseModel):
     name: str
     email: str
