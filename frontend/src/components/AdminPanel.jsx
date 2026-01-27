@@ -1227,7 +1227,7 @@ const AdminPanel = ({ user }) => {
                               <SelectValue placeholder="No manager..." />
                             </SelectTrigger>
                             <SelectContent>
-                              <SelectItem value="">No manager</SelectItem>
+                              <SelectItem value="none">No manager</SelectItem>
                               {assignToTeamId && users
                                 .filter(u => u.team_id === assignToTeamId && ['state_manager', 'regional_manager', 'district_manager'].includes(u.role))
                                 .map((manager) => (
