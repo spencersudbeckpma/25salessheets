@@ -1,7 +1,7 @@
 # Team Sudbeck Sales Tracker - Product Requirements Document
 
 ## Overview
-A comprehensive sales tracking application for insurance agencies, enabling team management, activity tracking, reporting, and agent progress monitoring.
+A comprehensive sales tracking application for insurance agencies, enabling team management, activity tracking, reporting, and agent progress monitoring. **Now with multi-tenancy support.**
 
 ## Core Features
 
@@ -9,46 +9,56 @@ A comprehensive sales tracking application for insurance agencies, enabling team
 - JWT-based authentication
 - Role-based access: State Manager, Regional Manager, District Manager, Agent
 - Hierarchical team structure
+- **Multi-tenancy: Users must be assigned to a team to access the app**
 
-### 2. Daily Activity Tracking
+### 2. Multi-Tenancy (NEW - Jan 2026)
+- **Team-based data isolation**: All data scoped by `team_id`
+- **Admin Panel**: State Managers can create teams and assign users
+- **Migration completed**: All existing data migrated to "Team Sudbeck"
+- **Team hierarchy**: Each team has independent hierarchies
+- **Data collections with team_id**: users, activities, interviews, suitability_forms, npa_agents, new_face_customers, recruits, team_goals, goals, invites
+
+### 3. Daily Activity Tracking
 - Track: Contacts, Appointments, Presentations, Referrals, Testimonials, Apps, Sales, Premium
 - New Face Sold and Bankers Premium tracking
 
-### 3. Reports & Analytics
+### 4. Reports & Analytics
 - Daily, Weekly, Monthly, Quarterly, Yearly reports
-- Team View with hierarchical data
-- Leaderboard
+- Team View with hierarchical data rollup
+- Leaderboard (organization-wide, team-scoped)
 - Analytics dashboard
 
-### 4. SNA Tracker (State/New Agent)
-- **Automatic tracking** from first production entry
-- 90-day tracking period
-- $30,000 premium goal
+### 5. SNA Tracker (State/New Agent)
+- Automatic tracking from first production entry
+- 90-day tracking period, $30,000 premium goal
 - Shows: Active, On Pace, Behind Pace, Graduated/Completed
 - Manual exclude/remove feature for managers
 
-### 5. NPA Tracker (New Producing Agent)
+### 6. NPA Tracker (New Producing Agent)
 - Track agents toward $1,000 premium goal
-- Two modes:
-  - **Select Team Member**: Links to existing user, **automatically calculates premium from activities**
-  - **Manual Entry**: For external agents not in the system
+- Select Team Member: Links to existing user, auto-calculates premium
+- Manual Entry: For external agents not in the system
 - Shows progress percentage, upline information
-- Achieved NPA list with achievement date
 
-### 6. Interviews Feature
+### 7. Interviews Feature
 - Regional Breakdown view with stats by region
-- Share functionality
-- Updated interview guide form
-- **2nd Interview Answers** - Editable text area that appears only for candidates with "Moving Forward", "2nd Interview Scheduled", or "Completed" status. Allows entering detailed notes from the 2nd interview.
+- Share functionality with team members
+- 2nd Interview Answers field for Moving Forward candidates
 
-### 7. PMA Bonuses
+### 8. Suitability Form
+- Complete form for client suitability assessments
+- Life Licensed field with Regional Manager assignment
+- Weekly Report view with export to Excel (.xlsx)
+- Manager notes/results field
+
+### 9. PMA Bonuses
 - Bonus tracking and calculation
 
-### 8. DocuSphere
+### 10. DocuSphere
 - Document management
 
-### 9. Recruiting
-- Team member recruitment tracking
+### 11. Recruiting
+- Team member recruitment pipeline tracking
 
 ## Technical Architecture
 
@@ -65,85 +75,106 @@ A comprehensive sales tracking application for insurance agencies, enabling team
 - Axios for API calls
 
 ### Key Files
-- `backend/server.py` - Main backend file (4000+ lines, needs refactoring)
+- `backend/server.py` - Main backend file (~5500 lines)
+- `frontend/src/components/Dashboard.jsx` - Main dashboard with tabs
+- `frontend/src/components/AdminPanel.jsx` - Team/User management (NEW)
 - `frontend/src/components/Reports.jsx` - Reports & tracking tabs
 - `frontend/src/components/NPATracker.jsx` - NPA tracker component
 - `frontend/src/components/SNATracker.jsx` - SNA tracker component
 - `frontend/src/components/Interviews.jsx` - Interview management
+- `frontend/src/components/SuitabilityForm.jsx` - Suitability form feature
 
 ## Database Collections
 
-### npa_agents
-```
+### teams (NEW)
+```json
 {
-  id: string,
-  user_id: string (optional - links to users collection),
-  name: string,
-  phone: string,
-  email: string,
-  start_date: string,
-  upline_dm: string,
-  upline_rm: string,
-  total_premium: float (manual entry only),
-  notes: string,
-  added_by: string,
-  added_by_name: string,
-  created_at: string,
-  achievement_date: string
+  "id": "string (UUID)",
+  "name": "string",
+  "created_at": "datetime",
+  "settings": {"is_default": true/false}
 }
 ```
 
-### sna_excluded_users
-```
+### users
+```json
 {
-  user_id: string,
-  excluded_by: string,
-  excluded_at: datetime
+  "id": "string (UUID)",
+  "email": "string",
+  "name": "string",
+  "role": "state_manager|regional_manager|district_manager|agent",
+  "team_id": "string (UUID) - required for non-admin access",
+  "manager_id": "string (UUID)",
+  "status": "active|archived"
 }
 ```
 
 ### activities
-```
+```json
 {
-  user_id: string,
-  date: string,
-  premium: float,
-  ... (other activity fields)
+  "id": "string",
+  "user_id": "string",
+  "team_id": "string",
+  "date": "YYYY-MM-DD",
+  "contacts": "float",
+  "appointments": "float",
+  "presentations": "float",
+  "referrals": "int",
+  "testimonials": "int",
+  "sales": "int",
+  "new_face_sold": "float",
+  "premium": "float"
 }
 ```
+
+### All other collections now include `team_id` field
 
 ## What's Been Implemented
 
 ### January 2026
-- [x] NPA Tracker with automatic premium calculation from activities
-- [x] NPA Tracker team member dropdown selection
-- [x] NPA Tracker manual entry mode
+- [x] **Multi-Tenancy Refactor** (Complete)
+  - [x] Team model and admin endpoints
+  - [x] Migration endpoint to assign existing data to Team Sudbeck
+  - [x] All data queries scoped by team_id
+  - [x] Admin Panel for team/user management
+  - [x] 58 users and all data migrated to Team Sudbeck
+- [x] NPA Tracker with automatic premium calculation
 - [x] SNA Tracker automatic tracking
-- [x] SNA Tracker manual exclude feature
-- [x] Reports tabs redesign (compact, color-coded)
 - [x] Interview Regional Breakdown
 - [x] Interview Share feature
-- [x] Weekly Report date range picker
-- [x] Fixed hierarchy data rollup for interviews
-- [x] **2nd Interview Answers** - Editable field in interview guide for Moving Forward candidates
+- [x] 2nd Interview Answers field
+- [x] Suitability Form with Excel export
+- [x] Reports tabs redesign
 
 ## Backlog / Future Tasks
 
 ### P0 (High Priority)
-- [ ] Deploy all changes to production
+- [x] Multi-tenancy refactor - COMPLETE
 
 ### P1 (Medium Priority)
-- [ ] Verify Team Goals saving issue
-- [ ] Code refactoring - break down server.py into modules
+- [ ] Code refactoring - break down server.py into modules (routes/, models/)
+- [ ] Deploy multi-tenancy changes to production
 
 ### P2 (Lower Priority)
 - [ ] Add more analytics and reporting features
 - [ ] Performance optimizations for large teams
+- [ ] Team branding/customization features
 
 ## Test Credentials
 - **State Manager**: spencer.sudbeck@pmagent.net / Bizlink25
 
-## Notes
-- The `user_id` field in NPA tracker is crucial: when present, premium is calculated from `activities` collection
-- Tabs use color-coded active states: blue (Reports), green (SNA), amber (NPA)
-- Backend needs refactoring - server.py is over 4000 lines
+## Architecture Notes
+- Multi-tenancy uses `team_id` field on all data collections
+- State Managers have admin privileges (can manage teams, assign users)
+- Users without team_id cannot access the app (except state_managers)
+- `get_all_subordinates()` now accepts optional `team_id` parameter for scoping
+- Migration endpoint: `POST /api/admin/migrate-to-teams`
+
+## Admin API Endpoints
+- `GET /api/admin/teams` - List all teams
+- `POST /api/admin/teams` - Create team
+- `PUT /api/admin/teams/{team_id}` - Update team
+- `DELETE /api/admin/teams/{team_id}` - Delete team (only if empty)
+- `GET /api/admin/users` - List all users with team info
+- `POST /api/admin/users/assign-team` - Assign user to team
+- `POST /api/admin/migrate-to-teams` - Run data migration
