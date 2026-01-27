@@ -39,6 +39,13 @@ const AdminPanel = ({ user }) => {
     team_id: '',
     manager_id: ''
   });
+  
+  // Hierarchy repair states
+  const [hierarchyData, setHierarchyData] = useState({});
+  const [repairLoading, setRepairLoading] = useState({});
+  const [showRepairModal, setShowRepairModal] = useState(false);
+  const [selectedTeamForRepair, setSelectedTeamForRepair] = useState(null);
+  const [managerAssignments, setManagerAssignments] = useState({});
 
   const token = localStorage.getItem('token');
   const headers = { Authorization: `Bearer ${token}` };
