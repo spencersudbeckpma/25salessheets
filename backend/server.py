@@ -299,6 +299,56 @@ async def update_team(team_id: str, team_data: TeamCreate, current_user: dict = 
     
     return {"message": "Team updated successfully"}
 
+@api_router.get("/admin/teams/{team_id}/branding")
+async def get_team_branding(team_id: str, current_user: dict = Depends(get_current_user)):
+    """Get team branding (super_admin only)"""
+    require_super_admin(current_user)
+    
+    team = await db.teams.find_one({"id": team_id}, {"_id": 0})
+    if not team:
+        raise HTTPException(status_code=404, detail="Team not found")
+    
+    return {
+        "team_id": team_id,
+        "team_name": team.get('name'),
+        "branding": team.get('branding', {
+            "logo_url": None,
+            "primary_color": "#1e40af",
+            "accent_color": "#3b82f6",
+            "display_name": None,
+            "tagline": None
+        })
+    }
+
+@api_router.put("/admin/teams/{team_id}/branding")
+async def update_team_branding(team_id: str, branding: TeamBrandingUpdate, current_user: dict = Depends(get_current_user)):
+    """Update team branding (super_admin only)"""
+    require_super_admin(current_user)
+    
+    team = await db.teams.find_one({"id": team_id}, {"_id": 0})
+    if not team:
+        raise HTTPException(status_code=404, detail="Team not found")
+    
+    # Get existing branding and merge with updates
+    existing_branding = team.get('branding', {})
+    updated_branding = {
+        "logo_url": branding.logo_url if branding.logo_url is not None else existing_branding.get('logo_url'),
+        "primary_color": branding.primary_color if branding.primary_color is not None else existing_branding.get('primary_color', '#1e40af'),
+        "accent_color": branding.accent_color if branding.accent_color is not None else existing_branding.get('accent_color', '#3b82f6'),
+        "display_name": branding.display_name if branding.display_name is not None else existing_branding.get('display_name'),
+        "tagline": branding.tagline if branding.tagline is not None else existing_branding.get('tagline')
+    }
+    
+    await db.teams.update_one(
+        {"id": team_id},
+        {"$set": {"branding": updated_branding}}
+    )
+    
+    return {
+        "message": "Branding updated successfully",
+        "branding": updated_branding
+    }
+
 @api_router.delete("/admin/teams/{team_id}")
 async def delete_team(team_id: str, current_user: dict = Depends(get_current_user)):
     """Delete a team (super_admin only) - only if no users assigned"""
