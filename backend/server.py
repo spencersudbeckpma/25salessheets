@@ -3021,8 +3021,8 @@ async def delete_docusphere_document(doc_id: str, current_user: dict = Depends(g
 
 @api_router.get("/recruiting")
 async def get_recruits(current_user: dict = Depends(get_current_user)):
-    """Get recruits - State Manager sees all, Regional sees own + DMs', District sees own only"""
-    if current_user['role'] not in ['state_manager', 'regional_manager', 'district_manager']:
+    """Get recruits - super_admin/State Manager sees all, Regional sees own + DMs', District sees own only"""
+    if current_user['role'] not in ['super_admin', 'state_manager', 'regional_manager', 'district_manager']:
         raise HTTPException(status_code=403, detail="Only managers can access recruiting")
     
     team_id = current_user.get('team_id')
