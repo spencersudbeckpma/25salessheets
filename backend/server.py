@@ -48,6 +48,14 @@ class Team(BaseModel):
     name: str
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     settings: Optional[Dict[str, Any]] = {}
+    # Branding fields
+    branding: Optional[Dict[str, Any]] = Field(default_factory=lambda: {
+        "logo_url": None,
+        "primary_color": "#1e40af",  # Default blue
+        "accent_color": "#3b82f6",   # Default lighter blue
+        "display_name": None,
+        "tagline": None
+    })
 
 class User(BaseModel):
     model_config = ConfigDict(extra="ignore")
