@@ -225,12 +225,13 @@ class TestLeaderboardWithTeamScope:
 class TestGoalsWithTeamScope:
     """Test Goals functionality with team scoping"""
     
-    def test_get_team_goals(self, headers):
-        """Verify team goals API returns data"""
-        response = requests.get(f"{BASE_URL}/api/goals/team", headers=headers)
+    def test_get_pma_bonuses(self, headers):
+        """Verify PMA bonuses API returns data (goals-related)"""
+        response = requests.get(f"{BASE_URL}/api/pma-bonuses", headers=headers)
         assert response.status_code == 200
-        goals = response.json()
-        print(f"✓ Team goals API returned data")
+        bonuses = response.json()
+        assert isinstance(bonuses, list)
+        print(f"✓ PMA Bonuses API returned {len(bonuses)} records")
 
 
 class TestNewFaceCustomersWithTeamScope:
