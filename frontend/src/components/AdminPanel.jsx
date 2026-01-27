@@ -161,6 +161,28 @@ const AdminPanel = ({ user }) => {
     }
   };
 
+  // Force rebuild hierarchy for a single team
+  const forceRebuildTeamHierarchy = async (teamId, teamName) => {
+    if (!window.confirm(`This will FORCE REBUILD the entire hierarchy for ${teamName}.\n\nAll Regional Managers will report to the State Manager.\nAll District Managers will report to a Regional Manager.\nAll Agents will report to a District Manager.\n\nContinue?`)) {
+      return;
+    }
+    
+    setRepairLoading(prev => ({ ...prev, [teamId]: true }));
+    
+    try {
+      const res = await axios.post(`${API}/api/admin/teams/${teamId}/force-rebuild-hierarchy`, {}, { headers });
+      toast.success(`${res.data.message} - ${res.data.repairs_made} repairs made`);
+      console.log('Force rebuild details:', res.data.details);
+      
+      // Refresh hierarchy data
+      await fetchBrokenHierarchy(teamId);
+    } catch (error) {
+      toast.error(error.response?.data?.detail || 'Failed to rebuild hierarchy');
+    } finally {
+      setRepairLoading(prev => ({ ...prev, [teamId]: false }));
+    }
+  };
+
   // Repair ALL teams at once (auto-assign to state_manager)
   const repairAllTeams = async () => {
     if (!window.confirm('This will automatically repair manager_id relationships for all teams (except Team Sudbeck). Continue?')) {
