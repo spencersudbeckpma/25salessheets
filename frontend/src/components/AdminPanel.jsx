@@ -1239,29 +1239,70 @@ const AdminPanel = ({ user }) => {
                               </Button>
                             </>
                           ) : (
-                            <>
-                              <p className="text-yellow-800 text-sm mb-2">
-                                <strong>No default team found.</strong> Available teams: {defaultTeamData.all_teams?.map(t => t.name).join(', ')}
+                            <div className="space-y-3">
+                              <p className="text-yellow-800 text-sm">
+                                <strong>No default team found.</strong>
                               </p>
-                              <Button
-                                onClick={async () => {
-                                  try {
-                                    await axios.post(`${API}/api/admin/teams`, { 
-                                      name: 'Team Sudbeck',
-                                      settings: { is_default: true }
-                                    }, { headers });
-                                    toast.success('Team Sudbeck created!');
-                                    await fetchData();
-                                    await runDiagnoseUnassignedUsers();
-                                  } catch (error) {
-                                    toast.error(error.response?.data?.detail || 'Failed to create team');
-                                  }
-                                }}
-                                className="bg-yellow-600 hover:bg-yellow-700 w-full"
-                              >
-                                Create Team Sudbeck
-                              </Button>
-                            </>
+                              
+                              {/* Show all teams with their IDs */}
+                              <div className="bg-white p-2 rounded text-xs max-h-32 overflow-y-auto">
+                                <strong>All Teams in Database:</strong>
+                                {defaultTeamData.all_teams?.map((t, i) => (
+                                  <div key={i} className="py-1 border-b last:border-0">
+                                    <span className="font-medium">{t.name}</span>
+                                    <br/>
+                                    <span className="text-gray-500">ID: {t.id}</span>
+                                    {t.settings?.is_default && <span className="ml-2 text-green-600">(default)</span>}
+                                    <Button
+                                      size="sm"
+                                      variant="outline"
+                                      className="ml-2 h-6 text-xs"
+                                      onClick={() => {
+                                        setAssignToTeamId(t.id);
+                                        toast.success(`Selected: ${t.name}`);
+                                      }}
+                                    >
+                                      Select
+                                    </Button>
+                                  </div>
+                                ))}
+                              </div>
+                              
+                              {/* Show orphaned team IDs if any */}
+                              {defaultTeamData.orphaned_team_ids?.length > 0 && (
+                                <div className="bg-red-50 p-2 rounded text-xs">
+                                  <strong className="text-red-800">Orphaned Team IDs (users reference these but team record missing):</strong>
+                                  {defaultTeamData.orphaned_team_ids.map((tid, i) => (
+                                    <div key={i} className="py-1">
+                                      <code className="bg-red-100 px-1">{tid}</code>
+                                      <Button
+                                        size="sm"
+                                        variant="outline"
+                                        className="ml-2 h-6 text-xs border-red-300"
+                                        onClick={() => {
+                                          setAssignToTeamId(tid);
+                                          toast.info(`Selected orphaned team ID: ${tid}`);
+                                        }}
+                                      >
+                                        Use This ID
+                                      </Button>
+                                    </div>
+                                  ))}
+                                </div>
+                              )}
+                              
+                              {/* Manual ID entry */}
+                              <div className="bg-gray-100 p-2 rounded">
+                                <Label className="text-xs text-gray-600">Or enter Team Sudbeck ID manually:</Label>
+                                <div className="flex gap-2 mt-1">
+                                  <Input
+                                    placeholder="Paste team ID here..."
+                                    className="text-xs h-8"
+                                    onChange={(e) => setAssignToTeamId(e.target.value)}
+                                  />
+                                </div>
+                              </div>
+                            </div>
                           )}
                         </div>
                       )}
