@@ -1101,49 +1101,29 @@ const AdminPanel = ({ user }) => {
                   Find Unassigned Users
                 </Button>
                 
-                {/* Fix missing Team Sudbeck record */}
+                {/* Create Team Sudbeck */}
                 <Button
                   onClick={async () => {
                     try {
                       const res = await axios.post(`${API}/api/admin/create-missing-team-record`, {}, { headers });
-                      if (res.data.created?.length > 0) {
-                        toast.success(`Created team record: ${res.data.created.map(t => t.name).join(', ')}`);
-                        await fetchData(); // Refresh teams list
+                      if (res.data.created) {
+                        toast.success(`Created: ${res.data.team.name}`);
                       } else {
                         toast.info(res.data.message);
                       }
+                      await fetchData(); // Refresh teams list
                     } catch (error) {
-                      toast.error(error.response?.data?.detail || 'Failed to create team record');
+                      toast.error(error.response?.data?.detail || 'Failed to create team');
                     }
                   }}
-                  variant="outline"
-                  className="border-blue-400 text-blue-700 hover:bg-blue-50"
+                  className="bg-green-600 hover:bg-green-700"
                 >
-                  <Wrench className="w-4 h-4 mr-2" />
-                  Recover Team Sudbeck Record
-                </Button>
-                
-                {/* Debug button */}
-                <Button
-                  onClick={async () => {
-                    try {
-                      const res = await axios.get(`${API}/api/admin/debug-teams`, { headers });
-                      console.log('DEBUG TEAMS:', res.data);
-                      const teamList = res.data.teams.map(t => `${t.name} (${t.user_count} users)`).join('\n');
-                      alert(`TEAMS IN DATABASE (${res.data.total_teams_in_db}):\n\n${teamList}\n\nCheck browser console for full details.`);
-                    } catch (error) {
-                      toast.error('Failed to fetch debug info');
-                    }
-                  }}
-                  variant="outline"
-                  size="sm"
-                >
-                  Debug Teams
+                  Create Team Sudbeck
                 </Button>
               </div>
               
               <p className="text-xs text-orange-700">
-                If Team Sudbeck is missing from dropdowns, click the Recover button first.
+                Click Create Team Sudbeck first, then Find Unassigned Users to assign them.
               </p>
             </CardContent>
           </Card>
