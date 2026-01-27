@@ -3156,40 +3156,46 @@ async def get_interviews(current_user: dict = Depends(get_current_user)):
     if current_user['role'] not in ['state_manager', 'regional_manager', 'district_manager']:
         raise HTTPException(status_code=403, detail="Only managers can access interviews")
     
-    # Base query excludes archived interviews
+    team_id = current_user.get('team_id')
+    
+    # Base query excludes archived interviews and filters by team
     archived_filter = {"$or": [{"archived": {"$exists": False}}, {"archived": False}]}
+    team_filter = {"team_id": team_id} if team_id else {}
     
     # Query for interviews shared with current user
     shared_with_filter = {"shared_with": current_user['id']}
     
     if current_user['role'] == 'state_manager':
-        interviews = await db.interviews.find(archived_filter, {"_id": 0}).sort("created_at", -1).to_list(1000)
+        query = {"$and": [archived_filter]}
+        if team_id:
+            query["$and"].append(team_filter)
+        interviews = await db.interviews.find(query, {"_id": 0}).sort("created_at", -1).to_list(1000)
     elif current_user['role'] == 'regional_manager':
         # Regional managers see their own interviews + their direct reports' + shared with them
-        subordinate_ids = await get_all_subordinates(current_user['id'])
+        subordinate_ids = await get_all_subordinates(current_user['id'], team_id)
         
-        interviews = await db.interviews.find(
-            {"$and": [
-                {"$or": [
-                    {"interviewer_id": {"$in": subordinate_ids}},
-                    shared_with_filter
-                ]},
-                archived_filter
-            ]}, 
-            {"_id": 0}
-        ).sort("created_at", -1).to_list(1000)
+        query = {"$and": [
+            {"$or": [
+                {"interviewer_id": {"$in": subordinate_ids}},
+                shared_with_filter
+            ]},
+            archived_filter
+        ]}
+        if team_id:
+            query["$and"].append(team_filter)
+        interviews = await db.interviews.find(query, {"_id": 0}).sort("created_at", -1).to_list(1000)
     else:
         # District managers see only their own interviews + shared with them
-        interviews = await db.interviews.find(
-            {"$and": [
-                {"$or": [
-                    {"interviewer_id": current_user['id']},
-                    shared_with_filter
-                ]},
-                archived_filter
-            ]}, 
-            {"_id": 0}
-        ).sort("created_at", -1).to_list(1000)
+        query = {"$and": [
+            {"$or": [
+                {"interviewer_id": current_user['id']},
+                shared_with_filter
+            ]},
+            archived_filter
+        ]}
+        if team_id:
+            query["$and"].append(team_filter)
+        interviews = await db.interviews.find(query, {"_id": 0}).sort("created_at", -1).to_list(1000)
     
     # Mark which interviews are shared (not owned by current user)
     for interview in interviews:
