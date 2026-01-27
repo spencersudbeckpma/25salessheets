@@ -46,7 +46,7 @@ import sys
 import os
 
 # Configuration
-BACKEND_URL = "https://pma-teams.preview.emergentagent.com/api"
+BACKEND_URL = "https://custom-theme-7.preview.emergentagent.com/api"
 
 class Colors:
     GREEN = '\033[92m'

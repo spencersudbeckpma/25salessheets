@@ -1,152 +1,154 @@
 <analysis>An analysis of the conversation and codebase has been completed. Here is the summary to assist the next agent.
 
-**original_problem_statement**: The user's initial goal was to fix the NPA Tracker's data rollup. This evolved into a series of feature requests, including UI improvements, a new Suitability Form, and a major architectural refactor to implement multi-tenancy. Following the refactor, the user requested the creation of four new teams with complete user hierarchies based on provided images.
+**original_problem_statement**: The user initially reported production-wide issues with data hierarchy and permissions. State Managers could not see their teams' data, hierarchies were not rolling up, and data visibility was broken. This led to a series of critical bug fixes, data repair tool implementations, and UI improvements. After resolving these stability issues, the user has now requested the implementation of a per-team branding feature.
 
 **PRODUCT REQUIREMENTS**:
-- **Multi-Tenancy**: The entire application must support isolated teams, where users can only see data belonging to their own team.
-- **Admin Panel**: A  role is required to manage teams and users. This role can create teams and create/assign users to any team.
-- **Team Management**: State Managers and other manager roles can manage users *within* their own team hierarchy but cannot create teams or move users between teams.
-- **New User Creation**: Admins must be able to create new users directly into a specific team with a designated role and manager.
-- **Team Population**: Create and populate four new teams (Gaines, Koch, Quick, Graham) with users and hierarchies as defined in provided images. Usernames should follow the  format with a default password of .
-- **Data Integrity**: All existing data and users from Team Sudbeck must remain untouched and isolated from the new teams.
+- **Branding Scope**: Implement per-team branding including a team logo, primary color, accent color, and an optional display name/tagline.
+- **Branding Behavior**:
+    - The login page remains neutral.
+    - After login, the UI (header, navigation, buttons, titles) should adapt to the branding of the user's team ().
+    - Branding must be editable by a  in the Admin Panel.
+- **No Other Changes**: Implement branding without any other refactors or features.
 
 **User's preferred language**: English
 
 **what currently exists?**
-- The multi-tenancy refactor is complete. All data models and API endpoints are scoped by .
-- A migration was successfully run to move all pre-existing data into a default Team Sudbeck.
-- The user  has been promoted to  in the production database.
-- A comprehensive Admin Panel exists in the frontend, allowing the  to create teams and users.
-- A Create User feature was added to the Admin Panel, allowing the admin to create a user directly into a specific team with a designated role and manager.
-- Four new teams (Gaines, Koch, Quick, Graham) have been created, and over 120 users have been added to them with their full hierarchies as specified by the user.
-- A code fix was implemented to correctly handle  during user creation/assignment, but it has not yet been deployed by the user.
+- A multi-tenant application with a  role for global management.
+- An Admin Panel with extensive features for user management (create, edit, delete), team management, and data repair.
+- A series of backend fixes have been implemented to correct data scoping and hierarchy roll-up issues for users and interviews.
+- Data repair tools are available in the Admin UI to fix broken  relationships and diagnose/fix orphaned interviews (interviews whose creators were deleted).
+- All user email/username lookups are now case-insensitive.
+- The initial backend and frontend structures for per-team branding have been created. This includes new fields in the  collection, API endpoints to manage and fetch branding, and a  in the React frontend.
 
 **Last working item**:
-- **Last item agent was working**: The agent identified that the Regional Managers for Team Gaines were created without the correct  because the initial user creation happened before the  bug was fixed and deployed. All other teams were created correctly after the fix was coded. The agent prepared a post-deployment repair script for the user.
-- **Status**: BLOCKED
-- **Agent Testing Done**: N (for the repair script, as it depends on user deployment)
-- **Which testing method agent to use?**: backend testing agent. After the user deploys the fix, run the provided repair script and then use the testing agent or  to verify that the  for the three affected users has been correctly updated.
+- **Last item agent was working**: Implementing the per-team branding feature. The agent had just finished the backend work (updating the Team model, adding branding API endpoints) and had set up the initial frontend structure (, wrapping , updating the  component). The agent was about to modify the  to consume and apply the branding styles.
+- **Status**: IN PROGRESS
+- **Agent Testing Done**: N
+- **Which testing method agent to use?**: both. The frontend testing agent should be used to verify that the UI correctly reflects the branding colors and logos. The backend testing agent (or ) should be used to test the new branding API endpoints for creating, updating, and fetching team branding settings.
 - **User Testing Done**: N
 
 **All Pending/In progress Issue list**:
-  - **Issue 1**: Hierarchy for Team Gaines is incorrect in production. (P0)
-
-  **Issues Detail**:
-  - **Issue 1**:
-     - **Description**: The three Regional Managers in Team Gaines (, , ) have a  . This prevents them from appearing under the State Manager (Justin Gaines) in the Team Management view.
-     - **Attempted fixes**: The agent tried to use the  endpoint, but it did not support updating  at the time. The code has since been fixed in the preview environment.
-     - **Next debug checklist**:
-        1. Wait for the user to confirm they have deployed the latest changes to production.
-        2. Execute the repair script provided in the previous turn to update the  for the three affected users.
-        3. Verify via an API call or by checking the Team Management UI that the hierarchy for Team Gaines is now correct.
-     - **Why fix this issue and what will be achieved with the fix?**: This will correct the reporting structure for Team Gaines, ensuring that data rollups and the hierarchy view function as intended.
-     - **Status**: BLOCKED (waiting for user to deploy)
-     - **Is recurring issue?**: N
-     - **Should Test frontend/backend/both after fix?**: Both. Backend to confirm API response, Frontend to confirm UI.
-     - **Blocked on other issue**: N/A
+There are no pending *issues*. The work is focused on a new feature.
 
 **In progress Task List**:
-  - **Task 1**: Execute the post-deployment repair for Team Gaines's hierarchy.
-     - **Where to resume**: After the user confirms deployment, execute the  script from the previous conversation to update the three Regional Managers.
-     - **What will be achieved with this?**: The Team Gaines hierarchy will be fully correct in the production database.
-     - **Status**: BLOCKED
+  - **Task 1**: Complete Per-Team Branding Implementation (P0)
+
+ **Task Detail**:
+  - **Task 1**:
+     - **Where to resume**: The  is created and provided in . The next step is to consume this context within  and other relevant components. You need to:
+        1.  Update  to use the  hook to get the team's branding settings.
+        2.  Apply the , , etc., to the UI elements (header, navigation, buttons) using inline styles or dynamic CSS variables.
+        3.  Display the  and  in the application header.
+        4.  Create the UI in  to allow the  to edit the branding for each team. This will involve adding form fields for the logo URL, display name, and color pickers for the primary/accent colors, and connecting them to the  endpoint.
+     - **What will be achieved with this?**: The application will have a dynamic, team-specific look and feel, editable by the administrator.
+     - **Status**: IN PROGRESS
      - **Should Test frontend/backend/both after fix?**: Both
-     - **Blocked on something**: User deployment.
+     - **Blocked on something**: No.
 
 **Upcoming and Future Tasks**
-- **Upcoming Tasks**:
-    - **Verify  Fix (P0)**: After deployment, confirm that creating or re-assigning any user now correctly persists the  in production.
 - **Future Tasks**:
-    - **Code Refactoring (P1)**: The  file is critically oversized (5,500+ lines). Once production is stable, this file MUST be broken down into smaller, feature-specific modules (e.g., , ). This is a significant technical debt that impedes maintainability and future development.
+    - **Code Refactoring (P1)**: The  file is critically oversized (now over 5,500 lines). This technical debt must be addressed by breaking the file into a route-based structure (e.g., , , etc.). This should only be tackled after the branding feature is stable in production.
 
 **Completed work in this session**
-- **Multi-Tenancy Refactor**: Completed the application-wide refactor for data isolation.
-- **Admin Panel & Permissions**: Built the UI and backend for  team/user management and correctly restricted permissions for other roles.
-- **User Role Promotion**: Successfully promoted the user's account to  in the production database.
-- **Visibility Regressions Fixed**: Restored missing Recruiting and SNA tabs for manager and admin roles.
-- **Admin Create User Feature**: Implemented a workflow for the admin to create new users directly into specific teams.
-- **Mobile UI Fix**: Made the Create User button prominent and accessible on mobile devices.
-- **Bulk User & Team Creation**: Created 4 new teams and populated them with over 120 users and their complete hierarchies based on screenshots.
+- **Hierarchy & Scoping Fix**: Corrected data visibility for  and other roles across , , and . State managers now correctly see all users in their team.
+- **Data Repair Tools**:
+    - Implemented Auto-Repair All Teams and Force Rebuild features in the Admin UI to fix broken  links caused by user deletions.
+    - Added subordinate counts (Subs column) to the Admin user list to help identify and safely delete duplicate manager accounts.
+- **Interview Data Fixes**:
+    - Resolved the issue where managers couldn't see their subordinates' interviews by fixing the rollup logic in  and related stats endpoints.
+    - Created a Diagnostics tool in the Admin Panel to find and reassign orphaned interviews (those belonging to deleted users), complete with an audit trail.
+- **User Management Enhancements**:
+    - Added Edit User and Delete User functionality to the Admin Panel.
+- **Case-Insensitive Logins**: Modified all relevant authentication and user lookup endpoints to be case-insensitive on the email field.
+- **Mobile UI Improvement**: Refactored the My Team view into a card-based layout to ensure hierarchy information (Role, Reports To) is visible on smaller screens.
 
 **Earlier issues found/mentioned but not fixed**
    - **Issue 1**: Monolithic  codebase.
-     - **Debug checklist**: This is a technical debt issue, not a bug. The plan is to create a  directory and split the endpoints from  into separate files based on functionality (e.g., , , ).
-     - **Why to solve this issue and what will be achieved with this?**: Refactoring will dramatically improve code readability, maintainability, and developer velocity. It will also reduce the risk of introducing regressions.
+     - **Debug checklist**: This is a technical debt issue. The plan is to create a  directory and split the endpoints from  into separate, feature-specific files.
+     - **Why to solve this issue and what will be achieved with this?**: Refactoring will dramatically improve code readability, maintainability, and developer velocity, reducing the risk of introducing regressions.
      - **Should Test frontend/backend/both after fix**: Both (full regression test required).
      - **Is recurring issue?**: Y
 
 **Known issue recurrence from previous fork**
-  - **Monolithic Codebase**: The  file has been a known issue and has grown significantly worse, making development more complex and risky.
+  - **Monolithic Codebase**: The  file has been a known issue and continues to grow, making development increasingly complex and risky.
 
 **Code Architecture**
 
 
 **Key Technical Concepts**
-- **Multi-Tenancy**: The core architecture is now multi-tenant, using a  on every data record to ensure data isolation between teams.
-- **Role-Based Access Control (RBAC)**: The application uses a  role for global management and restricts other roles (, etc.) to actions within their own team.
-- **Conditional Rendering (React)**: The frontend extensively uses the user's role and team data to conditionally show/hide UI elements like tabs and buttons.
-- **API-Driven Admin Actions**: All user and team management is handled via secure, role-protected API endpoints.
+- **Multi-Tenancy**: The core architecture uses a  on every data record to ensure data isolation.
+- **Role-Based Access Control (RBAC)**: Fine-grained permissions for , , and lower roles.
+- **Data Integrity & Repair**: Backend logic and UI tools to diagnose and repair broken data relationships (e.g., , orphaned records).
+- **Dynamic Theming/Branding**: Using React Context and API-driven settings to change the application's appearance based on the user's team.
+- **React Context API**: Used for managing global state like user authentication and team branding.
+- **Case-Insensitive Search**: Using MongoDB's  with the  option for case-insensitive queries.
 
 **key DB schema**
   - **teams**: 
-  - **users**:  (role now includes )
-  - **All other data collections** (activities, interviews, npa_agents, suitability_forms, recruits, etc.): Now include a  field.
+  - **users**: 
+  - **interviews**:  (audit fields added)
 
 **All files of reference**
-- : The monolithic file containing all backend logic.
-- : The UI for all admin-related tasks.
-- : The main layout component, modified for tab visibility.
-- , : Modified to fix role-based visibility regressions.
+- : Contains all backend logic, including new branding endpoints and all recent fixes.
+- : New file for managing branding state.
+- : Updated to wrap the application with .
+- : Updated to fetch and set branding data upon login.
+- : The next file to be modified to apply branding.
+- : Heavily modified to include repair tools, diagnostics, and user editing.
 
 **Areas that need refactoring**:
-- ****: This file is critically unmaintainable. It must be refactored into a route-based structure as the highest priority task after the current multi-tenancy work is confirmed to be stable in production.
+- ****: This file is critically unmaintainable and is the top candidate for refactoring after the branding feature is complete and stable.
 
 **key api endpoints**
-- : Create a new team.
-- : Delete a team.
-- : Create a new user directly into a team.
-- : Assign a user to a team and update their role/manager.
-- : (Newly added, pending deployment) Update a user's manager.
-- : Get users for a specific team.
+- : **(New)** Update branding settings for a team.
+- : **(New)** Get branding settings for the logged-in user's team.
+- : **(Modified)** Now returns team branding information in the response.
+- : **(Fixed)** Now correctly scopes users for managers based on hierarchy and team.
+- : **(New)** One-click repair for all  issues.
+- : **(New)** A more aggressive hierarchy rebuild for a specific team.
+- : **(New)** Checks for orphaned interviews.
+- : **(New)** Reassigns orphaned interviews.
+- : **(New)** Updates user details (email, name, role).
+- : **(New)** Deletes a user.
 
 **Critical Info for New Agent**
-- **You are blocked on the user.** The user needs to deploy the latest code changes to production. These changes fix the  update logic.
-- **Your immediate next action** is to run the repair script provided in the previous turn **after** the user confirms deployment is complete. This will fix the hierarchy for Team Gaines.
-- **DO NOT** start the  refactor until the user explicitly confirms that the multi-tenancy features and new team setups are stable in production. Stability is the top priority.
-- The user has been provided with credentials for all newly created users:  / .
+- You are picking up in the middle of the **per-team branding implementation**. The backend work is mostly done, and the frontend foundation is laid. Your main task is to apply the branding styles across the UI and build the admin editor for it.
+- All previous critical bugs related to hierarchy and data visibility are believed to be fixed and have been verified in the preview environment. The user considers the application stable and is ready to deploy the branding feature once it's complete.
+- The user prefers admin-safe UI features over  commands. Continue building UI-driven tools for any administrative tasks.
 
 **documents and test reports created in this job**
--  (Updated with multi-tenancy and admin requirements)
--  (Test report for the initial multi-tenancy refactor)
+-  (Updated)
+- 
+- 
 
 **Last 10 User Messages and any pending HUMAN messages**
-10. **User**: Requests creation of users for Team Gaines from a screenshot. (Status: COMPLETED)
-9.  **User**: Clarifies that Justin Gaines is the State Manager for Team Gaines. (Status: COMPLETED)
-8.  **User**: Asks agent to create the rest of the teams' hierarchies quickly, then they will deploy. (Status: IN PROGRESS)
-7.  **User**: Provides screenshot for Team Koch. (Status: COMPLETED)
-6.  **User**: Provides screenshot for Team Quick. (Status: COMPLETED)
-5.  **User**: Provides screenshot for Team Graham. (Status: COMPLETED)
-4.  **Agent**: Confirms all teams are created and that a deployment is needed to fix the  issue. (Status: COMPLETED)
-3.  **User**: Asks for confirmation on how  will work going forward and what repair is needed for existing users. (Status: COMPLETED)
-2.  **Agent**: Explains that only Team Gaines needs repair and provides a post-deployment  script to fix it. (Status: PENDING USER ACTION)
-1.  **User**: Requests the agent create the rest of the teams and their hierarchies. (Status: COMPLETED)
+10. **User**: Reports that interviews from their subordinates are not rolling up. (Status: COMPLETED)
+9. **Agent**: Diagnoses the issue as a faulty query in the  endpoint and applies a fix. (Status: COMPLETED)
+8. **User**: Confirms everything is stable and requests the implementation of per-team branding. (Status: IN PROGRESS)
+7. **Agent**: Begins implementing the branding feature, starting with backend changes. (Status: IN PROGRESS)
+6. **Agent**: Adds branding fields to the Team model and creates API endpoints. (Status: IN PROGRESS)
+5. **Agent**: Modifies the login endpoint to return branding data. (Status: IN PROGRESS)
+4. **Agent**: Creates the  for the frontend. (Status: IN PROGRESS)
+3. **Agent**: Updates  to use the . (Status: IN PROGRESS)
+2. **Agent**: Updates the  component to set branding data on successful login. (Status: IN PROGRESS)
+1. **Agent**: Prepares to update the  component to apply the branding styles. (Status: IN PROGRESS)
 
 **Project Health Check:**
-- **Broken**: The user hierarchy for Team Gaines is incorrect in production due to null  fields. This is blocked on a deployment and a subsequent repair script.
+- **Broken**: None. The application is considered stable by the user pending the completion of the branding feature.
 - **Mocked**: None.
 
 **3rd Party Integrations**
 - **openpyxl**: Used for generating  Excel reports.
 
 **Testing status**
-  - **Testing agent used after significant changes**: YES, earlier in the session for the main multi-tenancy refactor.
+  - **Testing agent used after significant changes**: YES, for the hierarchy/scoping fixes.
   - **Troubleshoot agent used after agent stuck in loop**: NO
-  - **Test files created**: None.
-  - **Known regressions**: None known, but the  issue was a bug introduced during the phased implementation.
+  - **Test files created**: []
+  - **Known regressions**: None.
 
 **Credentials to test flow:**
-- **Super Admin**:  / 
+- **Super Admin**:  /  (in preview),  /  (in production)
 - **New Team Users**:  / 
 
 **What agent forgot to execute**
-- The agent correctly identified the  bug before finishing but could not fully resolve it because the fix required a production deployment, which is controlled by the user. A repair plan is in place.</analysis>
+- The agent has been following the user's requests in a logical sequence. The current task (branding) is partially complete, which is the expected state for this handoff.</analysis>
