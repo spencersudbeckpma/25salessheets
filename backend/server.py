@@ -269,29 +269,44 @@ async def get_default_team(current_user: dict = Depends(get_current_user)):
     """Get the default team (Team Sudbeck) directly from database (super_admin only)"""
     require_super_admin(current_user)
     
+    # Get ALL teams first for complete visibility
+    all_teams = await db.teams.find({}, {"_id": 0}).to_list(100)
+    
     # Try multiple ways to find Team Sudbeck
-    default_team = await db.teams.find_one(
-        {"$or": [
-            {"name": "Team Sudbeck"},
-            {"name": {"$regex": "sudbeck", "$options": "i"}},
-            {"settings.is_default": True}
-        ]},
-        {"_id": 0}
-    )
+    default_team = None
+    for team in all_teams:
+        name = team.get('name', '').lower()
+        if 'sudbeck' in name or team.get('settings', {}).get('is_default') == True:
+            default_team = team
+            break
+    
+    # Also check: what team_ids are users referencing that might not be in teams list?
+    # This finds "orphaned" team references
+    team_ids_in_use = await db.users.distinct("team_id")
+    known_team_ids = {t.get('id') for t in all_teams}
+    orphaned_team_ids = [tid for tid in team_ids_in_use if tid and tid not in known_team_ids]
+    
+    # If we found orphaned team_ids, try to find if any team record exists for them
+    orphaned_teams = []
+    for tid in orphaned_team_ids:
+        team = await db.teams.find_one({"id": tid}, {"_id": 0})
+        if team:
+            orphaned_teams.append(team)
     
     if default_team:
         return {
             "found": True,
             "team": default_team,
+            "all_teams": all_teams,
             "message": f"Found default team: {default_team.get('name')} (ID: {default_team.get('id')})"
         }
     
-    # If not found, list all teams for debugging
-    all_teams = await db.teams.find({}, {"_id": 0, "id": 1, "name": 1, "settings": 1}).to_list(100)
     return {
         "found": False,
         "all_teams": all_teams,
-        "message": "Default team not found. See all_teams for available teams."
+        "orphaned_team_ids": orphaned_team_ids,
+        "orphaned_teams": orphaned_teams,
+        "message": "Default team not found. Check all_teams and orphaned_team_ids for clues."
     }
 
 @api_router.post("/admin/teams")
