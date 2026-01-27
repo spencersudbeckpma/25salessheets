@@ -3852,6 +3852,7 @@ async def add_npa_agent(data: dict, current_user: dict = Depends(get_current_use
     
     npa_agent = {
         "id": str(uuid.uuid4()),
+        "team_id": current_user.get('team_id'),  # Multi-tenancy
         "user_id": data.get('user_id', ''),  # Link to team member if selected from list
         "name": data.get('name', ''),
         "phone": data.get('phone', ''),
