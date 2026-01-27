@@ -1,160 +1,139 @@
-# Team Sudbeck Sales Tracker - Product Requirements Document
+# PMA Agent - Product Requirements Document
 
-## Overview
-A comprehensive sales tracking application for insurance agencies, enabling team management, activity tracking, reporting, and agent progress monitoring. **Now with multi-tenancy support and strict data isolation.**
+## Original Problem Statement
+Multi-tenant sales activity tracking application with role-based access control for insurance agency hierarchy management.
 
-## Core Features
+## Core Architecture
+- **Frontend**: React + Tailwind CSS + Shadcn/UI
+- **Backend**: FastAPI + MongoDB
+- **Auth**: JWT-based authentication with case-insensitive email lookup
 
-### 1. User Management & Authentication
-- JWT-based authentication
-- Role-based access: super_admin, State Manager, Regional Manager, District Manager, Agent
-- Hierarchical team structure
-- **Multi-tenancy: Users must be assigned to a team to access the app**
+## User Roles (Hierarchy)
+1. `super_admin` - Global access, admin panel
+2. `state_manager` - Team-level admin
+3. `regional_manager` - Regional oversight
+4. `district_manager` - District management
+5. `agent` - Field agents
 
-### 2. Multi-Tenancy (Jan 2026 - COMPLETE)
-- **Team-based data isolation**: All data scoped by `team_id`
-- **Admin Panel**: Super Admin ONLY can create teams and assign users across teams
-- **Migration completed**: All existing data migrated to "Team Sudbeck"
-- **Team hierarchy**: Each team has independent hierarchies
-- **Data collections with team_id**: users, activities, interviews, suitability_forms, npa_agents, new_face_customers, recruits, team_goals, goals, invites
+## Key Features Implemented
 
-### 3. Role-Based Access Control (Jan 27, 2026 - COMPLETE)
-#### Acceptance Criteria VERIFIED:
-- **super_admin**: Can see ALL teams/users ONLY in Admin tab
-- **state_manager**: Can see ONLY their own team, ONLY their hierarchy (downline), NO "All Users" view
-- **regional_manager / district_manager**: Same team-only + downline-only restrictions
+### Multi-Tenancy & Teams
+- Team-based data isolation
+- User assignment to teams
+- Team management in Admin Panel
 
-### 4. Daily Activity Tracking
-- Track: Contacts, Appointments, Presentations, Referrals, Testimonials, Apps, Sales, Premium
-- New Face Sold and Bankers Premium tracking
+### User Management (Admin Panel)
+- Create, edit, delete users
+- Assign/reassign users to teams
+- Role management
+- Case-insensitive email lookup
 
-### 5. Reports & Analytics
-- Daily, Weekly, Monthly, Quarterly, Yearly reports
-- Team View with hierarchical data rollup
-- Leaderboard (organization-wide, team-scoped)
-- Analytics dashboard
+### Data Repair Tools (Admin Panel - Diagnostics Tab)
+- **Hierarchy Repair**: Fix broken manager_id relationships
+- **Auto-Repair All Teams**: One-click fix for all teams
+- **Force Rebuild Team Hierarchy**: Aggressive rebuild option
+- **Diagnose Interviews**: Find orphaned interviews
+- **Fix Orphaned Interviews**: Reassign to state managers
+- **Diagnose Unassigned Users**: Find users without team_id (NEW - Jan 2026)
+- **Fix Unassigned Users**: Bulk-assign team_id to users (NEW - Jan 2026)
 
-### 6. SNA Tracker (State/New Agent)
-- Automatic tracking from first production entry
-- 90-day tracking period, $30,000 premium goal
+### Interview Tracking
+- Interview submission with activity metrics
+- Report generation (XLSX export)
+- Statistics dashboard
 
-### 7. NPA Tracker (New Producing Agent)
-- Track agents toward $1,000 premium goal
-- Select Team Member: Links to existing user, auto-calculates premium
+## Recent Fixes (January 2026)
 
-### 8. Interviews Feature
-- Regional Breakdown view with stats by region
-- Share functionality with team members
+### Unassigned Users Bug
+- **Issue**: Agents getting "Access denied - not assigned to team" error
+- **Cause**: Users in database without team_id field
+- **Solution**: New diagnostic/fix tool in Admin Panel
 
-### 9. Suitability Form
-- Complete form for client suitability assessments
-- Weekly Report view with export to Excel (.xlsx)
+## In Progress
+- Per-Team Branding (paused to fix unassigned users bug)
+  - Team logo, primary/accent colors, display name
+  - Editable by super_admin
 
-### 10. PMA Bonuses & DocuSphere
-- Bonus tracking and document management
+## Backlog
+- **P1**: Refactor server.py (5500+ lines) into route modules
 
-## Technical Architecture
+## API Endpoints
 
-### Backend
-- FastAPI (Python)
-- MongoDB database
-- JWT authentication
-- RESTful API with /api prefix
+### Admin - User Management
+- `POST /api/admin/users` - Create user
+- `PUT /api/admin/users/{user_id}` - Update user  
+- `DELETE /api/admin/users/{user_id}` - Delete user
+- `GET /api/admin/users` - List all users
+- `POST /api/admin/users/assign-team` - Assign user to team
 
-### Frontend
-- React
-- Tailwind CSS
-- Shadcn/UI components
-- Axios for API calls
+### Admin - Team Management
+- `GET /api/admin/teams` - List teams
+- `POST /api/admin/teams` - Create team
+- `PUT /api/admin/teams/{team_id}` - Update team
+- `DELETE /api/admin/teams/{team_id}` - Delete team
 
-### Key Files
-- `backend/server.py` - Main backend file (~5700 lines)
-- `frontend/src/components/Dashboard.jsx` - Main dashboard with tabs
-- `frontend/src/components/AdminPanel.jsx` - Team/User management (super_admin only)
-- `frontend/src/components/TeamManagement.jsx` - Team-scoped management (managers)
+### Admin - Data Repair
+- `GET /api/admin/teams/{team_id}/broken-hierarchy` - Find broken hierarchies
+- `POST /api/admin/repair-manager-ids` - Batch repair manager_id
+- `POST /api/admin/auto-repair-all-teams` - Auto-repair all teams
+- `POST /api/admin/force-rebuild-team-hierarchy` - Force rebuild
+- `GET /api/admin/diagnose-interviews` - Find orphaned interviews
+- `POST /api/admin/fix-orphaned-interviews` - Fix orphaned interviews
+- `GET /api/admin/diagnose-unassigned-users` - Find users without team (NEW)
+- `POST /api/admin/fix-unassigned-users` - Bulk assign team_id (NEW)
 
-## Database Collections
+### Admin - Branding
+- `GET /api/admin/teams/{team_id}/branding` - Get team branding
+- `PUT /api/admin/teams/{team_id}/branding` - Update team branding
+- `GET /api/branding/my-team` - Get current user's team branding
 
-### teams
-```json
-{
-  "id": "string (UUID)",
-  "name": "string",
-  "created_at": "datetime",
-  "settings": {"is_default": true/false}
-}
-```
+## Database Schema
 
 ### users
 ```json
 {
-  "id": "string (UUID)",
+  "id": "string",
   "email": "string",
   "name": "string",
-  "role": "super_admin|state_manager|regional_manager|district_manager|agent",
-  "team_id": "string (UUID) - required for non-super_admin access",
-  "manager_id": "string (UUID)",
+  "password_hash": "string",
+  "role": "string",
+  "team_id": "string",
+  "manager_id": "string",
   "status": "active|archived"
 }
 ```
 
-## What's Been Implemented
+### teams
+```json
+{
+  "id": "string",
+  "name": "string",
+  "created_at": "datetime",
+  "settings": { "is_default": boolean },
+  "branding": {
+    "logo_url": "string",
+    "display_name": "string",
+    "primary_color": "string",
+    "accent_color": "string"
+  }
+}
+```
 
-### January 27, 2026 - Hierarchy & Scoping Fix (COMPLETE)
-- [x] **Backend enforcement** for team_id and role-based hierarchy filtering
-  - [x] `/users/active/list` - Now filters by team_id + hierarchy for non-super_admin
-  - [x] `/users/archived/list` - Now filters by team_id for non-super_admin
-  - [x] `/reports/managers` - Now scoped to team hierarchy
-- [x] **Hierarchy repair/backfill endpoints** for broken manager_id
-  - [x] `GET /admin/teams/{team_id}/hierarchy` - View hierarchy tree
-  - [x] `GET /admin/teams/{team_id}/broken-hierarchy` - Detect broken relationships
-  - [x] `POST /admin/repair-manager-ids` - Batch repair manager_id
-- [x] **Frontend updates**
-  - [x] Renamed "All Users" tab to "My Team" in TeamManagement
-  - [x] Scoped to managers (state_manager, regional_manager, district_manager)
-  - [x] Removed cross-team visibility
-
-### January 2026 - Multi-Tenancy Refactor (COMPLETE)
-- [x] Team model and admin endpoints
-- [x] Migration endpoint to assign existing data to Team Sudbeck
-- [x] All data queries scoped by team_id
-- [x] Admin Panel for team/user management
-- [x] 4 new teams created (Gaines, Koch, Quick, Graham)
-- [x] 120+ users added with hierarchies
-
-## Admin API Endpoints
-
-### Team Management (super_admin only)
-- `GET /api/admin/teams` - List all teams
-- `POST /api/admin/teams` - Create team
-- `PUT /api/admin/teams/{team_id}` - Update team
-- `DELETE /api/admin/teams/{team_id}` - Delete team (only if empty)
-- `GET /api/admin/teams/{team_id}/users` - Get team users
-- `GET /api/admin/teams/{team_id}/hierarchy` - Get hierarchy tree
-- `GET /api/admin/teams/{team_id}/broken-hierarchy` - Find broken hierarchy
-
-### User Management (super_admin only)
-- `GET /api/admin/users` - List all users with team info
-- `POST /api/admin/users` - Create user in team
-- `POST /api/admin/users/assign-team` - Assign user to team
-- `POST /api/admin/repair-manager-ids` - Batch repair manager_id
+### interviews
+```json
+{
+  "id": "string",
+  "interviewer_id": "string",
+  "team_id": "string",
+  "candidate_name": "string",
+  "interview_date": "datetime",
+  "original_interviewer_id": "string",
+  "reassigned_at": "datetime",
+  "reassigned_by": "string"
+}
+```
 
 ## Test Credentials
-- **Super Admin**: admin@pmagent.net / Admin2026
-- **Team Sudbeck SM**: spencer.sudbeck@pmagent.net / Bizlink25
-- **Team Quick SM**: sean.quick@pmagent.net / PMA2026
-
-## Backlog / Future Tasks
-
-### P1 (Medium Priority)
-- [ ] Code refactoring - break down server.py into modules (routes/, models/)
-
-### P2 (Lower Priority)
-- [ ] Add more analytics and reporting features
-- [ ] Performance optimizations for large teams
-
-## Architecture Notes
-- Multi-tenancy uses `team_id` field on all data collections
-- Super Admin has global access but is NOT assigned to any team
-- State Managers have admin privileges within their team ONLY
-- `get_all_subordinates()` accepts `team_id` parameter for scoping
+- **Super Admin**: admin@pmagent.net / Bizlink25 (preview)
+- **Production Admin**: spencer.sudbeck@pmagent.net / Bizlink25
+- **New Team Users**: first.last@pmagent.net / PMA2026
