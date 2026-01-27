@@ -4427,7 +4427,7 @@ async def get_active_users_for_reassignment(current_user: dict = Depends(get_cur
     """Get active users within the user's team and hierarchy for team reorganization.
     
     - super_admin: Can see ALL users (only in Admin tab)
-    - state_manager: Can see ONLY their team's users (their downline hierarchy)
+    - state_manager: Can see ALL users in their team (they're at the top of hierarchy)
     - regional_manager/district_manager: Can see only their downline
     """
     if current_user['role'] not in ['super_admin', 'state_manager', 'regional_manager', 'district_manager']:
@@ -4441,8 +4441,19 @@ async def get_active_users_for_reassignment(current_user: dict = Depends(get_cur
             {"$or": [{"status": "active"}, {"status": {"$exists": False}}]},
             {"_id": 0, "password_hash": 0}
         ).to_list(10000)
+    elif current_user['role'] == 'state_manager':
+        # State manager sees ALL users in their team (they're at the top)
+        if not team_id:
+            return []
+        users = await db.users.find(
+            {
+                "team_id": team_id,
+                "$or": [{"status": "active"}, {"status": {"$exists": False}}]
+            },
+            {"_id": 0, "password_hash": 0}
+        ).to_list(10000)
     else:
-        # For all other roles: MUST filter by team_id AND hierarchy
+        # For regional/district managers: filter by team_id AND hierarchy
         if not team_id:
             return []
         
