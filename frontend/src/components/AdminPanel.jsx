@@ -1094,6 +1094,174 @@ const AdminPanel = ({ user }) => {
               </CardContent>
             </Card>
           )}
+
+          {/* Unassigned Users Section */}
+          <Card className="bg-orange-50 border-orange-200">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-orange-800">
+                <AlertTriangle className="w-5 h-5" />
+                Unassigned Users Diagnostic
+              </CardTitle>
+              <CardDescription className="text-orange-700">
+                Find and fix users who cannot access the app because they don't have a team assigned.
+                This is the cause of "Access denied - not assigned to team" errors.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <Button
+                onClick={runDiagnoseUnassignedUsers}
+                disabled={unassignedLoading}
+                className="bg-orange-600 hover:bg-orange-700"
+                data-testid="diagnose-unassigned-btn"
+              >
+                {unassignedLoading ? <RefreshCw className="w-4 h-4 mr-2 animate-spin" /> : <Search className="w-4 h-4 mr-2" />}
+                Find Unassigned Users
+              </Button>
+            </CardContent>
+          </Card>
+
+          {/* Unassigned Users Results */}
+          {unassignedData && (
+            <Card data-testid="unassigned-results">
+              <CardHeader>
+                <CardTitle className="text-lg flex items-center gap-2">
+                  {unassignedData.unassigned_count > 0 ? (
+                    <AlertTriangle className="w-5 h-5 text-orange-600" />
+                  ) : (
+                    <CheckCircle2 className="w-5 h-5 text-green-600" />
+                  )}
+                  Unassigned Users Results
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {/* Summary */}
+                <div className={`p-4 rounded-lg text-center ${unassignedData.unassigned_count > 0 ? 'bg-orange-50' : 'bg-green-50'}`}>
+                  <div className={`text-3xl font-bold ${unassignedData.unassigned_count > 0 ? 'text-orange-800' : 'text-green-800'}`}>
+                    {unassignedData.unassigned_count}
+                  </div>
+                  <div className={`text-sm ${unassignedData.unassigned_count > 0 ? 'text-orange-600' : 'text-green-600'}`}>
+                    Users Without Team Assignment
+                  </div>
+                </div>
+
+                {unassignedData.unassigned_count > 0 && (
+                  <>
+                    {/* Selection controls */}
+                    <div className="flex flex-wrap gap-2 items-center">
+                      <Button variant="outline" size="sm" onClick={selectAllUnassignedUsers}>
+                        Select All
+                      </Button>
+                      <Button variant="outline" size="sm" onClick={deselectAllUnassignedUsers}>
+                        Deselect All
+                      </Button>
+                      <span className="text-sm text-slate-600">
+                        {selectedUnassignedUsers.length} of {unassignedData.unassigned_count} selected
+                      </span>
+                    </div>
+
+                    {/* User list with checkboxes */}
+                    <div className="max-h-60 overflow-y-auto border rounded">
+                      <table className="w-full text-sm">
+                        <thead className="bg-slate-100 sticky top-0">
+                          <tr>
+                            <th className="px-3 py-2 text-left w-8">
+                              <input 
+                                type="checkbox" 
+                                checked={selectedUnassignedUsers.length === unassignedData.unassigned_count}
+                                onChange={(e) => e.target.checked ? selectAllUnassignedUsers() : deselectAllUnassignedUsers()}
+                              />
+                            </th>
+                            <th className="px-3 py-2 text-left">Name</th>
+                            <th className="px-3 py-2 text-left">Email</th>
+                            <th className="px-3 py-2 text-left">Role</th>
+                            <th className="px-3 py-2 text-left">Status</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y">
+                          {unassignedData.unassigned_users.map((u) => (
+                            <tr key={u.id} className="hover:bg-slate-50">
+                              <td className="px-3 py-2">
+                                <input 
+                                  type="checkbox" 
+                                  checked={selectedUnassignedUsers.includes(u.id)}
+                                  onChange={() => toggleSelectUnassignedUser(u.id)}
+                                />
+                              </td>
+                              <td className="px-3 py-2 font-medium">{u.name || '-'}</td>
+                              <td className="px-3 py-2">{u.email}</td>
+                              <td className="px-3 py-2">{u.role || '-'}</td>
+                              <td className="px-3 py-2">
+                                <span className={`text-xs px-2 py-1 rounded ${u.status === 'active' || !u.status ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-700'}`}>
+                                  {u.status || 'active'}
+                                </span>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+
+                    {/* Assignment controls */}
+                    <div className="bg-slate-50 p-4 rounded-lg space-y-3">
+                      <h4 className="font-medium text-slate-800">Assign Selected Users To:</h4>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                        <div>
+                          <Label htmlFor="assign-team" className="text-sm text-slate-600 mb-1 block">Team (required)</Label>
+                          <Select value={assignToTeamId} onValueChange={setAssignToTeamId}>
+                            <SelectTrigger id="assign-team">
+                              <SelectValue placeholder="Select team..." />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {unassignedData.available_teams?.map((team) => (
+                                <SelectItem key={team.id} value={team.id}>
+                                  {team.name}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <div>
+                          <Label htmlFor="assign-manager" className="text-sm text-slate-600 mb-1 block">Manager (optional)</Label>
+                          <Select value={assignManagerId} onValueChange={setAssignManagerId}>
+                            <SelectTrigger id="assign-manager">
+                              <SelectValue placeholder="No manager..." />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="">No manager</SelectItem>
+                              {assignToTeamId && users
+                                .filter(u => u.team_id === assignToTeamId && ['state_manager', 'regional_manager', 'district_manager'].includes(u.role))
+                                .map((manager) => (
+                                  <SelectItem key={manager.id} value={manager.id}>
+                                    {manager.name} ({manager.role})
+                                  </SelectItem>
+                                ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      </div>
+                      <Button
+                        onClick={runFixUnassignedUsers}
+                        disabled={unassignedLoading || selectedUnassignedUsers.length === 0 || !assignToTeamId}
+                        className="bg-orange-600 hover:bg-orange-700 w-full md:w-auto"
+                        data-testid="fix-unassigned-btn"
+                      >
+                        {unassignedLoading ? <RefreshCw className="w-4 h-4 mr-2 animate-spin" /> : <Wrench className="w-4 h-4 mr-2" />}
+                        Assign {selectedUnassignedUsers.length} User(s) to Team
+                      </Button>
+                    </div>
+                  </>
+                )}
+
+                {unassignedData.unassigned_count === 0 && (
+                  <div className="bg-green-50 p-4 rounded-lg text-center">
+                    <CheckCircle2 className="w-8 h-8 text-green-600 mx-auto mb-2" />
+                    <div className="text-green-800 font-medium">All users are assigned to teams!</div>
+                    <div className="text-green-600 text-sm">No users are blocked from accessing the app.</div>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          )}
         </div>
       )}
 
