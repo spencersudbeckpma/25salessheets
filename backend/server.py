@@ -328,6 +328,8 @@ async def assign_user_to_team(assignment: UserTeamAssignment, current_user: dict
     update_data = {"team_id": assignment.team_id}
     if assignment.role:
         update_data["role"] = assignment.role
+    if assignment.manager_id:
+        update_data["manager_id"] = assignment.manager_id
     
     await db.users.update_one({"id": assignment.user_id}, {"$set": update_data})
     
