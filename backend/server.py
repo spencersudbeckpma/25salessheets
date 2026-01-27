@@ -2521,8 +2521,11 @@ async def create_user_directly(user_data: UserCreate, current_user: dict = Depen
     if current_user['role'] not in ['super_admin', 'state_manager', 'regional_manager', 'district_manager']:
         raise HTTPException(status_code=403, detail="Only managers can create users")
     
-    # Check if email already exists
-    existing_user = await db.users.find_one({"email": user_data.email}, {"_id": 0})
+    # Check if email already exists (case-insensitive)
+    existing_user = await db.users.find_one(
+        {"email": {"$regex": f"^{user_data.email}$", "$options": "i"}},
+        {"_id": 0}
+    )
     if existing_user:
         raise HTTPException(status_code=400, detail="Email already registered")
     
