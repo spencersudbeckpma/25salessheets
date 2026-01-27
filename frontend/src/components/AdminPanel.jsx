@@ -7,7 +7,7 @@ import { Label } from './ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from './ui/dialog';
 import { toast } from 'sonner';
-import { Users, Building2, UserPlus, RefreshCw, Search, Shield, UserCog, ChevronRight, Wrench, AlertTriangle, CheckCircle2, ArrowRight, Trash2 } from 'lucide-react';
+import { Users, Building2, UserPlus, RefreshCw, Search, Shield, UserCog, ChevronRight, Wrench, AlertTriangle, CheckCircle2, ArrowRight, Trash2, Pencil } from 'lucide-react';
 
 const API = process.env.REACT_APP_BACKEND_URL;
 
