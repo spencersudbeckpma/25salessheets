@@ -4018,7 +4018,7 @@ async def get_interview_stats(current_user: dict = Depends(get_current_user)):
 @api_router.get("/interviews/regional-breakdown")
 async def get_interview_regional_breakdown(current_user: dict = Depends(get_current_user)):
     """Get interview statistics broken down by region/manager - State Manager only"""
-    if current_user['role'] != 'state_manager':
+    if current_user['role'] not in ['super_admin', 'state_manager']:
         raise HTTPException(status_code=403, detail="Only State Managers can view regional breakdown")
     
     from datetime import datetime, timedelta
@@ -4027,18 +4027,26 @@ async def get_interview_regional_breakdown(current_user: dict = Depends(get_curr
     central = pytz.timezone('America/Chicago')
     now = datetime.now(central)
     
+    team_id = current_user.get('team_id')
+    
     # Calculate date ranges
     today = now.date()
     week_start = today - timedelta(days=today.weekday())
     month_start = today.replace(day=1)
     year_start = today.replace(month=1, day=1)
     
-    # Get all interviews
-    all_interviews = await db.interviews.find({}, {"_id": 0}).to_list(10000)
+    # Get all interviews (scoped by team for non-super_admin)
+    interview_query = {}
+    if current_user['role'] != 'super_admin' and team_id:
+        interview_query["team_id"] = team_id
+    all_interviews = await db.interviews.find(interview_query, {"_id": 0}).to_list(10000)
     
-    # Get all regional managers - ONLY include real accounts with company email
+    # Get all regional managers - ONLY include real accounts with company email, scoped by team
+    rm_query = {"role": "regional_manager"}
+    if current_user['role'] != 'super_admin' and team_id:
+        rm_query["team_id"] = team_id
     regional_managers = await db.users.find(
-        {"role": "regional_manager"},
+        rm_query,
         {"_id": 0, "id": 1, "name": 1, "email": 1, "is_active": 1}
     ).to_list(100)
     
@@ -4049,9 +4057,12 @@ async def get_interview_regional_breakdown(current_user: dict = Depends(get_curr
         and rm.get('is_active', True) != False
     ]
     
-    # Get all district managers with their manager_id (to link to RM) - also only real accounts
+    # Get all district managers with their manager_id (to link to RM) - also only real accounts, scoped by team
+    dm_query = {"role": "district_manager"}
+    if current_user['role'] != 'super_admin' and team_id:
+        dm_query["team_id"] = team_id
     district_managers = await db.users.find(
-        {"role": "district_manager"},
+        dm_query,
         {"_id": 0, "id": 1, "name": 1, "manager_id": 1, "email": 1, "is_active": 1}
     ).to_list(100)
     
@@ -4068,8 +4079,11 @@ async def get_interview_regional_breakdown(current_user: dict = Depends(get_curr
         dm_to_rm[dm['id']] = dm.get('manager_id', '')
     
     # Get State Manager IDs to exclude their interviews from regional breakdown
+    sm_query = {"role": "state_manager"}
+    if current_user['role'] != 'super_admin' and team_id:
+        sm_query["team_id"] = team_id
     state_managers = await db.users.find(
-        {"role": "state_manager"},
+        sm_query,
         {"_id": 0, "id": 1}
     ).to_list(100)
     state_manager_ids = [sm['id'] for sm in state_managers]
