@@ -686,6 +686,103 @@ async def get_broken_hierarchy_users(team_id: str, current_user: dict = Depends(
         "potential_managers": potential_managers
     }
 
+@api_router.get("/admin/diagnose-interviews")
+async def diagnose_interviews(current_user: dict = Depends(get_current_user)):
+    """
+    Diagnostic endpoint to check interview data integrity (super_admin only).
+    Shows total interviews, interviews by team, and orphaned interviews.
+    """
+    require_super_admin(current_user)
+    
+    # Get all interviews
+    all_interviews = await db.interviews.find({}, {"_id": 0}).to_list(10000)
+    
+    # Get all users
+    all_users = await db.users.find({}, {"_id": 0, "id": 1, "name": 1, "team_id": 1}).to_list(10000)
+    user_map = {u['id']: u for u in all_users}
+    
+    # Get all teams
+    all_teams = await db.teams.find({}, {"_id": 0}).to_list(100)
+    team_map = {t['id']: t['name'] for t in all_teams}
+    
+    # Analyze interviews
+    by_team = {}
+    orphaned = []
+    
+    for interview in all_interviews:
+        team_id = interview.get('team_id')
+        interviewer_id = interview.get('interviewer_id')
+        
+        # Count by team
+        team_name = team_map.get(team_id, 'No Team')
+        by_team[team_name] = by_team.get(team_name, 0) + 1
+        
+        # Check if interviewer still exists
+        if interviewer_id and interviewer_id not in user_map:
+            orphaned.append({
+                "interview_id": interview.get('id'),
+                "candidate_name": interview.get('candidate_name'),
+                "interviewer_id": interviewer_id,
+                "team_id": team_id,
+                "interview_date": interview.get('interview_date'),
+                "issue": "Interviewer user no longer exists"
+            })
+    
+    return {
+        "total_interviews": len(all_interviews),
+        "interviews_by_team": by_team,
+        "orphaned_interviews_count": len(orphaned),
+        "orphaned_interviews": orphaned[:20],  # Limit to first 20
+        "message": "Orphaned interviews have interviewer_id pointing to deleted users"
+    }
+
+@api_router.post("/admin/fix-orphaned-interviews")
+async def fix_orphaned_interviews(current_user: dict = Depends(get_current_user)):
+    """
+    Fix orphaned interviews by reassigning them to the team's State Manager (super_admin only).
+    """
+    require_super_admin(current_user)
+    
+    # Get all interviews
+    all_interviews = await db.interviews.find({}, {"_id": 0}).to_list(10000)
+    
+    # Get all users
+    all_users = await db.users.find({}, {"_id": 0}).to_list(10000)
+    user_ids = {u['id'] for u in all_users}
+    
+    # Group state managers by team
+    state_managers_by_team = {}
+    for u in all_users:
+        if u.get('role') == 'state_manager' and u.get('team_id'):
+            state_managers_by_team[u['team_id']] = u
+    
+    fixed = []
+    for interview in all_interviews:
+        interviewer_id = interview.get('interviewer_id')
+        team_id = interview.get('team_id')
+        
+        # Check if interviewer no longer exists
+        if interviewer_id and interviewer_id not in user_ids:
+            # Find state manager for this team
+            sm = state_managers_by_team.get(team_id)
+            if sm:
+                await db.interviews.update_one(
+                    {"id": interview.get('id')},
+                    {"$set": {"interviewer_id": sm['id']}}
+                )
+                fixed.append({
+                    "interview_id": interview.get('id'),
+                    "candidate_name": interview.get('candidate_name'),
+                    "old_interviewer_id": interviewer_id,
+                    "new_interviewer": sm['name']
+                })
+    
+    return {
+        "message": f"Fixed {len(fixed)} orphaned interviews",
+        "fixed_count": len(fixed),
+        "details": fixed[:20]  # Limit details
+    }
+
 @api_router.delete("/admin/users/{user_id}")
 async def admin_delete_user(user_id: str, current_user: dict = Depends(get_current_user)):
     """
