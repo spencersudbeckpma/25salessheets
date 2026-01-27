@@ -1204,6 +1204,19 @@ const AdminPanel = ({ user }) => {
                     {/* Assignment controls */}
                     <div className="bg-slate-50 p-4 rounded-lg space-y-3">
                       <h4 className="font-medium text-slate-800">Assign Selected Users To:</h4>
+                      
+                      {/* Debug: Show all available teams */}
+                      <div className="bg-white p-3 rounded border text-xs">
+                        <strong>Available Teams ({unassignedData.available_teams?.length || 0} total):</strong>
+                        <div className="mt-1 max-h-20 overflow-y-auto">
+                          {unassignedData.available_teams?.map((team, idx) => (
+                            <span key={team.id} className="inline-block bg-slate-100 px-2 py-1 rounded mr-1 mb-1">
+                              {team.name}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                      
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                         <div>
                           <Label htmlFor="assign-team" className="text-sm text-slate-600 mb-1 block">Team (required)</Label>
