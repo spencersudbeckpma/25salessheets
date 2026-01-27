@@ -414,6 +414,72 @@ async def create_super_admin_user(user_data: UserCreate, admin_secret: str):
     
     return {"message": "Super admin created successfully", "user": admin_user}
 
+class AdminUserCreate(BaseModel):
+    name: str
+    email: EmailStr
+    password: str
+    role: str  # state_manager, regional_manager, district_manager, agent
+    team_id: str
+    manager_id: Optional[str] = None
+
+@api_router.post("/admin/users")
+async def admin_create_user(user_data: AdminUserCreate, current_user: dict = Depends(get_current_user)):
+    """Create a new user directly into a specific team (super_admin only)"""
+    require_super_admin(current_user)
+    
+    # Validate team exists
+    team = await db.teams.find_one({"id": user_data.team_id})
+    if not team:
+        raise HTTPException(status_code=404, detail="Team not found")
+    
+    # Check if email already exists
+    existing = await db.users.find_one({"email": user_data.email})
+    if existing:
+        raise HTTPException(status_code=400, detail="Email already registered")
+    
+    # Validate role
+    valid_roles = ['state_manager', 'regional_manager', 'district_manager', 'agent']
+    if user_data.role not in valid_roles:
+        raise HTTPException(status_code=400, detail=f"Invalid role. Must be one of: {valid_roles}")
+    
+    # If manager_id provided, validate it exists and is in the same team
+    if user_data.manager_id:
+        manager = await db.users.find_one({"id": user_data.manager_id, "team_id": user_data.team_id})
+        if not manager:
+            raise HTTPException(status_code=404, detail="Manager not found in this team")
+    
+    hashed_pw = bcrypt.hashpw(user_data.password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
+    
+    new_user = {
+        "id": str(uuid.uuid4()),
+        "email": user_data.email,
+        "name": user_data.name,
+        "role": user_data.role,
+        "team_id": user_data.team_id,
+        "manager_id": user_data.manager_id,
+        "password_hash": hashed_pw,
+        "status": "active",
+        "created_at": datetime.now(timezone.utc).isoformat()
+    }
+    
+    await db.users.insert_one(new_user)
+    new_user.pop('_id', None)
+    new_user.pop('password_hash', None)
+    
+    return {"message": "User created successfully", "user": new_user}
+
+@api_router.get("/admin/teams/{team_id}/users")
+async def get_team_users(team_id: str, current_user: dict = Depends(get_current_user)):
+    """Get all users in a specific team (super_admin only)"""
+    require_super_admin(current_user)
+    
+    users = await db.users.find(
+        {"team_id": team_id},
+        {"_id": 0, "password_hash": 0}
+    ).to_list(1000)
+    
+    return users
+
 # ==================== END ADMIN TEAM MANAGEMENT ====================
 
 # Authentication Routes
