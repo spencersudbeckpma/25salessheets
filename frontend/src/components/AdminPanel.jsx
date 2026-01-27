@@ -1210,26 +1210,53 @@ const AdminPanel = ({ user }) => {
                         <p className="text-blue-800 text-sm mb-2">
                           <strong>Quick Action:</strong> Assign all selected users to Team Sudbeck
                         </p>
-                        <Button
-                          onClick={() => {
-                            // Find Team Sudbeck by name or default flag
-                            const teamSud = teams.find(t => 
-                              t.name?.toLowerCase().includes('sudbeck') || 
-                              t.settings?.is_default === true
+                        {(() => {
+                          const teamSud = teams.find(t => 
+                            t.name?.toLowerCase().includes('sudbeck') || 
+                            t.settings?.is_default === true
+                          );
+                          if (teamSud) {
+                            return (
+                              <Button
+                                onClick={() => {
+                                  setAssignToTeamId(teamSud.id);
+                                  toast.success(`Selected: ${teamSud.name}`);
+                                }}
+                                className="bg-blue-600 hover:bg-blue-700 w-full"
+                              >
+                                Select Team Sudbeck ({teamSud.name})
+                              </Button>
                             );
-                            if (teamSud) {
-                              setAssignToTeamId(teamSud.id);
-                              toast.success(`Selected: ${teamSud.name} (ID: ${teamSud.id})`);
-                            } else {
-                              // Show available teams for debugging
-                              const teamNames = teams.map(t => t.name).join(', ');
-                              toast.error(`Team Sudbeck not found. Available: ${teamNames}`);
-                            }
-                          }}
-                          className="bg-blue-600 hover:bg-blue-700 w-full"
-                        >
-                          Quick Select: Team Sudbeck (Default Team)
-                        </Button>
+                          } else {
+                            return (
+                              <div className="space-y-2">
+                                <p className="text-red-600 text-sm">Team Sudbeck not found in database!</p>
+                                <Button
+                                  onClick={async () => {
+                                    try {
+                                      const res = await axios.post(`${API}/api/admin/teams`, { 
+                                        name: 'Team Sudbeck',
+                                        settings: { is_default: true }
+                                      }, { headers });
+                                      toast.success('Team Sudbeck created successfully!');
+                                      await fetchData(); // Refresh teams list
+                                    } catch (error) {
+                                      if (error.response?.data?.detail?.includes('already exists')) {
+                                        toast.error('Team already exists - refreshing...');
+                                        await fetchData();
+                                      } else {
+                                        toast.error(error.response?.data?.detail || 'Failed to create team');
+                                      }
+                                    }
+                                  }}
+                                  className="bg-green-600 hover:bg-green-700 w-full"
+                                >
+                                  Create Team Sudbeck Now
+                                </Button>
+                              </div>
+                            );
+                          }
+                        })()}
                       </div>
                       
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
