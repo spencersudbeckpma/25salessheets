@@ -4204,11 +4204,26 @@ async def unarchive_user(user_id: str, current_user: dict = Depends(get_current_
 
 @api_router.get("/users/archived/list")
 async def get_archived_users(current_user: dict = Depends(get_current_user)):
-    """Get list of all archived users"""
-    if current_user['role'] != 'state_manager':
-        raise HTTPException(status_code=403, detail="Only state managers can view archived users")
+    """Get list of archived users within the user's team and hierarchy"""
+    if current_user['role'] not in ['super_admin', 'state_manager', 'regional_manager', 'district_manager']:
+        raise HTTPException(status_code=403, detail="Only managers can view archived users")
     
-    archived = await db.users.find({"status": "archived"}, {"_id": 0, "password_hash": 0}).sort("archived_at", -1).to_list(1000)
+    team_id = current_user.get('team_id')
+    
+    # super_admin sees all archived, others see only their team
+    if current_user['role'] == 'super_admin':
+        archived = await db.users.find(
+            {"status": "archived"}, 
+            {"_id": 0, "password_hash": 0}
+        ).sort("archived_at", -1).to_list(1000)
+    else:
+        # Get archived users from same team only
+        if not team_id:
+            return []
+        archived = await db.users.find(
+            {"status": "archived", "team_id": team_id}, 
+            {"_id": 0, "password_hash": 0}
+        ).sort("archived_at", -1).to_list(1000)
     
     # Get activity stats for each archived user
     for user in archived:
@@ -4225,15 +4240,44 @@ async def get_archived_users(current_user: dict = Depends(get_current_user)):
 
 @api_router.get("/users/active/list")
 async def get_active_users_for_reassignment(current_user: dict = Depends(get_current_user)):
-    """Get all active users for team reorganization"""
+    """Get active users within the user's team and hierarchy for team reorganization.
+    
+    - super_admin: Can see ALL users (only in Admin tab)
+    - state_manager: Can see ONLY their team's users (their downline hierarchy)
+    - regional_manager/district_manager: Can see only their downline
+    """
     if current_user['role'] not in ['super_admin', 'state_manager', 'regional_manager', 'district_manager']:
         raise HTTPException(status_code=403, detail="Only managers can access this")
     
-    # Get all active users (or users without status field - default to active)
-    users = await db.users.find(
-        {"$or": [{"status": "active"}, {"status": {"$exists": False}}]},
-        {"_id": 0, "password_hash": 0}
-    ).to_list(1000)
+    team_id = current_user.get('team_id')
+    
+    # super_admin can see all users - but this is ONLY used in Admin panel
+    if current_user['role'] == 'super_admin':
+        users = await db.users.find(
+            {"$or": [{"status": "active"}, {"status": {"$exists": False}}]},
+            {"_id": 0, "password_hash": 0}
+        ).to_list(10000)
+    else:
+        # For all other roles: MUST filter by team_id AND hierarchy
+        if not team_id:
+            return []
+        
+        # Get only users within their downline hierarchy (same team)
+        subordinate_ids = await get_all_subordinates(current_user['id'], team_id)
+        
+        # Also include self
+        all_ids = list(set(subordinate_ids))
+        if current_user['id'] not in all_ids:
+            all_ids.append(current_user['id'])
+        
+        users = await db.users.find(
+            {
+                "id": {"$in": all_ids},
+                "team_id": team_id,
+                "$or": [{"status": "active"}, {"status": {"$exists": False}}]
+            },
+            {"_id": 0, "password_hash": 0}
+        ).to_list(10000)
     
     # Add manager name to each user
     for user in users:
