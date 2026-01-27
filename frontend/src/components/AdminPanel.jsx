@@ -1103,8 +1103,8 @@ const AdminPanel = ({ user }) => {
                 Unassigned Users Diagnostic
               </CardTitle>
               <CardDescription className="text-orange-700">
-                Find and fix users who cannot access the app because they don't have a team assigned.
-                This is the cause of "Access denied - not assigned to team" errors.
+                Find and fix users who cannot access the app because they do not have a team assigned.
+                This is the cause of Access denied - not assigned to team errors.
               </CardDescription>
             </CardHeader>
             <CardContent>
