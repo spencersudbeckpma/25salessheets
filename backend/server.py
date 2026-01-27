@@ -212,6 +212,203 @@ async def get_all_subordinates(user_id: str, team_id: str = None) -> List[str]:
         subordinates.extend(sub_list)
     return list(set(subordinates))
 
+def require_super_admin(current_user: dict):
+    """Check if user is super_admin"""
+    if current_user.get('role') != 'super_admin':
+        raise HTTPException(status_code=403, detail="Super admin access required")
+
+# ==================== ADMIN TEAM MANAGEMENT ====================
+
+class TeamCreate(BaseModel):
+    name: str
+    settings: Optional[Dict[str, Any]] = {}
+
+class UserTeamAssignment(BaseModel):
+    user_id: str
+    team_id: str
+    role: Optional[str] = None
+
+@api_router.get("/admin/teams")
+async def get_all_teams(current_user: dict = Depends(get_current_user)):
+    """Get all teams (super_admin only)"""
+    require_super_admin(current_user)
+    teams = await db.teams.find({}, {"_id": 0}).to_list(1000)
+    
+    # Add user count for each team
+    for team in teams:
+        user_count = await db.users.count_documents({"team_id": team['id']})
+        team['user_count'] = user_count
+    
+    return teams
+
+@api_router.post("/admin/teams")
+async def create_team(team_data: TeamCreate, current_user: dict = Depends(get_current_user)):
+    """Create a new team (super_admin only)"""
+    require_super_admin(current_user)
+    
+    # Check if team name exists
+    existing = await db.teams.find_one({"name": team_data.name})
+    if existing:
+        raise HTTPException(status_code=400, detail="Team name already exists")
+    
+    team = Team(name=team_data.name, settings=team_data.settings)
+    team_dict = team.model_dump()
+    team_dict['created_at'] = team_dict['created_at'].isoformat()
+    
+    await db.teams.insert_one(team_dict)
+    team_dict.pop('_id', None)
+    
+    return {"message": f"Team '{team_data.name}' created successfully", "team": team_dict}
+
+@api_router.put("/admin/teams/{team_id}")
+async def update_team(team_id: str, team_data: TeamCreate, current_user: dict = Depends(get_current_user)):
+    """Update a team (super_admin only)"""
+    require_super_admin(current_user)
+    
+    existing = await db.teams.find_one({"id": team_id})
+    if not existing:
+        raise HTTPException(status_code=404, detail="Team not found")
+    
+    await db.teams.update_one(
+        {"id": team_id}, 
+        {"$set": {"name": team_data.name, "settings": team_data.settings}}
+    )
+    
+    return {"message": "Team updated successfully"}
+
+@api_router.delete("/admin/teams/{team_id}")
+async def delete_team(team_id: str, current_user: dict = Depends(get_current_user)):
+    """Delete a team (super_admin only) - only if no users assigned"""
+    require_super_admin(current_user)
+    
+    user_count = await db.users.count_documents({"team_id": team_id})
+    if user_count > 0:
+        raise HTTPException(status_code=400, detail=f"Cannot delete team with {user_count} users assigned. Reassign users first.")
+    
+    await db.teams.delete_one({"id": team_id})
+    return {"message": "Team deleted successfully"}
+
+@api_router.get("/admin/users")
+async def get_all_users_admin(current_user: dict = Depends(get_current_user)):
+    """Get all users with team info (super_admin only)"""
+    require_super_admin(current_user)
+    
+    users = await db.users.find({}, {"_id": 0, "password_hash": 0}).to_list(10000)
+    teams = await db.teams.find({}, {"_id": 0}).to_list(1000)
+    team_map = {t['id']: t['name'] for t in teams}
+    
+    for user in users:
+        user['team_name'] = team_map.get(user.get('team_id'), 'Unassigned')
+    
+    return users
+
+@api_router.post("/admin/users/assign-team")
+async def assign_user_to_team(assignment: UserTeamAssignment, current_user: dict = Depends(get_current_user)):
+    """Assign a user to a team (super_admin only)"""
+    require_super_admin(current_user)
+    
+    # Verify user exists
+    user = await db.users.find_one({"id": assignment.user_id})
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    # Verify team exists
+    team = await db.teams.find_one({"id": assignment.team_id})
+    if not team:
+        raise HTTPException(status_code=404, detail="Team not found")
+    
+    update_data = {"team_id": assignment.team_id}
+    if assignment.role:
+        update_data["role"] = assignment.role
+    
+    await db.users.update_one({"id": assignment.user_id}, {"$set": update_data})
+    
+    return {"message": f"User assigned to team '{team['name']}' successfully"}
+
+@api_router.post("/admin/users/remove-team")
+async def remove_user_from_team(user_id: str, current_user: dict = Depends(get_current_user)):
+    """Remove a user from their team (super_admin only)"""
+    require_super_admin(current_user)
+    
+    await db.users.update_one({"id": user_id}, {"$set": {"team_id": None}})
+    return {"message": "User removed from team"}
+
+@api_router.post("/admin/migrate-to-teams")
+async def migrate_existing_data_to_teams(current_user: dict = Depends(get_current_user)):
+    """One-time migration: Create default team and assign all existing data (super_admin only)"""
+    require_super_admin(current_user)
+    
+    # Check if default team exists
+    default_team = await db.teams.find_one({"name": "Team Sudbeck"})
+    
+    if not default_team:
+        # Create Team Sudbeck
+        default_team = {
+            "id": str(uuid.uuid4()),
+            "name": "Team Sudbeck",
+            "created_at": datetime.now(timezone.utc).isoformat(),
+            "settings": {"is_default": True}
+        }
+        await db.teams.insert_one(default_team)
+    
+    team_id = default_team['id']
+    
+    # Collections to migrate
+    collections = [
+        'users', 'activities', 'interviews', 'suitability_forms', 
+        'npa_agents', 'new_face_customers', 'recruits', 'team_goals',
+        'goals', 'pma_bonuses', 'docusphere_documents', 'docusphere_folders', 'invites'
+    ]
+    
+    results = {}
+    for collection_name in collections:
+        collection = db[collection_name]
+        # Update all documents that don't have team_id
+        result = await collection.update_many(
+            {"team_id": {"$exists": False}},
+            {"$set": {"team_id": team_id}}
+        )
+        results[collection_name] = result.modified_count
+    
+    return {
+        "message": "Migration completed successfully",
+        "team_id": team_id,
+        "team_name": "Team Sudbeck",
+        "migrated_records": results
+    }
+
+@api_router.post("/admin/create-super-admin")
+async def create_super_admin_user(user_data: UserCreate, admin_secret: str):
+    """Create a super admin user (requires secret key)"""
+    # Simple security - in production, use a more secure method
+    if admin_secret != os.environ.get('JWT_SECRET_KEY', 'your-super-secret-jwt-key-change-in-production'):
+        raise HTTPException(status_code=403, detail="Invalid admin secret")
+    
+    existing = await db.users.find_one({"email": user_data.email})
+    if existing:
+        raise HTTPException(status_code=400, detail="Email already exists")
+    
+    hashed_pw = hash_password(user_data.password)
+    
+    admin_user = {
+        "id": str(uuid.uuid4()),
+        "email": user_data.email,
+        "name": user_data.name,
+        "role": "super_admin",
+        "team_id": None,  # Super admins don't belong to a team
+        "manager_id": None,
+        "password_hash": hashed_pw,
+        "created_at": datetime.now(timezone.utc).isoformat()
+    }
+    
+    await db.users.insert_one(admin_user)
+    admin_user.pop('_id', None)
+    admin_user.pop('password_hash', None)
+    
+    return {"message": "Super admin created successfully", "user": admin_user}
+
+# ==================== END ADMIN TEAM MANAGEMENT ====================
+
 # Authentication Routes
 @api_router.post("/auth/register")
 async def register(user_data: UserCreate):
@@ -230,6 +427,8 @@ async def register(user_data: UserCreate):
         user_data.name = invite['name']
         user_data.role = invite['role']
         user_data.manager_id = invite['manager_id']
+        # Inherit team_id from invite
+        user_data.team_id = invite.get('team_id')
         
         # Mark invite as accepted
         await db.invites.update_one({"invite_code": user_data.invite_code}, {"$set": {"status": "accepted"}})
@@ -242,6 +441,7 @@ async def register(user_data: UserCreate):
         email=user_data.email,
         name=user_data.name,
         role=user_data.role,
+        team_id=user_data.team_id,
         manager_id=user_data.manager_id
     )
     
