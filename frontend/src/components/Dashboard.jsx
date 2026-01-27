@@ -220,18 +220,21 @@ const Dashboard = ({ user, setUser }) => {
             <Leaderboard user={user} />
           </TabsContent>
 
-          {['state_manager', 'regional_manager', 'district_manager'].includes(user.role) && (
+          {/* Reports - visible to all managers including super_admin */}
+          {['super_admin', 'state_manager', 'regional_manager', 'district_manager'].includes(user.role) && (
             <TabsContent value="reports" data-testid="reports-content" className="mt-4 md:mt-6">
               <Reports user={user} />
             </TabsContent>
           )}
 
-          {['state_manager', 'regional_manager', 'district_manager'].includes(user.role) && (
+          {/* Recruiting - visible to all managers including super_admin */}
+          {['super_admin', 'state_manager', 'regional_manager', 'district_manager'].includes(user.role) && (
             <TabsContent value="recruiting" data-testid="recruiting-content" className="mt-4 md:mt-6">
               <Recruiting user={user} />
             </TabsContent>
           )}
 
+          {/* Admin Panel - super_admin ONLY for cross-team management */}
           {user.role === 'super_admin' && (
             <TabsContent value="admin" data-testid="admin-content" className="mt-4 md:mt-6">
               <AdminPanel user={user} />
