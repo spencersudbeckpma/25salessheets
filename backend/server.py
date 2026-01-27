@@ -41,12 +41,21 @@ app = FastAPI()
 api_router = APIRouter(prefix="/api")
 
 # Models
+class Team(BaseModel):
+    """Team model for multi-tenancy"""
+    model_config = ConfigDict(extra="ignore")
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    name: str
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    settings: Optional[Dict[str, Any]] = {}
+
 class User(BaseModel):
     model_config = ConfigDict(extra="ignore")
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
     email: EmailStr
     name: str
-    role: str  # state_manager, regional_manager, district_manager, agent
+    role: str  # super_admin, state_manager, regional_manager, district_manager, agent
+    team_id: Optional[str] = None  # Required for all non-admin users
     manager_id: Optional[str] = None
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
@@ -55,6 +64,7 @@ class UserCreate(BaseModel):
     password: str
     name: str
     role: str
+    team_id: Optional[str] = None
     manager_id: Optional[str] = None
     invite_code: Optional[str] = None
 
