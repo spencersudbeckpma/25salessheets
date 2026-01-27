@@ -3045,7 +3045,7 @@ async def get_recruits(current_user: dict = Depends(get_current_user)):
             query["team_id"] = team_id
         recruits = await db.recruits.find(query, {"_id": 0}).sort("created_at", -1).to_list(1000)
     else:
-        # State Manager sees all (within team)
+        # super_admin or State Manager sees all (within team for state_manager, all for super_admin)
         query = {}
         if team_id:
             query["team_id"] = team_id
@@ -3055,7 +3055,7 @@ async def get_recruits(current_user: dict = Depends(get_current_user)):
 @api_router.post("/recruiting")
 async def create_recruit(recruit_data: dict, current_user: dict = Depends(get_current_user)):
     """Create a new recruit (State Manager, Regional Manager, or District Manager)"""
-    if current_user['role'] not in ['state_manager', 'regional_manager', 'district_manager']:
+    if current_user['role'] not in ['super_admin', 'state_manager', 'regional_manager', 'district_manager']:
         raise HTTPException(status_code=403, detail="Only managers can manage recruiting")
     
     # Handle RM assignment
