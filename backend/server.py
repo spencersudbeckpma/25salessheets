@@ -87,6 +87,7 @@ class Activity(BaseModel):
     model_config = ConfigDict(extra="ignore")
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
     user_id: str
+    team_id: Optional[str] = None  # Multi-tenancy support
     date: str  # YYYY-MM-DD format
     contacts: float = 0.0
     appointments: float = 0.0
