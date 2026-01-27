@@ -101,12 +101,12 @@ class TestActivitiesWithTeamScope:
         print(f"✓ My activities API returned {len(activities)} records")
     
     def test_get_team_activities(self, headers):
-        """Verify team activities API returns data"""
-        response = requests.get(f"{BASE_URL}/api/activities/team", headers=headers)
+        """Verify team all-members API returns data"""
+        response = requests.get(f"{BASE_URL}/api/team/all-members", headers=headers)
         assert response.status_code == 200
-        activities = response.json()
-        assert isinstance(activities, list)
-        print(f"✓ Team activities API returned {len(activities)} records")
+        members = response.json()
+        assert isinstance(members, list)
+        print(f"✓ Team all-members API returned {len(members)} records")
     
     def test_save_activity(self, headers):
         """Verify saving activity works"""
