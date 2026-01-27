@@ -3400,6 +3400,7 @@ async def create_interview(interview_data: dict, current_user: dict = Depends(ge
     
     interview = {
         "id": str(uuid4()),
+        "team_id": current_user.get('team_id'),  # Multi-tenancy
         "candidate_name": interview_data.get('candidate_name', ''),
         "candidate_location": interview_data.get('candidate_location', ''),
         "candidate_phone": interview_data.get('candidate_phone', ''),
