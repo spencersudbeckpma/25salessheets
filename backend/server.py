@@ -3603,15 +3603,17 @@ async def get_sna_agents(current_user: dict = Depends(get_current_user)):
     if current_user['role'] not in ['state_manager', 'regional_manager']:
         raise HTTPException(status_code=403, detail="Only State and Regional Managers can access SNA tracker")
     
-    # Get all agents/DMs (potential SNAs) - only real accounts with @pmagent.net
+    team_id = current_user.get('team_id')
+    
+    # Get all agents/DMs (potential SNAs) - only real accounts with @pmagent.net, scoped to team
     if current_user['role'] == 'state_manager':
-        potential_snas = await db.users.find(
-            {"role": {"$in": ["agent", "district_manager"]}},
-            {"_id": 0, "password_hash": 0}
-        ).to_list(1000)
+        query = {"role": {"$in": ["agent", "district_manager"]}}
+        if team_id:
+            query["team_id"] = team_id
+        potential_snas = await db.users.find(query, {"_id": 0, "password_hash": 0}).to_list(1000)
     else:
-        # Regional managers see only their subordinates
-        subordinate_ids = await get_all_subordinates(current_user['id'])
+        # Regional managers see only their subordinates (scoped to team)
+        subordinate_ids = await get_all_subordinates(current_user['id'], team_id)
         potential_snas = await db.users.find(
             {"role": {"$in": ["agent", "district_manager"]}, "id": {"$in": subordinate_ids}},
             {"_id": 0, "password_hash": 0}
@@ -3628,9 +3630,12 @@ async def get_sna_agents(current_user: dict = Depends(get_current_user)):
     graduated_data = []
     
     for user in potential_snas:
-        # Find their FIRST production (first activity with premium > 0)
+        # Find their FIRST production (first activity with premium > 0), scoped to team
+        act_query = {"user_id": user['id'], "premium": {"$gt": 0}}
+        if team_id:
+            act_query["team_id"] = team_id
         first_production = await db.activities.find_one(
-            {"user_id": user['id'], "premium": {"$gt": 0}},
+            act_query,
             {"_id": 0},
             sort=[("date", 1)]  # Oldest first
         )
@@ -3653,11 +3658,11 @@ async def get_sna_agents(current_user: dict = Depends(get_current_user)):
         days_in = (today - start_date).days
         days_remaining = max(0, SNA_TRACKING_DAYS - days_in)
         
-        # Get total premium since first production
-        activities = await db.activities.find({
-            "user_id": user['id'],
-            "date": {"$gte": sna_start[:10]}
-        }, {"_id": 0}).to_list(10000)
+        # Get total premium since first production (scoped to team)
+        act_query2 = {"user_id": user['id'], "date": {"$gte": sna_start[:10]}}
+        if team_id:
+            act_query2["team_id"] = team_id
+        activities = await db.activities.find(act_query2, {"_id": 0}).to_list(10000)
         
         total_premium = sum(a.get('premium', 0) for a in activities)
         
