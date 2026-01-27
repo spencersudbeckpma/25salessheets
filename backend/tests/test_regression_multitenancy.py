@@ -57,12 +57,15 @@ class TestLoginAndUserData:
         print(f"✓ State manager login successful: {data['user']['name']}")
     
     def test_user_has_team_assignment(self, headers):
-        """Verify user has team_id assigned"""
-        response = requests.get(f"{BASE_URL}/api/auth/me", headers=headers)
+        """Verify user has team_id assigned via admin users endpoint"""
+        response = requests.get(f"{BASE_URL}/api/admin/users", headers=headers)
         assert response.status_code == 200
-        user = response.json()
-        assert user.get("team_id") is not None, "User should have team_id assigned"
-        print(f"✓ User has team_id: {user.get('team_id')}")
+        users = response.json()
+        # Find the state_manager user
+        state_manager = next((u for u in users if u["email"] == STATE_MANAGER_EMAIL), None)
+        assert state_manager is not None, "State manager should be in users list"
+        assert state_manager.get("team_id") is not None, "User should have team_id assigned"
+        print(f"✓ User has team_id: {state_manager.get('team_id')}")
 
 
 class TestTeamMembersAndHierarchy:
