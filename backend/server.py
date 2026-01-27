@@ -671,6 +671,114 @@ async def get_broken_hierarchy_users(team_id: str, current_user: dict = Depends(
         "potential_managers": potential_managers
     }
 
+@api_router.post("/admin/auto-repair-all-teams")
+async def auto_repair_all_teams(current_user: dict = Depends(get_current_user)):
+    """
+    Automatically repair manager_id for ALL teams (except Team Sudbeck).
+    This is a ONE-CLICK fix that:
+    - Finds all users with missing/invalid manager_id
+    - Assigns them to the appropriate manager based on role hierarchy
+    - Does NOT touch team_id, does NOT reset users
+    (super_admin only)
+    """
+    require_super_admin(current_user)
+    
+    # Get all teams except Team Sudbeck
+    teams = await db.teams.find({"name": {"$ne": "Team Sudbeck"}}, {"_id": 0}).to_list(100)
+    
+    total_repaired = 0
+    team_results = []
+    
+    for team in teams:
+        team_id = team['id']
+        team_name = team.get('name', 'Unknown')
+        
+        # Get all users in this team
+        users = await db.users.find(
+            {"team_id": team_id, "$or": [{"status": "active"}, {"status": {"$exists": False}}]},
+            {"_id": 0, "password_hash": 0}
+        ).to_list(1000)
+        
+        if not users:
+            team_results.append({"team": team_name, "repaired": 0, "message": "No users found"})
+            continue
+        
+        user_ids = {u['id'] for u in users}
+        
+        # Find managers by role
+        state_managers = [u for u in users if u.get('role') == 'state_manager']
+        regional_managers = [u for u in users if u.get('role') == 'regional_manager']
+        district_managers = [u for u in users if u.get('role') == 'district_manager']
+        
+        if not state_managers:
+            team_results.append({"team": team_name, "repaired": 0, "message": "No state manager found - skipped"})
+            continue
+        
+        # Default state manager for this team
+        default_sm = state_managers[0]
+        
+        repairs_made = 0
+        
+        # Find and fix broken users
+        for u in users:
+            role = u.get('role', '')
+            manager_id = u.get('manager_id')
+            
+            # State managers don't need a manager_id
+            if role == 'state_manager':
+                continue
+            
+            # Check if manager_id is missing or invalid
+            needs_repair = False
+            new_manager_id = None
+            
+            if not manager_id or manager_id not in user_ids:
+                needs_repair = True
+                
+                # Smart assignment based on role
+                if role == 'regional_manager':
+                    # Regional managers report to state manager
+                    new_manager_id = default_sm['id']
+                elif role == 'district_manager':
+                    # District managers report to regional manager (or state if none)
+                    if regional_managers:
+                        new_manager_id = regional_managers[0]['id']
+                    else:
+                        new_manager_id = default_sm['id']
+                elif role == 'agent':
+                    # Agents report to district manager (or regional, or state)
+                    if district_managers:
+                        new_manager_id = district_managers[0]['id']
+                    elif regional_managers:
+                        new_manager_id = regional_managers[0]['id']
+                    else:
+                        new_manager_id = default_sm['id']
+                else:
+                    # Default to state manager
+                    new_manager_id = default_sm['id']
+            
+            if needs_repair and new_manager_id:
+                await db.users.update_one(
+                    {"id": u['id']},
+                    {"$set": {"manager_id": new_manager_id}}
+                )
+                repairs_made += 1
+        
+        total_repaired += repairs_made
+        team_results.append({
+            "team": team_name,
+            "repaired": repairs_made,
+            "total_users": len(users),
+            "message": "Repaired successfully" if repairs_made > 0 else "No repairs needed"
+        })
+    
+    return {
+        "message": f"Auto-repair complete. Fixed {total_repaired} users across {len(teams)} teams.",
+        "total_repaired": total_repaired,
+        "teams_processed": len(teams),
+        "details": team_results
+    }
+
 # ==================== END ADMIN TEAM MANAGEMENT ====================
 
 # Authentication Routes
