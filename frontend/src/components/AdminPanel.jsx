@@ -271,6 +271,36 @@ const AdminPanel = ({ user }) => {
     }
   };
 
+  const openEditUserModal = (user) => {
+    setEditUserForm({
+      id: user.id,
+      name: user.name || '',
+      email: user.email || '',
+      role: user.role || '',
+      team_id: user.team_id || '',
+      manager_id: user.manager_id || ''
+    });
+    setShowEditUserModal(true);
+  };
+
+  const handleUpdateUser = async () => {
+    try {
+      const payload = {};
+      if (editUserForm.name) payload.name = editUserForm.name;
+      if (editUserForm.email) payload.email = editUserForm.email;
+      if (editUserForm.role) payload.role = editUserForm.role;
+      if (editUserForm.team_id) payload.team_id = editUserForm.team_id;
+      if (editUserForm.manager_id !== undefined) payload.manager_id = editUserForm.manager_id || null;
+
+      await axios.put(`${API}/api/admin/users/${editUserForm.id}`, payload, { headers });
+      toast.success('User updated successfully');
+      setShowEditUserModal(false);
+      fetchData();
+    } catch (error) {
+      toast.error(error.response?.data?.detail || 'Failed to update user');
+    }
+  };
+
   // Get potential managers for selected team and role
   const getPotentialManagers = () => {
     if (!newUserForm.team_id || !newUserForm.role) return [];
