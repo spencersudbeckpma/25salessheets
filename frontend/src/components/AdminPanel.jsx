@@ -731,6 +731,18 @@ const AdminPanel = ({ user }) => {
                             Repair ({data.broken_count})
                           </Button>
                         )}
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => forceRebuildTeamHierarchy(team.id, team.name)}
+                          disabled={isLoading}
+                          className="text-red-600 border-red-200 hover:bg-red-50"
+                          data-testid={`force-rebuild-btn-${team.id}`}
+                          title="Force rebuild entire hierarchy from scratch"
+                        >
+                          <RefreshCw className="w-3 h-3 mr-1" />
+                          Force Rebuild
+                        </Button>
                       </div>
                     </CardContent>
                   </Card>
