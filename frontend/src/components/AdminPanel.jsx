@@ -401,7 +401,7 @@ const AdminPanel = ({ user }) => {
         user_id: selectedUser.id,
         team_id: selectedTeamForAssignment
       };
-      if (selectedRoleForAssignment) {
+      if (selectedRoleForAssignment && selectedRoleForAssignment !== 'keep_current') {
         payload.role = selectedRoleForAssignment;
       }
       
