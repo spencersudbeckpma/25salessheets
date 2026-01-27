@@ -495,14 +495,16 @@ const AdminPanel = ({ user }) => {
                     <th className="px-4 py-3 text-left font-medium text-slate-600">Email</th>
                     <th className="px-4 py-3 text-left font-medium text-slate-600">Role</th>
                     <th className="px-4 py-3 text-left font-medium text-slate-600">Team</th>
+                    <th className="px-4 py-3 text-left font-medium text-slate-600">Reports To</th>
+                    <th className="px-4 py-3 text-left font-medium text-slate-600">Subs</th>
                     <th className="px-4 py-3 text-left font-medium text-slate-600">Actions</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-200">
                   {filteredUsers.map(u => (
-                    <tr key={u.id} className="hover:bg-slate-50" data-testid={`user-row-${u.id}`}>
+                    <tr key={u.id} className={`hover:bg-slate-50 ${u.subordinate_count === 0 && u.role === 'state_manager' ? 'bg-yellow-50' : ''}`} data-testid={`user-row-${u.id}`}>
                       <td className="px-4 py-3 font-medium text-slate-800">{u.name}</td>
-                      <td className="px-4 py-3 text-slate-600">{u.email}</td>
+                      <td className="px-4 py-3 text-slate-600 text-xs">{u.email}</td>
                       <td className="px-4 py-3">
                         <span className={`px-2 py-1 rounded-full text-xs ${roleColors[u.role] || 'bg-slate-100'}`}>
                           {u.role?.replace('_', ' ').toUpperCase()}
@@ -512,7 +514,19 @@ const AdminPanel = ({ user }) => {
                         {u.team_name === 'Unassigned' ? (
                           <span className="text-red-500 text-xs font-medium">Unassigned</span>
                         ) : (
-                          <span className="text-slate-600">{u.team_name}</span>
+                          <span className="text-slate-600 text-xs">{u.team_name}</span>
+                        )}
+                      </td>
+                      <td className="px-4 py-3 text-xs text-slate-500">
+                        {u.manager_name || '-'}
+                      </td>
+                      <td className="px-4 py-3">
+                        {u.subordinate_count > 0 ? (
+                          <span className="bg-green-100 text-green-800 px-2 py-1 rounded-full text-xs font-medium">
+                            {u.subordinate_count}
+                          </span>
+                        ) : (
+                          <span className="text-slate-400 text-xs">0</span>
                         )}
                       </td>
                       <td className="px-4 py-3">
