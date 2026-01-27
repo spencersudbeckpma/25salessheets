@@ -274,14 +274,28 @@ const AdminPanel = ({ user }) => {
     setSelectedUnassignedUsers([]);
     setAssignToTeamId('');
     setAssignManagerId('');
+    setDefaultTeamData(null);
     
     try {
-      const res = await axios.get(`${API}/api/admin/diagnose-unassigned-users`, { headers });
-      setUnassignedData(res.data);
-      if (res.data.unassigned_count > 0) {
-        toast.warning(`Found ${res.data.unassigned_count} users without team assignment`);
+      // Fetch unassigned users AND default team in parallel
+      const [unassignedRes, defaultTeamRes] = await Promise.all([
+        axios.get(`${API}/api/admin/diagnose-unassigned-users`, { headers }),
+        axios.get(`${API}/api/admin/default-team`, { headers }).catch(() => ({ data: { found: false } }))
+      ]);
+      
+      setUnassignedData(unassignedRes.data);
+      setDefaultTeamData(defaultTeamRes.data);
+      
+      if (unassignedRes.data.unassigned_count > 0) {
+        toast.warning(`Found ${unassignedRes.data.unassigned_count} users without team assignment`);
       } else {
         toast.success('All users have team assignments');
+      }
+      
+      // Auto-select default team if found
+      if (defaultTeamRes.data?.found && defaultTeamRes.data?.team?.id) {
+        setAssignToTeamId(defaultTeamRes.data.team.id);
+        toast.success(`Auto-selected default team: ${defaultTeamRes.data.team.name}`);
       }
     } catch (error) {
       toast.error(error.response?.data?.detail || 'Failed to diagnose unassigned users');
