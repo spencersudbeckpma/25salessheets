@@ -150,15 +150,15 @@ A comprehensive sales tracking application for insurance agencies, enabling team
 
 ### P0 (High Priority)
 - [x] Multi-tenancy refactor - COMPLETE
+- [x] Restrict team management to super_admin only - COMPLETE
+- [x] Deploy to production - READY (passed deployment check)
 
 ### P1 (Medium Priority)
 - [ ] Code refactoring - break down server.py into modules (routes/, models/)
-- [ ] Deploy multi-tenancy changes to production
 
 ### P2 (Lower Priority)
 - [ ] Add more analytics and reporting features
 - [ ] Performance optimizations for large teams
-- [ ] Team branding/customization features
 
 ## Test Credentials
 - **State Manager**: spencer.sudbeck@pmagent.net / Bizlink25
