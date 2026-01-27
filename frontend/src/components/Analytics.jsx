@@ -115,7 +115,7 @@ const Analytics = ({ user }) => {
   const [expandedManagers, setExpandedManagers] = useState(new Set());
   const [subordinateData, setSubordinateData] = useState({});
 
-  const isManager = ['state_manager', 'regional_manager', 'district_manager'].includes(user.role);
+  const isManager = ['super_admin', 'state_manager', 'regional_manager', 'district_manager'].includes(user.role);
   const isStateManager = user.role === 'state_manager';
 
   useEffect(() => {

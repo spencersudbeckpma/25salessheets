@@ -58,7 +58,7 @@ const Dashboard = ({ user, setUser }) => {
         {/* Main Content */}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4 md:space-y-6">
           <div className="overflow-x-auto -mx-2 px-2">
-            <TabsList className={`inline-flex w-full md:grid md:w-full ${['state_manager', 'regional_manager', 'district_manager'].includes(user.role) ? 'md:grid-cols-10' : 'md:grid-cols-8'} gap-1 md:gap-2 bg-white rounded-xl shadow-md border border-slate-200 p-1.5 md:p-2 h-auto min-w-max md:min-w-0`} data-testid="dashboard-tabs">
+            <TabsList className={`inline-flex w-full md:grid md:w-full ${['super_admin', 'state_manager', 'regional_manager', 'district_manager'].includes(user.role) ? 'md:grid-cols-10' : 'md:grid-cols-8'} gap-1 md:gap-2 bg-white rounded-xl shadow-md border border-slate-200 p-1.5 md:p-2 h-auto min-w-max md:min-w-0`} data-testid="dashboard-tabs">
               <TabsTrigger 
                 value="activity" 
                 data-testid="activity-tab" 
@@ -115,7 +115,7 @@ const Dashboard = ({ user, setUser }) => {
               >
                 📊 Analytics
               </TabsTrigger>
-              {['state_manager', 'regional_manager', 'district_manager'].includes(user.role) && (
+              {['super_admin', 'state_manager', 'regional_manager', 'district_manager'].includes(user.role) && (
                 <>
                   <TabsTrigger 
                     value="reports" 

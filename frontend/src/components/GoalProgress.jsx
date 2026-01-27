@@ -23,7 +23,7 @@ const GoalProgress = ({ user }) => {
   const [showIndividualForm, setShowIndividualForm] = useState(false);
   const [showTeamForm, setShowTeamForm] = useState(false);
 
-  const isManager = ['state_manager', 'regional_manager', 'district_manager'].includes(user.role);
+  const isManager = ['super_admin', 'state_manager', 'regional_manager', 'district_manager'].includes(user.role);
 
   useEffect(() => {
     fetchIndividualProgress();

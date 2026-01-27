@@ -106,7 +106,7 @@ const Interviews = ({ user }) => {
         'Test RM Account'
       ];
       setTeamMembers(response.data.filter(m => 
-        ['state_manager', 'regional_manager', 'district_manager'].includes(m.role) &&
+        ['super_admin', 'state_manager', 'regional_manager', 'district_manager'].includes(m.role) &&
         !excludeNames.includes(m.name) &&
         !m.name?.toLowerCase().includes('test')
       ));
