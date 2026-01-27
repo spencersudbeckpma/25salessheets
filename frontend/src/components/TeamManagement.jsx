@@ -1090,7 +1090,8 @@ const TeamManagement = ({ user }) => {
           </TabsContent>
           )}
 
-          {user.role === 'state_manager' && (
+          {/* Archive Tab - Available to managers, scoped to their team */}
+          {['state_manager', 'regional_manager', 'district_manager'].includes(user.role) && (
           <TabsContent value="archive" className="space-y-6" data-testid="archive-content">
             <div className="bg-yellow-50 p-6 rounded-lg border border-yellow-200">
               <h3 className="font-semibold text-lg mb-4">Archive Users</h3>
@@ -1098,7 +1099,7 @@ const TeamManagement = ({ user }) => {
                 Archive users who have left the organization. Their data will be preserved and still count in reports, but they won't be able to log in or appear in the active team hierarchy.
               </p>
               <div className="flex gap-4">
-                <Button onClick={fetchActiveUsers}>Load Active Users</Button>
+                <Button onClick={fetchActiveUsers}>Load My Team</Button>
                 <Button onClick={fetchArchivedUsers} variant="outline">View Archived Users</Button>
               </div>
             </div>
