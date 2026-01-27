@@ -2678,8 +2678,8 @@ async def forgot_password(forgot_request: ForgotPasswordRequest):
     Since we don't have email service, generates a temporary password that admins can share.
     """
     try:
-        # Check if user exists
-        user = await db.users.find_one({"email": forgot_request.email})
+        # Check if user exists (case-insensitive)
+        user = await db.users.find_one({"email": {"$regex": f"^{forgot_request.email}$", "$options": "i"}})
         if not user:
             # Don't reveal if user exists or not for security
             return {"message": "If the email exists, password reset instructions would be sent"}
