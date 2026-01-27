@@ -1104,26 +1104,39 @@ async def get_manager_hierarchy_report(manager_id: str, period: str, current_use
 async def get_available_managers(current_user: dict = Depends(get_current_user)):
     """
     Get list of managers available for individual reporting.
-    Returns all users under the current user's hierarchy.
+    Returns users under the current user's hierarchy, scoped by team.
+    
+    - super_admin: Can see all users across all teams
+    - state_manager/regional_manager/district_manager: ONLY their team's downline
     """
     if current_user['role'] not in ['super_admin', 'state_manager', 'regional_manager', 'district_manager']:
         raise HTTPException(status_code=403, detail="Only Managers can access manager list")
     
-    # Helper function to get all subordinates recursively (exclude archived)
-    async def get_all_subordinates(user_id: str):
+    team_id = current_user.get('team_id')
+    
+    # Helper function to get all subordinates recursively (exclude archived), scoped by team
+    async def get_subordinates_with_info(user_id: str, filter_team_id: str = None):
         members = []
-        subordinates = await db.users.find(
-            {"manager_id": user_id, "$or": [{"status": "active"}, {"status": {"$exists": False}}]},
-            {"_id": 0, "password_hash": 0}
-        ).to_list(1000)
+        query = {"manager_id": user_id, "$or": [{"status": "active"}, {"status": {"$exists": False}}]}
+        if filter_team_id:
+            query["team_id"] = filter_team_id
+        
+        subordinates = await db.users.find(query, {"_id": 0, "password_hash": 0}).to_list(1000)
         for sub in subordinates:
             members.append(sub)
-            sub_members = await get_all_subordinates(sub['id'])
+            sub_members = await get_subordinates_with_info(sub['id'], filter_team_id)
             members.extend(sub_members)
         return members
     
-    # Get all subordinates
-    team_members = await get_all_subordinates(current_user['id'])
+    # super_admin can see all, others filtered by team
+    if current_user['role'] == 'super_admin':
+        team_members = await get_subordinates_with_info(current_user['id'], None)
+    else:
+        # For non-super_admin, enforce team filtering
+        if not team_id:
+            return {"managers": []}
+        team_members = await get_subordinates_with_info(current_user['id'], team_id)
+    
     team_members.insert(0, current_user)  # Include self
     
     # Format for dropdown display
