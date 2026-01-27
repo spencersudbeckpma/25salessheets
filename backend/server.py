@@ -1273,7 +1273,8 @@ async def get_available_managers(current_user: dict = Depends(get_current_user))
     Returns users under the current user's hierarchy, scoped by team.
     
     - super_admin: Can see all users across all teams
-    - state_manager/regional_manager/district_manager: ONLY their team's downline
+    - state_manager: Can see ALL users in their team (they're at the top)
+    - regional_manager/district_manager: ONLY their team's downline
     """
     if current_user['role'] not in ['super_admin', 'state_manager', 'regional_manager', 'district_manager']:
         raise HTTPException(status_code=403, detail="Only Managers can access manager list")
@@ -1294,16 +1295,26 @@ async def get_available_managers(current_user: dict = Depends(get_current_user))
             members.extend(sub_members)
         return members
     
-    # super_admin can see all, others filtered by team
+    # super_admin can see all
     if current_user['role'] == 'super_admin':
         team_members = await get_subordinates_with_info(current_user['id'], None)
+    elif current_user['role'] == 'state_manager':
+        # State manager sees ALL users in their team (they're at the top)
+        if not team_id:
+            return {"managers": []}
+        team_members = await db.users.find(
+            {"team_id": team_id, "$or": [{"status": "active"}, {"status": {"$exists": False}}]},
+            {"_id": 0, "password_hash": 0}
+        ).to_list(1000)
+        # Remove self from list (will be added back)
+        team_members = [m for m in team_members if m['id'] != current_user['id']]
     else:
-        # For non-super_admin, enforce team filtering
+        # For regional/district managers, enforce team + hierarchy filtering
         if not team_id:
             return {"managers": []}
         team_members = await get_subordinates_with_info(current_user['id'], team_id)
     
-    team_members.insert(0, current_user)  # Include self
+    team_members.insert(0, current_user)  # Include self at the top
     
     # Format for dropdown display
     manager_list = []
