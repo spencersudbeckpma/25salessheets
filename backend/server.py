@@ -2580,7 +2580,8 @@ async def create_invite(invite_data: InviteCreate, current_user: dict = Depends(
         name=invite_data.name,
         email=invite_data.email,
         role=invite_data.role,
-        manager_id=current_user['id']
+        manager_id=current_user['id'],
+        team_id=current_user.get('team_id')  # Multi-tenancy
     )
     
     doc = invite.model_dump()
