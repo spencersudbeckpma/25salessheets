@@ -324,6 +324,35 @@ async def create_missing_team_record(current_user: dict = Depends(get_current_us
         "created": created
     }
 
+@api_router.get("/admin/debug-teams")
+async def debug_teams(current_user: dict = Depends(get_current_user)):
+    """Raw database dump of all teams for debugging (super_admin only)"""
+    require_super_admin(current_user)
+    
+    # Get ALL teams from database
+    all_teams = await db.teams.find({}, {"_id": 0}).to_list(100)
+    
+    # Get all distinct team_ids from users
+    user_team_ids = await db.users.distinct("team_id")
+    
+    # Count users per team
+    team_stats = []
+    for team in all_teams:
+        count = await db.users.count_documents({"team_id": team.get('id')})
+        team_stats.append({
+            "id": team.get('id'),
+            "name": team.get('name'),
+            "settings": team.get('settings'),
+            "user_count": count
+        })
+    
+    return {
+        "total_teams_in_db": len(all_teams),
+        "teams": team_stats,
+        "user_team_ids": [t for t in user_team_ids if t],
+        "raw_teams": all_teams
+    }
+
 @api_router.get("/admin/default-team")
 async def get_default_team(current_user: dict = Depends(get_current_user)):
     """Get the default team (Team Sudbeck) directly from database (super_admin only)"""
