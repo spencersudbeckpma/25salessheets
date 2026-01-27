@@ -868,6 +868,81 @@ async def auto_repair_all_teams(current_user: dict = Depends(get_current_user)):
         "details": team_results
     }
 
+@api_router.post("/admin/teams/{team_id}/force-rebuild-hierarchy")
+async def force_rebuild_team_hierarchy(team_id: str, current_user: dict = Depends(get_current_user)):
+    """
+    Force rebuild the entire hierarchy for a team (super_admin only).
+    This will:
+    - Find the State Manager
+    - Assign ALL Regional Managers to report to the State Manager
+    - Assign ALL District Managers to report to a Regional Manager
+    - Assign ALL Agents to report to a District Manager
+    
+    Use this when auto-repair fails due to deleted users or corrupted manager_ids.
+    """
+    require_super_admin(current_user)
+    
+    # Get team info
+    team = await db.teams.find_one({"id": team_id}, {"_id": 0})
+    if not team:
+        raise HTTPException(status_code=404, detail="Team not found")
+    
+    # Get all active users in this team
+    users = await db.users.find(
+        {"team_id": team_id, "$or": [{"status": "active"}, {"status": {"$exists": False}}]},
+        {"_id": 0, "password_hash": 0}
+    ).to_list(1000)
+    
+    if not users:
+        return {"message": "No users found in team", "repaired": 0}
+    
+    # Group users by role
+    state_managers = [u for u in users if u.get('role') == 'state_manager']
+    regional_managers = [u for u in users if u.get('role') == 'regional_manager']
+    district_managers = [u for u in users if u.get('role') == 'district_manager']
+    agents = [u for u in users if u.get('role') == 'agent']
+    
+    if not state_managers:
+        raise HTTPException(status_code=400, detail="No State Manager found in team. Cannot rebuild hierarchy.")
+    
+    # Use the first state manager as the top of hierarchy
+    state_manager = state_managers[0]
+    repairs = []
+    
+    # State Manager should have no manager_id (top of hierarchy)
+    if state_manager.get('manager_id'):
+        await db.users.update_one({"id": state_manager['id']}, {"$set": {"manager_id": None}})
+        repairs.append(f"State Manager {state_manager['name']}: cleared manager_id (top level)")
+    
+    # All Regional Managers report to State Manager
+    for rm in regional_managers:
+        if rm.get('manager_id') != state_manager['id']:
+            await db.users.update_one({"id": rm['id']}, {"$set": {"manager_id": state_manager['id']}})
+            repairs.append(f"Regional Manager {rm['name']}: now reports to {state_manager['name']}")
+    
+    # All District Managers report to a Regional Manager (first one if multiple)
+    target_rm = regional_managers[0] if regional_managers else state_manager
+    for dm in district_managers:
+        if dm.get('manager_id') != target_rm['id']:
+            await db.users.update_one({"id": dm['id']}, {"$set": {"manager_id": target_rm['id']}})
+            repairs.append(f"District Manager {dm['name']}: now reports to {target_rm['name']}")
+    
+    # All Agents report to a District Manager (first one if multiple), or Regional, or State
+    target_dm = district_managers[0] if district_managers else (regional_managers[0] if regional_managers else state_manager)
+    for agent in agents:
+        if agent.get('manager_id') != target_dm['id']:
+            await db.users.update_one({"id": agent['id']}, {"$set": {"manager_id": target_dm['id']}})
+            repairs.append(f"Agent {agent['name']}: now reports to {target_dm['name']}")
+    
+    return {
+        "message": f"Force rebuilt hierarchy for {team['name']}",
+        "team_name": team['name'],
+        "state_manager": state_manager['name'],
+        "total_users": len(users),
+        "repairs_made": len(repairs),
+        "details": repairs
+    }
+
 # ==================== END ADMIN TEAM MANAGEMENT ====================
 
 # Authentication Routes
