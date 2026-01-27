@@ -800,9 +800,7 @@ const AdminPanel = ({ user }) => {
 
           {/* Teams Grid */}
           <div className="grid gap-4 md:grid-cols-2" data-testid="repair-teams-grid">
-            {teams
-              .filter(team => team.name !== 'Team Sudbeck')
-              .map(team => {
+            {teams.map(team => {
                 const data = hierarchyData[team.id];
                 const isLoading = repairLoading[team.id];
                 const hasBroken = data && data.broken_count > 0;
