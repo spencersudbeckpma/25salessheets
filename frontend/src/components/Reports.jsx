@@ -8,7 +8,8 @@ import NPATracker from './NPATracker';
 import { FileText, Users, Target, Award } from 'lucide-react';
 
 const Reports = ({ user }) => {
-  const canAccessSNA = ['state_manager', 'regional_manager'].includes(user.role);
+  // SNA Tracker visible to super_admin, state_manager, and regional_manager
+  const canAccessSNA = ['super_admin', 'state_manager', 'regional_manager'].includes(user.role);
 
   return (
     <Card className="shadow-lg bg-white" data-testid="reports-card">
