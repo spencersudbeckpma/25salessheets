@@ -525,6 +525,161 @@ const AdminPanel = ({ user }) => {
         </div>
       )}
 
+      {/* Repair Hierarchy Tab */}
+      {activeTab === 'repair' && (
+        <div className="space-y-6" data-testid="repair-hierarchy-tab">
+          {/* Header */}
+          <Card className="bg-orange-50 border-orange-200">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-orange-800">
+                <Wrench className="w-5 h-5" />
+                Repair Team Hierarchies
+              </CardTitle>
+              <CardDescription className="text-orange-700">
+                This tool fixes broken manager_id relationships. It will NOT modify team_id, reset users, 
+                or touch Team Sudbeck. Use this to repair hierarchies for newly created teams.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="flex flex-col sm:flex-row gap-3">
+                <Button
+                  onClick={fetchAllBrokenHierarchies}
+                  disabled={repairLoading.all}
+                  variant="outline"
+                  className="border-orange-300 text-orange-700 hover:bg-orange-100"
+                  data-testid="check-all-teams-btn"
+                >
+                  {repairLoading.all ? <RefreshCw className="w-4 h-4 mr-2 animate-spin" /> : <Search className="w-4 h-4 mr-2" />}
+                  Check All Teams
+                </Button>
+                <Button
+                  onClick={repairAllTeams}
+                  disabled={repairLoading.all}
+                  className="bg-orange-600 hover:bg-orange-700 text-white"
+                  data-testid="repair-all-teams-btn"
+                >
+                  {repairLoading.all ? <RefreshCw className="w-4 h-4 mr-2 animate-spin" /> : <Wrench className="w-4 h-4 mr-2" />}
+                  Repair All Teams (Auto)
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Teams Grid */}
+          <div className="grid gap-4 md:grid-cols-2" data-testid="repair-teams-grid">
+            {teams
+              .filter(team => team.name !== 'Team Sudbeck')
+              .map(team => {
+                const data = hierarchyData[team.id];
+                const isLoading = repairLoading[team.id];
+                const hasBroken = data && data.broken_count > 0;
+                const isHealthy = data && data.broken_count === 0;
+
+                return (
+                  <Card 
+                    key={team.id} 
+                    className={`transition-all ${hasBroken ? 'border-red-300 bg-red-50' : isHealthy ? 'border-green-300 bg-green-50' : ''}`}
+                    data-testid={`repair-team-card-${team.id}`}
+                  >
+                    <CardHeader className="pb-2">
+                      <div className="flex items-center justify-between">
+                        <CardTitle className="text-lg flex items-center gap-2">
+                          <Building2 className="w-5 h-5 text-slate-600" />
+                          {team.name}
+                        </CardTitle>
+                        {hasBroken && (
+                          <span className="flex items-center text-xs bg-red-100 text-red-800 px-2 py-1 rounded-full">
+                            <AlertTriangle className="w-3 h-3 mr-1" />
+                            {data.broken_count} broken
+                          </span>
+                        )}
+                        {isHealthy && (
+                          <span className="flex items-center text-xs bg-green-100 text-green-800 px-2 py-1 rounded-full">
+                            <CheckCircle2 className="w-3 h-3 mr-1" />
+                            Healthy
+                          </span>
+                        )}
+                      </div>
+                      <CardDescription>
+                        {team.user_count} members
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent className="space-y-3">
+                      {/* Status info */}
+                      {data && (
+                        <div className="text-sm">
+                          <div className="flex justify-between text-slate-600">
+                            <span>Total Users:</span>
+                            <span className="font-medium">{data.total_users}</span>
+                          </div>
+                          <div className="flex justify-between text-slate-600">
+                            <span>Broken Relationships:</span>
+                            <span className={`font-medium ${hasBroken ? 'text-red-600' : 'text-green-600'}`}>
+                              {data.broken_count}
+                            </span>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Broken users list */}
+                      {hasBroken && data.broken_users && (
+                        <div className="bg-white rounded border border-red-200 p-2 text-xs">
+                          <div className="font-medium text-red-800 mb-1">Users needing repair:</div>
+                          {data.broken_users.map(user => (
+                            <div key={user.id} className="flex items-center gap-1 text-slate-600 py-0.5">
+                              <ArrowRight className="w-3 h-3 text-red-400" />
+                              {user.name} ({user.role?.replace('_', ' ')})
+                              <span className="text-red-500">- {user.issue}</span>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+
+                      {/* Action buttons */}
+                      <div className="flex gap-2 pt-2">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => fetchBrokenHierarchy(team.id)}
+                          disabled={isLoading}
+                          data-testid={`check-team-btn-${team.id}`}
+                        >
+                          {isLoading ? <RefreshCw className="w-3 h-3 mr-1 animate-spin" /> : <Search className="w-3 h-3 mr-1" />}
+                          Check
+                        </Button>
+                        {hasBroken && (
+                          <Button
+                            size="sm"
+                            onClick={() => openRepairModal(team)}
+                            className="bg-orange-600 hover:bg-orange-700 text-white"
+                            data-testid={`repair-team-btn-${team.id}`}
+                          >
+                            <Wrench className="w-3 h-3 mr-1" />
+                            Repair ({data.broken_count})
+                          </Button>
+                        )}
+                      </div>
+                    </CardContent>
+                  </Card>
+                );
+              })}
+          </div>
+
+          {/* Team Sudbeck (protected) */}
+          <Card className="bg-slate-50 border-slate-200 opacity-60">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-lg flex items-center gap-2 text-slate-500">
+                <Shield className="w-5 h-5" />
+                Team Sudbeck (Protected)
+              </CardTitle>
+              <CardDescription>
+                This team is protected and will not be modified by the repair tool.
+              </CardDescription>
+            </CardHeader>
+          </Card>
+        </div>
+      )}
+
       {/* Create Team Modal */}
       <Dialog open={showNewTeamModal} onOpenChange={setShowNewTeamModal}>
         <DialogContent data-testid="create-team-modal">
