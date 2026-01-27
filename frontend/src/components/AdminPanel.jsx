@@ -7,7 +7,7 @@ import { Label } from './ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from './ui/dialog';
 import { toast } from 'sonner';
-import { Users, Building2, UserPlus, Settings, RefreshCw, Search, Shield, UserCog } from 'lucide-react';
+import { Users, Building2, UserPlus, RefreshCw, Search, Shield, UserCog, ChevronRight } from 'lucide-react';
 
 const API = process.env.REACT_APP_BACKEND_URL;
 
@@ -17,16 +17,28 @@ const AdminPanel = ({ user }) => {
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
+  const [selectedTeamFilter, setSelectedTeamFilter] = useState('all');
   
   // Modal states
   const [showNewTeamModal, setShowNewTeamModal] = useState(false);
   const [showAssignUserModal, setShowAssignUserModal] = useState(false);
+  const [showCreateUserModal, setShowCreateUserModal] = useState(false);
   const [selectedUser, setSelectedUser] = useState(null);
   
   // Form states
   const [newTeamName, setNewTeamName] = useState('');
   const [selectedTeamForAssignment, setSelectedTeamForAssignment] = useState('');
   const [selectedRoleForAssignment, setSelectedRoleForAssignment] = useState('');
+  
+  // New user form
+  const [newUserForm, setNewUserForm] = useState({
+    name: '',
+    email: '',
+    password: '',
+    role: '',
+    team_id: '',
+    manager_id: ''
+  });
 
   const token = localStorage.getItem('token');
   const headers = { Authorization: `Bearer ${token}` };
@@ -69,6 +81,32 @@ const AdminPanel = ({ user }) => {
     }
   };
 
+  const handleCreateUser = async () => {
+    if (!newUserForm.name || !newUserForm.email || !newUserForm.password || !newUserForm.role || !newUserForm.team_id) {
+      toast.error('Please fill in all required fields');
+      return;
+    }
+    
+    try {
+      const payload = {
+        name: newUserForm.name,
+        email: newUserForm.email,
+        password: newUserForm.password,
+        role: newUserForm.role,
+        team_id: newUserForm.team_id,
+        manager_id: newUserForm.manager_id || null
+      };
+      
+      await axios.post(`${API}/api/admin/users`, payload, { headers });
+      toast.success(`User "${newUserForm.name}" created successfully`);
+      setNewUserForm({ name: '', email: '', password: '', role: '', team_id: '', manager_id: '' });
+      setShowCreateUserModal(false);
+      fetchData();
+    } catch (error) {
+      toast.error(error.response?.data?.detail || 'Failed to create user');
+    }
+  };
+
   const handleAssignUser = async () => {
     if (!selectedUser || !selectedTeamForAssignment) {
       toast.error('Please select a user and team');
@@ -96,21 +134,32 @@ const AdminPanel = ({ user }) => {
     }
   };
 
-  const handleRunMigration = async () => {
-    try {
-      const res = await axios.post(`${API}/api/admin/migrate-to-teams`, {}, { headers });
-      toast.success(`Migration complete! ${JSON.stringify(res.data.migrated_records)}`);
-      fetchData();
-    } catch (error) {
-      toast.error(error.response?.data?.detail || 'Migration failed');
-    }
+  // Get potential managers for selected team and role
+  const getPotentialManagers = () => {
+    if (!newUserForm.team_id || !newUserForm.role) return [];
+    
+    const teamUsers = users.filter(u => u.team_id === newUserForm.team_id);
+    
+    // Based on role, find valid managers
+    const managerRoles = {
+      'regional_manager': ['state_manager'],
+      'district_manager': ['regional_manager'],
+      'agent': ['district_manager']
+    };
+    
+    const validManagerRoles = managerRoles[newUserForm.role] || [];
+    return teamUsers.filter(u => validManagerRoles.includes(u.role));
   };
 
-  const filteredUsers = users.filter(u => 
-    u.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    u.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    u.team_name?.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const filteredUsers = users.filter(u => {
+    const matchesSearch = u.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      u.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      u.team_name?.toLowerCase().includes(searchTerm.toLowerCase());
+    
+    const matchesTeam = selectedTeamFilter === 'all' || u.team_id === selectedTeamFilter;
+    
+    return matchesSearch && matchesTeam;
+  });
 
   const roleColors = {
     'super_admin': 'bg-purple-100 text-purple-800',
@@ -137,9 +186,9 @@ const AdminPanel = ({ user }) => {
             <Shield className="w-6 h-6 text-blue-600" />
             Admin Panel
           </h2>
-          <p className="text-slate-500 text-sm mt-1">Manage teams and user assignments</p>
+          <p className="text-slate-500 text-sm mt-1">Manage teams and users</p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex gap-2 flex-wrap">
           <Button 
             onClick={() => setShowNewTeamModal(true)}
             className="bg-blue-600 hover:bg-blue-700"
@@ -149,12 +198,12 @@ const AdminPanel = ({ user }) => {
             New Team
           </Button>
           <Button 
-            onClick={handleRunMigration}
-            variant="outline"
-            data-testid="run-migration-btn"
+            onClick={() => setShowCreateUserModal(true)}
+            className="bg-green-600 hover:bg-green-700"
+            data-testid="create-user-btn"
           >
-            <RefreshCw className="w-4 h-4 mr-2" />
-            Run Migration
+            <UserPlus className="w-4 h-4 mr-2" />
+            Create User
           </Button>
         </div>
       </div>
@@ -185,7 +234,12 @@ const AdminPanel = ({ user }) => {
       {activeTab === 'teams' && (
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3" data-testid="teams-grid">
           {teams.map(team => (
-            <Card key={team.id} className="hover:shadow-md transition-shadow" data-testid={`team-card-${team.id}`}>
+            <Card key={team.id} className="hover:shadow-md transition-shadow cursor-pointer" data-testid={`team-card-${team.id}`}
+              onClick={() => {
+                setSelectedTeamFilter(team.id);
+                setActiveTab('users');
+              }}
+            >
               <CardHeader className="pb-2">
                 <div className="flex items-center justify-between">
                   <CardTitle className="text-lg flex items-center gap-2">
@@ -203,8 +257,11 @@ const AdminPanel = ({ user }) => {
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <div className="text-xs text-slate-500">
-                  Created: {new Date(team.created_at).toLocaleDateString()}
+                <div className="flex items-center justify-between">
+                  <span className="text-xs text-slate-500">
+                    Created: {new Date(team.created_at).toLocaleDateString()}
+                  </span>
+                  <ChevronRight className="w-4 h-4 text-slate-400" />
                 </div>
               </CardContent>
             </Card>
@@ -215,16 +272,31 @@ const AdminPanel = ({ user }) => {
       {/* Users Tab */}
       {activeTab === 'users' && (
         <div className="space-y-4">
-          {/* Search */}
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400 w-4 h-4" />
-            <Input
-              placeholder="Search users by name, email, or team..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-10"
-              data-testid="user-search-input"
-            />
+          {/* Filters */}
+          <div className="flex flex-col sm:flex-row gap-3">
+            <div className="relative flex-1">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400 w-4 h-4" />
+              <Input
+                placeholder="Search users by name, email..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-10"
+                data-testid="user-search-input"
+              />
+            </div>
+            <Select value={selectedTeamFilter} onValueChange={setSelectedTeamFilter}>
+              <SelectTrigger className="w-full sm:w-48" data-testid="team-filter">
+                <SelectValue placeholder="Filter by team" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Teams</SelectItem>
+                {teams.map(team => (
+                  <SelectItem key={team.id} value={team.id}>
+                    {team.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
 
           {/* Users Table */}
@@ -270,7 +342,7 @@ const AdminPanel = ({ user }) => {
                           data-testid={`assign-user-btn-${u.id}`}
                         >
                           <UserCog className="w-3 h-3 mr-1" />
-                          Assign
+                          Edit
                         </Button>
                       </td>
                     </tr>
@@ -314,18 +386,134 @@ const AdminPanel = ({ user }) => {
         </DialogContent>
       </Dialog>
 
-      {/* Assign User Modal */}
-      <Dialog open={showAssignUserModal} onOpenChange={setShowAssignUserModal}>
-        <DialogContent data-testid="assign-user-modal">
+      {/* Create User Modal */}
+      <Dialog open={showCreateUserModal} onOpenChange={setShowCreateUserModal}>
+        <DialogContent className="max-w-md" data-testid="create-user-modal">
           <DialogHeader>
-            <DialogTitle>Assign User to Team</DialogTitle>
+            <DialogTitle>Create New User</DialogTitle>
             <DialogDescription>
-              {selectedUser && `Assign ${selectedUser.name} to a team and optionally update their role.`}
+              Create a new user directly into a team.
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-4">
             <div className="space-y-2">
-              <Label>Select Team</Label>
+              <Label>Team *</Label>
+              <Select 
+                value={newUserForm.team_id} 
+                onValueChange={(val) => setNewUserForm({...newUserForm, team_id: val, manager_id: ''})}
+              >
+                <SelectTrigger data-testid="new-user-team">
+                  <SelectValue placeholder="Select team..." />
+                </SelectTrigger>
+                <SelectContent>
+                  {teams.filter(t => !t.settings?.is_default || t.name !== 'Team Sudbeck').map(team => (
+                    <SelectItem key={team.id} value={team.id}>
+                      {team.name}
+                    </SelectItem>
+                  ))}
+                  {teams.filter(t => t.settings?.is_default).map(team => (
+                    <SelectItem key={team.id} value={team.id}>
+                      {team.name} (Default)
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label>Full Name *</Label>
+              <Input
+                placeholder="John Smith"
+                value={newUserForm.name}
+                onChange={(e) => setNewUserForm({...newUserForm, name: e.target.value})}
+                data-testid="new-user-name"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Email *</Label>
+              <Input
+                type="email"
+                placeholder="john@example.com"
+                value={newUserForm.email}
+                onChange={(e) => setNewUserForm({...newUserForm, email: e.target.value})}
+                data-testid="new-user-email"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Password *</Label>
+              <Input
+                type="password"
+                placeholder="••••••••"
+                value={newUserForm.password}
+                onChange={(e) => setNewUserForm({...newUserForm, password: e.target.value})}
+                data-testid="new-user-password"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Role *</Label>
+              <Select 
+                value={newUserForm.role} 
+                onValueChange={(val) => setNewUserForm({...newUserForm, role: val, manager_id: ''})}
+              >
+                <SelectTrigger data-testid="new-user-role">
+                  <SelectValue placeholder="Select role..." />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="state_manager">State Manager</SelectItem>
+                  <SelectItem value="regional_manager">Regional Manager</SelectItem>
+                  <SelectItem value="district_manager">District Manager</SelectItem>
+                  <SelectItem value="agent">Agent</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            {newUserForm.role && newUserForm.role !== 'state_manager' && (
+              <div className="space-y-2">
+                <Label>Reports To</Label>
+                <Select 
+                  value={newUserForm.manager_id} 
+                  onValueChange={(val) => setNewUserForm({...newUserForm, manager_id: val})}
+                >
+                  <SelectTrigger data-testid="new-user-manager">
+                    <SelectValue placeholder="Select manager..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="">None (set later in Team Mgmt)</SelectItem>
+                    {getPotentialManagers().map(manager => (
+                      <SelectItem key={manager.id} value={manager.id}>
+                        {manager.name} ({manager.role?.replace('_', ' ')})
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <p className="text-xs text-slate-500">
+                  {getPotentialManagers().length === 0 && newUserForm.team_id && 
+                    "No managers found. Create the manager first, or set this later in Team Mgmt."}
+                </p>
+              </div>
+            )}
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowCreateUserModal(false)}>
+              Cancel
+            </Button>
+            <Button onClick={handleCreateUser} className="bg-green-600 hover:bg-green-700" data-testid="confirm-create-user">
+              Create User
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Assign User Modal */}
+      <Dialog open={showAssignUserModal} onOpenChange={setShowAssignUserModal}>
+        <DialogContent data-testid="assign-user-modal">
+          <DialogHeader>
+            <DialogTitle>Edit User Assignment</DialogTitle>
+            <DialogDescription>
+              {selectedUser && `Update team or role for ${selectedUser.name}`}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label>Team</Label>
               <Select value={selectedTeamForAssignment} onValueChange={setSelectedTeamForAssignment}>
                 <SelectTrigger data-testid="team-select">
                   <SelectValue placeholder="Select a team..." />
@@ -340,7 +528,7 @@ const AdminPanel = ({ user }) => {
               </Select>
             </div>
             <div className="space-y-2">
-              <Label>Update Role (Optional)</Label>
+              <Label>Role</Label>
               <Select value={selectedRoleForAssignment} onValueChange={setSelectedRoleForAssignment}>
                 <SelectTrigger data-testid="role-select">
                   <SelectValue placeholder="Keep current role..." />
@@ -360,7 +548,7 @@ const AdminPanel = ({ user }) => {
               Cancel
             </Button>
             <Button onClick={handleAssignUser} data-testid="confirm-assign-user">
-              Assign User
+              Update User
             </Button>
           </DialogFooter>
         </DialogContent>
