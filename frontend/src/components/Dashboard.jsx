@@ -151,7 +151,7 @@ const Dashboard = ({ user, setUser }) => {
                   👥 My Recruiting
                 </TabsTrigger>
               )}
-              {user.role === 'state_manager' && (
+              {user.role === 'super_admin' && (
                 <TabsTrigger 
                   value="admin" 
                   data-testid="admin-tab" 
