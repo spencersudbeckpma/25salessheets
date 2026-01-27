@@ -468,6 +468,28 @@ async def admin_create_user(user_data: AdminUserCreate, current_user: dict = Dep
     
     return {"message": "User created successfully", "user": new_user}
 
+@api_router.put("/admin/users/{user_id}/manager")
+async def update_user_manager(user_id: str, data: dict, current_user: dict = Depends(get_current_user)):
+    """Update a user's manager_id (super_admin only)"""
+    require_super_admin(current_user)
+    
+    user = await db.users.find_one({"id": user_id})
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    manager_id = data.get('manager_id')
+    if manager_id:
+        manager = await db.users.find_one({"id": manager_id})
+        if not manager:
+            raise HTTPException(status_code=404, detail="Manager not found")
+    
+    await db.users.update_one(
+        {"id": user_id},
+        {"$set": {"manager_id": manager_id}}
+    )
+    
+    return {"message": "Manager updated successfully"}
+
 @api_router.get("/admin/teams/{team_id}/users")
 async def get_team_users(team_id: str, current_user: dict = Depends(get_current_user)):
     """Get all users in a specific team (super_admin only)"""
