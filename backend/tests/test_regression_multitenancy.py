@@ -215,7 +215,7 @@ class TestLeaderboardWithTeamScope:
     
     def test_get_leaderboard(self, headers):
         """Verify leaderboard API returns data"""
-        response = requests.get(f"{BASE_URL}/api/leaderboard", headers=headers)
+        response = requests.get(f"{BASE_URL}/api/leaderboard/weekly", headers=headers)
         assert response.status_code == 200
         leaderboard = response.json()
         assert isinstance(leaderboard, list)
