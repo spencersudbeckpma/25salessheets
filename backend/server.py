@@ -185,6 +185,10 @@ async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(s
     if user.get('role') == 'super_admin':
         return user
     
+    # State managers have admin privileges - allow access even without team for bootstrap
+    if user.get('role') == 'state_manager':
+        return user
+    
     # Regular users MUST have a team assigned
     if not user.get('team_id'):
         raise HTTPException(
