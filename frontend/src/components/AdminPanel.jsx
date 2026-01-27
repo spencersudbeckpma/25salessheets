@@ -1122,6 +1122,24 @@ const AdminPanel = ({ user }) => {
                   <Wrench className="w-4 h-4 mr-2" />
                   Recover Team Sudbeck Record
                 </Button>
+                
+                {/* Debug button */}
+                <Button
+                  onClick={async () => {
+                    try {
+                      const res = await axios.get(`${API}/api/admin/debug-teams`, { headers });
+                      console.log('DEBUG TEAMS:', res.data);
+                      const teamList = res.data.teams.map(t => `${t.name} (${t.user_count} users)`).join('\n');
+                      alert(`TEAMS IN DATABASE (${res.data.total_teams_in_db}):\n\n${teamList}\n\nCheck browser console for full details.`);
+                    } catch (error) {
+                      toast.error('Failed to fetch debug info');
+                    }
+                  }}
+                  variant="outline"
+                  size="sm"
+                >
+                  Debug Teams
+                </Button>
               </div>
               
               <p className="text-xs text-orange-700">
