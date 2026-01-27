@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs';
 import ActivityInput from './ActivityInput';
 import StatsView from './StatsView';
@@ -14,9 +14,23 @@ import SuitabilityForm from './SuitabilityForm';
 import AdminPanel from './AdminPanel';
 import { Button } from './ui/button';
 import { LogOut } from 'lucide-react';
+import { useBranding } from '../contexts/BrandingContext';
 
-const Dashboard = ({ user, setUser }) => {
+const Dashboard = ({ user, setUser, branding: initialBranding }) => {
   const [activeTab, setActiveTab] = useState('activity');
+  const { branding, updateBranding, getDisplayName, getTagline, logoUrl } = useBranding();
+
+  // Apply branding on mount
+  useEffect(() => {
+    if (initialBranding?.branding) {
+      updateBranding(initialBranding.branding, initialBranding.team_name);
+    }
+  }, [initialBranding]);
+
+  // Update document title with branding
+  useEffect(() => {
+    document.title = getDisplayName();
+  }, [branding]);
 
   const handleLogout = () => {
     localStorage.removeItem('token');
@@ -26,19 +40,38 @@ const Dashboard = ({ user, setUser }) => {
   return (
     <div className="min-h-screen bg-slate-100 pb-8">
       <div className="container mx-auto px-2 md:px-4 py-4 md:py-6 max-w-7xl">
-        {/* Header */}
-        <div className="bg-gradient-to-r from-slate-800 to-slate-900 rounded-xl shadow-xl p-4 md:p-6 mb-4 md:mb-6 flex flex-col md:flex-row justify-between md:items-center gap-3">
+        {/* Header with branding */}
+        <div 
+          className="rounded-xl shadow-xl p-4 md:p-6 mb-4 md:mb-6 flex flex-col md:flex-row justify-between md:items-center gap-3"
+          style={{ 
+            background: `linear-gradient(to right, ${branding?.primary_color || '#1e293b'}, ${branding?.accent_color || '#334155'})`
+          }}
+        >
           <div className="flex items-center gap-4 flex-1 min-w-0">
-            <img 
-              src="/team-sudbeck-logo.jpg" 
-              alt="Team Sudbeck Logo" 
-              className="h-12 md:h-14 w-auto object-contain flex-shrink-0 rounded-lg"
-            />
+            {/* Team Logo or Default */}
+            {logoUrl ? (
+              <img 
+                src={logoUrl} 
+                alt="Team Logo" 
+                className="h-12 md:h-14 w-auto object-contain flex-shrink-0 rounded-lg bg-white p-1"
+              />
+            ) : (
+              <div 
+                className="h-12 md:h-14 w-12 md:w-14 flex-shrink-0 rounded-lg flex items-center justify-center bg-white/20 backdrop-blur-sm"
+              >
+                <span className="text-lg md:text-xl font-bold text-white">
+                  {(getDisplayName() || 'PMA').substring(0, 3).toUpperCase()}
+                </span>
+              </div>
+            )}
             <div className="flex-1 min-w-0">
               <h1 className="text-lg md:text-2xl font-bold text-white truncate" data-testid="dashboard-title">
-                Team Sudbeck Sales Tracker
+                {getDisplayName()}
               </h1>
-              <p className="text-xs md:text-sm text-amber-400 mt-1 truncate" data-testid="user-info">
+              {getTagline() && (
+                <p className="text-xs text-white/70 truncate">{getTagline()}</p>
+              )}
+              <p className="text-xs md:text-sm text-amber-300 mt-1 truncate" data-testid="user-info">
                 {user.name} • {user.role.replace('_', ' ').toUpperCase()}
               </p>
             </div>
@@ -47,7 +80,7 @@ const Dashboard = ({ user, setUser }) => {
             variant="outline"
             onClick={handleLogout}
             data-testid="logout-btn"
-            className="flex items-center gap-2 w-full md:w-auto justify-center border-amber-500 text-amber-400 hover:bg-amber-500/20"
+            className="flex items-center gap-2 w-full md:w-auto justify-center border-white/30 text-white hover:bg-white/20"
             size="sm"
           >
             <LogOut size={16} />
@@ -62,21 +95,23 @@ const Dashboard = ({ user, setUser }) => {
               <TabsTrigger 
                 value="activity" 
                 data-testid="activity-tab" 
-                className="py-2.5 px-3 text-xs md:text-sm whitespace-nowrap flex-shrink-0 rounded-lg text-slate-600 data-[state=active]:bg-slate-800 data-[state=active]:text-amber-400 data-[state=active]:shadow-md"
+                className="py-2.5 px-3 text-xs md:text-sm whitespace-nowrap flex-shrink-0 rounded-lg text-slate-600 data-[state=active]:text-white data-[state=active]:shadow-md"
+                style={{ '--tw-bg-opacity': 1 }}
+                data-active-style={{ backgroundColor: branding?.primary_color }}
               >
                 Daily Activity
               </TabsTrigger>
               <TabsTrigger 
                 value="stats" 
                 data-testid="stats-tab" 
-                className="py-2.5 px-3 text-xs md:text-sm whitespace-nowrap flex-shrink-0 rounded-lg text-slate-600 data-[state=active]:bg-slate-800 data-[state=active]:text-amber-400 data-[state=active]:shadow-md"
+                className="py-2.5 px-3 text-xs md:text-sm whitespace-nowrap flex-shrink-0 rounded-lg text-slate-600 data-[state=active]:text-white data-[state=active]:shadow-md"
               >
                 My Stats
               </TabsTrigger>
               <TabsTrigger 
                 value="team" 
                 data-testid="team-tab" 
-                className="py-2.5 px-3 text-xs md:text-sm whitespace-nowrap flex-shrink-0 rounded-lg text-slate-600 data-[state=active]:bg-slate-800 data-[state=active]:text-amber-400 data-[state=active]:shadow-md"
+                className="py-2.5 px-3 text-xs md:text-sm whitespace-nowrap flex-shrink-0 rounded-lg text-slate-600 data-[state=active]:text-white data-[state=active]:shadow-md"
               >
                 Team View
               </TabsTrigger>
