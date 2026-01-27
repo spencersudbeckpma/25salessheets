@@ -3959,6 +3959,8 @@ async def get_interview_stats(current_user: dict = Depends(get_current_user)):
     central = pytz.timezone('America/Chicago')
     now = datetime.now(central)
     
+    team_id = current_user.get('team_id')
+    
     # Calculate date ranges
     today = now.date()
     week_start = today - timedelta(days=today.weekday())
@@ -3967,15 +3969,25 @@ async def get_interview_stats(current_user: dict = Depends(get_current_user)):
     
     # Build query based on role - NOTE: Stats include archived interviews to preserve totals
     base_query = {}
-    if current_user['role'] == 'state_manager':
-        base_query = {}
+    if current_user['role'] == 'super_admin':
+        base_query = {}  # See all
+    elif current_user['role'] == 'state_manager':
+        # State manager sees all in their team
+        if team_id:
+            base_query = {"team_id": team_id}
     elif current_user['role'] == 'regional_manager':
         # Include own interviews + subordinates' interviews
-        subordinate_ids = await get_all_subordinates(current_user['id'])
-        base_query = {"interviewer_id": {"$in": subordinate_ids}}
+        subordinate_ids = await get_all_subordinates(current_user['id'], team_id)
+        all_ids = list(set(subordinate_ids))
+        all_ids.append(current_user['id'])  # Include self
+        base_query = {"interviewer_id": {"$in": all_ids}}
+        if team_id:
+            base_query["team_id"] = team_id
     else:
         # District manager sees only own
         base_query = {"interviewer_id": current_user['id']}
+        if team_id:
+            base_query["team_id"] = team_id
     
     # Get all interviews for stats
     all_interviews = await db.interviews.find(base_query, {"_id": 0}).to_list(10000)
