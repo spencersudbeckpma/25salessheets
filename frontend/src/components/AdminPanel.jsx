@@ -377,7 +377,7 @@ const AdminPanel = ({ user }) => {
         password: newUserForm.password,
         role: newUserForm.role,
         team_id: newUserForm.team_id,
-        manager_id: newUserForm.manager_id || null
+        manager_id: newUserForm.manager_id && newUserForm.manager_id !== 'none' ? newUserForm.manager_id : null
       };
       
       await axios.post(`${API}/api/admin/users`, payload, { headers });
