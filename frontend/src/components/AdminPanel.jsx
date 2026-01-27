@@ -332,7 +332,7 @@ const AdminPanel = ({ user }) => {
       const payload = {
         user_ids: selectedUnassignedUsers,
         team_id: assignToTeamId,
-        set_manager_id: assignManagerId || null
+        set_manager_id: assignManagerId && assignManagerId !== 'none' ? assignManagerId : null
       };
       const res = await axios.post(`${API}/api/admin/fix-unassigned-users`, payload, { headers });
       toast.success(res.data.message);
