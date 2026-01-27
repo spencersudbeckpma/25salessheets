@@ -1244,6 +1244,28 @@ const AdminPanel = ({ user }) => {
                                 <strong>No default team found.</strong>
                               </p>
                               
+                              {/* YOUR TEAM - This is likely Team Sudbeck! */}
+                              {defaultTeamData.current_user_team_id && (
+                                <div className="bg-blue-50 border border-blue-300 p-2 rounded">
+                                  <p className="text-blue-800 text-sm font-bold mb-1">
+                                    YOUR TEAM (This is likely Team Sudbeck!):
+                                  </p>
+                                  <p className="text-blue-700 text-xs">
+                                    {defaultTeamData.current_user_team?.name || 'Unknown'} 
+                                    <br/>ID: <code className="bg-blue-100 px-1">{defaultTeamData.current_user_team_id}</code>
+                                  </p>
+                                  <Button
+                                    onClick={() => {
+                                      setAssignToTeamId(defaultTeamData.current_user_team_id);
+                                      toast.success(`Selected YOUR team: ${defaultTeamData.current_user_team?.name || defaultTeamData.current_user_team_id}`);
+                                    }}
+                                    className="bg-blue-600 hover:bg-blue-700 w-full mt-2"
+                                  >
+                                    Use MY Team (Team Sudbeck)
+                                  </Button>
+                                </div>
+                              )}
+                              
                               {/* Show all teams with their IDs */}
                               <div className="bg-white p-2 rounded text-xs max-h-32 overflow-y-auto">
                                 <strong>All Teams in Database:</strong>
