@@ -280,24 +280,31 @@ async def get_default_team(current_user: dict = Depends(get_current_user)):
             default_team = team
             break
     
+    # Check what team the current admin user belongs to - this might be Team Sudbeck!
+    current_user_team_id = current_user.get('team_id')
+    current_user_team = None
+    if current_user_team_id:
+        current_user_team = await db.teams.find_one({"id": current_user_team_id}, {"_id": 0})
+    
     # Also check: what team_ids are users referencing that might not be in teams list?
-    # This finds "orphaned" team references
     team_ids_in_use = await db.users.distinct("team_id")
     known_team_ids = {t.get('id') for t in all_teams}
     orphaned_team_ids = [tid for tid in team_ids_in_use if tid and tid not in known_team_ids]
     
-    # If we found orphaned team_ids, try to find if any team record exists for them
-    orphaned_teams = []
-    for tid in orphaned_team_ids:
-        team = await db.teams.find_one({"id": tid}, {"_id": 0})
-        if team:
-            orphaned_teams.append(team)
+    # Count users per team_id to find the main team
+    team_user_counts = {}
+    for tid in team_ids_in_use:
+        if tid:
+            count = await db.users.count_documents({"team_id": tid})
+            team_user_counts[tid] = count
     
     if default_team:
         return {
             "found": True,
             "team": default_team,
             "all_teams": all_teams,
+            "current_user_team_id": current_user_team_id,
+            "current_user_team": current_user_team,
             "message": f"Found default team: {default_team.get('name')} (ID: {default_team.get('id')})"
         }
     
@@ -305,8 +312,10 @@ async def get_default_team(current_user: dict = Depends(get_current_user)):
         "found": False,
         "all_teams": all_teams,
         "orphaned_team_ids": orphaned_team_ids,
-        "orphaned_teams": orphaned_teams,
-        "message": "Default team not found. Check all_teams and orphaned_team_ids for clues."
+        "current_user_team_id": current_user_team_id,
+        "current_user_team": current_user_team,
+        "team_user_counts": team_user_counts,
+        "message": "Default team not found. Check current_user_team - that might be Team Sudbeck!"
     }
 
 @api_router.post("/admin/teams")
