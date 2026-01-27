@@ -1198,106 +1198,30 @@ const AdminPanel = ({ user }) => {
                       </table>
                     </div>
 
-                    {/* Assignment controls */}
+                    {/* Assignment controls - Simple and direct */}
                     <div className="bg-slate-50 p-4 rounded-lg space-y-3">
                       <h4 className="font-medium text-slate-800">Assign Selected Users To:</h4>
-                      
-                      {/* Default Team Info from dedicated API */}
-                      {defaultTeamData && (
-                        <div className={`p-3 rounded-lg border ${defaultTeamData.found ? 'bg-green-50 border-green-300' : 'bg-yellow-50 border-yellow-300'}`}>
-                          {defaultTeamData.found ? (
-                            <>
-                              <p className="text-green-800 text-sm mb-2">
-                                <strong>Default Team Found:</strong> {defaultTeamData.team?.name} (ID: {defaultTeamData.team?.id})
-                              </p>
-                              <Button
-                                onClick={() => {
-                                  setAssignToTeamId(defaultTeamData.team.id);
-                                  toast.success(`Selected: ${defaultTeamData.team.name}`);
-                                }}
-                                className="bg-green-600 hover:bg-green-700 w-full"
-                              >
-                                Use Default Team: {defaultTeamData.team?.name}
-                              </Button>
-                            </>
-                          ) : (
-                            <div className="space-y-3">
-                              <p className="text-yellow-800 text-sm">
-                                <strong>No default team found.</strong>
-                              </p>
-                              
-                              {/* TEAM USAGE - Shows all teams with user counts */}
-                              {defaultTeamData.team_usage?.length > 0 && (
-                                <div className="bg-blue-50 border border-blue-300 p-2 rounded">
-                                  <p className="text-blue-800 text-sm font-bold mb-2">
-                                    Teams by User Count (largest is likely Team Sudbeck):
-                                  </p>
-                                  {defaultTeamData.team_usage.map((t, i) => (
-                                    <div key={i} className={`py-2 border-b last:border-0 ${!t.has_team_record ? 'bg-red-100' : ''}`}>
-                                      <div className="flex justify-between items-center">
-                                        <div>
-                                          <span className={`font-medium ${!t.has_team_record ? 'text-red-700' : ''}`}>
-                                            {t.team_name}
-                                          </span>
-                                          <span className="ml-2 text-blue-600 font-bold">({t.user_count} users)</span>
-                                          {!t.has_team_record && (
-                                            <span className="ml-2 text-red-600 text-xs">(ORPHANED - likely Team Sudbeck!)</span>
-                                          )}
-                                        </div>
-                                        <Button
-                                          size="sm"
-                                          className={`h-7 ${!t.has_team_record ? 'bg-red-600 hover:bg-red-700' : 'bg-blue-600 hover:bg-blue-700'}`}
-                                          onClick={() => {
-                                            setAssignToTeamId(t.team_id);
-                                            toast.success(`Selected: ${t.team_name} (${t.user_count} users)`);
-                                          }}
-                                        >
-                                          Select
-                                        </Button>
-                                      </div>
-                                      <div className="text-xs text-gray-500 mt-1">
-                                        ID: {t.team_id}
-                                      </div>
-                                    </div>
-                                  ))}
-                                </div>
-                              )}
-                              
-                              {/* Manual ID entry */}
-                              <div className="bg-gray-100 p-2 rounded">
-                                <Label className="text-xs text-gray-600">Or enter Team ID manually:</Label>
-                                <div className="flex gap-2 mt-1">
-                                  <Input
-                                    placeholder="Paste team ID here..."
-                                    className="text-xs h-8"
-                                    onChange={(e) => setAssignToTeamId(e.target.value)}
-                                  />
-                                </div>
-                              </div>
-                            </div>
-                          )}
-                        </div>
-                      )}
                       
                       {/* Selected team indicator */}
                       {assignToTeamId && (
                         <div className="bg-blue-100 p-2 rounded text-blue-800 text-sm">
-                          <strong>Selected Team ID:</strong> {assignToTeamId}
+                          <strong>Selected Team:</strong> {teams.find(t => t.id === assignToTeamId)?.name || assignToTeamId}
                         </div>
                       )}
                       
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                         <div>
-                          <Label htmlFor="assign-team" className="text-sm text-slate-600 mb-1 block">Team (required) - {teams.length} teams available</Label>
+                          <Label htmlFor="assign-team" className="text-sm text-slate-600 mb-1 block">Team (required)</Label>
                           <Select value={assignToTeamId} onValueChange={setAssignToTeamId}>
                             <SelectTrigger id="assign-team">
                               <SelectValue placeholder="Select team..." />
                             </SelectTrigger>
                             <SelectContent>
-                              {/* Show ALL teams from admin state, including default team */}
+                              {/* Show ALL teams - no filtering */}
                               {teams.map((team) => (
                                 <SelectItem key={team.id} value={team.id}>
-                                  {team.name} {team.settings?.is_default ? '(Default)' : ''}
+                                  {team.name}
+                                </SelectItem>
                                 </SelectItem>
                               ))}
                             </SelectContent>
