@@ -266,6 +266,87 @@ const AdminPanel = ({ user }) => {
     }
   };
 
+  // Unassigned users functions
+  const runDiagnoseUnassignedUsers = async () => {
+    setUnassignedLoading(true);
+    setUnassignedData(null);
+    setSelectedUnassignedUsers([]);
+    setAssignToTeamId('');
+    setAssignManagerId('');
+    
+    try {
+      const res = await axios.get(`${API}/api/admin/diagnose-unassigned-users`, { headers });
+      setUnassignedData(res.data);
+      if (res.data.unassigned_count > 0) {
+        toast.warning(`Found ${res.data.unassigned_count} users without team assignment`);
+      } else {
+        toast.success('All users have team assignments');
+      }
+    } catch (error) {
+      toast.error(error.response?.data?.detail || 'Failed to diagnose unassigned users');
+    } finally {
+      setUnassignedLoading(false);
+    }
+  };
+
+  const toggleSelectUnassignedUser = (userId) => {
+    setSelectedUnassignedUsers(prev => 
+      prev.includes(userId) 
+        ? prev.filter(id => id !== userId) 
+        : [...prev, userId]
+    );
+  };
+
+  const selectAllUnassignedUsers = () => {
+    if (!unassignedData) return;
+    setSelectedUnassignedUsers(unassignedData.unassigned_users.map(u => u.id));
+  };
+
+  const deselectAllUnassignedUsers = () => {
+    setSelectedUnassignedUsers([]);
+  };
+
+  const runFixUnassignedUsers = async () => {
+    if (selectedUnassignedUsers.length === 0) {
+      toast.error('Please select at least one user to fix');
+      return;
+    }
+    if (!assignToTeamId) {
+      toast.error('Please select a team to assign users to');
+      return;
+    }
+    
+    const teamName = unassignedData?.available_teams?.find(t => t.id === assignToTeamId)?.name || 'selected team';
+    
+    if (!window.confirm(
+      `This will assign ${selectedUnassignedUsers.length} user(s) to "${teamName}".\n\n` +
+      'These users will then be able to access the application.\n\n' +
+      'Continue?'
+    )) {
+      return;
+    }
+    
+    setUnassignedLoading(true);
+    
+    try {
+      const payload = {
+        user_ids: selectedUnassignedUsers,
+        team_id: assignToTeamId,
+        set_manager_id: assignManagerId || null
+      };
+      const res = await axios.post(`${API}/api/admin/fix-unassigned-users`, payload, { headers });
+      toast.success(res.data.message);
+      
+      // Re-run diagnostics to show updated state
+      await runDiagnoseUnassignedUsers();
+      fetchData(); // Refresh users list
+    } catch (error) {
+      toast.error(error.response?.data?.detail || 'Failed to fix unassigned users');
+    } finally {
+      setUnassignedLoading(false);
+    }
+  };
+
   const handleCreateTeam = async () => {
     if (!newTeamName.trim()) {
       toast.error('Please enter a team name');
