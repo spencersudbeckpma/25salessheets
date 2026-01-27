@@ -3766,17 +3766,22 @@ async def get_npa_agents(current_user: dict = Depends(get_current_user)):
     if current_user['role'] not in ['state_manager', 'regional_manager', 'district_manager']:
         raise HTTPException(status_code=403, detail="Only managers can access NPA tracker")
     
-    # Get NPA agents based on role
+    team_id = current_user.get('team_id')
+    
+    # Get NPA agents based on role, filtered by team
     if current_user['role'] == 'state_manager':
-        npa_agents = await db.npa_agents.find({}, {"_id": 0}).to_list(1000)
+        query = {}
+        if team_id:
+            query["team_id"] = team_id
+        npa_agents = await db.npa_agents.find(query, {"_id": 0}).to_list(1000)
     else:
-        # Managers see only their own added agents
-        subordinate_ids = await get_all_subordinates(current_user['id'])
+        # Managers see only their own added agents (within team)
+        subordinate_ids = await get_all_subordinates(current_user['id'], team_id)
         subordinate_ids.append(current_user['id'])
-        npa_agents = await db.npa_agents.find(
-            {"added_by": {"$in": subordinate_ids}},
-            {"_id": 0}
-        ).to_list(1000)
+        query = {"added_by": {"$in": subordinate_ids}}
+        if team_id:
+            query["team_id"] = team_id
+        npa_agents = await db.npa_agents.find(query, {"_id": 0}).to_list(1000)
     
     npa_data = []
     achieved_data = []
@@ -3785,11 +3790,11 @@ async def get_npa_agents(current_user: dict = Depends(get_current_user)):
         # If linked to a user, calculate their actual premium from activities
         user_id = agent.get('user_id', '')
         if user_id:
-            # Get all activities for this user and sum premium
-            activities = await db.activities.find(
-                {"user_id": user_id, "premium": {"$gt": 0}},
-                {"_id": 0, "premium": 1}
-            ).to_list(10000)
+            # Get all activities for this user and sum premium (scoped to team)
+            act_query = {"user_id": user_id, "premium": {"$gt": 0}}
+            if team_id:
+                act_query["team_id"] = team_id
+            activities = await db.activities.find(act_query, {"_id": 0, "premium": 1}).to_list(10000)
             total_premium = sum(a.get('premium', 0) for a in activities)
         else:
             # Use manually entered premium
