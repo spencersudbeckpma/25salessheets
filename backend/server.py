@@ -269,10 +269,10 @@ async def get_default_team(current_user: dict = Depends(get_current_user)):
     """Get the default team (Team Sudbeck) directly from database (super_admin only)"""
     require_super_admin(current_user)
     
-    # Get ALL teams first for complete visibility
+    # Get ALL teams
     all_teams = await db.teams.find({}, {"_id": 0}).to_list(100)
     
-    # Try multiple ways to find Team Sudbeck
+    # Find Team Sudbeck by name or default flag
     default_team = None
     for team in all_teams:
         name = team.get('name', '').lower()
@@ -280,42 +280,45 @@ async def get_default_team(current_user: dict = Depends(get_current_user)):
             default_team = team
             break
     
-    # Check what team the current admin user belongs to - this might be Team Sudbeck!
-    current_user_team_id = current_user.get('team_id')
-    current_user_team = None
-    if current_user_team_id:
-        current_user_team = await db.teams.find_one({"id": current_user_team_id}, {"_id": 0})
+    # Get ALL distinct team_ids that users have - this reveals ALL teams in use
+    all_team_ids_in_use = await db.users.distinct("team_id")
     
-    # Also check: what team_ids are users referencing that might not be in teams list?
-    team_ids_in_use = await db.users.distinct("team_id")
-    known_team_ids = {t.get('id') for t in all_teams}
-    orphaned_team_ids = [tid for tid in team_ids_in_use if tid and tid not in known_team_ids]
+    # For each team_id in use, get count and check if it matches a known team
+    team_usage = []
+    for tid in all_team_ids_in_use:
+        if not tid:
+            continue
+        count = await db.users.count_documents({"team_id": tid})
+        # Find if this team_id has a team record
+        team_record = await db.teams.find_one({"id": tid}, {"_id": 0})
+        team_usage.append({
+            "team_id": tid,
+            "user_count": count,
+            "team_name": team_record.get('name') if team_record else "NO TEAM RECORD - ORPHANED",
+            "has_team_record": team_record is not None
+        })
     
-    # Count users per team_id to find the main team
-    team_user_counts = {}
-    for tid in team_ids_in_use:
-        if tid:
-            count = await db.users.count_documents({"team_id": tid})
-            team_user_counts[tid] = count
+    # Sort by user count descending - the biggest team is likely Team Sudbeck
+    team_usage.sort(key=lambda x: x['user_count'], reverse=True)
+    
+    # The team with most users that's NOT in all_teams is likely Team Sudbeck
+    orphaned_teams = [t for t in team_usage if not t['has_team_record']]
     
     if default_team:
         return {
             "found": True,
             "team": default_team,
             "all_teams": all_teams,
-            "current_user_team_id": current_user_team_id,
-            "current_user_team": current_user_team,
-            "message": f"Found default team: {default_team.get('name')} (ID: {default_team.get('id')})"
+            "team_usage": team_usage,
+            "message": f"Found: {default_team.get('name')}"
         }
     
     return {
         "found": False,
         "all_teams": all_teams,
-        "orphaned_team_ids": orphaned_team_ids,
-        "current_user_team_id": current_user_team_id,
-        "current_user_team": current_user_team,
-        "team_user_counts": team_user_counts,
-        "message": "Default team not found. Check current_user_team - that might be Team Sudbeck!"
+        "team_usage": team_usage,
+        "orphaned_teams": orphaned_teams,
+        "message": "Team Sudbeck not in teams collection. Check team_usage for orphaned team_ids - largest one is likely Team Sudbeck."
     }
 
 @api_router.post("/admin/teams")
