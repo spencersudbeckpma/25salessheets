@@ -636,7 +636,7 @@ const NPATracker = ({ user }) => {
                               >
                                 <Edit2 size={16} />
                               </button>
-                              {['state_manager', 'regional_manager'].includes(user.role) && (
+                              {['super_admin', 'state_manager', 'regional_manager'].includes(user.role) && (
                                 <button
                                   onClick={() => handleDeleteAgent(agent.id, agent.name)}
                                   className="p-1.5 text-red-600 hover:bg-red-50 rounded"
@@ -743,7 +743,7 @@ const NPATracker = ({ user }) => {
                               >
                                 <Edit2 size={16} />
                               </button>
-                              {['state_manager', 'regional_manager'].includes(user.role) && (
+                              {['super_admin', 'state_manager', 'regional_manager'].includes(user.role) && (
                                 <button
                                   onClick={() => handleDeleteAgent(agent.id, agent.name)}
                                   className="p-1.5 text-red-600 hover:bg-red-50 rounded"
