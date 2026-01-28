@@ -3274,9 +3274,15 @@ async def login(login_data: UserLogin):
     
     token = create_jwt_token(user['id'], user['email'])
     
-    # Get team branding if user has a team
+    # Get team branding and features if user has a team
     branding = None
     team_name = None
+    features = None
+    
+    if user.get('role') == 'super_admin':
+        # Super admins see all features
+        features = {k: True for k in DEFAULT_TEAM_FEATURES.keys()}
+    
     if user.get('team_id'):
         team = await db.teams.find_one({"id": user['team_id']}, {"_id": 0})
         if team:
@@ -3288,6 +3294,13 @@ async def login(login_data: UserLogin):
                 "display_name": None,
                 "tagline": None
             })
+            # Get features (merge with defaults)
+            team_features = team.get('features', {})
+            features = {**DEFAULT_TEAM_FEATURES, **team_features}
+    
+    # Default features if none set
+    if features is None:
+        features = DEFAULT_TEAM_FEATURES
     
     return {
         "token": token,
@@ -3300,7 +3313,8 @@ async def login(login_data: UserLogin):
             "team_name": team_name,
             "manager_id": user.get('manager_id')
         },
-        "branding": branding
+        "branding": branding,
+        "features": features
     }
 
 @api_router.get("/auth/branding")
