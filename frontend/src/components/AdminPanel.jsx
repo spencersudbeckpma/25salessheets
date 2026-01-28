@@ -430,6 +430,57 @@ const AdminPanel = ({ user }) => {
     }
   };
 
+  // Feature flags functions
+  const openFeaturesModal = async (team) => {
+    setSelectedTeamForFeatures(team);
+    try {
+      const res = await axios.get(`${API}/api/admin/teams/${team.id}/features`, { headers });
+      setFeaturesForm(res.data.features);
+    } catch (error) {
+      // Use defaults if fetch fails
+      setFeaturesForm({
+        activity: true, stats: true, team_view: true, suitability: true,
+        pma_bonuses: true, docusphere: true, leaderboard: true, analytics: true,
+        reports: true, team_mgmt: true, recruiting: false, interviews: true
+      });
+    }
+    setShowFeaturesModal(true);
+  };
+
+  const handleSaveFeatures = async () => {
+    if (!selectedTeamForFeatures) return;
+    try {
+      await axios.put(`${API}/api/admin/teams/${selectedTeamForFeatures.id}/features`, { features: featuresForm }, { headers });
+      toast.success(`Features updated for ${selectedTeamForFeatures.name}`);
+      setShowFeaturesModal(false);
+      fetchData();
+    } catch (error) {
+      toast.error(error.response?.data?.detail || 'Failed to update features');
+    }
+  };
+
+  const handleResetFeatures = async () => {
+    if (!selectedTeamForFeatures) return;
+    try {
+      const res = await axios.post(`${API}/api/admin/teams/${selectedTeamForFeatures.id}/features/reset`, {}, { headers });
+      setFeaturesForm(res.data.features);
+      toast.success('Features reset to defaults');
+    } catch (error) {
+      toast.error(error.response?.data?.detail || 'Failed to reset features');
+    }
+  };
+
+  const handleCopyFeatures = async (sourceTeamId) => {
+    if (!selectedTeamForFeatures || !sourceTeamId) return;
+    try {
+      const res = await axios.post(`${API}/api/admin/teams/${selectedTeamForFeatures.id}/features/copy-from/${sourceTeamId}`, {}, { headers });
+      setFeaturesForm(res.data.features);
+      toast.success(`Features copied from ${teams.find(t => t.id === sourceTeamId)?.name}`);
+    } catch (error) {
+      toast.error(error.response?.data?.detail || 'Failed to copy features');
+    }
+  };
+
   const handleCreateUser = async () => {
     if (!newUserForm.name || !newUserForm.email || !newUserForm.password || !newUserForm.role || !newUserForm.team_id) {
       toast.error('Please fill in all required fields');
