@@ -6043,6 +6043,9 @@ async def get_manager_subordinate_averages(manager_id: str, period: str, current
 @api_router.get("/analytics/true-field-averages")
 async def get_true_field_averages(period: str = "last_4_weeks", current_user: dict = Depends(get_current_user)):
     """Get true field averages - only counting people who logged activity in the period (State Manager only)"""
+    # Check feature access
+    await check_feature_access(current_user, "analytics")
+    
     if current_user['role'] != 'state_manager':
         raise HTTPException(status_code=403, detail="Only State Managers can access true field averages")
     
