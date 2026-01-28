@@ -24,6 +24,17 @@ const AdminPanel = ({ user }) => {
   const [showAssignUserModal, setShowAssignUserModal] = useState(false);
   const [showCreateUserModal, setShowCreateUserModal] = useState(false);
   const [selectedUser, setSelectedUser] = useState(null);
+  const [showBrandingModal, setShowBrandingModal] = useState(false);
+  const [selectedTeamForBranding, setSelectedTeamForBranding] = useState(null);
+  
+  // Branding form
+  const [brandingForm, setBrandingForm] = useState({
+    logo_url: '',
+    primary_color: '#1e40af',
+    accent_color: '#3b82f6',
+    display_name: '',
+    tagline: ''
+  });
   
   // Form states
   const [newTeamName, setNewTeamName] = useState('');
