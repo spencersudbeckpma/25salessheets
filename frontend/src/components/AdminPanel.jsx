@@ -1719,6 +1719,141 @@ const AdminPanel = ({ user }) => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Branding Modal */}
+      <Dialog open={showBrandingModal} onOpenChange={setShowBrandingModal}>
+        <DialogContent className="max-w-lg" data-testid="branding-modal">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Building2 className="w-5 h-5 text-blue-600" />
+              Team Branding - {selectedTeamForBranding?.name}
+            </DialogTitle>
+            <DialogDescription>
+              Customize the look and feel for this team. Users will see these colors and logo after login.
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-4 py-4">
+            {/* Logo URL */}
+            <div className="space-y-2">
+              <Label>Logo URL</Label>
+              <Input
+                placeholder="https://example.com/logo.png"
+                value={brandingForm.logo_url}
+                onChange={(e) => setBrandingForm({ ...brandingForm, logo_url: e.target.value })}
+                data-testid="branding-logo-url"
+              />
+              {brandingForm.logo_url && (
+                <div className="mt-2 p-2 bg-slate-100 rounded flex items-center justify-center">
+                  <img 
+                    src={brandingForm.logo_url} 
+                    alt="Logo Preview" 
+                    className="h-12 object-contain"
+                    onError={(e) => e.target.style.display = 'none'}
+                  />
+                </div>
+              )}
+            </div>
+            
+            {/* Display Name */}
+            <div className="space-y-2">
+              <Label>Display Name</Label>
+              <Input
+                placeholder="Team Display Name"
+                value={brandingForm.display_name}
+                onChange={(e) => setBrandingForm({ ...brandingForm, display_name: e.target.value })}
+                data-testid="branding-display-name"
+              />
+              <p className="text-xs text-slate-500">Shown in the header after login. Leave empty to use team name.</p>
+            </div>
+            
+            {/* Tagline */}
+            <div className="space-y-2">
+              <Label>Tagline (optional)</Label>
+              <Input
+                placeholder="Your team motto or tagline"
+                value={brandingForm.tagline}
+                onChange={(e) => setBrandingForm({ ...brandingForm, tagline: e.target.value })}
+                data-testid="branding-tagline"
+              />
+            </div>
+            
+            {/* Colors */}
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label>Primary Color</Label>
+                <div className="flex gap-2">
+                  <input
+                    type="color"
+                    value={brandingForm.primary_color}
+                    onChange={(e) => setBrandingForm({ ...brandingForm, primary_color: e.target.value })}
+                    className="w-12 h-10 rounded border cursor-pointer"
+                    data-testid="branding-primary-color"
+                  />
+                  <Input
+                    value={brandingForm.primary_color}
+                    onChange={(e) => setBrandingForm({ ...brandingForm, primary_color: e.target.value })}
+                    className="font-mono"
+                    placeholder="#1e40af"
+                  />
+                </div>
+              </div>
+              <div className="space-y-2">
+                <Label>Accent Color</Label>
+                <div className="flex gap-2">
+                  <input
+                    type="color"
+                    value={brandingForm.accent_color}
+                    onChange={(e) => setBrandingForm({ ...brandingForm, accent_color: e.target.value })}
+                    className="w-12 h-10 rounded border cursor-pointer"
+                    data-testid="branding-accent-color"
+                  />
+                  <Input
+                    value={brandingForm.accent_color}
+                    onChange={(e) => setBrandingForm({ ...brandingForm, accent_color: e.target.value })}
+                    className="font-mono"
+                    placeholder="#3b82f6"
+                  />
+                </div>
+              </div>
+            </div>
+            
+            {/* Preview */}
+            <div className="space-y-2">
+              <Label>Preview</Label>
+              <div 
+                className="rounded-lg p-4 text-white"
+                style={{ 
+                  background: `linear-gradient(to right, ${brandingForm.primary_color}, ${brandingForm.accent_color})`
+                }}
+              >
+                <div className="flex items-center gap-3">
+                  {brandingForm.logo_url ? (
+                    <img src={brandingForm.logo_url} alt="Logo" className="h-10 w-auto object-contain bg-white rounded p-1" />
+                  ) : (
+                    <div className="h-10 w-10 bg-white/20 rounded flex items-center justify-center text-sm font-bold">
+                      {(brandingForm.display_name || selectedTeamForBranding?.name || 'TM').substring(0, 2).toUpperCase()}
+                    </div>
+                  )}
+                  <div>
+                    <div className="font-bold">{brandingForm.display_name || selectedTeamForBranding?.name}</div>
+                    {brandingForm.tagline && <div className="text-xs opacity-70">{brandingForm.tagline}</div>}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowBrandingModal(false)}>
+              Cancel
+            </Button>
+            <Button onClick={handleSaveBranding} className="bg-blue-600 hover:bg-blue-700" data-testid="save-branding-btn">
+              Save Branding
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
