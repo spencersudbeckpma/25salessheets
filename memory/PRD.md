@@ -28,66 +28,87 @@ Multi-tenant sales activity tracking application with role-based access control 
 - Role management
 - Case-insensitive email lookup
 
+### Per-Team Branding (January 2026)
+- Team logo, primary color, accent color, display name, tagline
+- Editable by super_admin in Admin Panel → Teams → Branding
+- Login page shows neutral platform branding (PMAUSA logo)
+- Post-login UI adapts to user's team branding
+
+### Team Feature Flags (January 2026)
+- Control which tabs/features are visible per team
+- Features: activity, stats, team_view, suitability, pma_bonuses, docusphere, leaderboard, analytics, reports, team_mgmt, recruiting, interviews
+- Editable by super_admin in Admin Panel → Teams → Features
+- Copy features from another team
+- Reset to defaults option
+
 ### Data Repair Tools (Admin Panel - Diagnostics Tab)
-- **Hierarchy Repair**: Fix broken manager_id relationships
-- **Auto-Repair All Teams**: One-click fix for all teams
-- **Force Rebuild Team Hierarchy**: Aggressive rebuild option
-- **Diagnose Interviews**: Find orphaned interviews
-- **Fix Orphaned Interviews**: Reassign to state managers
-- **Diagnose Unassigned Users**: Find users without team_id (NEW - Jan 2026)
-- **Fix Unassigned Users**: Bulk-assign team_id to users (NEW - Jan 2026)
+- Hierarchy Repair, Auto-Repair All Teams
+- Force Rebuild Team Hierarchy
+- Diagnose/Fix Orphaned Interviews
+- Diagnose/Fix Unassigned Users
 
 ### Interview Tracking
 - Interview submission with activity metrics
 - Report generation (XLSX export)
 - Statistics dashboard
 
-## Recent Fixes (January 2026)
-
-### Unassigned Users Bug
-- **Issue**: Agents getting "Access denied - not assigned to team" error
-- **Cause**: Users in database without team_id field
-- **Solution**: New diagnostic/fix tool in Admin Panel
-
-## In Progress
-- Per-Team Branding (paused to fix unassigned users bug)
-  - Team logo, primary/accent colors, display name
-  - Editable by super_admin
-
-## Backlog
-- **P1**: Refactor server.py (5500+ lines) into route modules
-
 ## API Endpoints
+
+### Admin - Team Features
+- `GET /api/admin/teams/{team_id}/features` - Get team features
+- `PUT /api/admin/teams/{team_id}/features` - Update team features
+- `POST /api/admin/teams/{team_id}/features/reset` - Reset to defaults
+- `POST /api/admin/teams/{team_id}/features/copy-from/{source_id}` - Copy features
+- `GET /api/teams/my-features` - Get current user's team features
+
+### Admin - Team Branding
+- `GET /api/admin/teams/{team_id}/branding` - Get team branding
+- `PUT /api/admin/teams/{team_id}/branding` - Update team branding
+- `POST /api/admin/setup-all-branding` - Apply branding to all teams
 
 ### Admin - User Management
 - `POST /api/admin/users` - Create user
-- `PUT /api/admin/users/{user_id}` - Update user  
+- `PUT /api/admin/users/{user_id}` - Update user
 - `DELETE /api/admin/users/{user_id}` - Delete user
 - `GET /api/admin/users` - List all users
-- `POST /api/admin/users/assign-team` - Assign user to team
-
-### Admin - Team Management
-- `GET /api/admin/teams` - List teams
-- `POST /api/admin/teams` - Create team
-- `PUT /api/admin/teams/{team_id}` - Update team
-- `DELETE /api/admin/teams/{team_id}` - Delete team
 
 ### Admin - Data Repair
-- `GET /api/admin/teams/{team_id}/broken-hierarchy` - Find broken hierarchies
-- `POST /api/admin/repair-manager-ids` - Batch repair manager_id
-- `POST /api/admin/auto-repair-all-teams` - Auto-repair all teams
-- `POST /api/admin/force-rebuild-team-hierarchy` - Force rebuild
-- `GET /api/admin/diagnose-interviews` - Find orphaned interviews
-- `POST /api/admin/fix-orphaned-interviews` - Fix orphaned interviews
-- `GET /api/admin/diagnose-unassigned-users` - Find users without team (NEW)
-- `POST /api/admin/fix-unassigned-users` - Bulk assign team_id (NEW)
-
-### Admin - Branding
-- `GET /api/admin/teams/{team_id}/branding` - Get team branding
-- `PUT /api/admin/teams/{team_id}/branding` - Update team branding
-- `GET /api/branding/my-team` - Get current user's team branding
+- `GET /api/admin/diagnose-unassigned-users` - Find users without team
+- `POST /api/admin/fix-unassigned-users` - Bulk assign team_id
+- `POST /api/admin/create-missing-team-record` - Create Team Sudbeck
 
 ## Database Schema
+
+### teams
+```json
+{
+  "id": "string",
+  "name": "string",
+  "created_at": "datetime",
+  "settings": { "is_default": boolean },
+  "branding": {
+    "logo_url": "string",
+    "display_name": "string",
+    "primary_color": "string",
+    "accent_color": "string",
+    "tagline": "string"
+  },
+  "features": {
+    "activity": boolean,
+    "stats": boolean,
+    "team_view": boolean,
+    "suitability": boolean,
+    "pma_bonuses": boolean,
+    "docusphere": boolean,
+    "leaderboard": boolean,
+    "analytics": boolean,
+    "reports": boolean,
+    "team_mgmt": boolean,
+    "recruiting": boolean,
+    "interviews": boolean
+  }
+}
+```
 
 ### users
 ```json
@@ -103,37 +124,10 @@ Multi-tenant sales activity tracking application with role-based access control 
 }
 ```
 
-### teams
-```json
-{
-  "id": "string",
-  "name": "string",
-  "created_at": "datetime",
-  "settings": { "is_default": boolean },
-  "branding": {
-    "logo_url": "string",
-    "display_name": "string",
-    "primary_color": "string",
-    "accent_color": "string"
-  }
-}
-```
-
-### interviews
-```json
-{
-  "id": "string",
-  "interviewer_id": "string",
-  "team_id": "string",
-  "candidate_name": "string",
-  "interview_date": "datetime",
-  "original_interviewer_id": "string",
-  "reassigned_at": "datetime",
-  "reassigned_by": "string"
-}
-```
-
 ## Test Credentials
 - **Super Admin**: admin@pmagent.net / Bizlink25 (preview)
 - **Production Admin**: spencer.sudbeck@pmagent.net / Bizlink25
-- **New Team Users**: first.last@pmagent.net / PMA2026
+
+## Backlog
+- **P1**: Refactor server.py (5500+ lines) into route modules
+- **P2**: Backend enforcement for disabled features (403 responses)
