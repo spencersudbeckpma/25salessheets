@@ -22,12 +22,6 @@ Multi-tenant sales activity tracking application with role-based access control 
 - User assignment to teams
 - Team management in Admin Panel
 
-### User Management (Admin Panel)
-- Create, edit, delete users
-- Assign/reassign users to teams
-- Role management
-- Case-insensitive email lookup
-
 ### Per-Team Branding (January 2026)
 - Team logo, primary color, accent color, display name, tagline
 - Editable by super_admin in Admin Panel → Teams → Branding
@@ -37,116 +31,54 @@ Multi-tenant sales activity tracking application with role-based access control 
 ### Team Feature Flags (January 2026) ✅ COMPLETED
 - Control which tabs/features are visible per team
 - Features: activity, stats, team_view, suitability, pma_bonuses, docusphere, leaderboard, analytics, reports, team_mgmt, recruiting, interviews
-- Editable by super_admin in Admin Panel → Teams → Features
-- Copy features from another team
-- Reset to defaults option
-- **Backend Enforcement**: API endpoints now return 403 for disabled features
+- **Backend Enforcement**: API endpoints return 403 for disabled features
 
-### Data Repair Tools (Admin Panel - Diagnostics Tab)
-- Hierarchy Repair, Auto-Repair All Teams
-- Force Rebuild Team Hierarchy
-- Diagnose/Fix Orphaned Interviews
-- Diagnose/Fix Unassigned Users
+### Leaderboard Fix (January 28, 2026) ✅ COMPLETED
+- Fixed issue where non-super_admin users only saw their subordinates' data
+- Now ALL team members see the same leaderboard (team-wide ranking)
+- Period selection (weekly/monthly/quarterly/yearly) works correctly for all roles
 
-### Interview Tracking
-- Interview submission with activity metrics
-- Report generation (XLSX export)
-- Statistics dashboard
+### Environment + Build Version Indicator (January 28, 2026) ✅ NEW
+- Shows on login page and dashboard footer
+- Displays: Environment (PREVIEW/PRODUCTION/LOCAL) + Build hash + Timestamp
+- Helps verify deployments
+
+### Data Migration (January 28, 2026) ✅ COMPLETED
+- Migrated orphaned data records to Team Sudbeck
+- 39 records migrated, 57 merged
+- All data now has valid user and team references
 
 ## API Endpoints
+
+### Leaderboard (Fixed)
+- `GET /api/leaderboard/{period}` - Returns top 5 for entire team (all roles see same data)
+- Periods: daily, weekly, monthly, quarterly, yearly
+- Debug info (`_debug` field) visible to super_admin only
 
 ### Admin - Team Features
 - `GET /api/admin/teams/{team_id}/features` - Get team features
 - `PUT /api/admin/teams/{team_id}/features` - Update team features
-- `POST /api/admin/teams/{team_id}/features/reset` - Reset to defaults
-- `POST /api/admin/teams/{team_id}/features/copy-from/{source_id}` - Copy features
-- `GET /api/teams/my-features` - Get current user's team features
 
 ### Admin - Team Branding
 - `GET /api/admin/teams/{team_id}/branding` - Get team branding
 - `PUT /api/admin/teams/{team_id}/branding` - Update team branding
-- `POST /api/admin/setup-all-branding` - Apply branding to all teams
 
-### Admin - User Management
-- `POST /api/admin/users` - Create user
-- `PUT /api/admin/users/{user_id}` - Update user
-- `DELETE /api/admin/users/{user_id}` - Delete user
-- `GET /api/admin/users` - List all users
+## Test Credentials (Preview Environment)
+- **Super Admin**: admin@pmagent.net / Bizlink25
+- **State Manager**: spencer.sudbeck@pmagent.net / Bizlink25
+- **Agent**: sam.agent@pmagent.net / Bizlink25
 
-### Admin - Data Repair
-- `GET /api/admin/diagnose-unassigned-users` - Find users without team
-- `POST /api/admin/fix-unassigned-users` - Bulk assign team_id
-- `POST /api/admin/create-missing-team-record` - Create Team Sudbeck
+## Current Build
+- **Git Hash**: 1c1b075
+- **Timestamp**: 2026-01-28 05:31:17 UTC
 
-## Feature-Protected API Endpoints
-The following endpoints now enforce feature flags (return 403 if feature is disabled for team):
-
-| Feature | Protected Endpoints |
-|---------|---------------------|
-| leaderboard | GET /api/leaderboard/{period} |
-| docusphere | GET/POST /api/docusphere/folders |
-| recruiting | GET/POST/PUT/DELETE /api/recruiting* |
-| interviews | GET/POST/PUT/DELETE /api/interviews* |
-| analytics | GET /api/analytics/* |
-| reports | GET /api/reports/* |
-
-## Database Schema
-
-### teams
-```json
-{
-  "id": "string",
-  "name": "string",
-  "created_at": "datetime",
-  "settings": { "is_default": boolean },
-  "branding": {
-    "logo_url": "string",
-    "display_name": "string",
-    "primary_color": "string",
-    "accent_color": "string",
-    "tagline": "string"
-  },
-  "features": {
-    "activity": boolean,
-    "stats": boolean,
-    "team_view": boolean,
-    "suitability": boolean,
-    "pma_bonuses": boolean,
-    "docusphere": boolean,
-    "leaderboard": boolean,
-    "analytics": boolean,
-    "reports": boolean,
-    "team_mgmt": boolean,
-    "recruiting": boolean,
-    "interviews": boolean
-  }
-}
-```
-
-### users
-```json
-{
-  "id": "string",
-  "email": "string",
-  "name": "string",
-  "password_hash": "string",
-  "role": "string",
-  "team_id": "string",
-  "manager_id": "string",
-  "status": "active|archived"
-}
-```
-
-## Test Credentials
-- **Super Admin**: admin@pmagent.net / Bizlink25 (preview)
-- **Production Admin**: spencer.sudbeck@pmagent.net / Bizlink25
-
-## Bugs Fixed (January 2026)
-- **Super Admin Branding Bug**: Fixed issue where super_admin saw wrong team branding by assigning correct team_id
-- **Feature Flag Backend Enforcement**: Added `check_feature_access` calls to all feature-protected endpoints
+## Bugs Fixed (January 28, 2026)
+- **Super Admin Branding Bug**: Fixed team_id assignment
+- **Leaderboard Hierarchy Bug**: All roles now see full team data
+- **Data Integrity Issues**: Migrated orphaned records
 
 ## Backlog
-- **P1**: Refactor server.py (6000+ lines) into route modules (`routes/auth.py`, `routes/admin.py`, etc.)
+- **P1**: Refactor server.py (6000+ lines) into route modules
 - **P2**: Add more granular feature flags for sub-features
 
 ## Last Updated
