@@ -324,18 +324,6 @@ const Dashboard = ({ user, setUser, branding: initialBranding, features: initial
           )}
         </Tabs>
       </div>
-      
-      {/* Environment + Build Version Footer */}
-      <div className="mt-4 pb-4 text-center text-xs text-gray-400" data-testid="build-info-footer">
-        <span className={`px-2 py-0.5 rounded ${
-          getEnvironment() === 'PRODUCTION' ? 'bg-green-100 text-green-700' : 
-          getEnvironment() === 'PREVIEW' ? 'bg-yellow-100 text-yellow-700' : 
-          'bg-blue-100 text-blue-700'
-        }`}>
-          {getEnvironment()}
-        </span>
-        <span className="ml-2">Build: {BUILD_INFO.gitHash} ({BUILD_INFO.timestamp})</span>
-      </div>
     </div>
   );
 };
