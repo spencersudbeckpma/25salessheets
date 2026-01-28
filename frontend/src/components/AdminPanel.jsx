@@ -1549,8 +1549,230 @@ const AdminPanel = ({ user }) => {
               </CardContent>
             </Card>
           )}
+
+          {/* Orphaned Activities Section */}
+          <Card className="bg-blue-50 border-blue-200">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-blue-800">
+                <Search className="w-5 h-5" />
+                Orphaned Activities Diagnostic
+              </CardTitle>
+              <CardDescription className="text-blue-700">
+                Find activities with NULL team_id. These activities won't appear in team rollups until fixed.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              <div className="bg-white rounded-lg p-4 border border-blue-200">
+                <h4 className="font-medium text-slate-800 mb-2">How this works:</h4>
+                <ul className="text-sm text-slate-600 space-y-1">
+                  <li>1. <strong>Diagnose</strong> - Identifies activities missing team_id</li>
+                  <li>2. <strong>Review</strong> - Shows which users' activities are affected</li>
+                  <li>3. <strong>Fix</strong> - Sets team_id based on each user's current team</li>
+                </ul>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                <Button
+                  onClick={runDiagnoseOrphanedActivities}
+                  disabled={orphanedActivitiesLoading}
+                  className="bg-blue-600 hover:bg-blue-700"
+                  data-testid="diagnose-orphaned-activities-btn"
+                >
+                  {orphanedActivitiesLoading ? <RefreshCw className="w-4 h-4 mr-2 animate-spin" /> : <Search className="w-4 h-4 mr-2" />}
+                  Diagnose Orphaned Activities
+                </Button>
+                {orphanedActivitiesData && (
+                  <Button
+                    onClick={copyOrphanedDataToClipboard}
+                    variant="outline"
+                    className="border-blue-300 text-blue-700 hover:bg-blue-50"
+                  >
+                    Copy to Clipboard
+                  </Button>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Orphaned Activities Results */}
+          {orphanedActivitiesData && (
+            <Card data-testid="orphaned-activities-results">
+              <CardHeader>
+                <CardTitle className="text-lg flex items-center gap-2">
+                  {orphanedActivitiesData.total_orphaned_activities > 0 ? (
+                    <AlertTriangle className="w-5 h-5 text-orange-600" />
+                  ) : (
+                    <CheckCircle2 className="w-5 h-5 text-green-600" />
+                  )}
+                  Orphaned Activities Results
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {/* Summary Cards */}
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                  <div className={`p-4 rounded-lg text-center ${orphanedActivitiesData.total_orphaned_activities > 0 ? 'bg-orange-50' : 'bg-green-50'}`}>
+                    <div className={`text-3xl font-bold ${orphanedActivitiesData.total_orphaned_activities > 0 ? 'text-orange-800' : 'text-green-800'}`}>
+                      {orphanedActivitiesData.total_orphaned_activities}
+                    </div>
+                    <div className={`text-sm ${orphanedActivitiesData.total_orphaned_activities > 0 ? 'text-orange-600' : 'text-green-600'}`}>
+                      Total Orphaned
+                    </div>
+                  </div>
+                  <div className="bg-green-50 p-4 rounded-lg text-center">
+                    <div className="text-3xl font-bold text-green-800">
+                      {orphanedActivitiesData.fixable_activities}
+                    </div>
+                    <div className="text-sm text-green-600">Fixable</div>
+                  </div>
+                  <div className={`p-4 rounded-lg text-center ${orphanedActivitiesData.needs_team_assignment_activities > 0 ? 'bg-red-50' : 'bg-slate-50'}`}>
+                    <div className={`text-3xl font-bold ${orphanedActivitiesData.needs_team_assignment_activities > 0 ? 'text-red-800' : 'text-slate-600'}`}>
+                      {orphanedActivitiesData.needs_team_assignment_activities}
+                    </div>
+                    <div className={`text-sm ${orphanedActivitiesData.needs_team_assignment_activities > 0 ? 'text-red-600' : 'text-slate-500'}`}>
+                      Need User Fix First
+                    </div>
+                  </div>
+                </div>
+
+                {/* Users Table */}
+                {orphanedActivitiesData.users_with_orphaned_activities.length > 0 && (
+                  <div>
+                    <h4 className="font-medium text-slate-800 mb-2">Affected Users:</h4>
+                    <div className="max-h-80 overflow-y-auto border rounded">
+                      <table className="w-full text-sm">
+                        <thead className="bg-slate-100 sticky top-0">
+                          <tr>
+                            <th className="px-3 py-2 text-left">User</th>
+                            <th className="px-3 py-2 text-left">Email</th>
+                            <th className="px-3 py-2 text-center">Activities</th>
+                            <th className="px-3 py-2 text-left">Status</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y">
+                          {orphanedActivitiesData.users_with_orphaned_activities.map((user, idx) => (
+                            <tr key={idx} className="hover:bg-slate-50">
+                              <td className="px-3 py-2 font-medium">{user.user_name}</td>
+                              <td className="px-3 py-2 text-slate-600">{user.user_email || '-'}</td>
+                              <td className="px-3 py-2 text-center font-bold">{user.activity_count}</td>
+                              <td className="px-3 py-2">
+                                {user.fix_status === 'FIXABLE - user has team_id' ? (
+                                  <span className="inline-flex items-center gap-1 text-green-700 bg-green-50 px-2 py-1 rounded text-xs">
+                                    <CheckCircle2 className="w-3 h-3" /> Fixable
+                                  </span>
+                                ) : user.fix_status === 'NEEDS USER TEAM ASSIGNMENT' ? (
+                                  <span className="inline-flex items-center gap-1 text-orange-700 bg-orange-50 px-2 py-1 rounded text-xs">
+                                    <AlertTriangle className="w-3 h-3" /> Needs Team
+                                  </span>
+                                ) : (
+                                  <span className="inline-flex items-center gap-1 text-red-700 bg-red-50 px-2 py-1 rounded text-xs">
+                                    <AlertTriangle className="w-3 h-3" /> Orphaned
+                                  </span>
+                                )}
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                )}
+
+                {/* Fix Button */}
+                {orphanedActivitiesData.total_orphaned_activities > 0 && (
+                  <div className="pt-4 border-t">
+                    {orphanedActivitiesData.needs_team_assignment_activities > 0 ? (
+                      <div className="bg-orange-50 p-4 rounded-lg">
+                        <p className="text-orange-800 text-sm mb-2">
+                          <strong>Action Required:</strong> {orphanedActivitiesData.needs_team_assignment_activities} activities belong to users without a team.
+                        </p>
+                        <p className="text-orange-700 text-sm">
+                          Use "Find Unassigned Users" above to assign these users to a team first, then re-run the diagnostic.
+                        </p>
+                      </div>
+                    ) : (
+                      <Button
+                        onClick={runFixOrphanedActivities}
+                        disabled={orphanedActivitiesLoading}
+                        className="bg-green-600 hover:bg-green-700"
+                        data-testid="fix-orphaned-activities-btn"
+                      >
+                        {orphanedActivitiesLoading ? <RefreshCw className="w-4 h-4 mr-2 animate-spin" /> : <Wrench className="w-4 h-4 mr-2" />}
+                        Fix {orphanedActivitiesData.fixable_activities} Orphaned Activities
+                      </Button>
+                    )}
+                  </div>
+                )}
+
+                {/* Success State */}
+                {orphanedActivitiesData.total_orphaned_activities === 0 && (
+                  <div className="bg-green-50 p-4 rounded-lg text-center">
+                    <CheckCircle2 className="w-8 h-8 text-green-600 mx-auto mb-2" />
+                    <div className="text-green-800 font-medium">All activities have team_id assigned!</div>
+                    <div className="text-green-600 text-sm">No orphaned activities found.</div>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Fix Results */}
+          {fixOrphanedResult && (
+            <Card className="border-green-200 bg-green-50" data-testid="fix-orphaned-results">
+              <CardHeader>
+                <CardTitle className="text-lg text-green-800 flex items-center gap-2">
+                  <CheckCircle2 className="w-5 h-5" />
+                  Migration Results
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                  <div className="bg-white p-4 rounded-lg text-center border border-green-200">
+                    <div className="text-2xl font-bold text-green-800">{fixOrphanedResult.total_updated}</div>
+                    <div className="text-sm text-green-600">Updated</div>
+                  </div>
+                  <div className="bg-white p-4 rounded-lg text-center border border-slate-200">
+                    <div className="text-2xl font-bold text-slate-800">{fixOrphanedResult.total_skipped_user_has_no_team || 0}</div>
+                    <div className="text-sm text-slate-600">Skipped (No Team)</div>
+                  </div>
+                  <div className="bg-white p-4 rounded-lg text-center border border-slate-200">
+                    <div className="text-2xl font-bold text-slate-800">{fixOrphanedResult.total_skipped_user_not_found || 0}</div>
+                    <div className="text-sm text-slate-600">Skipped (No User)</div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          )}
         </div>
       )}
+
+      {/* Fix Orphaned Activities Confirmation Modal */}
+      <Dialog open={showFixOrphanedModal} onOpenChange={setShowFixOrphanedModal}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Confirm Fix Orphaned Activities</DialogTitle>
+            <DialogDescription>
+              This will update {orphanedActivitiesData?.fixable_activities || 0} activity records, setting their team_id based on the user's current team assignment.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="py-4">
+            <div className="bg-blue-50 p-4 rounded-lg text-sm text-blue-800">
+              <strong>What this does:</strong>
+              <ul className="mt-2 space-y-1">
+                <li>• Sets activity.team_id = user.team_id for each affected activity</li>
+                <li>• Only updates activities where team_id is NULL</li>
+                <li>• Does NOT modify any other fields (dates, counts, premium, etc.)</li>
+              </ul>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowFixOrphanedModal(false)}>
+              Cancel
+            </Button>
+            <Button onClick={confirmFixOrphanedActivities} className="bg-green-600 hover:bg-green-700">
+              Confirm & Fix
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Create Team Modal */}
       <Dialog open={showNewTeamModal} onOpenChange={setShowNewTeamModal}>
