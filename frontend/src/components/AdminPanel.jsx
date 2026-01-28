@@ -723,6 +723,7 @@ const AdminPanel = ({ user }) => {
               </CardContent>
             </Card>
           ))}
+          </div>
         </div>
       )}
 
