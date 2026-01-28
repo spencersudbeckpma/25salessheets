@@ -395,6 +395,14 @@ const PMADocuSphere = ({ user }) => {
         <p className="text-sm text-slate-500 mt-1">
           Document library for your team • {documents.length} documents
         </p>
+        {/* Read-only notice for non-state_manager users */}
+        {user.role !== 'state_manager' && (
+          <div className="mt-2 p-2 bg-blue-50 border border-blue-200 rounded-lg">
+            <p className="text-xs text-blue-700">
+              <span className="font-medium">Read-only access:</span> Only your State Manager can upload or modify documents.
+            </p>
+          </div>
+        )}
       </CardHeader>
       <CardContent className="pt-2">
         <div className="flex flex-col lg:flex-row gap-4">
