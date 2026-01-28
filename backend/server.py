@@ -1795,6 +1795,9 @@ async def generate_newface_report(period: str, current_user: dict = Depends(get_
     Generate Excel report for new face customers by period.
     Shows customer name, county, policy amount, date, and agent.
     """
+    # Check feature access
+    await check_feature_access(current_user, "reports")
+    
     if current_user['role'] != 'state_manager':
         raise HTTPException(status_code=403, detail="Access denied")
     
