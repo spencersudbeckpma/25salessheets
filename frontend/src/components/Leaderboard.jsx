@@ -13,24 +13,27 @@ const Leaderboard = ({ user }) => {
   const [leaderboard, setLeaderboard] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    fetchLeaderboard();
-  }, [period]);
-
-  const fetchLeaderboard = async () => {
+  const fetchLeaderboard = async (selectedPeriod) => {
     setLoading(true);
     try {
       const token = localStorage.getItem('token');
-      const response = await axios.get(`${API}/leaderboard/${period}`, {
+      console.log(`[Leaderboard] Fetching ${selectedPeriod} data...`);
+      const response = await axios.get(`${API}/leaderboard/${selectedPeriod}`, {
         headers: { Authorization: `Bearer ${token}` }
       });
+      console.log(`[Leaderboard] Received ${selectedPeriod} data:`, response.data?.presentations?.[0]);
       setLeaderboard(response.data);
     } catch (error) {
+      console.error(`[Leaderboard] Error fetching ${selectedPeriod}:`, error);
       toast.error('Failed to fetch leaderboard');
     } finally {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    fetchLeaderboard(period);
+  }, [period]);
 
   const getRankBadge = (rank) => {
     if (rank === 0) return <span className="text-2xl">🥇</span>;
