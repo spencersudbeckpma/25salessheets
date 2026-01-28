@@ -5706,6 +5706,7 @@ async def delete_npa_agent(agent_id: str, current_user: dict = Depends(get_curre
 @api_router.get("/pma-bonuses")
 async def get_pma_bonuses(current_user: dict = Depends(get_current_user)):
     """Get all PMA bonus PDFs"""
+    await check_feature_access(current_user, "pma_bonuses")
     bonuses = await db.pma_bonuses.find({}, {"_id": 0, "file_data": 0}).sort("uploaded_at", -1).to_list(100)
     return bonuses
 
@@ -5715,6 +5716,7 @@ async def upload_pma_bonus(
     current_user: dict = Depends(get_current_user)
 ):
     """Upload a PMA bonus PDF (State Manager only)"""
+    await check_feature_access(current_user, "pma_bonuses")
     if current_user['role'] != 'state_manager':
         raise HTTPException(status_code=403, detail="Only State Managers can upload bonus PDFs")
     
