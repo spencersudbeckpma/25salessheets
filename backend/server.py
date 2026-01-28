@@ -294,6 +294,99 @@ async def create_missing_team_record(current_user: dict = Depends(get_current_us
         "created": True
     }
 
+@api_router.post("/admin/setup-all-branding")
+async def setup_all_branding(current_user: dict = Depends(get_current_user)):
+    """
+    One-time setup: Apply branding (logos, colors) to all teams.
+    (super_admin only)
+    """
+    require_super_admin(current_user)
+    
+    # Define branding for each team
+    branding_config = {
+        "sudbeck": {
+            "logo_url": "https://customer-assets.emergentagent.com/job_0086b560-8cff-4294-89b3-b94a427d032c/artifacts/rxkifhzg_IMG_2351.jpeg",
+            "primary_color": "#1e3a5f",
+            "accent_color": "#2563eb",
+            "display_name": "Team Sudbeck",
+            "tagline": "We Build Leaders"
+        },
+        "gaines": {
+            "logo_url": "https://customer-assets.emergentagent.com/job_0086b560-8cff-4294-89b3-b94a427d032c/artifacts/5zlvaqi5_image.png",
+            "primary_color": "#1e3a5f",
+            "accent_color": "#3b82f6",
+            "display_name": "Team Gaines",
+            "tagline": "Arizona • Texas"
+        },
+        "koch": {
+            "logo_url": "https://customer-assets.emergentagent.com/job_0086b560-8cff-4294-89b3-b94a427d032c/artifacts/grsbn8m3_image.png",
+            "primary_color": "#1e3a5f",
+            "accent_color": "#3b82f6",
+            "display_name": "Team Koch",
+            "tagline": "South Dakota"
+        },
+        "quick": {
+            "logo_url": "https://customer-assets.emergentagent.com/job_0086b560-8cff-4294-89b3-b94a427d032c/artifacts/9odjpoz2_image.png",
+            "primary_color": "#1e3a5f",
+            "accent_color": "#3b82f6",
+            "display_name": "Team Quick",
+            "tagline": "Joining Forces Changing Lives"
+        },
+        "graham": {
+            "logo_url": "https://customer-assets.emergentagent.com/job_0086b560-8cff-4294-89b3-b94a427d032c/artifacts/hq27bw63_image.png",
+            "primary_color": "#1e3a5f",
+            "accent_color": "#3b82f6",
+            "display_name": "Team Graham",
+            "tagline": "Kansas • Colorado • Nebraska"
+        }
+    }
+    
+    # Get all teams
+    teams = await db.teams.find({}, {"_id": 0}).to_list(100)
+    
+    results = []
+    for team in teams:
+        team_name = team.get('name', '').lower()
+        
+        # Find matching branding config
+        branding = None
+        matched_key = None
+        for key, config in branding_config.items():
+            if key in team_name:
+                branding = config
+                matched_key = key
+                break
+        
+        if branding:
+            await db.teams.update_one(
+                {"id": team.get('id')},
+                {"$set": {"branding": branding}}
+            )
+            results.append({
+                "team": team.get('name'),
+                "status": "updated",
+                "branding": branding['display_name']
+            })
+        else:
+            results.append({
+                "team": team.get('name'),
+                "status": "skipped",
+                "reason": "no matching branding config"
+            })
+    
+    updated_count = len([r for r in results if r['status'] == 'updated'])
+    
+    return {
+        "message": f"Branding applied to {updated_count} of {len(teams)} teams",
+        "results": results
+    }
+    
+    return {
+        "message": "Team Sudbeck created successfully",
+        "team": new_team,
+        "created": True
+    }
+
 @api_router.get("/admin/debug-teams")
 async def debug_teams(current_user: dict = Depends(get_current_user)):
     """Raw database dump of all teams for debugging (super_admin only)"""
