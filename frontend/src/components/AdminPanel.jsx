@@ -36,6 +36,24 @@ const AdminPanel = ({ user }) => {
     tagline: ''
   });
   
+  // Feature flags modal
+  const [showFeaturesModal, setShowFeaturesModal] = useState(false);
+  const [selectedTeamForFeatures, setSelectedTeamForFeatures] = useState(null);
+  const [featuresForm, setFeaturesForm] = useState({
+    activity: true,
+    stats: true,
+    team_view: true,
+    suitability: true,
+    pma_bonuses: true,
+    docusphere: true,
+    leaderboard: true,
+    analytics: true,
+    reports: true,
+    team_mgmt: true,
+    recruiting: false,
+    interviews: true
+  });
+  
   // Form states
   const [newTeamName, setNewTeamName] = useState('');
   const [selectedTeamForAssignment, setSelectedTeamForAssignment] = useState('');
