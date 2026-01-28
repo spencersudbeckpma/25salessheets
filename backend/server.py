@@ -472,6 +472,68 @@ async def migrate_docusphere_team_id(current_user: dict = Depends(get_current_us
         "documents_updated": docs_result.modified_count
     }
 
+@api_router.get("/admin/user-activities-diagnostic/{user_id}")
+async def user_activities_diagnostic(user_id: str, current_user: dict = Depends(get_current_user)):
+    """Check a specific user's activities (super_admin only)"""
+    require_super_admin(current_user)
+    
+    # Get user info
+    user = await db.users.find_one({"id": user_id}, {"_id": 0, "password_hash": 0})
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    # Get user's activities
+    activities = await db.activities.find(
+        {"user_id": user_id},
+        {"_id": 0, "date": 1, "team_id": 1, "presentations": 1, "premium": 1}
+    ).sort("date", -1).to_list(100)
+    
+    # Count by team_id
+    team_counts = {}
+    for a in activities:
+        tid = a.get("team_id") or "NULL"
+        team_counts[tid] = team_counts.get(tid, 0) + 1
+    
+    return {
+        "user": {
+            "id": user.get("id"),
+            "name": user.get("name"),
+            "email": user.get("email"),
+            "team_id": user.get("team_id"),
+            "role": user.get("role")
+        },
+        "total_activities": len(activities),
+        "activities_by_team_id": team_counts,
+        "recent_activities": activities[:10]
+    }
+
+@api_router.post("/admin/fix-user-activities-team-id/{user_id}")
+async def fix_user_activities_team_id(user_id: str, current_user: dict = Depends(get_current_user)):
+    """Fix team_id on a specific user's activities (super_admin only)"""
+    require_super_admin(current_user)
+    
+    # Get user info
+    user = await db.users.find_one({"id": user_id}, {"_id": 0})
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    user_team_id = user.get("team_id")
+    if not user_team_id:
+        raise HTTPException(status_code=400, detail="User has no team_id assigned")
+    
+    # Update activities that have NULL or missing team_id
+    result = await db.activities.update_many(
+        {"user_id": user_id, "$or": [{"team_id": None}, {"team_id": {"$exists": False}}]},
+        {"$set": {"team_id": user_team_id}}
+    )
+    
+    return {
+        "message": f"Updated activities for user {user.get('name')}",
+        "user_id": user_id,
+        "user_team_id": user_team_id,
+        "activities_updated": result.modified_count
+    }
+
 @api_router.get("/admin/teams")
 async def get_all_teams(current_user: dict = Depends(get_current_user)):
     """Get all teams (super_admin only)"""
