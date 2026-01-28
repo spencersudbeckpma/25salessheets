@@ -143,14 +143,16 @@ const Dashboard = ({ user, setUser, branding: initialBranding }) => {
               <TabsTrigger 
                 value="leaderboard" 
                 data-testid="leaderboard-tab" 
-                className="py-2.5 px-3 text-xs md:text-sm whitespace-nowrap flex-shrink-0 rounded-lg text-slate-600 data-[state=active]:bg-slate-800 data-[state=active]:text-amber-400 data-[state=active]:shadow-md"
+                className="py-2.5 px-3 text-xs md:text-sm whitespace-nowrap flex-shrink-0 rounded-lg text-slate-600 data-[state=active]:text-white data-[state=active]:shadow-md"
+                style={activeTab === 'leaderboard' ? { backgroundColor: branding?.primary_color || '#1e40af' } : {}}
               >
                 Leaderboard
               </TabsTrigger>
               <TabsTrigger 
                 value="analytics" 
                 data-testid="analytics-tab" 
-                className="py-2.5 px-3 text-xs md:text-sm whitespace-nowrap flex-shrink-0 rounded-lg text-slate-600 data-[state=active]:bg-slate-800 data-[state=active]:text-amber-400 data-[state=active]:shadow-md"
+                className="py-2.5 px-3 text-xs md:text-sm whitespace-nowrap flex-shrink-0 rounded-lg text-slate-600 data-[state=active]:text-white data-[state=active]:shadow-md"
+                style={activeTab === 'analytics' ? { backgroundColor: branding?.primary_color || '#1e40af' } : {}}
               >
                 📊 Analytics
               </TabsTrigger>
@@ -159,14 +161,16 @@ const Dashboard = ({ user, setUser, branding: initialBranding }) => {
                   <TabsTrigger 
                     value="reports" 
                     data-testid="reports-tab" 
-                    className="py-2.5 px-3 text-xs md:text-sm whitespace-nowrap flex-shrink-0 rounded-lg text-slate-600 data-[state=active]:bg-slate-800 data-[state=active]:text-amber-400 data-[state=active]:shadow-md"
+                    className="py-2.5 px-3 text-xs md:text-sm whitespace-nowrap flex-shrink-0 rounded-lg text-slate-600 data-[state=active]:text-white data-[state=active]:shadow-md"
+                    style={activeTab === 'reports' ? { backgroundColor: branding?.primary_color || '#1e40af' } : {}}
                   >
                     📊 Reports
                   </TabsTrigger>
                   <TabsTrigger 
                     value="manage" 
                     data-testid="manage-tab" 
-                    className="py-2.5 px-3 text-xs md:text-sm whitespace-nowrap flex-shrink-0 rounded-lg text-slate-600 data-[state=active]:bg-slate-800 data-[state=active]:text-amber-400 data-[state=active]:shadow-md"
+                    className="py-2.5 px-3 text-xs md:text-sm whitespace-nowrap flex-shrink-0 rounded-lg text-slate-600 data-[state=active]:text-white data-[state=active]:shadow-md"
+                    style={activeTab === 'manage' ? { backgroundColor: branding?.primary_color || '#1e40af' } : {}}
                   >
                     Team Mgmt
                   </TabsTrigger>
@@ -177,7 +181,8 @@ const Dashboard = ({ user, setUser, branding: initialBranding }) => {
                 <TabsTrigger 
                   value="recruiting" 
                   data-testid="recruiting-tab" 
-                  className="py-2.5 px-3 text-xs md:text-sm whitespace-nowrap flex-shrink-0 rounded-lg text-slate-600 data-[state=active]:bg-slate-800 data-[state=active]:text-amber-400 data-[state=active]:shadow-md"
+                  className="py-2.5 px-3 text-xs md:text-sm whitespace-nowrap flex-shrink-0 rounded-lg text-slate-600 data-[state=active]:text-white data-[state=active]:shadow-md"
+                  style={activeTab === 'recruiting' ? { backgroundColor: branding?.primary_color || '#1e40af' } : {}}
                 >
                   👥 Recruiting
                 </TabsTrigger>
