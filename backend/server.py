@@ -6999,6 +6999,7 @@ async def export_suitability_forms(
     format: str = "csv"
 ):
     """Export suitability forms to CSV"""
+    await check_feature_access(current_user, "suitability")
     query = {}
     
     if start_date and end_date:
