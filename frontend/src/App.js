@@ -13,6 +13,7 @@ const API = `${BACKEND_URL}/api`;
 function App() {
   const [user, setUser] = useState(null);
   const [branding, setBranding] = useState(null);
+  const [features, setFeatures] = useState(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -23,13 +24,15 @@ function App() {
       })
         .then(res => {
           setUser(res.data);
-          // Fetch branding after getting user
-          return axios.get(`${API}/auth/branding`, {
-            headers: { Authorization: `Bearer ${token}` }
-          });
+          // Fetch branding and features after getting user
+          return Promise.all([
+            axios.get(`${API}/auth/branding`, { headers: { Authorization: `Bearer ${token}` } }),
+            axios.get(`${API}/teams/my-features`, { headers: { Authorization: `Bearer ${token}` } })
+          ]);
         })
-        .then(res => {
-          setBranding(res.data);
+        .then(([brandingRes, featuresRes]) => {
+          setBranding(brandingRes.data);
+          setFeatures(featuresRes.data.features);
           setLoading(false);
         })
         .catch(() => {
@@ -40,6 +43,12 @@ function App() {
       setLoading(false);
     }
   }, []);
+
+  // Handler to update branding and features (called from Login)
+  const handleSetBranding = (data) => {
+    if (data.branding) setBranding(data.branding);
+    if (data.features) setFeatures(data.features);
+  };
 
   if (loading) {
     return (
@@ -55,11 +64,11 @@ function App() {
         <Routes>
           <Route
             path="/login"
-            element={user ? <Navigate to="/" /> : <Login setUser={setUser} setBranding={setBranding} />}
+            element={user ? <Navigate to="/" /> : <Login setUser={setUser} setBranding={handleSetBranding} />}
           />
           <Route
             path="/*"
-            element={user ? <Dashboard user={user} setUser={setUser} branding={branding} setBranding={setBranding} /> : <Navigate to="/login" />}
+            element={user ? <Dashboard user={user} setUser={setUser} branding={branding} setBranding={setBranding} features={features} /> : <Navigate to="/login" />}
           />
         </Routes>
       </BrowserRouter>
