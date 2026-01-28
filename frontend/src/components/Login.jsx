@@ -46,11 +46,12 @@ const Login = ({ setUser, setBranding }) => {
         const response = await axios.post(`${API}/auth/login`, { email, password });
         localStorage.setItem('token', response.data.token);
         setUser(response.data.user);
-        // Set branding from login response
-        if (setBranding && response.data.branding) {
+        // Set branding and features from login response
+        if (setBranding) {
           setBranding({
             branding: response.data.branding,
-            team_name: response.data.user.team_name
+            team_name: response.data.user.team_name,
+            features: response.data.features
           });
         }
         toast.success('Login successful!');
