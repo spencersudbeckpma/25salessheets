@@ -16,16 +16,48 @@ import { Button } from './ui/button';
 import { LogOut } from 'lucide-react';
 import { useBranding } from '../contexts/BrandingContext';
 
-const Dashboard = ({ user, setUser, branding: initialBranding }) => {
+const Dashboard = ({ user, setUser, branding: initialBranding, features: initialFeatures }) => {
   const [activeTab, setActiveTab] = useState('activity');
-  const { branding, updateBranding, getDisplayName, getTagline, logoUrl } = useBranding();
+  const { branding, features, updateBranding, getDisplayName, getTagline, logoUrl, hasFeature } = useBranding();
 
-  // Apply branding on mount
+  // Apply branding and features on mount
   useEffect(() => {
-    if (initialBranding?.branding) {
-      updateBranding(initialBranding.branding, initialBranding.team_name);
+    if (initialBranding?.branding || initialFeatures) {
+      updateBranding(
+        initialBranding?.branding || null, 
+        initialBranding?.team_name || null,
+        initialFeatures || null
+      );
     }
-  }, [initialBranding]);
+  }, [initialBranding, initialFeatures]);
+
+  // If current tab is disabled, switch to first available tab
+  useEffect(() => {
+    const tabFeatureMap = {
+      'activity': 'activity',
+      'stats': 'stats',
+      'team': 'team_view',
+      'suitability': 'suitability',
+      'pma-bonuses': 'pma_bonuses',
+      'docusphere': 'docusphere',
+      'leaderboard': 'leaderboard',
+      'analytics': 'analytics',
+      'reports': 'reports',
+      'manage': 'team_mgmt',
+      'recruiting': 'recruiting'
+    };
+    
+    const currentFeature = tabFeatureMap[activeTab];
+    if (currentFeature && !hasFeature(currentFeature)) {
+      // Find first enabled tab
+      for (const [tab, feature] of Object.entries(tabFeatureMap)) {
+        if (hasFeature(feature)) {
+          setActiveTab(tab);
+          break;
+        }
+      }
+    }
+  }, [features, activeTab, hasFeature]);
 
   // Update document title with branding
   useEffect(() => {
