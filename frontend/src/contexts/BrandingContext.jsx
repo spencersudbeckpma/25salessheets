@@ -10,9 +10,25 @@ const DEFAULT_BRANDING = {
   tagline: null
 };
 
+const DEFAULT_FEATURES = {
+  activity: true,
+  stats: true,
+  team_view: true,
+  suitability: true,
+  pma_bonuses: true,
+  docusphere: true,
+  leaderboard: true,
+  analytics: true,
+  reports: true,
+  team_mgmt: true,
+  recruiting: false,
+  interviews: true
+};
+
 export const BrandingProvider = ({ children }) => {
   const [branding, setBranding] = useState(DEFAULT_BRANDING);
   const [teamName, setTeamName] = useState(null);
+  const [features, setFeatures] = useState(DEFAULT_FEATURES);
 
   // Apply CSS variables when branding changes
   useEffect(() => {
@@ -42,16 +58,20 @@ export const BrandingProvider = ({ children }) => {
     return '#' + (0x1000000 + R * 0x10000 + G * 0x100 + B).toString(16).slice(1);
   };
 
-  const updateBranding = (newBranding, newTeamName = null) => {
+  const updateBranding = (newBranding, newTeamName = null, newFeatures = null) => {
     setBranding(newBranding || DEFAULT_BRANDING);
     if (newTeamName !== null) {
       setTeamName(newTeamName);
+    }
+    if (newFeatures !== null) {
+      setFeatures({ ...DEFAULT_FEATURES, ...newFeatures });
     }
   };
 
   const clearBranding = () => {
     setBranding(DEFAULT_BRANDING);
     setTeamName(null);
+    setFeatures(DEFAULT_FEATURES);
     // Reset CSS variables
     const root = document.documentElement;
     root.style.setProperty('--brand-primary', DEFAULT_BRANDING.primary_color);
@@ -70,14 +90,20 @@ export const BrandingProvider = ({ children }) => {
     return branding?.tagline || '';
   };
 
+  const hasFeature = (featureName) => {
+    return features[featureName] === true;
+  };
+
   return (
     <BrandingContext.Provider value={{
       branding,
       teamName,
+      features,
       updateBranding,
       clearBranding,
       getDisplayName,
       getTagline,
+      hasFeature,
       logoUrl: branding?.logo_url
     }}>
       {children}
