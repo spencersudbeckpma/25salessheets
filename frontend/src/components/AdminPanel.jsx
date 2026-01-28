@@ -374,6 +374,44 @@ const AdminPanel = ({ user }) => {
     }
   };
 
+  const openBrandingModal = async (team) => {
+    setSelectedTeamForBranding(team);
+    // Load existing branding
+    try {
+      const res = await axios.get(`${API}/api/admin/teams/${team.id}/branding`, { headers });
+      const b = res.data.branding || {};
+      setBrandingForm({
+        logo_url: b.logo_url || '',
+        primary_color: b.primary_color || '#1e40af',
+        accent_color: b.accent_color || '#3b82f6',
+        display_name: b.display_name || '',
+        tagline: b.tagline || ''
+      });
+    } catch (error) {
+      setBrandingForm({
+        logo_url: '',
+        primary_color: '#1e40af',
+        accent_color: '#3b82f6',
+        display_name: '',
+        tagline: ''
+      });
+    }
+    setShowBrandingModal(true);
+  };
+
+  const handleSaveBranding = async () => {
+    if (!selectedTeamForBranding) return;
+    
+    try {
+      await axios.put(`${API}/api/admin/teams/${selectedTeamForBranding.id}/branding`, brandingForm, { headers });
+      toast.success(`Branding updated for ${selectedTeamForBranding.name}`);
+      setShowBrandingModal(false);
+      fetchData();
+    } catch (error) {
+      toast.error(error.response?.data?.detail || 'Failed to update branding');
+    }
+  };
+
   const handleCreateUser = async () => {
     if (!newUserForm.name || !newUserForm.email || !newUserForm.password || !newUserForm.role || !newUserForm.team_id) {
       toast.error('Please fill in all required fields');
