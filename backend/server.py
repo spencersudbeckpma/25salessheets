@@ -56,6 +56,37 @@ class Team(BaseModel):
         "display_name": None,
         "tagline": None
     })
+    # Feature flags - controls which tabs/features are visible to team members
+    features: Optional[Dict[str, bool]] = Field(default_factory=lambda: {
+        "activity": True,
+        "stats": True,
+        "team_view": True,
+        "suitability": True,
+        "pma_bonuses": True,
+        "docusphere": True,
+        "leaderboard": True,
+        "analytics": True,
+        "reports": True,
+        "team_mgmt": True,
+        "recruiting": True,
+        "interviews": True
+    })
+
+# Default features for new teams
+DEFAULT_TEAM_FEATURES = {
+    "activity": True,
+    "stats": True,
+    "team_view": True,
+    "suitability": True,
+    "pma_bonuses": True,
+    "docusphere": True,
+    "leaderboard": True,
+    "analytics": True,
+    "reports": True,
+    "team_mgmt": True,
+    "recruiting": False,  # Disabled by default - super_admin enables per team
+    "interviews": True
+}
 
 class User(BaseModel):
     model_config = ConfigDict(extra="ignore")
