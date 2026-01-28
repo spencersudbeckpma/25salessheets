@@ -4114,6 +4114,9 @@ async def delete_all_user_activities(user_id: str, current_user: dict = Depends(
 # Leaderboard
 @api_router.get("/leaderboard/{period}")
 async def get_leaderboard(period: str, current_user: dict = Depends(get_current_user), user_date: str = None):
+    # Check feature access
+    await check_feature_access(current_user, "leaderboard")
+    
     from datetime import timedelta
     
     team_id = current_user.get('team_id')
@@ -4202,6 +4205,9 @@ async def get_leaderboard(period: str, current_user: dict = Depends(get_current_
 @api_router.get("/docusphere/folders")
 async def get_docusphere_folders(current_user: dict = Depends(get_current_user)):
     """Get all folders"""
+    # Check feature access
+    await check_feature_access(current_user, "docusphere")
+    
     folders = await db.docusphere_folders.find({}, {"_id": 0}).sort("name", 1).to_list(500)
     return folders
 
@@ -4211,6 +4217,9 @@ async def create_docusphere_folder(
     current_user: dict = Depends(get_current_user)
 ):
     """Create a new folder (State Manager only)"""
+    # Check feature access
+    await check_feature_access(current_user, "docusphere")
+    
     if current_user['role'] != 'state_manager':
         raise HTTPException(status_code=403, detail="Only State Managers can create folders")
     
@@ -4325,6 +4334,9 @@ async def delete_docusphere_document(doc_id: str, current_user: dict = Depends(g
 @api_router.get("/recruiting")
 async def get_recruits(current_user: dict = Depends(get_current_user)):
     """Get recruits - super_admin/State Manager sees all, Regional sees own + DMs', District sees own only"""
+    # Check feature access
+    await check_feature_access(current_user, "recruiting")
+    
     if current_user['role'] not in ['super_admin', 'state_manager', 'regional_manager', 'district_manager']:
         raise HTTPException(status_code=403, detail="Only managers can access recruiting")
     
@@ -4358,6 +4370,9 @@ async def get_recruits(current_user: dict = Depends(get_current_user)):
 @api_router.post("/recruiting")
 async def create_recruit(recruit_data: dict, current_user: dict = Depends(get_current_user)):
     """Create a new recruit (State Manager, Regional Manager, or District Manager)"""
+    # Check feature access
+    await check_feature_access(current_user, "recruiting")
+    
     if current_user['role'] not in ['super_admin', 'state_manager', 'regional_manager', 'district_manager']:
         raise HTTPException(status_code=403, detail="Only managers can manage recruiting")
     
@@ -4484,6 +4499,9 @@ async def delete_recruit(recruit_id: str, current_user: dict = Depends(get_curre
 async def get_interviews(current_user: dict = Depends(get_current_user)):
     """Get all interviews - State Manager sees all in team, Regional sees own + their subordinates', District sees own only. 
     Also includes interviews shared with the current user. Excludes archived."""
+    # Check feature access
+    await check_feature_access(current_user, "interviews")
+    
     if current_user['role'] not in ['super_admin', 'state_manager', 'regional_manager', 'district_manager']:
         raise HTTPException(status_code=403, detail="Only managers can access interviews")
     
