@@ -7075,6 +7075,7 @@ async def get_friday_report_export(
     week_offset: int = 0
 ):
     """Export Friday Report - Professional Excel format grouped by agent"""
+    await check_feature_access(current_user, "suitability")
     from openpyxl import Workbook
     from openpyxl.styles import Font, Fill, PatternFill, Border, Side, Alignment
     from openpyxl.utils import get_column_letter
