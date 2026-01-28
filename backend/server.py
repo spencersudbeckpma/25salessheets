@@ -4160,18 +4160,27 @@ async def get_leaderboard(period: str, current_user: dict = Depends(get_current_
     # End date is always today (inclusive)
     end_date = today
     
-    # Get ALL users in the organization (find the root state manager), scoped to team
-    # First, traverse up to find the top-level manager
-    current_manager = current_user
-    while current_manager.get('manager_id'):
-        parent = await db.users.find_one({"id": current_manager['manager_id']}, {"_id": 0})
-        if parent:
-            current_manager = parent
+    # Determine which users to include in the leaderboard
+    if current_user.get('role') == 'super_admin':
+        # Super admin sees all users in their team (or all users if no team filter)
+        if team_id:
+            all_users_query = {"team_id": team_id, "$or": [{"status": "active"}, {"status": {"$exists": False}}]}
         else:
-            break
-    
-    # Now get all users under the top manager (entire organization), scoped to team
-    all_user_ids = await get_all_subordinates(current_manager['id'], team_id)
+            all_users_query = {"$or": [{"status": "active"}, {"status": {"$exists": False}}]}
+        all_user_ids = [u["id"] for u in await db.users.find(all_users_query, {"_id": 0, "id": 1}).to_list(1000)]
+    else:
+        # Non-super_admin: Get ALL users in the organization (find the root state manager), scoped to team
+        # First, traverse up to find the top-level manager
+        current_manager = current_user
+        while current_manager.get('manager_id'):
+            parent = await db.users.find_one({"id": current_manager['manager_id']}, {"_id": 0})
+            if parent:
+                current_manager = parent
+            else:
+                break
+        
+        # Now get all users under the top manager (entire organization), scoped to team
+        all_user_ids = await get_all_subordinates(current_manager['id'], team_id)
     
     # Get all users info
     users = await db.users.find({"id": {"$in": all_user_ids}}, {"_id": 0, "password_hash": 0}).to_list(1000)
