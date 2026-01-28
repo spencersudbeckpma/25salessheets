@@ -33,6 +33,8 @@ const Dashboard = ({ user, setUser, branding: initialBranding, features: initial
 
   // If current tab is disabled, switch to first available tab
   useEffect(() => {
+  // Determine which tab to show based on features
+  const getValidTab = (requestedTab) => {
     const tabFeatureMap = {
       'activity': 'activity',
       'stats': 'stats',
@@ -44,25 +46,33 @@ const Dashboard = ({ user, setUser, branding: initialBranding, features: initial
       'analytics': 'analytics',
       'reports': 'reports',
       'manage': 'team_mgmt',
-      'recruiting': 'recruiting'
+      'recruiting': 'recruiting',
+      'admin': null // admin is always available for super_admin
     };
     
-    const currentFeature = tabFeatureMap[activeTab];
-    if (currentFeature && !hasFeature(currentFeature)) {
-      // Find first enabled tab
-      for (const [tab, feature] of Object.entries(tabFeatureMap)) {
-        if (hasFeature(feature)) {
-          setActiveTab(tab);
-          break;
-        }
+    const requestedFeature = tabFeatureMap[requestedTab];
+    if (requestedFeature === null || hasFeature(requestedFeature)) {
+      return requestedTab;
+    }
+    
+    // Find first enabled tab
+    for (const [tab, feature] of Object.entries(tabFeatureMap)) {
+      if (feature === null || hasFeature(feature)) {
+        return tab;
       }
     }
-  }, [features, activeTab, hasFeature]);
+    return 'activity';
+  };
+
+  const handleTabChange = (newTab) => {
+    const validTab = getValidTab(newTab);
+    setActiveTab(validTab);
+  };
 
   // Update document title with branding
   useEffect(() => {
     document.title = getDisplayName();
-  }, [branding]);
+  }, [branding, getDisplayName]);
 
   const handleLogout = () => {
     localStorage.removeItem('token');
