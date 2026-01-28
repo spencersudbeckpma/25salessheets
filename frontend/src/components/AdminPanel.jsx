@@ -382,6 +382,73 @@ const AdminPanel = ({ user }) => {
     }
   };
 
+  // Orphaned Activities functions
+  const runDiagnoseOrphanedActivities = async () => {
+    setOrphanedActivitiesLoading(true);
+    setOrphanedActivitiesData(null);
+    setFixOrphanedResult(null);
+    
+    try {
+      const res = await axios.get(`${API}/api/admin/diagnose-orphaned-activities`, { headers });
+      setOrphanedActivitiesData(res.data);
+      
+      if (res.data.total_orphaned_activities > 0) {
+        toast.warning(`Found ${res.data.total_orphaned_activities} activities with NULL team_id`);
+      } else {
+        toast.success('All activities have team_id assigned!');
+      }
+    } catch (error) {
+      toast.error(error.response?.data?.detail || 'Failed to diagnose orphaned activities');
+    } finally {
+      setOrphanedActivitiesLoading(false);
+    }
+  };
+
+  const copyOrphanedDataToClipboard = () => {
+    if (!orphanedActivitiesData) return;
+    
+    const text = JSON.stringify(orphanedActivitiesData, null, 2);
+    navigator.clipboard.writeText(text);
+    toast.success('Diagnostic data copied to clipboard');
+  };
+
+  const runFixOrphanedActivities = async () => {
+    if (!orphanedActivitiesData) {
+      toast.error('Please run diagnostic first');
+      return;
+    }
+    
+    if (orphanedActivitiesData.needs_team_assignment_activities > 0) {
+      toast.error('Some users need team assignment first. Fix those users before running migration.');
+      return;
+    }
+    
+    if (orphanedActivitiesData.fixable_activities === 0) {
+      toast.info('No fixable activities found');
+      return;
+    }
+    
+    setShowFixOrphanedModal(true);
+  };
+
+  const confirmFixOrphanedActivities = async () => {
+    setOrphanedActivitiesLoading(true);
+    setShowFixOrphanedModal(false);
+    
+    try {
+      const res = await axios.post(`${API}/api/admin/migrate-activities-team-id`, {}, { headers });
+      setFixOrphanedResult(res.data.migration_report);
+      toast.success(`Fixed ${res.data.migration_report.total_updated} activities`);
+      
+      // Re-run diagnostic to show updated state
+      await runDiagnoseOrphanedActivities();
+    } catch (error) {
+      toast.error(error.response?.data?.detail || 'Failed to fix orphaned activities');
+    } finally {
+      setOrphanedActivitiesLoading(false);
+    }
+  };
+
   const handleCreateTeam = async () => {
     if (!newTeamName.trim()) {
       toast.error('Please enter a team name');
