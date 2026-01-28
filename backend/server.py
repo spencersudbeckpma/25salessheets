@@ -4351,11 +4351,19 @@ async def get_leaderboard(period: str, current_user: dict = Depends(get_current_
 
 @api_router.get("/docusphere/folders")
 async def get_docusphere_folders(current_user: dict = Depends(get_current_user)):
-    """Get all folders"""
+    """Get folders for user's team only"""
     # Check feature access
     await check_feature_access(current_user, "docusphere")
     
-    folders = await db.docusphere_folders.find({}, {"_id": 0}).sort("name", 1).to_list(500)
+    team_id = current_user.get('team_id')
+    if not team_id:
+        raise HTTPException(status_code=403, detail="You must be assigned to a team to access DocuSphere")
+    
+    # Only return folders for the user's team
+    folders = await db.docusphere_folders.find(
+        {"team_id": team_id}, 
+        {"_id": 0}
+    ).sort("name", 1).to_list(500)
     return folders
 
 @api_router.post("/docusphere/folders")
@@ -4363,17 +4371,22 @@ async def create_docusphere_folder(
     folder_data: dict,
     current_user: dict = Depends(get_current_user)
 ):
-    """Create a new folder (State Manager only)"""
+    """Create a new folder (State Manager only, within their team)"""
     # Check feature access
     await check_feature_access(current_user, "docusphere")
     
     if current_user['role'] != 'state_manager':
         raise HTTPException(status_code=403, detail="Only State Managers can create folders")
     
+    team_id = current_user.get('team_id')
+    if not team_id:
+        raise HTTPException(status_code=403, detail="You must be assigned to a team")
+    
     folder = {
         "id": str(uuid.uuid4()),
         "name": folder_data.get('name'),
         "parent_id": folder_data.get('parent_id'),
+        "team_id": team_id,
         "created_by": current_user['id'],
         "created_at": datetime.now(timezone.utc).isoformat()
     }
@@ -4383,32 +4396,52 @@ async def create_docusphere_folder(
 
 @api_router.delete("/docusphere/folders/{folder_id}")
 async def delete_docusphere_folder(folder_id: str, current_user: dict = Depends(get_current_user)):
-    """Delete a folder and all its contents (State Manager only)"""
+    """Delete a folder and all its contents (State Manager only, within their team)"""
     if current_user['role'] != 'state_manager':
         raise HTTPException(status_code=403, detail="Only State Managers can delete folders")
     
-    # Get all subfolders recursively
+    team_id = current_user.get('team_id')
+    if not team_id:
+        raise HTTPException(status_code=403, detail="You must be assigned to a team")
+    
+    # Verify folder belongs to user's team
+    folder = await db.docusphere_folders.find_one({"id": folder_id, "team_id": team_id})
+    if not folder:
+        raise HTTPException(status_code=404, detail="Folder not found or access denied")
+    
+    # Get all subfolders recursively (within same team)
     async def get_subfolder_ids(parent_id):
         ids = [parent_id]
-        subfolders = await db.docusphere_folders.find({"parent_id": parent_id}, {"id": 1}).to_list(100)
+        subfolders = await db.docusphere_folders.find(
+            {"parent_id": parent_id, "team_id": team_id}, 
+            {"id": 1}
+        ).to_list(100)
         for sf in subfolders:
             ids.extend(await get_subfolder_ids(sf['id']))
         return ids
     
     folder_ids = await get_subfolder_ids(folder_id)
     
-    # Delete all documents in these folders
-    await db.docusphere_documents.delete_many({"folder_id": {"$in": folder_ids}})
+    # Delete all documents in these folders (within same team)
+    await db.docusphere_documents.delete_many({"folder_id": {"$in": folder_ids}, "team_id": team_id})
     
     # Delete all folders
-    await db.docusphere_folders.delete_many({"id": {"$in": folder_ids}})
+    await db.docusphere_folders.delete_many({"id": {"$in": folder_ids}, "team_id": team_id})
     
     return {"message": "Folder and contents deleted"}
 
 @api_router.get("/docusphere/documents")
 async def get_docusphere_documents(current_user: dict = Depends(get_current_user)):
-    """Get all documents (without file data)"""
-    documents = await db.docusphere_documents.find({}, {"_id": 0, "file_data": 0}).sort("filename", 1).to_list(1000)
+    """Get documents for user's team only (without file data)"""
+    team_id = current_user.get('team_id')
+    if not team_id:
+        raise HTTPException(status_code=403, detail="You must be assigned to a team to access DocuSphere")
+    
+    # Only return documents for the user's team
+    documents = await db.docusphere_documents.find(
+        {"team_id": team_id}, 
+        {"_id": 0, "file_data": 0}
+    ).sort("filename", 1).to_list(1000)
     return documents
 
 @api_router.post("/docusphere/documents")
@@ -4417,9 +4450,19 @@ async def upload_docusphere_document(
     folder_id: str = Form(None),
     current_user: dict = Depends(get_current_user)
 ):
-    """Upload a document (State Manager only)"""
+    """Upload a document (State Manager only, within their team)"""
     if current_user['role'] != 'state_manager':
         raise HTTPException(status_code=403, detail="Only State Managers can upload documents")
+    
+    team_id = current_user.get('team_id')
+    if not team_id:
+        raise HTTPException(status_code=403, detail="You must be assigned to a team")
+    
+    # If folder specified, verify it belongs to user's team
+    if folder_id:
+        folder = await db.docusphere_folders.find_one({"id": folder_id, "team_id": team_id})
+        if not folder:
+            raise HTTPException(status_code=404, detail="Folder not found or access denied")
     
     if not file.filename.lower().endswith('.pdf'):
         raise HTTPException(status_code=400, detail="Only PDF files are allowed")
@@ -4437,6 +4480,7 @@ async def upload_docusphere_document(
         "file_data": file_base64,
         "file_size": len(file_content),
         "folder_id": folder_id,
+        "team_id": team_id,
         "uploaded_by": current_user['id'],
         "uploaded_by_name": current_user['name'],
         "uploaded_at": datetime.now(timezone.utc).isoformat()
@@ -4448,10 +4492,18 @@ async def upload_docusphere_document(
 
 @api_router.get("/docusphere/documents/{doc_id}/download")
 async def download_docusphere_document(doc_id: str, current_user: dict = Depends(get_current_user)):
-    """Download a document"""
-    document = await db.docusphere_documents.find_one({"id": doc_id}, {"_id": 0})
+    """Download a document (user's team only)"""
+    team_id = current_user.get('team_id')
+    if not team_id:
+        raise HTTPException(status_code=403, detail="You must be assigned to a team")
+    
+    # Only allow download if document belongs to user's team
+    document = await db.docusphere_documents.find_one(
+        {"id": doc_id, "team_id": team_id}, 
+        {"_id": 0}
+    )
     if not document:
-        raise HTTPException(status_code=404, detail="Document not found")
+        raise HTTPException(status_code=404, detail="Document not found or access denied")
     
     file_content = base64.b64decode(document['file_data'])
     
@@ -4463,13 +4515,18 @@ async def download_docusphere_document(doc_id: str, current_user: dict = Depends
 
 @api_router.delete("/docusphere/documents/{doc_id}")
 async def delete_docusphere_document(doc_id: str, current_user: dict = Depends(get_current_user)):
-    """Delete a document (State Manager only)"""
+    """Delete a document (State Manager only, within their team)"""
     if current_user['role'] != 'state_manager':
         raise HTTPException(status_code=403, detail="Only State Managers can delete documents")
     
-    result = await db.docusphere_documents.delete_one({"id": doc_id})
+    team_id = current_user.get('team_id')
+    if not team_id:
+        raise HTTPException(status_code=403, detail="You must be assigned to a team")
+    
+    # Only delete if document belongs to user's team
+    result = await db.docusphere_documents.delete_one({"id": doc_id, "team_id": team_id})
     if result.deleted_count == 0:
-        raise HTTPException(status_code=404, detail="Document not found")
+        raise HTTPException(status_code=404, detail="Document not found or access denied")
     
     return {"message": "Document deleted"}
 
