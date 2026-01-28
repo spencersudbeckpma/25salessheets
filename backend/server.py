@@ -307,6 +307,66 @@ class UserTeamAssignment(BaseModel):
     role: Optional[str] = None
     manager_id: Optional[str] = None
 
+@api_router.get("/admin/activities-team-diagnostic")
+async def activities_team_diagnostic(current_user: dict = Depends(get_current_user)):
+    """Diagnose activities team_id distribution (super_admin only)"""
+    require_super_admin(current_user)
+    
+    # Get all teams
+    teams = await db.teams.find({}, {"_id": 0, "id": 1, "name": 1}).to_list(100)
+    team_names = {t["id"]: t["name"] for t in teams}
+    
+    # Count activities by team_id
+    pipeline = [
+        {"$group": {"_id": "$team_id", "count": {"$sum": 1}}},
+        {"$sort": {"count": -1}}
+    ]
+    team_counts = await db.activities.aggregate(pipeline).to_list(100)
+    
+    # Count activities for January 2026 by team
+    jan_pipeline = [
+        {"$match": {"date": {"$gte": "2026-01-01", "$lte": "2026-01-31"}}},
+        {"$group": {"_id": "$team_id", "count": {"$sum": 1}, "total_presentations": {"$sum": "$presentations"}}},
+        {"$sort": {"count": -1}}
+    ]
+    jan_counts = await db.activities.aggregate(jan_pipeline).to_list(100)
+    
+    # Check Steve Ahlers specifically
+    steve = await db.users.find_one({"name": {"$regex": "Steve Ahlers", "$options": "i"}}, {"_id": 0})
+    steve_activities = []
+    if steve:
+        steve_acts = await db.activities.find(
+            {"user_id": steve["id"], "date": {"$gte": "2026-01-01"}}, 
+            {"_id": 0, "date": 1, "team_id": 1, "presentations": 1}
+        ).sort("date", 1).to_list(100)
+        steve_activities = steve_acts
+    
+    return {
+        "total_activities": await db.activities.count_documents({}),
+        "activities_by_team": [
+            {
+                "team_id": tc["_id"],
+                "team_name": team_names.get(tc["_id"], "NO TEAM" if tc["_id"] is None else "UNKNOWN"),
+                "count": tc["count"]
+            }
+            for tc in team_counts
+        ],
+        "january_2026_by_team": [
+            {
+                "team_id": tc["_id"],
+                "team_name": team_names.get(tc["_id"], "NO TEAM" if tc["_id"] is None else "UNKNOWN"),
+                "count": tc["count"],
+                "presentations": tc["total_presentations"]
+            }
+            for tc in jan_counts
+        ],
+        "steve_ahlers": {
+            "user_id": steve["id"] if steve else None,
+            "team_id": steve.get("team_id") if steve else None,
+            "january_activities": steve_activities
+        }
+    }
+
 @api_router.get("/admin/teams")
 async def get_all_teams(current_user: dict = Depends(get_current_user)):
     """Get all teams (super_admin only)"""
