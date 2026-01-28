@@ -5817,6 +5817,9 @@ async def get_individual_member_averages(current_user: dict = Depends(get_curren
 @api_router.get("/analytics/manager-team-averages")
 async def get_manager_team_averages(current_user: dict = Depends(get_current_user), period: str = "last_4_weeks"):
     """Get average performance for each direct report manager's team"""
+    # Check feature access
+    await check_feature_access(current_user, "analytics")
+    
     if current_user['role'] not in ['super_admin', 'state_manager', 'regional_manager', 'district_manager']:
         raise HTTPException(status_code=403, detail="Only managers can access this")
     
