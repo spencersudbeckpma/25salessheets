@@ -99,6 +99,12 @@ const AdminPanel = ({ user }) => {
   const [selectedUnassignedUsers, setSelectedUnassignedUsers] = useState([]);
   const [assignToTeamId, setAssignToTeamId] = useState('');
   const [assignManagerId, setAssignManagerId] = useState('');
+  
+  // Orphaned activities states
+  const [orphanedActivitiesData, setOrphanedActivitiesData] = useState(null);
+  const [orphanedActivitiesLoading, setOrphanedActivitiesLoading] = useState(false);
+  const [showFixOrphanedModal, setShowFixOrphanedModal] = useState(false);
+  const [fixOrphanedResult, setFixOrphanedResult] = useState(null);
 
   const token = localStorage.getItem('token');
   const headers = { Authorization: `Bearer ${token}` };
