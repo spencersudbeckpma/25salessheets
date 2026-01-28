@@ -78,9 +78,11 @@ const Login = ({ setUser, setBranding }) => {
       <Card className="w-full max-w-md shadow-lg" data-testid="login-card">
         <CardHeader className="space-y-3">
           <div className="flex justify-center mb-2">
-            <div className="h-16 w-16 bg-gradient-to-br from-blue-600 to-indigo-700 rounded-xl flex items-center justify-center shadow-lg">
-              <span className="text-2xl font-bold text-white">PMA</span>
-            </div>
+            <img 
+              src="https://customer-assets.emergentagent.com/job_0086b560-8cff-4294-89b3-b94a427d032c/artifacts/yzm6empe_image.png" 
+              alt="PMAUSA - We Build Leaders" 
+              className="h-32 w-auto object-contain"
+            />
           </div>
           <CardTitle className="text-2xl font-bold text-center text-slate-800" data-testid="login-title">
             {isLogin ? 'Welcome Back' : 'Create Account'}
