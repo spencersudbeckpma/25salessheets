@@ -769,6 +769,42 @@ const AdminPanel = ({ user }) => {
       {/* Teams Tab */}
       {activeTab === 'teams' && (
         <div className="space-y-4">
+          {/* Admin Documents Section */}
+          <Card className="bg-slate-50 border-slate-200">
+            <CardContent className="py-4">
+              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+                <div>
+                  <h3 className="font-medium text-slate-800">Admin Documents</h3>
+                  <p className="text-sm text-slate-600">Download playbooks and guides for administration</p>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  <Button
+                    onClick={() => {
+                      window.open(`${API}/api/admin/guides/admin-playbook`, '_blank');
+                    }}
+                    variant="outline"
+                    className="border-slate-400"
+                    data-testid="download-admin-playbook-btn"
+                  >
+                    <FileText className="w-4 h-4 mr-2" />
+                    Admin Playbook
+                  </Button>
+                  <Button
+                    onClick={() => {
+                      window.open(`${API}/api/admin/guides/state-manager`, '_blank');
+                    }}
+                    variant="outline"
+                    className="border-slate-400"
+                    data-testid="download-sm-guide-btn"
+                  >
+                    <FileText className="w-4 h-4 mr-2" />
+                    State Manager Guide
+                  </Button>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+          
           {/* Quick Setup Button */}
           <Card className="bg-blue-50 border-blue-200">
             <CardContent className="py-4">
@@ -874,6 +910,53 @@ const AdminPanel = ({ user }) => {
                   >
                     View Users
                     <ChevronRight className="w-4 h-4 ml-1" />
+                  </Button>
+                </div>
+                
+                {/* Download Section */}
+                <div className="flex flex-wrap items-center gap-2 pt-2 border-t">
+                  <span className="text-xs text-slate-500 w-full mb-1">Downloads:</span>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => {
+                      window.open(`${API}/api/admin/teams/${team.id}/roster/pdf`, '_blank');
+                    }}
+                    className="border-green-300 text-green-700 hover:bg-green-50"
+                    data-testid={`download-roster-pdf-${team.id}`}
+                  >
+                    <Download className="w-3 h-3 mr-1" />
+                    Roster PDF
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => {
+                      window.open(`${API}/api/admin/teams/${team.id}/roster/csv`, '_blank');
+                    }}
+                    className="border-green-300 text-green-700 hover:bg-green-50"
+                    data-testid={`download-roster-csv-${team.id}`}
+                  >
+                    <Download className="w-3 h-3 mr-1" />
+                    Roster CSV
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="default"
+                    onClick={async () => {
+                      // Download State Manager Pack (roster + guide)
+                      toast.info('Downloading State Manager Pack...');
+                      window.open(`${API}/api/admin/teams/${team.id}/roster/pdf`, '_blank');
+                      setTimeout(() => {
+                        window.open(`${API}/api/admin/guides/state-manager`, '_blank');
+                      }, 500);
+                      toast.success('State Manager Pack downloaded! (2 files)');
+                    }}
+                    className="bg-blue-600 hover:bg-blue-700"
+                    data-testid={`download-sm-pack-${team.id}`}
+                  >
+                    <Package className="w-3 h-3 mr-1" />
+                    SM Pack
                   </Button>
                 </div>
               </CardContent>
