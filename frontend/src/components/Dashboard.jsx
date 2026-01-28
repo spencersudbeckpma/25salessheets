@@ -131,7 +131,7 @@ const Dashboard = ({ user, setUser, branding: initialBranding, features: initial
         </div>
 
         {/* Main Content */}
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4 md:space-y-6">
+        <Tabs value={activeTab} onValueChange={handleTabChange} className="space-y-4 md:space-y-6">
           <div className="overflow-x-auto -mx-2 px-2">
             <TabsList className="inline-flex w-full gap-1 md:gap-2 bg-white rounded-xl shadow-md border border-slate-200 p-1.5 md:p-2 h-auto min-w-max md:min-w-0 flex-wrap" data-testid="dashboard-tabs">
               {hasFeature('activity') && (
