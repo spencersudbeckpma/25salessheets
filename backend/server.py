@@ -4475,6 +4475,9 @@ async def update_recruit(recruit_id: str, recruit_data: dict, current_user: dict
 @api_router.delete("/recruiting/{recruit_id}")
 async def delete_recruit(recruit_id: str, current_user: dict = Depends(get_current_user)):
     """Delete a recruit (State Manager, Regional Manager or District Manager for their own recruits)"""
+    # Check feature access
+    await check_feature_access(current_user, "recruiting")
+    
     if current_user['role'] not in ['super_admin', 'state_manager', 'regional_manager', 'district_manager']:
         raise HTTPException(status_code=403, detail="Only managers can manage recruiting")
     
