@@ -5606,6 +5606,9 @@ async def get_active_users_for_reassignment(current_user: dict = Depends(get_cur
 @api_router.get("/analytics/personal-averages")
 async def get_personal_averages(current_user: dict = Depends(get_current_user)):
     """Get personal weekly averages for different time periods"""
+    # Check feature access
+    await check_feature_access(current_user, "analytics")
+    
     from datetime import timedelta
     
     central_tz = pytz_timezone('America/Chicago')
