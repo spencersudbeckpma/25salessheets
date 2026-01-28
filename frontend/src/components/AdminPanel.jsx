@@ -1965,6 +1965,81 @@ const AdminPanel = ({ user }) => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Features Modal */}
+      <Dialog open={showFeaturesModal} onOpenChange={setShowFeaturesModal}>
+        <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto" data-testid="features-modal">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Settings className="w-5 h-5 text-purple-600" />
+              Team Features - {selectedTeamForFeatures?.name}
+            </DialogTitle>
+            <DialogDescription>
+              Control which tabs and features are visible to members of this team.
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-4 py-4">
+            {/* Copy from team / Reset */}
+            <div className="flex flex-wrap gap-2 pb-3 border-b">
+              <Select onValueChange={handleCopyFeatures}>
+                <SelectTrigger className="w-[200px]">
+                  <SelectValue placeholder="Copy from team..." />
+                </SelectTrigger>
+                <SelectContent>
+                  {teams.filter(t => t.id !== selectedTeamForFeatures?.id).map(t => (
+                    <SelectItem key={t.id} value={t.id}>{t.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <Button variant="outline" onClick={handleResetFeatures}>
+                Reset to Defaults
+              </Button>
+            </div>
+
+            {/* Feature Toggles */}
+            <div className="space-y-3">
+              <h4 className="font-medium text-slate-700">Visible Tabs / Features:</h4>
+              
+              {[
+                { key: 'activity', label: 'Daily Activity', desc: 'Daily activity input form' },
+                { key: 'stats', label: 'My Stats', desc: 'Personal statistics view' },
+                { key: 'team_view', label: 'Team View', desc: 'Team overview and hierarchy' },
+                { key: 'suitability', label: 'Suitability', desc: 'Suitability form tab' },
+                { key: 'pma_bonuses', label: 'PMA Bonuses', desc: 'PMA bonuses documentation' },
+                { key: 'docusphere', label: 'DocuSphere', desc: 'Document management' },
+                { key: 'leaderboard', label: 'Leaderboard', desc: 'Team leaderboard' },
+                { key: 'analytics', label: 'Analytics', desc: 'Analytics dashboard' },
+                { key: 'reports', label: 'Reports', desc: 'Manager reports (role-restricted)' },
+                { key: 'team_mgmt', label: 'Team Mgmt', desc: 'Team management (role-restricted)' },
+                { key: 'recruiting', label: 'Recruiting', desc: 'Recruiting module (role-restricted)' },
+                { key: 'interviews', label: 'Interviews', desc: 'Interview tracking' }
+              ].map(feature => (
+                <div key={feature.key} className="flex items-center justify-between p-3 bg-slate-50 rounded-lg">
+                  <div>
+                    <div className="font-medium text-slate-800">{feature.label}</div>
+                    <div className="text-xs text-slate-500">{feature.desc}</div>
+                  </div>
+                  <Switch
+                    checked={featuresForm[feature.key] || false}
+                    onCheckedChange={(checked) => setFeaturesForm({ ...featuresForm, [feature.key]: checked })}
+                    data-testid={`feature-toggle-${feature.key}`}
+                  />
+                </div>
+              ))}
+            </div>
+          </div>
+          
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowFeaturesModal(false)}>
+              Cancel
+            </Button>
+            <Button onClick={handleSaveFeatures} className="bg-purple-600 hover:bg-purple-700" data-testid="save-features-btn">
+              Save Features
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
