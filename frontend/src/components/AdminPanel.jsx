@@ -625,48 +625,75 @@ const AdminPanel = ({ user }) => {
 
       {/* Teams Tab */}
       {activeTab === 'teams' && (
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3" data-testid="teams-grid">
-          {teams.map(team => (
-            <Card key={team.id} className="hover:shadow-md transition-shadow" data-testid={`team-card-${team.id}`}>
-              <CardHeader className="pb-2">
-                <div className="flex items-center justify-between">
-                  <CardTitle className="text-lg flex items-center gap-2">
-                    <Building2 className="w-5 h-5 text-blue-600" />
-                    {team.name}
-                  </CardTitle>
-                  {team.settings?.is_default && (
-                    <span className="text-xs bg-green-100 text-green-800 px-2 py-1 rounded-full">
-                      Default
-                    </span>
-                  )}
+        <div className="space-y-4">
+          {/* Quick Setup Button */}
+          <Card className="bg-blue-50 border-blue-200">
+            <CardContent className="py-4">
+              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+                <div>
+                  <h3 className="font-medium text-blue-800">Quick Branding Setup</h3>
+                  <p className="text-sm text-blue-600">Apply all team logos and colors in one click</p>
                 </div>
-                <CardDescription>
-                  {team.user_count} members
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                {/* Branding Preview */}
-                <div className="flex items-center gap-2">
-                  {team.branding?.logo_url ? (
-                    <img src={team.branding.logo_url} alt="Logo" className="h-8 w-8 object-contain rounded" />
-                  ) : (
-                    <div className="h-8 w-8 bg-slate-200 rounded flex items-center justify-center text-xs text-slate-500">
-                      No Logo
-                    </div>
-                  )}
-                  <div className="flex gap-1">
-                    <div 
-                      className="w-6 h-6 rounded border" 
-                      style={{ backgroundColor: team.branding?.primary_color || '#1e40af' }}
-                      title="Primary Color"
-                    />
-                    <div 
-                      className="w-6 h-6 rounded border" 
-                      style={{ backgroundColor: team.branding?.accent_color || '#3b82f6' }}
-                      title="Accent Color"
-                    />
+                <Button
+                  onClick={async () => {
+                    try {
+                      const res = await axios.post(`${API}/api/admin/setup-all-branding`, {}, { headers });
+                      toast.success(res.data.message);
+                      fetchData(); // Refresh to show updated branding
+                    } catch (error) {
+                      toast.error(error.response?.data?.detail || 'Failed to setup branding');
+                    }
+                  }}
+                  className="bg-blue-600 hover:bg-blue-700"
+                >
+                  Apply All Team Branding
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+          
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3" data-testid="teams-grid">
+            {teams.map(team => (
+              <Card key={team.id} className="hover:shadow-md transition-shadow" data-testid={`team-card-${team.id}`}>
+                <CardHeader className="pb-2">
+                  <div className="flex items-center justify-between">
+                    <CardTitle className="text-lg flex items-center gap-2">
+                      <Building2 className="w-5 h-5 text-blue-600" />
+                      {team.name}
+                    </CardTitle>
+                    {team.settings?.is_default && (
+                      <span className="text-xs bg-green-100 text-green-800 px-2 py-1 rounded-full">
+                        Default
+                      </span>
+                    )}
                   </div>
-                </div>
+                  <CardDescription>
+                    {team.user_count} members
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  {/* Branding Preview */}
+                  <div className="flex items-center gap-2">
+                    {team.branding?.logo_url ? (
+                      <img src={team.branding.logo_url} alt="Logo" className="h-8 w-8 object-contain rounded" />
+                    ) : (
+                      <div className="h-8 w-8 bg-slate-200 rounded flex items-center justify-center text-xs text-slate-500">
+                        No Logo
+                      </div>
+                    )}
+                    <div className="flex gap-1">
+                      <div 
+                        className="w-6 h-6 rounded border" 
+                        style={{ backgroundColor: team.branding?.primary_color || '#1e40af' }}
+                        title="Primary Color"
+                      />
+                      <div 
+                        className="w-6 h-6 rounded border" 
+                        style={{ backgroundColor: team.branding?.accent_color || '#3b82f6' }}
+                        title="Accent Color"
+                      />
+                    </div>
+                  </div>
                 
                 <div className="flex items-center justify-between pt-2 border-t">
                   <Button
