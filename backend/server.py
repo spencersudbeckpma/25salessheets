@@ -4048,10 +4048,12 @@ async def get_team_hierarchy(period: str, current_user: dict = Depends(get_curre
         if not user:
             return None
         
-        # Get user's own stats for the specified period (scoped to team)
+        # Get user's own stats for the specified period
+        # NOTE: We do NOT filter by team_id here because:
+        # 1. The user is already confirmed to be in the hierarchy (and thus the team)
+        # 2. Some legacy activities may not have team_id set
+        # 3. This matches /stats/my/{period} behavior for consistency
         act_query = {"user_id": user_id, "date": {"$gte": start_date.isoformat()}}
-        if team_id:
-            act_query["team_id"] = team_id
         activities = await db.activities.find(act_query, {"_id": 0}).to_list(1000)
         
         own_stats = {
