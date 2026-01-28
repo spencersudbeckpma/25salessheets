@@ -123,81 +123,96 @@ const Dashboard = ({ user, setUser, branding: initialBranding, features: initial
         {/* Main Content */}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4 md:space-y-6">
           <div className="overflow-x-auto -mx-2 px-2">
-            <TabsList className={`inline-flex w-full md:grid md:w-full ${['super_admin', 'state_manager', 'regional_manager', 'district_manager'].includes(user.role) ? 'md:grid-cols-10' : 'md:grid-cols-8'} gap-1 md:gap-2 bg-white rounded-xl shadow-md border border-slate-200 p-1.5 md:p-2 h-auto min-w-max md:min-w-0`} data-testid="dashboard-tabs">
-              <TabsTrigger 
-                value="activity" 
-                data-testid="activity-tab" 
-                className="py-2.5 px-3 text-xs md:text-sm whitespace-nowrap flex-shrink-0 rounded-lg text-slate-600 data-[state=active]:text-white data-[state=active]:shadow-md"
-                style={activeTab === 'activity' ? { backgroundColor: branding?.primary_color || '#1e40af' } : {}}
-              >
-                Daily Activity
-              </TabsTrigger>
-              <TabsTrigger 
-                value="stats" 
-                data-testid="stats-tab" 
-                className="py-2.5 px-3 text-xs md:text-sm whitespace-nowrap flex-shrink-0 rounded-lg text-slate-600 data-[state=active]:text-white data-[state=active]:shadow-md"
-                style={activeTab === 'stats' ? { backgroundColor: branding?.primary_color || '#1e40af' } : {}}
-              >
-                My Stats
-              </TabsTrigger>
-              <TabsTrigger 
-                value="team" 
-                data-testid="team-tab" 
-                className="py-2.5 px-3 text-xs md:text-sm whitespace-nowrap flex-shrink-0 rounded-lg text-slate-600 data-[state=active]:text-white data-[state=active]:shadow-md"
-                style={activeTab === 'team' ? { backgroundColor: branding?.primary_color || '#1e40af' } : {}}
-              >
-                Team View
-              </TabsTrigger>
-              <TabsTrigger 
-                value="suitability" 
-                data-testid="suitability-tab" 
-                className="py-2.5 px-3 text-xs md:text-sm whitespace-nowrap flex-shrink-0 rounded-lg text-slate-600 data-[state=active]:text-white data-[state=active]:shadow-md"
-                style={activeTab === 'suitability' ? { backgroundColor: branding?.primary_color || '#1e40af' } : {}}
-              >
-                📋 Suitability
-              </TabsTrigger>
-              <TabsTrigger 
-                value="pma-bonuses" 
-                data-testid="pma-bonuses-tab" 
-                className="py-2.5 px-3 text-xs md:text-sm whitespace-nowrap flex-shrink-0 rounded-lg text-slate-600 data-[state=active]:text-white data-[state=active]:shadow-md"
-                style={activeTab === 'pma-bonuses' ? { backgroundColor: branding?.primary_color || '#1e40af' } : {}}
-              >
-                📄 PMA Bonuses
-              </TabsTrigger>
-              <TabsTrigger 
-                value="docusphere" 
-                data-testid="docusphere-tab" 
-                className="py-2.5 px-3 text-xs md:text-sm whitespace-nowrap flex-shrink-0 rounded-lg text-slate-600 data-[state=active]:text-white data-[state=active]:shadow-md"
-                style={activeTab === 'docusphere' ? { backgroundColor: branding?.primary_color || '#1e40af' } : {}}
-              >
-                📁 DocuSphere
-              </TabsTrigger>
-              <TabsTrigger 
-                value="leaderboard" 
-                data-testid="leaderboard-tab" 
-                className="py-2.5 px-3 text-xs md:text-sm whitespace-nowrap flex-shrink-0 rounded-lg text-slate-600 data-[state=active]:text-white data-[state=active]:shadow-md"
-                style={activeTab === 'leaderboard' ? { backgroundColor: branding?.primary_color || '#1e40af' } : {}}
-              >
-                Leaderboard
-              </TabsTrigger>
-              <TabsTrigger 
-                value="analytics" 
-                data-testid="analytics-tab" 
-                className="py-2.5 px-3 text-xs md:text-sm whitespace-nowrap flex-shrink-0 rounded-lg text-slate-600 data-[state=active]:text-white data-[state=active]:shadow-md"
-                style={activeTab === 'analytics' ? { backgroundColor: branding?.primary_color || '#1e40af' } : {}}
-              >
-                📊 Analytics
-              </TabsTrigger>
-              {['super_admin', 'state_manager', 'regional_manager', 'district_manager'].includes(user.role) && (
-                <>
-                  <TabsTrigger 
-                    value="reports" 
-                    data-testid="reports-tab" 
-                    className="py-2.5 px-3 text-xs md:text-sm whitespace-nowrap flex-shrink-0 rounded-lg text-slate-600 data-[state=active]:text-white data-[state=active]:shadow-md"
-                    style={activeTab === 'reports' ? { backgroundColor: branding?.primary_color || '#1e40af' } : {}}
-                  >
-                    📊 Reports
-                  </TabsTrigger>
+            <TabsList className="inline-flex w-full gap-1 md:gap-2 bg-white rounded-xl shadow-md border border-slate-200 p-1.5 md:p-2 h-auto min-w-max md:min-w-0 flex-wrap" data-testid="dashboard-tabs">
+              {hasFeature('activity') && (
+                <TabsTrigger 
+                  value="activity" 
+                  data-testid="activity-tab" 
+                  className="py-2.5 px-3 text-xs md:text-sm whitespace-nowrap flex-shrink-0 rounded-lg text-slate-600 data-[state=active]:text-white data-[state=active]:shadow-md"
+                  style={activeTab === 'activity' ? { backgroundColor: branding?.primary_color || '#1e40af' } : {}}
+                >
+                  Daily Activity
+                </TabsTrigger>
+              )}
+              {hasFeature('stats') && (
+                <TabsTrigger 
+                  value="stats" 
+                  data-testid="stats-tab" 
+                  className="py-2.5 px-3 text-xs md:text-sm whitespace-nowrap flex-shrink-0 rounded-lg text-slate-600 data-[state=active]:text-white data-[state=active]:shadow-md"
+                  style={activeTab === 'stats' ? { backgroundColor: branding?.primary_color || '#1e40af' } : {}}
+                >
+                  My Stats
+                </TabsTrigger>
+              )}
+              {hasFeature('team_view') && (
+                <TabsTrigger 
+                  value="team" 
+                  data-testid="team-tab" 
+                  className="py-2.5 px-3 text-xs md:text-sm whitespace-nowrap flex-shrink-0 rounded-lg text-slate-600 data-[state=active]:text-white data-[state=active]:shadow-md"
+                  style={activeTab === 'team' ? { backgroundColor: branding?.primary_color || '#1e40af' } : {}}
+                >
+                  Team View
+                </TabsTrigger>
+              )}
+              {hasFeature('suitability') && (
+                <TabsTrigger 
+                  value="suitability" 
+                  data-testid="suitability-tab" 
+                  className="py-2.5 px-3 text-xs md:text-sm whitespace-nowrap flex-shrink-0 rounded-lg text-slate-600 data-[state=active]:text-white data-[state=active]:shadow-md"
+                  style={activeTab === 'suitability' ? { backgroundColor: branding?.primary_color || '#1e40af' } : {}}
+                >
+                  📋 Suitability
+                </TabsTrigger>
+              )}
+              {hasFeature('pma_bonuses') && (
+                <TabsTrigger 
+                  value="pma-bonuses" 
+                  data-testid="pma-bonuses-tab" 
+                  className="py-2.5 px-3 text-xs md:text-sm whitespace-nowrap flex-shrink-0 rounded-lg text-slate-600 data-[state=active]:text-white data-[state=active]:shadow-md"
+                  style={activeTab === 'pma-bonuses' ? { backgroundColor: branding?.primary_color || '#1e40af' } : {}}
+                >
+                  📄 PMA Bonuses
+                </TabsTrigger>
+              )}
+              {hasFeature('docusphere') && (
+                <TabsTrigger 
+                  value="docusphere" 
+                  data-testid="docusphere-tab" 
+                  className="py-2.5 px-3 text-xs md:text-sm whitespace-nowrap flex-shrink-0 rounded-lg text-slate-600 data-[state=active]:text-white data-[state=active]:shadow-md"
+                  style={activeTab === 'docusphere' ? { backgroundColor: branding?.primary_color || '#1e40af' } : {}}
+                >
+                  📁 DocuSphere
+                </TabsTrigger>
+              )}
+              {hasFeature('leaderboard') && (
+                <TabsTrigger 
+                  value="leaderboard" 
+                  data-testid="leaderboard-tab" 
+                  className="py-2.5 px-3 text-xs md:text-sm whitespace-nowrap flex-shrink-0 rounded-lg text-slate-600 data-[state=active]:text-white data-[state=active]:shadow-md"
+                  style={activeTab === 'leaderboard' ? { backgroundColor: branding?.primary_color || '#1e40af' } : {}}
+                >
+                  Leaderboard
+                </TabsTrigger>
+              )}
+              {hasFeature('analytics') && (
+                <TabsTrigger 
+                  value="analytics" 
+                  data-testid="analytics-tab" 
+                  className="py-2.5 px-3 text-xs md:text-sm whitespace-nowrap flex-shrink-0 rounded-lg text-slate-600 data-[state=active]:text-white data-[state=active]:shadow-md"
+                  style={activeTab === 'analytics' ? { backgroundColor: branding?.primary_color || '#1e40af' } : {}}
+                >
+                  📊 Analytics
+                </TabsTrigger>
+              )}
+              {hasFeature('reports') && ['super_admin', 'state_manager', 'regional_manager', 'district_manager'].includes(user.role) && (
+                <TabsTrigger 
+                  value="reports" 
+                  data-testid="reports-tab" 
+                  className="py-2.5 px-3 text-xs md:text-sm whitespace-nowrap flex-shrink-0 rounded-lg text-slate-600 data-[state=active]:text-white data-[state=active]:shadow-md"
+                  style={activeTab === 'reports' ? { backgroundColor: branding?.primary_color || '#1e40af' } : {}}
+                >
+                  📊 Reports
+                </TabsTrigger>
                   <TabsTrigger 
                     value="manage" 
                     data-testid="manage-tab" 
