@@ -15,15 +15,6 @@ import AdminPanel from './AdminPanel';
 import { Button } from './ui/button';
 import { LogOut } from 'lucide-react';
 import { useBranding } from '../contexts/BrandingContext';
-import { BUILD_INFO } from '../buildInfo';
-
-// Detect environment from URL
-const getEnvironment = () => {
-  const url = process.env.REACT_APP_BACKEND_URL || window.location.hostname;
-  if (url.includes('preview.emergentagent.com')) return 'PREVIEW';
-  if (url.includes('localhost')) return 'LOCAL';
-  return 'PRODUCTION';
-};
 
 const Dashboard = ({ user, setUser, branding: initialBranding, features: initialFeatures }) => {
   const [activeTab, setActiveTab] = useState('activity');
