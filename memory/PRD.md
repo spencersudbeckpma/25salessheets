@@ -34,12 +34,13 @@ Multi-tenant sales activity tracking application with role-based access control 
 - Login page shows neutral platform branding (PMAUSA logo)
 - Post-login UI adapts to user's team branding
 
-### Team Feature Flags (January 2026)
+### Team Feature Flags (January 2026) ✅ COMPLETED
 - Control which tabs/features are visible per team
 - Features: activity, stats, team_view, suitability, pma_bonuses, docusphere, leaderboard, analytics, reports, team_mgmt, recruiting, interviews
 - Editable by super_admin in Admin Panel → Teams → Features
 - Copy features from another team
 - Reset to defaults option
+- **Backend Enforcement**: API endpoints now return 403 for disabled features
 
 ### Data Repair Tools (Admin Panel - Diagnostics Tab)
 - Hierarchy Repair, Auto-Repair All Teams
@@ -76,6 +77,18 @@ Multi-tenant sales activity tracking application with role-based access control 
 - `GET /api/admin/diagnose-unassigned-users` - Find users without team
 - `POST /api/admin/fix-unassigned-users` - Bulk assign team_id
 - `POST /api/admin/create-missing-team-record` - Create Team Sudbeck
+
+## Feature-Protected API Endpoints
+The following endpoints now enforce feature flags (return 403 if feature is disabled for team):
+
+| Feature | Protected Endpoints |
+|---------|---------------------|
+| leaderboard | GET /api/leaderboard/{period} |
+| docusphere | GET/POST /api/docusphere/folders |
+| recruiting | GET/POST/PUT/DELETE /api/recruiting* |
+| interviews | GET/POST/PUT/DELETE /api/interviews* |
+| analytics | GET /api/analytics/* |
+| reports | GET /api/reports/* |
 
 ## Database Schema
 
@@ -128,6 +141,13 @@ Multi-tenant sales activity tracking application with role-based access control 
 - **Super Admin**: admin@pmagent.net / Bizlink25 (preview)
 - **Production Admin**: spencer.sudbeck@pmagent.net / Bizlink25
 
+## Bugs Fixed (January 2026)
+- **Super Admin Branding Bug**: Fixed issue where super_admin saw wrong team branding by assigning correct team_id
+- **Feature Flag Backend Enforcement**: Added `check_feature_access` calls to all feature-protected endpoints
+
 ## Backlog
-- **P1**: Refactor server.py (5500+ lines) into route modules
-- **P2**: Backend enforcement for disabled features (403 responses)
+- **P1**: Refactor server.py (6000+ lines) into route modules (`routes/auth.py`, `routes/admin.py`, etc.)
+- **P2**: Add more granular feature flags for sub-features
+
+## Last Updated
+January 28, 2026
