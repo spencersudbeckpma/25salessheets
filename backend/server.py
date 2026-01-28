@@ -5755,6 +5755,7 @@ async def upload_pma_bonus(
 @api_router.get("/pma-bonuses/{bonus_id}/download")
 async def download_pma_bonus(bonus_id: str, current_user: dict = Depends(get_current_user)):
     """Download a PMA bonus PDF"""
+    await check_feature_access(current_user, "pma_bonuses")
     bonus = await db.pma_bonuses.find_one({"id": bonus_id}, {"_id": 0})
     if not bonus:
         raise HTTPException(status_code=404, detail="Bonus PDF not found")
@@ -5773,6 +5774,7 @@ async def download_pma_bonus(bonus_id: str, current_user: dict = Depends(get_cur
 @api_router.delete("/pma-bonuses/{bonus_id}")
 async def delete_pma_bonus(bonus_id: str, current_user: dict = Depends(get_current_user)):
     """Delete a PMA bonus PDF (State Manager only)"""
+    await check_feature_access(current_user, "pma_bonuses")
     if current_user['role'] != 'state_manager':
         raise HTTPException(status_code=403, detail="Only State Managers can delete bonus PDFs")
     
