@@ -31,8 +31,6 @@ const Dashboard = ({ user, setUser, branding: initialBranding, features: initial
     }
   }, [initialBranding, initialFeatures]);
 
-  // If current tab is disabled, switch to first available tab
-  useEffect(() => {
   // Determine which tab to show based on features
   const getValidTab = (requestedTab) => {
     const tabFeatureMap = {
