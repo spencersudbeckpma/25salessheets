@@ -79,6 +79,15 @@ const Leaderboard = ({ user }) => {
           </div>
         </div>
 
+        {/* Debug Info Panel */}
+        {leaderboard?._debug && (
+          <div className="mb-4 p-3 bg-gray-100 rounded text-xs font-mono" data-testid="leaderboard-debug">
+            <div className="font-bold text-gray-700 mb-1">Debug Info:</div>
+            <div>Period: {leaderboard._debug.requested_period} | Start: {leaderboard._debug.computed_start_date} | End: {leaderboard._debug.computed_end_date}</div>
+            <div>Records: {leaderboard._debug.record_count_returned} | Users: {leaderboard._debug.users_in_query} | Team: {leaderboard._debug.team_id || 'ALL'}</div>
+          </div>
+        )}
+
         {loading ? (
           <div className="text-center py-12 text-gray-500">Loading leaderboard...</div>
         ) : leaderboard && (
