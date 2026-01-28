@@ -6903,6 +6903,7 @@ class SuitabilityFormCreate(BaseModel):
 @api_router.get("/suitability-forms/config")
 async def get_suitability_form_config(current_user: dict = Depends(get_current_user)):
     """Get form configuration for dropdowns"""
+    await check_feature_access(current_user, "suitability")
     return SUITABILITY_FORM_CONFIG
 
 @api_router.get("/suitability-forms")
@@ -6913,6 +6914,7 @@ async def get_suitability_forms(
     view_all: bool = False
 ):
     """Get suitability forms - users see their own, managers can see all"""
+    await check_feature_access(current_user, "suitability")
     team_id = current_user.get('team_id')
     query = {}
     
@@ -6940,6 +6942,7 @@ async def get_suitability_forms(
 @api_router.post("/suitability-forms")
 async def create_suitability_form(form_data: SuitabilityFormCreate, current_user: dict = Depends(get_current_user)):
     """Create a new suitability form"""
+    await check_feature_access(current_user, "suitability")
     form_dict = {
         "id": str(uuid.uuid4()),
         "team_id": current_user.get('team_id'),  # Multi-tenancy
