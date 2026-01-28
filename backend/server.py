@@ -2075,6 +2075,9 @@ async def get_manager_hierarchy_report(manager_id: str, period: str, current_use
     quarter: Optional - specific quarter for quarterly reports in YYYY-Q1 format
     year: Optional - specific year for yearly reports in YYYY format
     """
+    # Check feature access
+    await check_feature_access(current_user, "reports")
+    
     if current_user['role'] not in ['super_admin', 'state_manager', 'regional_manager', 'district_manager']:
         raise HTTPException(status_code=403, detail="Only Managers can access hierarchy reports")
     
