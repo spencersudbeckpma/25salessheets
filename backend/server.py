@@ -4138,19 +4138,27 @@ async def get_leaderboard(period: str, current_user: dict = Depends(get_current_
         central_tz = pytz_timezone('America/Chicago')
         today = datetime.now(central_tz).date()
     
+    # Calculate start_date based on period
     if period == "daily":
         start_date = today
     elif period == "weekly":
+        # Start of current week (Monday)
         start_date = today - timedelta(days=today.weekday())
     elif period == "monthly":
+        # Start of current month
         start_date = today.replace(day=1)
     elif period == "quarterly":
+        # Start of current quarter
         quarter = (today.month - 1) // 3
         start_date = today.replace(month=quarter * 3 + 1, day=1)
     elif period == "yearly":
+        # Start of current year
         start_date = today.replace(month=1, day=1)
     else:
         raise HTTPException(status_code=400, detail="Invalid period")
+    
+    # End date is always today (inclusive)
+    end_date = today
     
     # Get ALL users in the organization (find the root state manager), scoped to team
     # First, traverse up to find the top-level manager
@@ -4170,7 +4178,11 @@ async def get_leaderboard(period: str, current_user: dict = Depends(get_current_
     user_dict = {u['id']: u for u in users}
     
     # Get all activities for the period for the ENTIRE organization (scoped to team)
-    act_query = {"user_id": {"$in": all_user_ids}, "date": {"$gte": start_date.isoformat()}}
+    # Query uses >= start_date AND <= end_date
+    act_query = {
+        "user_id": {"$in": all_user_ids}, 
+        "date": {"$gte": start_date.isoformat(), "$lte": end_date.isoformat()}
+    }
     if team_id:
         act_query["team_id"] = team_id
     activities = await db.activities.find(act_query, {"_id": 0}).to_list(10000)
@@ -4189,11 +4201,11 @@ async def get_leaderboard(period: str, current_user: dict = Depends(get_current_
                 "new_face_sold": 0,
                 "premium": 0.0
             }
-        user_stats[uid]['presentations'] += activity['presentations']
-        user_stats[uid]['referrals'] += activity['referrals']
-        user_stats[uid]['testimonials'] += activity['testimonials']
-        user_stats[uid]['new_face_sold'] += activity['new_face_sold']
-        user_stats[uid]['premium'] += activity['premium']
+        user_stats[uid]['presentations'] += activity.get('presentations', 0)
+        user_stats[uid]['referrals'] += activity.get('referrals', 0)
+        user_stats[uid]['testimonials'] += activity.get('testimonials', 0)
+        user_stats[uid]['new_face_sold'] += activity.get('new_face_sold', 0)
+        user_stats[uid]['premium'] += activity.get('premium', 0)
     
     # Create leaderboards for each category - Top 5 from ENTIRE organization
     leaderboard = {
@@ -4203,6 +4215,18 @@ async def get_leaderboard(period: str, current_user: dict = Depends(get_current_
         "new_face_sold": sorted(user_stats.values(), key=lambda x: x['new_face_sold'], reverse=True)[:5],
         "premium": sorted(user_stats.values(), key=lambda x: x['premium'], reverse=True)[:5]
     }
+    
+    # Add debug info for super_admin only
+    if current_user.get('role') == 'super_admin':
+        leaderboard["_debug"] = {
+            "requested_period": period,
+            "computed_start_date": start_date.isoformat(),
+            "computed_end_date": end_date.isoformat(),
+            "today_central": today.isoformat(),
+            "record_count_returned": len(activities),
+            "users_in_query": len(all_user_ids),
+            "team_id": team_id
+        }
     
     return leaderboard
 
