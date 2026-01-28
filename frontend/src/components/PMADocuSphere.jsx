@@ -292,6 +292,20 @@ const PMADocuSphere = ({ user }) => {
     return documents.filter(d => d.folder_id === folderId);
   };
 
+  // Get total document count for a folder including all subfolders (recursive)
+  const getTotalDocumentCount = (folderId) => {
+    // Direct documents in this folder
+    let count = documents.filter(d => d.folder_id === folderId).length;
+    
+    // Add documents from all subfolders recursively
+    const childFolders = folders.filter(f => f.parent_id === folderId);
+    for (const child of childFolders) {
+      count += getTotalDocumentCount(child.id);
+    }
+    
+    return count;
+  };
+
   // Filter documents by search
   const filteredDocuments = searchTerm
     ? documents.filter(d => 
