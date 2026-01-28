@@ -4429,6 +4429,9 @@ async def create_recruit(recruit_data: dict, current_user: dict = Depends(get_cu
 @api_router.put("/recruiting/{recruit_id}")
 async def update_recruit(recruit_id: str, recruit_data: dict, current_user: dict = Depends(get_current_user)):
     """Update a recruit (State Manager, Regional Manager or District Manager for their own recruits)"""
+    # Check feature access
+    await check_feature_access(current_user, "recruiting")
+    
     if current_user['role'] not in ['super_admin', 'state_manager', 'regional_manager', 'district_manager']:
         raise HTTPException(status_code=403, detail="Only managers can manage recruiting")
     
@@ -4775,6 +4778,9 @@ async def get_interview_regional_breakdown(current_user: dict = Depends(get_curr
 @api_router.post("/interviews")
 async def create_interview(interview_data: dict, current_user: dict = Depends(get_current_user)):
     """Create a new interview (1st interview submission)"""
+    # Check feature access
+    await check_feature_access(current_user, "interviews")
+    
     if current_user['role'] not in ['super_admin', 'state_manager', 'regional_manager', 'district_manager']:
         raise HTTPException(status_code=403, detail="Only managers can conduct interviews")
     
