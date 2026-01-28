@@ -206,18 +206,6 @@ const Login = ({ setUser, setBranding }) => {
           </div>
         </CardContent>
       </Card>
-      
-      {/* Environment + Build Version Indicator */}
-      <div className="mt-4 text-center text-xs text-gray-400" data-testid="build-info">
-        <span className={`px-2 py-0.5 rounded ${
-          getEnvironment() === 'PRODUCTION' ? 'bg-green-100 text-green-700' : 
-          getEnvironment() === 'PREVIEW' ? 'bg-yellow-100 text-yellow-700' : 
-          'bg-blue-100 text-blue-700'
-        }`}>
-          {getEnvironment()}
-        </span>
-        <span className="ml-2">Build: {BUILD_INFO.gitHash} ({BUILD_INFO.timestamp})</span>
-      </div>
     </div>
   );
 };
