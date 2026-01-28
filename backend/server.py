@@ -1927,6 +1927,9 @@ async def generate_excel_report(period: str, current_user: dict = Depends(get_cu
     Generate Excel report for weekly, monthly, quarterly, or yearly data.
     Returns Excel file with one row per team member showing totals.
     """
+    # Check feature access
+    await check_feature_access(current_user, "reports")
+    
     from openpyxl import Workbook
     from openpyxl.styles import Font, PatternFill, Alignment
     from io import BytesIO
