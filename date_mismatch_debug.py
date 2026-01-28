@@ -19,7 +19,7 @@ import os
 from pytz import timezone as pytz_timezone
 
 # Configuration
-BACKEND_URL = "https://feature-flags-app.preview.emergentagent.com/api"
+BACKEND_URL = "https://data-integrity-36.preview.emergentagent.com/api"
 
 class Colors:
     GREEN = '\033[92m'
