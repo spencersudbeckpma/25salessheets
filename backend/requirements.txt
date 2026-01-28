@@ -12,9 +12,12 @@ cryptography==46.0.3
 dnspython==2.8.0
 ecdsa==0.19.1
 email-validator==2.3.0
+et_xmlfile==2.0.0
 fastapi==0.110.1
 flake8==7.3.0
 h11==0.16.0
+httpcore==1.0.9
+httpx==0.28.1
 idna==3.11
 iniconfig==2.3.0
 isort==7.0.0
@@ -28,10 +31,12 @@ mypy==1.18.2
 mypy_extensions==1.1.0
 numpy==2.3.4
 oauthlib==3.3.1
+openpyxl==3.1.5
 packaging==25.0
 pandas==2.3.3
 passlib==1.7.4
 pathspec==0.12.1
+pillow==12.1.0
 platformdirs==4.5.0
 pluggy==1.6.0
 pyasn1==0.6.1
@@ -50,6 +55,7 @@ python-jose==3.5.0
 python-multipart==0.0.20
 pytokens==0.2.0
 pytz==2025.2
+reportlab==4.4.9
 requests==2.32.5
 requests-oauthlib==2.0.0
 rich==14.2.0
@@ -67,4 +73,3 @@ tzdata==2025.2
 urllib3==2.5.0
 uvicorn==0.25.0
 watchfiles==1.1.1
-openpyxl==3.1.5
