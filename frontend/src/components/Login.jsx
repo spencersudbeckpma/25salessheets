@@ -5,9 +5,18 @@ import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from './ui/card';
 import { Label } from './ui/label';
+import { BUILD_INFO } from '../buildInfo';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
+
+// Detect environment from URL
+const getEnvironment = () => {
+  const url = BACKEND_URL || window.location.hostname;
+  if (url.includes('preview.emergentagent.com')) return 'PREVIEW';
+  if (url.includes('localhost')) return 'LOCAL';
+  return 'PRODUCTION';
+};
 
 const Login = ({ setUser, setBranding }) => {
   const [isLogin, setIsLogin] = useState(true);
