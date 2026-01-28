@@ -367,6 +367,76 @@ async def activities_team_diagnostic(current_user: dict = Depends(get_current_us
         }
     }
 
+@api_router.post("/admin/migrate-activities-team-id")
+async def migrate_activities_team_id(current_user: dict = Depends(get_current_user)):
+    """
+    Backfill missing team_id on activities based on user's team_id.
+    GUARDRAILS:
+    - Only updates activities where team_id is NULL or missing
+    - Sets activity.team_id = user.team_id
+    - Does NOT modify dates, premium, counts, or any other fields
+    - If user_id not found, leaves activity unchanged
+    (super_admin only)
+    """
+    require_super_admin(current_user)
+    
+    # Build user_id -> team_id mapping
+    users = await db.users.find({}, {"_id": 0, "id": 1, "team_id": 1}).to_list(10000)
+    user_team_map = {u["id"]: u.get("team_id") for u in users}
+    
+    # Find activities with missing team_id
+    activities_to_update = await db.activities.find(
+        {"$or": [{"team_id": None}, {"team_id": {"$exists": False}}]},
+        {"_id": 1, "user_id": 1}
+    ).to_list(100000)
+    
+    total_scanned = len(activities_to_update)
+    total_updated = 0
+    total_skipped_no_user = 0
+    total_skipped_user_no_team = 0
+    unresolved_user_ids = set()
+    
+    for activity in activities_to_update:
+        user_id = activity.get("user_id")
+        
+        if not user_id or user_id not in user_team_map:
+            # User not found - do not guess, leave unchanged
+            total_skipped_no_user += 1
+            if user_id:
+                unresolved_user_ids.add(user_id)
+            continue
+        
+        user_team_id = user_team_map[user_id]
+        
+        if not user_team_id:
+            # User exists but has no team_id - leave unchanged
+            total_skipped_user_no_team += 1
+            continue
+        
+        # Update ONLY the team_id field
+        await db.activities.update_one(
+            {"_id": activity["_id"]},
+            {"$set": {"team_id": user_team_id}}
+        )
+        total_updated += 1
+    
+    # Count activities that already had team_id (for completeness)
+    total_already_had_team = await db.activities.count_documents(
+        {"team_id": {"$ne": None, "$exists": True}}
+    ) - total_updated
+    
+    return {
+        "migration_report": {
+            "total_activities_in_db": await db.activities.count_documents({}),
+            "total_scanned_missing_team_id": total_scanned,
+            "total_updated": total_updated,
+            "total_skipped_already_had_team_id": total_already_had_team,
+            "total_skipped_user_not_found": total_skipped_no_user,
+            "total_skipped_user_has_no_team": total_skipped_user_no_team,
+            "unresolved_user_ids": list(unresolved_user_ids)[:20]  # Limit to first 20
+        }
+    }
+
 @api_router.get("/admin/teams")
 async def get_all_teams(current_user: dict = Depends(get_current_user)):
     """Get all teams (super_admin only)"""
