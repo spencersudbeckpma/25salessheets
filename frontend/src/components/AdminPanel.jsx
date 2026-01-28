@@ -627,12 +627,7 @@ const AdminPanel = ({ user }) => {
       {activeTab === 'teams' && (
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3" data-testid="teams-grid">
           {teams.map(team => (
-            <Card key={team.id} className="hover:shadow-md transition-shadow cursor-pointer" data-testid={`team-card-${team.id}`}
-              onClick={() => {
-                setSelectedTeamFilter(team.id);
-                setActiveTab('users');
-              }}
-            >
+            <Card key={team.id} className="hover:shadow-md transition-shadow" data-testid={`team-card-${team.id}`}>
               <CardHeader className="pb-2">
                 <div className="flex items-center justify-between">
                   <CardTitle className="text-lg flex items-center gap-2">
@@ -649,12 +644,54 @@ const AdminPanel = ({ user }) => {
                   {team.user_count} members
                 </CardDescription>
               </CardHeader>
-              <CardContent>
-                <div className="flex items-center justify-between">
-                  <span className="text-xs text-slate-500">
-                    Created: {new Date(team.created_at).toLocaleDateString()}
-                  </span>
-                  <ChevronRight className="w-4 h-4 text-slate-400" />
+              <CardContent className="space-y-3">
+                {/* Branding Preview */}
+                <div className="flex items-center gap-2">
+                  {team.branding?.logo_url ? (
+                    <img src={team.branding.logo_url} alt="Logo" className="h-8 w-8 object-contain rounded" />
+                  ) : (
+                    <div className="h-8 w-8 bg-slate-200 rounded flex items-center justify-center text-xs text-slate-500">
+                      No Logo
+                    </div>
+                  )}
+                  <div className="flex gap-1">
+                    <div 
+                      className="w-6 h-6 rounded border" 
+                      style={{ backgroundColor: team.branding?.primary_color || '#1e40af' }}
+                      title="Primary Color"
+                    />
+                    <div 
+                      className="w-6 h-6 rounded border" 
+                      style={{ backgroundColor: team.branding?.accent_color || '#3b82f6' }}
+                      title="Accent Color"
+                    />
+                  </div>
+                </div>
+                
+                <div className="flex items-center justify-between pt-2 border-t">
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      openBrandingModal(team);
+                    }}
+                    data-testid={`branding-btn-${team.id}`}
+                  >
+                    <Pencil className="w-3 h-3 mr-1" />
+                    Branding
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    onClick={() => {
+                      setSelectedTeamFilter(team.id);
+                      setActiveTab('users');
+                    }}
+                  >
+                    View Users
+                    <ChevronRight className="w-4 h-4 ml-1" />
+                  </Button>
                 </div>
               </CardContent>
             </Card>
