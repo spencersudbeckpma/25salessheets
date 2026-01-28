@@ -437,6 +437,41 @@ async def migrate_activities_team_id(current_user: dict = Depends(get_current_us
         }
     }
 
+@api_router.post("/admin/migrate-docusphere-team-id")
+async def migrate_docusphere_team_id(current_user: dict = Depends(get_current_user)):
+    """
+    Backfill team_id on DocuSphere folders and documents.
+    Assigns all existing content to Team Sudbeck.
+    (super_admin only)
+    """
+    require_super_admin(current_user)
+    
+    # Get Team Sudbeck ID
+    team_sudbeck = await db.teams.find_one({"name": "Team Sudbeck"})
+    if not team_sudbeck:
+        raise HTTPException(status_code=404, detail="Team Sudbeck not found")
+    
+    team_sudbeck_id = team_sudbeck["id"]
+    
+    # Migrate folders
+    folders_result = await db.docusphere_folders.update_many(
+        {"$or": [{"team_id": None}, {"team_id": {"$exists": False}}]},
+        {"$set": {"team_id": team_sudbeck_id}}
+    )
+    
+    # Migrate documents
+    docs_result = await db.docusphere_documents.update_many(
+        {"$or": [{"team_id": None}, {"team_id": {"$exists": False}}]},
+        {"$set": {"team_id": team_sudbeck_id}}
+    )
+    
+    return {
+        "message": "DocuSphere migration complete",
+        "team_sudbeck_id": team_sudbeck_id,
+        "folders_updated": folders_result.modified_count,
+        "documents_updated": docs_result.modified_count
+    }
+
 @api_router.get("/admin/teams")
 async def get_all_teams(current_user: dict = Depends(get_current_user)):
     """Get all teams (super_admin only)"""
