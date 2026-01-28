@@ -1024,6 +1024,449 @@ async def delete_team(team_id: str, current_user: dict = Depends(get_current_use
     await db.teams.delete_one({"id": team_id})
     return {"message": "Team deleted successfully"}
 
+# ============================================
+# Document Generation Endpoints (Admin Only)
+# ============================================
+
+@api_router.get("/admin/teams/{team_id}/roster/csv")
+async def download_team_roster_csv(team_id: str, current_user: dict = Depends(get_current_user)):
+    """Download team roster as CSV (super_admin only)"""
+    require_super_admin(current_user)
+    
+    team = await db.teams.find_one({"id": team_id}, {"_id": 0})
+    if not team:
+        raise HTTPException(status_code=404, detail="Team not found")
+    
+    # Get all users for this team
+    users = await db.users.find(
+        {"team_id": team_id, "$or": [{"status": "active"}, {"status": {"$exists": False}}]},
+        {"_id": 0, "password_hash": 0}
+    ).to_list(1000)
+    
+    # Build user lookup for manager names
+    all_users = await db.users.find({}, {"_id": 0, "id": 1, "name": 1}).to_list(10000)
+    user_dict = {u['id']: u['name'] for u in all_users}
+    
+    # Role order for sorting
+    role_order = {'state_manager': 0, 'regional_manager': 1, 'district_manager': 2, 'agent': 3}
+    users.sort(key=lambda u: (role_order.get(u.get('role', 'agent'), 4), u.get('name', '')))
+    
+    # Build CSV
+    import io
+    import csv
+    output = io.StringIO()
+    writer = csv.writer(output)
+    writer.writerow(['Name', 'Email', 'Role', 'Reports To'])
+    
+    for user in users:
+        manager_name = user_dict.get(user.get('manager_id'), '—') if user.get('manager_id') else '—'
+        role_display = user.get('role', '').replace('_', ' ').title()
+        writer.writerow([user.get('name', ''), user.get('email', ''), role_display, manager_name])
+    
+    csv_content = output.getvalue()
+    safe_name = team['name'].replace(' ', '_').replace('/', '_')
+    
+    return Response(
+        content=csv_content,
+        media_type="text/csv",
+        headers={"Content-Disposition": f"attachment; filename={safe_name}_roster.csv"}
+    )
+
+@api_router.get("/admin/teams/{team_id}/roster/pdf")
+async def download_team_roster_pdf(team_id: str, current_user: dict = Depends(get_current_user)):
+    """Download team roster as PDF (super_admin only)"""
+    require_super_admin(current_user)
+    from reportlab.lib import colors
+    from reportlab.lib.pagesizes import letter
+    from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer
+    from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+    import io
+    
+    team = await db.teams.find_one({"id": team_id}, {"_id": 0})
+    if not team:
+        raise HTTPException(status_code=404, detail="Team not found")
+    
+    # Get all users for this team
+    users = await db.users.find(
+        {"team_id": team_id, "$or": [{"status": "active"}, {"status": {"$exists": False}}]},
+        {"_id": 0, "password_hash": 0}
+    ).to_list(1000)
+    
+    # Build user lookup for manager names
+    all_users = await db.users.find({}, {"_id": 0, "id": 1, "name": 1}).to_list(10000)
+    user_dict = {u['id']: u['name'] for u in all_users}
+    
+    # Role order for sorting
+    role_order = {'state_manager': 0, 'regional_manager': 1, 'district_manager': 2, 'agent': 3}
+    users.sort(key=lambda u: (role_order.get(u.get('role', 'agent'), 4), u.get('name', '')))
+    
+    # Build PDF
+    buffer = io.BytesIO()
+    doc = SimpleDocTemplate(buffer, pagesize=letter, topMargin=50, bottomMargin=50)
+    elements = []
+    styles = getSampleStyleSheet()
+    
+    # Title
+    title_style = ParagraphStyle('Title', parent=styles['Heading1'], fontSize=18, spaceAfter=20)
+    elements.append(Paragraph(f"{team['name']} - Team Roster", title_style))
+    elements.append(Paragraph(f"Generated: {datetime.now().strftime('%B %d, %Y')}", styles['Normal']))
+    elements.append(Spacer(1, 20))
+    
+    # Table data
+    table_data = [['Name', 'Email', 'Role', 'Reports To']]
+    for user in users:
+        manager_name = user_dict.get(user.get('manager_id'), '—') if user.get('manager_id') else '—'
+        role_display = user.get('role', '').replace('_', ' ').title()
+        table_data.append([user.get('name', ''), user.get('email', ''), role_display, manager_name])
+    
+    # Create table
+    table = Table(table_data, colWidths=[140, 180, 100, 140])
+    table.setStyle(TableStyle([
+        ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#1e40af')),
+        ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
+        ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
+        ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+        ('FONTSIZE', (0, 0), (-1, 0), 11),
+        ('BOTTOMPADDING', (0, 0), (-1, 0), 12),
+        ('BACKGROUND', (0, 1), (-1, -1), colors.white),
+        ('TEXTCOLOR', (0, 1), (-1, -1), colors.black),
+        ('FONTNAME', (0, 1), (-1, -1), 'Helvetica'),
+        ('FONTSIZE', (0, 1), (-1, -1), 9),
+        ('GRID', (0, 0), (-1, -1), 0.5, colors.grey),
+        ('ROWBACKGROUNDS', (0, 1), (-1, -1), [colors.white, colors.HexColor('#f8fafc')]),
+        ('TOPPADDING', (0, 1), (-1, -1), 8),
+        ('BOTTOMPADDING', (0, 1), (-1, -1), 8),
+    ]))
+    elements.append(table)
+    
+    # Footer
+    elements.append(Spacer(1, 30))
+    elements.append(Paragraph(f"Total: {len(users)} team members", styles['Normal']))
+    
+    doc.build(elements)
+    pdf_content = buffer.getvalue()
+    safe_name = team['name'].replace(' ', '_').replace('/', '_')
+    
+    return Response(
+        content=pdf_content,
+        media_type="application/pdf",
+        headers={"Content-Disposition": f"attachment; filename={safe_name}_roster.pdf"}
+    )
+
+@api_router.get("/admin/guides/state-manager")
+async def download_state_manager_guide(current_user: dict = Depends(get_current_user)):
+    """Download State Manager Quick Start Guide as PDF (super_admin only)"""
+    require_super_admin(current_user)
+    from reportlab.lib import colors
+    from reportlab.lib.pagesizes import letter
+    from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle, ListFlowable, ListItem
+    from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+    import io
+    
+    buffer = io.BytesIO()
+    doc = SimpleDocTemplate(buffer, pagesize=letter, topMargin=40, bottomMargin=40, leftMargin=50, rightMargin=50)
+    elements = []
+    styles = getSampleStyleSheet()
+    
+    # Custom styles
+    title_style = ParagraphStyle('Title', parent=styles['Heading1'], fontSize=20, spaceAfter=10, textColor=colors.HexColor('#1e40af'))
+    h2_style = ParagraphStyle('H2', parent=styles['Heading2'], fontSize=14, spaceBefore=15, spaceAfter=8, textColor=colors.HexColor('#1e40af'))
+    body_style = ParagraphStyle('Body', parent=styles['Normal'], fontSize=10, spaceAfter=6, leading=14)
+    
+    # Title
+    elements.append(Paragraph("PMA Agent - State Manager Quick Start Guide", title_style))
+    elements.append(Paragraph("Welcome! This guide covers everything you need to know to get started.", body_style))
+    elements.append(Spacer(1, 15))
+    
+    # Logging In
+    elements.append(Paragraph("Logging In", h2_style))
+    elements.append(Paragraph("1. Go to your team's app URL", body_style))
+    elements.append(Paragraph("2. Enter your email (username) and password", body_style))
+    elements.append(Paragraph("3. Click Login - Your dashboard will load with your team's branding", body_style))
+    elements.append(Spacer(1, 10))
+    
+    # Tabs
+    elements.append(Paragraph("What You'll See", h2_style))
+    tab_data = [
+        ['Tab', 'What It Does'],
+        ['Activity', 'Log your daily activity (contacts, appointments, presentations)'],
+        ['Stats', 'View your personal statistics and trends'],
+        ['Team View', 'See your entire team hierarchy with rollup totals'],
+        ['Leaderboard', 'Team rankings for presentations, referrals, and more'],
+        ['Reports', 'Download team reports by period'],
+        ['Suitability', 'SNA/NPA forms - view and export'],
+        ['DocuSphere', 'Team document library (you can upload/manage)'],
+        ['Team Mgmt', 'Manage your team members and hierarchy'],
+    ]
+    tab_table = Table(tab_data, colWidths=[80, 400])
+    tab_table.setStyle(TableStyle([
+        ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#1e40af')),
+        ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
+        ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+        ('FONTSIZE', (0, 0), (-1, -1), 9),
+        ('GRID', (0, 0), (-1, -1), 0.5, colors.grey),
+        ('ROWBACKGROUNDS', (0, 1), (-1, -1), [colors.white, colors.HexColor('#f8fafc')]),
+        ('TOPPADDING', (0, 0), (-1, -1), 6),
+        ('BOTTOMPADDING', (0, 0), (-1, -1), 6),
+    ]))
+    elements.append(tab_table)
+    elements.append(Spacer(1, 15))
+    
+    # Understanding Rollups
+    elements.append(Paragraph("Understanding Rollups", h2_style))
+    elements.append(Paragraph("<b>What is a rollup?</b> A rollup is the sum of your activity PLUS all your subordinates' activity.", body_style))
+    elements.append(Paragraph("<b>Example:</b> You logged 5 presentations + Your 3 Regional Managers logged 10 + Their teams logged 85 = Your rollup is <b>100 presentations</b>", body_style))
+    elements.append(Paragraph("<b>Where to see rollups:</b> Team View (click your name) or Reports (download hierarchy report)", body_style))
+    elements.append(Spacer(1, 10))
+    
+    # What you CAN do
+    elements.append(Paragraph("What You CAN Do", h2_style))
+    can_do = ["Log your own daily activity", "View all team members' activity and stats", "Download reports for any time period",
+              "Upload documents to DocuSphere", "Create/delete folders in DocuSphere", "View and reassign team members",
+              "See all suitability forms from your team", "Export suitability data to CSV/Excel"]
+    for item in can_do:
+        elements.append(Paragraph(f"✓ {item}", body_style))
+    elements.append(Spacer(1, 10))
+    
+    # What you CANNOT do
+    elements.append(Paragraph("What You CANNOT Do", h2_style))
+    cannot_do = ["Create new users (Admin only)", "Delete users (Admin only)", "Change feature flags (Admin only)", "See other teams' data"]
+    for item in cannot_do:
+        elements.append(Paragraph(f"✗ {item}", body_style))
+    elements.append(Spacer(1, 10))
+    
+    # DocuSphere
+    elements.append(Paragraph("DocuSphere (Document Library)", h2_style))
+    elements.append(Paragraph("You are the <b>only role</b> that can manage DocuSphere for your team. Your team members can VIEW documents but cannot upload or delete.", body_style))
+    elements.append(Paragraph("<b>To upload:</b> Go to DocuSphere → Navigate to folder → Click Upload Document", body_style))
+    elements.append(Paragraph("<b>To create folder:</b> Click New Folder → Enter name → Click Create", body_style))
+    elements.append(Spacer(1, 10))
+    
+    # Tips
+    elements.append(Paragraph("Tips", h2_style))
+    elements.append(Paragraph("• Check rollups weekly - Make sure numbers match expectations", body_style))
+    elements.append(Paragraph("• Upload key docs to DocuSphere - Your team can access them anytime", body_style))
+    elements.append(Paragraph("• Use the Leaderboard - Motivate top performers", body_style))
+    elements.append(Paragraph("• Archive departed users promptly - Keeps your team list clean", body_style))
+    elements.append(Spacer(1, 15))
+    
+    # Footer
+    elements.append(Paragraph("Need Help? Contact your Super Admin for password resets, adding new team members, or technical problems.", body_style))
+    elements.append(Spacer(1, 10))
+    elements.append(Paragraph(f"<i>Generated: {datetime.now().strftime('%B %d, %Y')}</i>", body_style))
+    
+    doc.build(elements)
+    pdf_content = buffer.getvalue()
+    
+    return Response(
+        content=pdf_content,
+        media_type="application/pdf",
+        headers={"Content-Disposition": "attachment; filename=State_Manager_Quick_Start_Guide.pdf"}
+    )
+
+@api_router.get("/admin/guides/admin-playbook")
+async def download_admin_playbook(current_user: dict = Depends(get_current_user)):
+    """Download Admin Playbook as PDF (super_admin only)"""
+    require_super_admin(current_user)
+    from reportlab.lib import colors
+    from reportlab.lib.pagesizes import letter
+    from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle, PageBreak
+    from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+    import io
+    
+    buffer = io.BytesIO()
+    doc = SimpleDocTemplate(buffer, pagesize=letter, topMargin=40, bottomMargin=40, leftMargin=50, rightMargin=50)
+    elements = []
+    styles = getSampleStyleSheet()
+    
+    # Custom styles
+    title_style = ParagraphStyle('Title', parent=styles['Heading1'], fontSize=22, spaceAfter=10, textColor=colors.HexColor('#1e40af'))
+    h1_style = ParagraphStyle('H1', parent=styles['Heading1'], fontSize=16, spaceBefore=20, spaceAfter=10, textColor=colors.HexColor('#1e40af'))
+    h2_style = ParagraphStyle('H2', parent=styles['Heading2'], fontSize=12, spaceBefore=12, spaceAfter=6, textColor=colors.HexColor('#334155'))
+    body_style = ParagraphStyle('Body', parent=styles['Normal'], fontSize=10, spaceAfter=6, leading=14)
+    step_style = ParagraphStyle('Step', parent=styles['Normal'], fontSize=10, spaceAfter=4, leftIndent=15, leading=13)
+    
+    # Title Page
+    elements.append(Paragraph("PMA Agent", title_style))
+    elements.append(Paragraph("Super Admin Playbook", ParagraphStyle('Subtitle', parent=styles['Heading2'], fontSize=16, textColor=colors.HexColor('#64748b'))))
+    elements.append(Spacer(1, 20))
+    elements.append(Paragraph("A step-by-step guide for managing teams, users, and system administration.", body_style))
+    elements.append(Spacer(1, 30))
+    
+    # Table of Contents
+    elements.append(Paragraph("Table of Contents", h2_style))
+    toc = ["1. Logging In as Super Admin", "2. Creating a New Team", "3. Configuring Feature Flags",
+           "4. Creating Users", "5. Setting Up Hierarchy", "6. Team Branding", "7. DocuSphere Rules",
+           "8. Diagnostics & Recovery", "9. Common Issues & Solutions"]
+    for item in toc:
+        elements.append(Paragraph(item, body_style))
+    elements.append(PageBreak())
+    
+    # Section 1: Logging In
+    elements.append(Paragraph("1. Logging In as Super Admin", h1_style))
+    elements.append(Paragraph("1. Go to your app URL", step_style))
+    elements.append(Paragraph("2. Enter your super admin email and password", step_style))
+    elements.append(Paragraph("3. Click Login - You will see the full navigation with an Admin tab", step_style))
+    elements.append(Paragraph("<b>Note:</b> Super admins can see all teams and bypass feature restrictions.", body_style))
+    
+    # Section 2: Creating Team
+    elements.append(Paragraph("2. Creating a New Team", h1_style))
+    elements.append(Paragraph("1. Click <b>Admin</b> in the navigation", step_style))
+    elements.append(Paragraph("2. You're on the <b>Teams</b> tab by default", step_style))
+    elements.append(Paragraph("3. Click <b>+ New Team</b>", step_style))
+    elements.append(Paragraph("4. Enter the team name (e.g., 'Team Nebraska')", step_style))
+    elements.append(Paragraph("5. Click <b>Create Team</b>", step_style))
+    elements.append(Paragraph("<b>What happens:</b> A new team is created with default feature flags (all ON except Recruiting).", body_style))
+    
+    # Section 3: Feature Flags
+    elements.append(Paragraph("3. Configuring Feature Flags", h1_style))
+    elements.append(Paragraph("Feature flags control which tabs/features each team can access.", body_style))
+    
+    feature_data = [
+        ['Feature', 'Description', 'Default'],
+        ['Activity', 'Daily activity logging', 'ON'],
+        ['Stats', 'Personal statistics view', 'ON'],
+        ['Team View', 'Hierarchy tree with rollups', 'ON'],
+        ['Suitability', 'SNA/NPA forms', 'ON'],
+        ['PMA Bonuses', 'Bonus PDF uploads', 'ON'],
+        ['DocuSphere', 'Document library', 'ON'],
+        ['Leaderboard', 'Team rankings', 'ON'],
+        ['Analytics', 'Charts and trends', 'ON'],
+        ['Reports', 'Manager reports & exports', 'ON'],
+        ['Team Mgmt', 'Team management', 'ON'],
+        ['Interviews', 'Interview tracking', 'ON'],
+        ['Recruiting', 'Recruiting pipeline', 'OFF'],
+    ]
+    feature_table = Table(feature_data, colWidths=[80, 280, 50])
+    feature_table.setStyle(TableStyle([
+        ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#1e40af')),
+        ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
+        ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+        ('FONTSIZE', (0, 0), (-1, -1), 8),
+        ('GRID', (0, 0), (-1, -1), 0.5, colors.grey),
+        ('ROWBACKGROUNDS', (0, 1), (-1, -1), [colors.white, colors.HexColor('#f8fafc')]),
+        ('TOPPADDING', (0, 0), (-1, -1), 4),
+        ('BOTTOMPADDING', (0, 0), (-1, -1), 4),
+    ]))
+    elements.append(feature_table)
+    elements.append(Spacer(1, 10))
+    elements.append(Paragraph("<b>To configure:</b> Admin → Teams → Click gear icon (⚙️) → Toggle features ON/OFF", body_style))
+    
+    # Section 4: Creating Users
+    elements.append(Paragraph("4. Creating Users", h1_style))
+    elements.append(Paragraph("1. Go to <b>Admin → Users</b>", step_style))
+    elements.append(Paragraph("2. Click <b>+ Create User</b>", step_style))
+    elements.append(Paragraph("3. Fill in: Team, Full Name, Email (login), Password, Role", step_style))
+    elements.append(Paragraph("4. Optionally set Manager (can set later in Team Mgmt)", step_style))
+    elements.append(Paragraph("5. Click <b>Create User</b>", step_style))
+    
+    role_data = [
+        ['Role', 'Access Level'],
+        ['State Manager', 'Full team access, can manage DocuSphere, see all reports'],
+        ['Regional Manager', 'Sees direct + indirect reports, limited admin'],
+        ['District Manager', 'Sees direct reports only'],
+        ['Agent', 'Personal data only'],
+    ]
+    role_table = Table(role_data, colWidths=[120, 350])
+    role_table.setStyle(TableStyle([
+        ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#1e40af')),
+        ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
+        ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+        ('FONTSIZE', (0, 0), (-1, -1), 9),
+        ('GRID', (0, 0), (-1, -1), 0.5, colors.grey),
+        ('TOPPADDING', (0, 0), (-1, -1), 5),
+        ('BOTTOMPADDING', (0, 0), (-1, -1), 5),
+    ]))
+    elements.append(role_table)
+    
+    # Section 5: Hierarchy
+    elements.append(Paragraph("5. Setting Up Hierarchy", h1_style))
+    elements.append(Paragraph("Hierarchy determines who reports to whom and affects data visibility and rollups.", body_style))
+    elements.append(Paragraph("<b>Option A:</b> Set during user creation - select manager from dropdown", body_style))
+    elements.append(Paragraph("<b>Option B:</b> Edit existing user - Admin → Users → pencil icon → change Manager", body_style))
+    elements.append(Paragraph("<b>Option C:</b> Use Team Management (as State Manager) → Reorganize tab", body_style))
+    elements.append(Spacer(1, 8))
+    elements.append(Paragraph("<b>Hierarchy Rules:</b>", body_style))
+    elements.append(Paragraph("• State Manager at top (no manager)", step_style))
+    elements.append(Paragraph("• Regional Managers → State Manager", step_style))
+    elements.append(Paragraph("• District Managers → Regional Managers", step_style))
+    elements.append(Paragraph("• Agents → District Managers", step_style))
+    elements.append(Paragraph("• Users can only have ONE manager from the SAME team", step_style))
+    
+    # Section 6: Branding
+    elements.append(Paragraph("6. Team Branding", h1_style))
+    elements.append(Paragraph("Each team can have custom colors, logo, and display name.", body_style))
+    elements.append(Paragraph("1. Go to <b>Admin → Teams</b>", step_style))
+    elements.append(Paragraph("2. Click the <b>paint palette icon</b> for the team", step_style))
+    elements.append(Paragraph("3. Set: Display Name, Tagline, Primary Color, Accent Color, Logo URL", step_style))
+    elements.append(Paragraph("4. Click <b>Save Branding</b>", step_style))
+    
+    # Section 7: DocuSphere
+    elements.append(Paragraph("7. DocuSphere Rules", h1_style))
+    docu_data = [
+        ['Role', 'View', 'Upload', 'Create Folders', 'Delete'],
+        ['State Manager', '✓', '✓', '✓', '✓'],
+        ['Regional Manager', '✓', '✗', '✗', '✗'],
+        ['District Manager', '✓', '✗', '✗', '✗'],
+        ['Agent', '✓', '✗', '✗', '✗'],
+    ]
+    docu_table = Table(docu_data, colWidths=[120, 60, 60, 90, 60])
+    docu_table.setStyle(TableStyle([
+        ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#1e40af')),
+        ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
+        ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+        ('FONTSIZE', (0, 0), (-1, -1), 9),
+        ('GRID', (0, 0), (-1, -1), 0.5, colors.grey),
+        ('ALIGN', (1, 0), (-1, -1), 'CENTER'),
+        ('TOPPADDING', (0, 0), (-1, -1), 5),
+        ('BOTTOMPADDING', (0, 0), (-1, -1), 5),
+    ]))
+    elements.append(docu_table)
+    elements.append(Paragraph("<b>Key:</b> Documents are team-scoped. Team A cannot see Team B's documents.", body_style))
+    
+    # Section 8: Diagnostics
+    elements.append(PageBreak())
+    elements.append(Paragraph("8. Diagnostics & Recovery", h1_style))
+    elements.append(Paragraph("Access: <b>Admin → Diagnostics</b>", body_style))
+    elements.append(Spacer(1, 8))
+    elements.append(Paragraph("<b>A. Diagnose Interviews</b> - Finds interviews with deleted owners. Click Fix to reassign.", body_style))
+    elements.append(Paragraph("<b>B. Find Unassigned Users</b> - Users without a team cannot log in. Assign them to fix.", body_style))
+    elements.append(Paragraph("<b>C. Diagnose Orphaned Activities</b> - Finds activities missing team_id. Click Fix to repair.", body_style))
+    elements.append(Spacer(1, 8))
+    elements.append(Paragraph("<b>When to run:</b> After bulk imports, if rollups seem wrong, if users report missing data.", body_style))
+    
+    # Section 9: Common Issues
+    elements.append(Paragraph("9. Common Issues & Solutions", h1_style))
+    
+    elements.append(Paragraph("<b>User can't log in</b>", h2_style))
+    elements.append(Paragraph("Check: Is user assigned to a team? Is password correct? Is status 'active'?", body_style))
+    elements.append(Paragraph("Fix: Assign user to team or reset password.", body_style))
+    
+    elements.append(Paragraph("<b>Manager sees wrong rollup data</b>", h2_style))
+    elements.append(Paragraph("Check: Is hierarchy correct? Are subordinates in same team? Run Diagnostics.", body_style))
+    elements.append(Paragraph("Fix: Correct hierarchy or run activity migration.", body_style))
+    
+    elements.append(Paragraph("<b>Feature tab missing</b>", h2_style))
+    elements.append(Paragraph("Check: Is feature enabled for their team? Does role have access?", body_style))
+    elements.append(Paragraph("Fix: Enable feature flag for team.", body_style))
+    
+    elements.append(Paragraph("<b>DocuSphere empty</b>", h2_style))
+    elements.append(Paragraph("Check: Is DocuSphere enabled? Is user in correct team? Have docs been uploaded?", body_style))
+    elements.append(Paragraph("Fix: Enable feature and/or upload documents.", body_style))
+    
+    # Footer
+    elements.append(Spacer(1, 30))
+    elements.append(Paragraph(f"<i>PMA Agent Admin Playbook - Generated: {datetime.now().strftime('%B %d, %Y')}</i>", body_style))
+    
+    doc.build(elements)
+    pdf_content = buffer.getvalue()
+    
+    return Response(
+        content=pdf_content,
+        media_type="application/pdf",
+        headers={"Content-Disposition": "attachment; filename=Admin_Playbook.pdf"}
+    )
+
 @api_router.get("/admin/users")
 async def get_all_users_admin(current_user: dict = Depends(get_current_user)):
     """Get all users with team info and subordinate counts (super_admin only)"""
