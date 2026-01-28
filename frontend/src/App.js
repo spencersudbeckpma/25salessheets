@@ -46,7 +46,13 @@ function App() {
 
   // Handler to update branding and features (called from Login)
   const handleSetBranding = (data) => {
-    if (data.branding) setBranding(data.branding);
+    // Maintain consistent format: { branding: {...}, team_name: "..." }
+    if (data) {
+      setBranding({
+        branding: data.branding,
+        team_name: data.team_name
+      });
+    }
     if (data.features) setFeatures(data.features);
   };
 
