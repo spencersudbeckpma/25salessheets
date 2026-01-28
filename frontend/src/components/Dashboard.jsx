@@ -213,18 +213,19 @@ const Dashboard = ({ user, setUser, branding: initialBranding, features: initial
                 >
                   📊 Reports
                 </TabsTrigger>
-                  <TabsTrigger 
-                    value="manage" 
-                    data-testid="manage-tab" 
-                    className="py-2.5 px-3 text-xs md:text-sm whitespace-nowrap flex-shrink-0 rounded-lg text-slate-600 data-[state=active]:text-white data-[state=active]:shadow-md"
-                    style={activeTab === 'manage' ? { backgroundColor: branding?.primary_color || '#1e40af' } : {}}
-                  >
-                    Team Mgmt
-                  </TabsTrigger>
-                </>
               )}
-              {/* Recruiting visible to super_admin and state_manager */}
-              {(user.role === 'super_admin' || user.role === 'state_manager') && (
+              {hasFeature('team_mgmt') && ['super_admin', 'state_manager', 'regional_manager', 'district_manager'].includes(user.role) && (
+                <TabsTrigger 
+                  value="manage" 
+                  data-testid="manage-tab" 
+                  className="py-2.5 px-3 text-xs md:text-sm whitespace-nowrap flex-shrink-0 rounded-lg text-slate-600 data-[state=active]:text-white data-[state=active]:shadow-md"
+                  style={activeTab === 'manage' ? { backgroundColor: branding?.primary_color || '#1e40af' } : {}}
+                >
+                  Team Mgmt
+                </TabsTrigger>
+              )}
+              {/* Recruiting visible based on feature flag AND role */}
+              {hasFeature('recruiting') && (user.role === 'super_admin' || user.role === 'state_manager') && (
                 <TabsTrigger 
                   value="recruiting" 
                   data-testid="recruiting-tab" 
@@ -234,16 +235,17 @@ const Dashboard = ({ user, setUser, branding: initialBranding, features: initial
                   👥 Recruiting
                 </TabsTrigger>
               )}
-              {(user.role === 'regional_manager' || user.role === 'district_manager') && (
+              {hasFeature('recruiting') && (user.role === 'regional_manager' || user.role === 'district_manager') && (
                 <TabsTrigger 
                   value="recruiting" 
                   data-testid="recruiting-tab" 
-                  className="py-2.5 px-3 text-xs md:text-sm whitespace-nowrap flex-shrink-0 rounded-lg text-slate-600 data-[state=active]:bg-slate-800 data-[state=active]:text-amber-400 data-[state=active]:shadow-md"
+                  className="py-2.5 px-3 text-xs md:text-sm whitespace-nowrap flex-shrink-0 rounded-lg text-slate-600 data-[state=active]:text-white data-[state=active]:shadow-md"
+                  style={activeTab === 'recruiting' ? { backgroundColor: branding?.primary_color || '#1e40af' } : {}}
                 >
                   👥 My Recruiting
                 </TabsTrigger>
               )}
-              {/* Admin Panel - super_admin ONLY for team creation/assignment */}
+              {/* Admin Panel - super_admin ONLY */}
               {user.role === 'super_admin' && (
                 <TabsTrigger 
                   value="admin" 
