@@ -332,7 +332,7 @@ const PMADocuSphere = ({ user }) => {
     const isExpanded = expandedFolders.has(folder.id);
     const isSelected = selectedFolder === folder.id;
     const children = buildFolderTree(folder.id);
-    const docCount = getFolderDocuments(folder.id).length;
+    const totalDocCount = getTotalDocumentCount(folder.id);
 
     return (
       <div key={folder.id}>
@@ -366,7 +366,7 @@ const PMADocuSphere = ({ user }) => {
           )}
           <span className="flex-1 truncate text-sm font-medium">{folder.name}</span>
           <span className={`text-xs px-1.5 py-0.5 rounded ${isSelected ? 'bg-amber-500 text-slate-900' : 'bg-slate-200 text-slate-600'}`}>
-            {docCount}
+            {totalDocCount}
           </span>
           {user.role === 'state_manager' && (
             <button
