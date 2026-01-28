@@ -6961,6 +6961,7 @@ async def create_suitability_form(form_data: SuitabilityFormCreate, current_user
 @api_router.put("/suitability-forms/{form_id}")
 async def update_suitability_form(form_id: str, form_data: dict, current_user: dict = Depends(get_current_user)):
     """Update a suitability form"""
+    await check_feature_access(current_user, "suitability")
     existing = await db.suitability_forms.find_one({"id": form_id})
     if not existing:
         raise HTTPException(status_code=404, detail="Form not found")
@@ -6978,6 +6979,7 @@ async def update_suitability_form(form_id: str, form_data: dict, current_user: d
 @api_router.delete("/suitability-forms/{form_id}")
 async def delete_suitability_form(form_id: str, current_user: dict = Depends(get_current_user)):
     """Delete a suitability form"""
+    await check_feature_access(current_user, "suitability")
     existing = await db.suitability_forms.find_one({"id": form_id})
     if not existing:
         raise HTTPException(status_code=404, detail="Form not found")
