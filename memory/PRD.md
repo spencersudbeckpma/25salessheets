@@ -1,85 +1,91 @@
 # PMA Agent - Product Requirements Document
 
-## Original Problem Statement
-Multi-tenant sales activity tracking application with role-based access control for insurance agency hierarchy management.
+## Overview
+Team-based activity tracking and performance management application for insurance/sales teams with hierarchical structure.
 
-## Core Architecture
-- **Frontend**: React + Tailwind CSS + Shadcn/UI
-- **Backend**: FastAPI + MongoDB
-- **Auth**: JWT-based authentication with case-insensitive email lookup
+## Core Features
+- **Authentication**: JWT-based auth with role-based access control
+- **Team Hierarchy**: State Manager → Regional Manager → District Manager → Agent
+- **Activity Tracking**: Daily logging of contacts, appointments, presentations, referrals, testimonials, sales, premium
+- **Leaderboard**: Team-wide rankings for key metrics
+- **DocuSphere**: Team-scoped document library with role-based permissions (state_manager = write, others = read-only)
+- **Reports**: Manager hierarchy reports with period filters (daily, monthly, quarterly, yearly)
+- **Team Branding**: Custom branding per team (colors, logo, name)
+- **Feature Flags**: Team-based feature toggles
 
-## User Roles (Hierarchy)
-1. `super_admin` - Global access, admin panel
-2. `state_manager` - Team-level admin
-3. `regional_manager` - Regional oversight
-4. `district_manager` - District management
-5. `agent` - Field agents
+## User Roles
+1. **Super Admin**: Full system access, cross-team visibility
+2. **State Manager**: Team admin, full feature access, can create/edit DocuSphere content
+3. **Regional Manager**: Manages district managers, view subordinate data
+4. **District Manager**: Manages agents, view subordinate data  
+5. **Agent**: Individual contributor, personal activity tracking
 
-## Key Features Implemented
+## Technical Architecture
+- **Frontend**: React with Shadcn/UI, Tailwind CSS
+- **Backend**: FastAPI (Python)
+- **Database**: MongoDB
+- **Authentication**: JWT tokens
 
-### Multi-Tenancy & Teams
-- Team-based data isolation
-- User assignment to teams
-- Team management in Admin Panel
+## Key Endpoints
+- `/api/auth/login` - User authentication
+- `/api/stats/my/{period}` - Personal activity stats
+- `/api/team/hierarchy/{period}` - Team hierarchy with rollup stats
+- `/api/leaderboard/{period}` - Team leaderboard rankings
+- `/api/reports/manager-hierarchy/{manager_id}` - Detailed manager reports
+- `/api/docusphere/*` - Document library CRUD
 
-### Per-Team Branding (January 2026)
-- Team logo, primary color, accent color, display name, tagline
-- Editable by super_admin in Admin Panel → Teams → Branding
-- Login page shows neutral platform branding (PMAUSA logo)
-- Post-login UI adapts to user's team branding
+## Data Models
+- **users**: id, name, email, role, team_id, manager_id, status
+- **activities**: id, user_id, team_id, date, contacts, appointments, presentations, referrals, testimonials, sales, new_face_sold, premium
+- **teams**: id, name, branding, features
+- **docusphere_folders**: id, name, parent_id, team_id, created_by
+- **docusphere_documents**: id, filename, folder_id, team_id, uploaded_by
 
-### Team Feature Flags (January 2026) ✅ COMPLETED
-- Control which tabs/features are visible per team
-- Features: activity, stats, team_view, suitability, pma_bonuses, docusphere, leaderboard, analytics, reports, team_mgmt, recruiting, interviews
-- **Backend Enforcement**: API endpoints return 403 for disabled features
+---
 
-### Leaderboard Fix (January 28, 2026) ✅ COMPLETED
-- Fixed issue where non-super_admin users only saw their subordinates' data
-- Now ALL team members see the same leaderboard (team-wide ranking)
-- Period selection (weekly/monthly/quarterly/yearly) works correctly for all roles
+## Changelog
 
-### Environment + Build Version Indicator (January 28, 2026) ✅ NEW
-- Shows on login page and dashboard footer
-- Displays: Environment (PREVIEW/PRODUCTION/LOCAL) + Build hash + Timestamp
-- Helps verify deployments
+### 2025-01-28 - Team Rollup Bug Fix
+- **Fixed**: State manager's personal activities were not included in team hierarchy rollups
+- **Root Cause**: `/api/team/hierarchy/{period}` was filtering activity queries by `team_id`, excluding activities without team_id
+- **Solution**: Removed team_id filter from activity query in `build_hierarchy()` to match `/stats/my/{period}` behavior
+- **File Modified**: `backend/server.py` (lines 4046-4058)
 
-### Data Migration (January 28, 2026) ✅ COMPLETED
-- Migrated orphaned data records to Team Sudbeck
-- 39 records migrated, 57 merged
-- All data now has valid user and team references
+### Previous Session (from handoff)
+- Fixed Leaderboard bugs (migrated 600+ activities with team_id)
+- Implemented DocuSphere team scoping and role-based permissions
+- Fixed DocuSphere data visibility (migrated 22 folders, 185 documents)
+- Fixed personal rollup bug for state_manager
+- Resolved super_admin branding bug
+- Completed feature flag enforcement on all endpoints
+- Removed debug UI indicators
 
-## API Endpoints
+---
 
-### Leaderboard (Fixed)
-- `GET /api/leaderboard/{period}` - Returns top 5 for entire team (all roles see same data)
-- Periods: daily, weekly, monthly, quarterly, yearly
-- Debug info (`_debug` field) visible to super_admin only
+## Pending Tasks
 
-### Admin - Team Features
-- `GET /api/admin/teams/{team_id}/features` - Get team features
-- `PUT /api/admin/teams/{team_id}/features` - Update team features
+### P0 - Critical
+- ✅ Team rollup bug (FIXED 2025-01-28)
 
-### Admin - Team Branding
-- `GET /api/admin/teams/{team_id}/branding` - Get team branding
-- `PUT /api/admin/teams/{team_id}/branding` - Update team branding
+### P1 - High Priority  
+- [ ] Verify fix in production with acceptance test
+- [ ] Address 25 activity records with NULL team_id (users without team assignment)
 
-## Test Credentials (Preview Environment)
+### P2 - Medium Priority
+- [ ] Refactor monolithic `server.py` into route-based structure (`backend/routes/`)
+- [ ] Remove temporary migration/diagnostic endpoints after stability confirmed
+
+### P3 - Future/Backlog
+- [ ] Granular feature flags for sub-features
+- [ ] "All-Time" leaderboard period option
+- [ ] Additional enhancements as requested
+
+---
+
+## Test Credentials (Preview)
 - **Super Admin**: admin@pmagent.net / Bizlink25
-- **State Manager**: spencer.sudbeck@pmagent.net / Bizlink25
-- **Agent**: sam.agent@pmagent.net / Bizlink25
 
-## Current Build
-- **Git Hash**: 1c1b075
-- **Timestamp**: 2026-01-28 05:31:17 UTC
-
-## Bugs Fixed (January 28, 2026)
-- **Super Admin Branding Bug**: Fixed team_id assignment
-- **Leaderboard Hierarchy Bug**: All roles now see full team data
-- **Data Integrity Issues**: Migrated orphaned records
-
-## Backlog
-- **P1**: Refactor server.py (6000+ lines) into route modules
-- **P2**: Add more granular feature flags for sub-features
-
-## Last Updated
-January 28, 2026
+## Known Technical Debt
+- `backend/server.py` is a monolith (~7000+ lines) containing all logic
+- Multiple temporary migration endpoints need cleanup
+- Some legacy activities may not have team_id set
