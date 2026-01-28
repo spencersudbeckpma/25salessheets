@@ -534,6 +534,76 @@ async def fix_user_activities_team_id(user_id: str, current_user: dict = Depends
         "activities_updated": result.modified_count
     }
 
+@api_router.get("/admin/diagnose-orphaned-activities")
+async def diagnose_orphaned_activities(current_user: dict = Depends(get_current_user)):
+    """
+    Find activities with NULL team_id and identify which users they belong to.
+    Shows whether the user has a team (fixable) or not (needs user assignment first).
+    (super_admin only, read-only)
+    """
+    require_super_admin(current_user)
+    
+    # Find all activities with NULL/missing team_id
+    orphaned = await db.activities.find(
+        {"$or": [{"team_id": None}, {"team_id": {"$exists": False}}]},
+        {"_id": 0, "id": 1, "user_id": 1, "date": 1, "presentations": 1, "premium": 1}
+    ).to_list(1000)
+    
+    # Group by user_id
+    user_activity_counts = {}
+    for act in orphaned:
+        uid = act.get("user_id", "unknown")
+        if uid not in user_activity_counts:
+            user_activity_counts[uid] = {"count": 0, "sample_dates": []}
+        user_activity_counts[uid]["count"] += 1
+        if len(user_activity_counts[uid]["sample_dates"]) < 3:
+            user_activity_counts[uid]["sample_dates"].append(act.get("date"))
+    
+    # Look up user info for each
+    results = []
+    fixable_count = 0
+    needs_team_assignment_count = 0
+    
+    for user_id, info in user_activity_counts.items():
+        user = await db.users.find_one({"id": user_id}, {"_id": 0, "password_hash": 0})
+        if user:
+            has_team = bool(user.get("team_id"))
+            if has_team:
+                fixable_count += info["count"]
+                status = "FIXABLE - user has team_id"
+            else:
+                needs_team_assignment_count += info["count"]
+                status = "NEEDS USER TEAM ASSIGNMENT"
+            results.append({
+                "user_id": user_id,
+                "user_name": user.get("name"),
+                "user_email": user.get("email"),
+                "user_team_id": user.get("team_id"),
+                "user_status": user.get("status", "active"),
+                "activity_count": info["count"],
+                "sample_dates": info["sample_dates"],
+                "fix_status": status
+            })
+        else:
+            results.append({
+                "user_id": user_id,
+                "user_name": "USER NOT FOUND",
+                "activity_count": info["count"],
+                "sample_dates": info["sample_dates"],
+                "fix_status": "ORPHANED - user deleted"
+            })
+    
+    return {
+        "total_orphaned_activities": len(orphaned),
+        "fixable_activities": fixable_count,
+        "needs_team_assignment_activities": needs_team_assignment_count,
+        "users_with_orphaned_activities": results,
+        "instructions": {
+            "fixable": "Run POST /admin/migrate-activities-team-id to auto-fix",
+            "needs_team": "First assign user to team via /admin/fix-unassigned-users, then run migration"
+        }
+    }
+
 @api_router.get("/admin/teams")
 async def get_all_teams(current_user: dict = Depends(get_current_user)):
     """Get all teams (super_admin only)"""
