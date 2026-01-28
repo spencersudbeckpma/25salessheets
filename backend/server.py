@@ -263,6 +263,30 @@ def require_super_admin(current_user: dict):
     if current_user.get('role') != 'super_admin':
         raise HTTPException(status_code=403, detail="Super admin access required")
 
+async def check_feature_access(current_user: dict, feature_name: str):
+    """
+    Check if user's team has access to a specific feature.
+    Super admins always have access. Returns True if allowed, raises 403 if not.
+    """
+    if current_user.get('role') == 'super_admin':
+        return True
+    
+    team_id = current_user.get('team_id')
+    if not team_id:
+        raise HTTPException(status_code=403, detail=f"Access denied: {feature_name} is not available")
+    
+    team = await db.teams.find_one({"id": team_id}, {"_id": 0, "features": 1})
+    if not team:
+        raise HTTPException(status_code=403, detail=f"Access denied: team not found")
+    
+    features = team.get('features', DEFAULT_TEAM_FEATURES)
+    merged_features = {**DEFAULT_TEAM_FEATURES, **features}
+    
+    if not merged_features.get(feature_name, False):
+        raise HTTPException(status_code=403, detail=f"Access denied: {feature_name} is not enabled for your team")
+    
+    return True
+
 # ==================== ADMIN TEAM MANAGEMENT ====================
 
 class TeamCreate(BaseModel):
