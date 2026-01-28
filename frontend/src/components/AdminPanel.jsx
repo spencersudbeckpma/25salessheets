@@ -764,7 +764,7 @@ const AdminPanel = ({ user }) => {
                     </div>
                   </div>
                 
-                <div className="flex items-center justify-between pt-2 border-t">
+                <div className="flex flex-wrap items-center gap-2 pt-2 border-t">
                   <Button
                     size="sm"
                     variant="outline"
@@ -776,6 +776,19 @@ const AdminPanel = ({ user }) => {
                   >
                     <Pencil className="w-3 h-3 mr-1" />
                     Branding
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      openFeaturesModal(team);
+                    }}
+                    className="border-purple-300 text-purple-700"
+                    data-testid={`features-btn-${team.id}`}
+                  >
+                    <Settings className="w-3 h-3 mr-1" />
+                    Features
                   </Button>
                   <Button
                     size="sm"
