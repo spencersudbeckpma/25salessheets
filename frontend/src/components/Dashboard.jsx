@@ -96,8 +96,7 @@ const Dashboard = ({ user, setUser, branding: initialBranding }) => {
                 value="activity" 
                 data-testid="activity-tab" 
                 className="py-2.5 px-3 text-xs md:text-sm whitespace-nowrap flex-shrink-0 rounded-lg text-slate-600 data-[state=active]:text-white data-[state=active]:shadow-md"
-                style={{ '--tw-bg-opacity': 1 }}
-                data-active-style={{ backgroundColor: branding?.primary_color }}
+                style={activeTab === 'activity' ? { backgroundColor: branding?.primary_color || '#1e40af' } : {}}
               >
                 Daily Activity
               </TabsTrigger>
@@ -105,6 +104,7 @@ const Dashboard = ({ user, setUser, branding: initialBranding }) => {
                 value="stats" 
                 data-testid="stats-tab" 
                 className="py-2.5 px-3 text-xs md:text-sm whitespace-nowrap flex-shrink-0 rounded-lg text-slate-600 data-[state=active]:text-white data-[state=active]:shadow-md"
+                style={activeTab === 'stats' ? { backgroundColor: branding?.primary_color || '#1e40af' } : {}}
               >
                 My Stats
               </TabsTrigger>
@@ -112,27 +112,31 @@ const Dashboard = ({ user, setUser, branding: initialBranding }) => {
                 value="team" 
                 data-testid="team-tab" 
                 className="py-2.5 px-3 text-xs md:text-sm whitespace-nowrap flex-shrink-0 rounded-lg text-slate-600 data-[state=active]:text-white data-[state=active]:shadow-md"
+                style={activeTab === 'team' ? { backgroundColor: branding?.primary_color || '#1e40af' } : {}}
               >
                 Team View
               </TabsTrigger>
               <TabsTrigger 
                 value="suitability" 
                 data-testid="suitability-tab" 
-                className="py-2.5 px-3 text-xs md:text-sm whitespace-nowrap flex-shrink-0 rounded-lg text-slate-600 data-[state=active]:bg-slate-800 data-[state=active]:text-amber-400 data-[state=active]:shadow-md"
+                className="py-2.5 px-3 text-xs md:text-sm whitespace-nowrap flex-shrink-0 rounded-lg text-slate-600 data-[state=active]:text-white data-[state=active]:shadow-md"
+                style={activeTab === 'suitability' ? { backgroundColor: branding?.primary_color || '#1e40af' } : {}}
               >
                 📋 Suitability
               </TabsTrigger>
               <TabsTrigger 
                 value="pma-bonuses" 
                 data-testid="pma-bonuses-tab" 
-                className="py-2.5 px-3 text-xs md:text-sm whitespace-nowrap flex-shrink-0 rounded-lg text-slate-600 data-[state=active]:bg-slate-800 data-[state=active]:text-amber-400 data-[state=active]:shadow-md"
+                className="py-2.5 px-3 text-xs md:text-sm whitespace-nowrap flex-shrink-0 rounded-lg text-slate-600 data-[state=active]:text-white data-[state=active]:shadow-md"
+                style={activeTab === 'pma-bonuses' ? { backgroundColor: branding?.primary_color || '#1e40af' } : {}}
               >
                 📄 PMA Bonuses
               </TabsTrigger>
               <TabsTrigger 
                 value="docusphere" 
                 data-testid="docusphere-tab" 
-                className="py-2.5 px-3 text-xs md:text-sm whitespace-nowrap flex-shrink-0 rounded-lg text-slate-600 data-[state=active]:bg-slate-800 data-[state=active]:text-amber-400 data-[state=active]:shadow-md"
+                className="py-2.5 px-3 text-xs md:text-sm whitespace-nowrap flex-shrink-0 rounded-lg text-slate-600 data-[state=active]:text-white data-[state=active]:shadow-md"
+                style={activeTab === 'docusphere' ? { backgroundColor: branding?.primary_color || '#1e40af' } : {}}
               >
                 📁 DocuSphere
               </TabsTrigger>
