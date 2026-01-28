@@ -4341,19 +4341,6 @@ async def get_leaderboard(period: str, current_user: dict = Depends(get_current_
         "premium": sorted(user_stats.values(), key=lambda x: x['premium'], reverse=True)[:5]
     }
     
-    # Add debug info for ALL users to help troubleshoot
-    leaderboard["_debug"] = {
-        "requested_period": period,
-        "computed_start_date": start_date.isoformat(),
-        "computed_end_date": end_date.isoformat(),
-        "today_central": today.isoformat(),
-        "record_count_returned": len(activities),
-        "users_in_query": len(all_user_ids),
-        "team_id": team_id,
-        "user_role": current_user.get('role'),
-        "user_team_id": current_user.get('team_id')
-    }
-    
     return leaderboard
 
 
