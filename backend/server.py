@@ -7329,6 +7329,7 @@ async def get_weekly_suitability_report(
     week_offset: int = 0
 ):
     """Get weekly suitability forms report"""
+    await check_feature_access(current_user, "suitability")
     # Calculate week boundaries
     today = datetime.now(timezone.utc).date()
     start_of_week = today - timedelta(days=today.weekday() + (week_offset * 7))
