@@ -411,12 +411,113 @@ async def setup_all_branding(current_user: dict = Depends(get_current_user)):
         "message": f"Branding applied to {updated_count} of {len(teams)} teams",
         "results": results
     }
+
+# Team Feature Flags Endpoints
+class TeamFeaturesUpdate(BaseModel):
+    features: Dict[str, bool]
+
+@api_router.get("/admin/teams/{team_id}/features")
+async def get_team_features(team_id: str, current_user: dict = Depends(get_current_user)):
+    """Get team feature flags (super_admin only)"""
+    require_super_admin(current_user)
+    
+    team = await db.teams.find_one({"id": team_id}, {"_id": 0})
+    if not team:
+        raise HTTPException(status_code=404, detail="Team not found")
+    
+    # Return features with defaults for any missing flags
+    features = team.get('features', {})
+    merged_features = {**DEFAULT_TEAM_FEATURES, **features}
     
     return {
-        "message": "Team Sudbeck created successfully",
-        "team": new_team,
-        "created": True
+        "team_id": team_id,
+        "team_name": team.get('name'),
+        "features": merged_features
     }
+
+@api_router.put("/admin/teams/{team_id}/features")
+async def update_team_features(team_id: str, data: TeamFeaturesUpdate, current_user: dict = Depends(get_current_user)):
+    """Update team feature flags (super_admin only)"""
+    require_super_admin(current_user)
+    
+    team = await db.teams.find_one({"id": team_id}, {"_id": 0})
+    if not team:
+        raise HTTPException(status_code=404, detail="Team not found")
+    
+    await db.teams.update_one(
+        {"id": team_id},
+        {"$set": {"features": data.features}}
+    )
+    
+    return {
+        "message": f"Features updated for {team.get('name')}",
+        "features": data.features
+    }
+
+@api_router.post("/admin/teams/{team_id}/features/reset")
+async def reset_team_features(team_id: str, current_user: dict = Depends(get_current_user)):
+    """Reset team features to defaults (super_admin only)"""
+    require_super_admin(current_user)
+    
+    team = await db.teams.find_one({"id": team_id}, {"_id": 0})
+    if not team:
+        raise HTTPException(status_code=404, detail="Team not found")
+    
+    await db.teams.update_one(
+        {"id": team_id},
+        {"$set": {"features": DEFAULT_TEAM_FEATURES}}
+    )
+    
+    return {
+        "message": f"Features reset to defaults for {team.get('name')}",
+        "features": DEFAULT_TEAM_FEATURES
+    }
+
+@api_router.post("/admin/teams/{team_id}/features/copy-from/{source_team_id}")
+async def copy_team_features(team_id: str, source_team_id: str, current_user: dict = Depends(get_current_user)):
+    """Copy features from another team (super_admin only)"""
+    require_super_admin(current_user)
+    
+    target_team = await db.teams.find_one({"id": team_id}, {"_id": 0})
+    if not target_team:
+        raise HTTPException(status_code=404, detail="Target team not found")
+    
+    source_team = await db.teams.find_one({"id": source_team_id}, {"_id": 0})
+    if not source_team:
+        raise HTTPException(status_code=404, detail="Source team not found")
+    
+    source_features = source_team.get('features', DEFAULT_TEAM_FEATURES)
+    
+    await db.teams.update_one(
+        {"id": team_id},
+        {"$set": {"features": source_features}}
+    )
+    
+    return {
+        "message": f"Features copied from {source_team.get('name')} to {target_team.get('name')}",
+        "features": source_features
+    }
+
+@api_router.get("/teams/my-features")
+async def get_my_team_features(current_user: dict = Depends(get_current_user)):
+    """Get current user's team features (for frontend tab visibility)"""
+    team_id = current_user.get('team_id')
+    
+    # Super admins see all features
+    if current_user.get('role') == 'super_admin':
+        return {"features": {k: True for k in DEFAULT_TEAM_FEATURES.keys()}}
+    
+    if not team_id:
+        return {"features": DEFAULT_TEAM_FEATURES}
+    
+    team = await db.teams.find_one({"id": team_id}, {"_id": 0})
+    if not team:
+        return {"features": DEFAULT_TEAM_FEATURES}
+    
+    features = team.get('features', {})
+    merged_features = {**DEFAULT_TEAM_FEATURES, **features}
+    
+    return {"features": merged_features}
 
 @api_router.get("/admin/debug-teams")
 async def debug_teams(current_user: dict = Depends(get_current_user)):
