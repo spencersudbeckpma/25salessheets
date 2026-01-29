@@ -3627,10 +3627,11 @@ async def get_period_report(report_type: str, period: str, current_user: dict = 
         
         report_data = []
         for member in team_members:
-            activities = await db.activities.find({
-                "user_id": member['id'],
-                "date": {"$gte": start_date.isoformat()}
-            }, {"_id": 0}).to_list(10000)
+            # SCOPED TO TEAM
+            act_query = {"user_id": member['id'], "date": {"$gte": start_date.isoformat()}}
+            if team_id:
+                act_query["team_id"] = team_id
+            activities = await db.activities.find(act_query, {"_id": 0}).to_list(10000)
             
             totals = {
                 "name": member.get('name', 'Unknown'),
