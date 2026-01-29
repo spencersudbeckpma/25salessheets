@@ -99,6 +99,26 @@ Team-based activity tracking and performance management application for insuranc
 
 ## Changelog
 
+### 2025-01-29 - Full Data Health Check Admin UI
+- **Added**: Complete team-by-team data integrity check accessible from mobile without terminal
+- **Added**: Build info banner showing Version, Build timestamp, and Check timestamp
+- **Added**: Team-by-team health check table with columns:
+  - Team name, Status (PASS/FAIL), Users, Recruits, Interviews, New Faces, SNA, NPA, Activities, Issues
+- **Added**: PASS/FAIL status calculated based on:
+  - Missing team_id records → FAIL
+  - Cross-team owner mismatch → FAIL
+- **Added**: One-click backfill buttons for 6 collections (super_admin only):
+  - Recruits, Interviews, New Face Customers, Activities, SNA Agents, NPA Agents
+- **Added**: Backfill buttons conditionally appear only when records are missing team_id
+- **Added**: Auto-rerun health check after successful backfill
+- **Location**: Admin → Diagnostics tab → "Full Data Health Check" (top section)
+- **Endpoints Added**:
+  - `GET /api/admin/full-health-check` - Returns build_info, summary, teams array with counts
+  - `POST /api/admin/backfill-sna-agents-team-id` - Backfills SNA agents
+  - `POST /api/admin/backfill-npa-agents-team-id` - Backfills NPA agents
+- **Mobile-Friendly**: Tested on iPhone viewport (390x844)
+- **Testing**: 100% backend (21/21) and frontend tests passed
+
 ### 2025-12-19 - CRITICAL: Cross-Team Data Leak Fix
 - **Fixed**: Critical security vulnerability - Multiple analytics, reports, and debug endpoints were missing `team_id` filters, allowing cross-team data leakage
 - **Root Cause**: Calls to `get_all_subordinates()` helper function were not passing `team_id` parameter
