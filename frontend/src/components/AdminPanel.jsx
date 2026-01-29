@@ -52,8 +52,37 @@ const AdminPanel = ({ user }) => {
     reports: true,
     team_mgmt: true,
     recruiting: false,
-    interviews: true
+    interviews: true,
+    fact_finder: true,
+    sna: true,
+    npa: true,
+    new_faces: true
   });
+  
+  // Team Customization modal (Phase 1)
+  const [showCustomizationModal, setShowCustomizationModal] = useState(false);
+  const [selectedTeamForCustomization, setSelectedTeamForCustomization] = useState(null);
+  const [customizationForm, setCustomizationForm] = useState({
+    features: {},
+    role_tab_overrides: {
+      agent: { hidden_tabs: [] },
+      district_manager: { hidden_tabs: [] },
+      regional_manager: { hidden_tabs: [] }
+    },
+    ui_settings: {
+      default_landing_tab: 'activity',
+      default_leaderboard_period: 'weekly'
+    },
+    branding: {
+      logo_url: '',
+      primary_color: '#1e40af',
+      accent_color: '#3b82f6',
+      display_name: '',
+      tagline: ''
+    }
+  });
+  const [customizationLoading, setCustomizationLoading] = useState(false);
+  const [customizationTab, setCustomizationTab] = useState('features');
   
   // Form states
   const [newTeamName, setNewTeamName] = useState('');
