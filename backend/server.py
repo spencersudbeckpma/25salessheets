@@ -3477,7 +3477,7 @@ async def get_daily_report(report_type: str, date: str, current_user: dict = Dep
         all_members = await get_all_subordinates(current_user['id'])
         all_members.insert(0, current_user)  # Include self
         
-        # Aggregate organization totals
+        # Aggregate organization totals - SCOPED TO TEAM
         org_totals = {
             "contacts": 0, "appointments": 0, "presentations": 0,
             "referrals": 0, "testimonials": 0, "sales": 0,
@@ -3485,10 +3485,10 @@ async def get_daily_report(report_type: str, date: str, current_user: dict = Dep
         }
         
         for member in all_members:
-            activity = await db.activities.find_one({
-                "user_id": member['id'],
-                "date": report_date
-            }, {"_id": 0})
+            act_query = {"user_id": member['id'], "date": report_date}
+            if team_id:
+                act_query["team_id"] = team_id
+            activity = await db.activities.find_one(act_query, {"_id": 0})
             
             if activity:
                 org_totals["contacts"] += activity.get('contacts', 0)
