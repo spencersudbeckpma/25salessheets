@@ -211,10 +211,10 @@ Team-based activity tracking and performance management application for insuranc
 
 ### P1 - High Priority (PAUSED)
 - [ ] Refactor monolithic `server.py` into route-based structure (backend/routes/) - **PAUSED: App in active rollout**
-- [ ] Address 25 activity records with NULL team_id (users without team assignment)
 
 ### P2 - Medium Priority
 - [ ] Remove temporary migration/diagnostic endpoints after stability confirmed
+- [ ] Cleanup migration endpoints after production data is fully migrated
 
 ### P3 - Future/Backlog
 - [ ] Granular feature flags for sub-features
