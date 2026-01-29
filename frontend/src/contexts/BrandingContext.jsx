@@ -68,7 +68,7 @@ export const BrandingProvider = ({ children }) => {
     return '#' + (0x1000000 + R * 0x10000 + G * 0x100 + B).toString(16).slice(1);
   };
 
-  const updateBranding = (newBranding, newTeamName = null, newFeatures = null) => {
+  const updateBranding = (newBranding, newTeamName = null, newFeatures = null, newUiSettings = null) => {
     setBranding(newBranding || DEFAULT_BRANDING);
     if (newTeamName !== null) {
       setTeamName(newTeamName);
@@ -76,12 +76,16 @@ export const BrandingProvider = ({ children }) => {
     if (newFeatures !== null) {
       setFeatures({ ...DEFAULT_FEATURES, ...newFeatures });
     }
+    if (newUiSettings !== null) {
+      setUiSettings({ ...DEFAULT_UI_SETTINGS, ...newUiSettings });
+    }
   };
 
   const clearBranding = () => {
     setBranding(DEFAULT_BRANDING);
     setTeamName(null);
     setFeatures(DEFAULT_FEATURES);
+    setUiSettings(DEFAULT_UI_SETTINGS);
     // Reset CSS variables
     const root = document.documentElement;
     root.style.setProperty('--brand-primary', DEFAULT_BRANDING.primary_color);
@@ -104,15 +108,27 @@ export const BrandingProvider = ({ children }) => {
     return features[featureName] === true;
   };
 
+  const getDefaultTab = () => {
+    return uiSettings.default_landing_tab || 'activity';
+  };
+
+  const getDefaultLeaderboardPeriod = () => {
+    return uiSettings.default_leaderboard_period || 'weekly';
+  };
+
   return (
     <BrandingContext.Provider value={{
       branding,
       teamName,
       features,
+      uiSettings,
       updateBranding,
       clearBranding,
       getDisplayName,
       getTagline,
+      hasFeature,
+      getDefaultTab,
+      getDefaultLeaderboardPeriod,
       hasFeature,
       logoUrl: branding?.logo_url
     }}>
