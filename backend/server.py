@@ -522,6 +522,11 @@ async def recruiting_diagnostic(current_user: dict = Depends(get_current_user)):
     """Diagnose recruiting/pipeline data distribution (super_admin only)
     
     This helps debug why State Manager might not see all recruits.
+    Shows:
+    - users_in_scope: all users in your team who could create recruits
+    - recruits by team_id distribution
+    - recruits by creator role within your team
+    - sample recruits that might be missing (wrong/null team_id)
     """
     require_super_admin(current_user)
     
@@ -531,42 +536,114 @@ async def recruiting_diagnostic(current_user: dict = Depends(get_current_user)):
     teams = await db.teams.find({}, {"_id": 0, "id": 1, "name": 1}).to_list(100)
     team_names = {t["id"]: t["name"] for t in teams}
     
+    # Get all users in the current user's team (users_in_scope)
+    users_in_team = await db.users.find(
+        {"team_id": user_team_id, "$or": [{"status": "active"}, {"status": {"$exists": False}}]},
+        {"_id": 0, "id": 1, "name": 1, "role": 1, "email": 1}
+    ).to_list(10000)
+    users_in_scope_ids = [u["id"] for u in users_in_team]
+    users_by_role = {}
+    for u in users_in_team:
+        role = u.get("role", "unknown")
+        if role not in users_by_role:
+            users_by_role[role] = []
+        users_by_role[role].append({"id": u["id"], "name": u.get("name", "")})
+    
     # Count recruits by team_id
-    pipeline = [
+    pipeline_by_team = [
         {"$group": {"_id": "$team_id", "count": {"$sum": 1}}},
         {"$sort": {"count": -1}}
     ]
-    team_counts = await db.recruits.aggregate(pipeline).to_list(100)
+    team_counts = await db.recruits.aggregate(pipeline_by_team).to_list(100)
     
-    # Get sample of recruits with their team_id status
-    all_recruits = await db.recruits.find({}, {"_id": 0, "id": 1, "name": 1, "team_id": 1, "rm_id": 1, "dm_id": 1, "created_by": 1}).to_list(1000)
+    # Get ALL recruits to analyze
+    all_recruits = await db.recruits.find({}, {"_id": 0}).to_list(10000)
     
-    # Build the query that state_manager would use
+    # Build user lookup for creator info
+    all_users = await db.users.find({}, {"_id": 0, "id": 1, "name": 1, "role": 1, "team_id": 1}).to_list(10000)
+    user_lookup = {u["id"]: u for u in all_users}
+    
+    # Categorize recruits
+    recruits_by_creator_role = {"state_manager": 0, "regional_manager": 0, "district_manager": 0, "agent": 0, "super_admin": 0, "unknown_creator": 0}
+    recruits_in_my_team = []
+    recruits_missing_team_id = []
+    recruits_wrong_team_id = []
+    recruits_created_by_my_team_but_wrong_team_id = []
+    
+    for r in all_recruits:
+        recruit_team_id = r.get("team_id")
+        created_by = r.get("created_by")
+        creator = user_lookup.get(created_by, {})
+        creator_role = creator.get("role", "unknown_creator")
+        creator_team_id = creator.get("team_id")
+        
+        recruit_info = {
+            "name": r.get("name"),
+            "id": r.get("id", "")[:8] + "...",
+            "team_id": recruit_team_id if recruit_team_id else "MISSING",
+            "created_by": created_by[:8] + "..." if created_by else "NONE",
+            "creator_name": creator.get("name", "Unknown"),
+            "creator_role": creator_role,
+            "creator_team_id": creator_team_id if creator_team_id else "MISSING"
+        }
+        
+        # Check if recruit matches state_manager query
+        matches_query = (recruit_team_id == user_team_id) or (recruit_team_id is None) or ("team_id" not in r)
+        
+        if matches_query:
+            recruits_in_my_team.append(recruit_info)
+            if creator_role in recruits_by_creator_role:
+                recruits_by_creator_role[creator_role] += 1
+            else:
+                recruits_by_creator_role["unknown_creator"] += 1
+        
+        # Identify problematic recruits
+        if recruit_team_id is None or "team_id" not in r:
+            recruits_missing_team_id.append(recruit_info)
+        elif recruit_team_id != user_team_id:
+            # Recruit has a different team_id
+            if creator_team_id == user_team_id:
+                # Creator is in my team but recruit has wrong team_id - BUG!
+                recruits_created_by_my_team_but_wrong_team_id.append(recruit_info)
+            else:
+                recruits_wrong_team_id.append(recruit_info)
+    
+    # Build the EXACT query that state_manager uses
     state_manager_query = {"$or": [{"team_id": user_team_id}, {"team_id": {"$exists": False}}, {"team_id": None}]} if user_team_id else {}
-    matching_recruits = await db.recruits.find(state_manager_query, {"_id": 0, "id": 1, "name": 1, "team_id": 1}).to_list(1000)
+    matching_count = await db.recruits.count_documents(state_manager_query)
     
     return {
-        "current_user_team_id": user_team_id,
-        "current_user_team_name": team_names.get(user_team_id, "UNKNOWN"),
-        "recruits_by_team": [
+        "current_user": {
+            "team_id": user_team_id,
+            "team_name": team_names.get(user_team_id, "UNKNOWN"),
+            "role": current_user.get("role")
+        },
+        "state_manager_query": str(state_manager_query),
+        "users_in_scope": {
+            "total_users_in_team": len(users_in_scope_ids),
+            "by_role": {role: len(users) for role, users in users_by_role.items()},
+            "user_ids": users_in_scope_ids[:20]  # First 20 for reference
+        },
+        "recruits_summary": {
+            "total_in_database": len(all_recruits),
+            "matching_state_manager_query": matching_count,
+            "in_my_team_scope": len(recruits_in_my_team),
+            "missing_team_id": len(recruits_missing_team_id),
+            "different_team_id": len(recruits_wrong_team_id),
+            "created_by_my_team_but_wrong_team_id": len(recruits_created_by_my_team_but_wrong_team_id)
+        },
+        "recruits_by_team_id": [
             {
-                "team_id": tc["_id"],
+                "team_id": tc["_id"] if tc["_id"] else "NULL/MISSING",
                 "team_name": team_names.get(tc["_id"], "NO TEAM" if tc["_id"] is None else "UNKNOWN"),
                 "count": tc["count"]
             }
             for tc in team_counts
         ],
-        "total_recruits": len(all_recruits),
-        "recruits_matching_state_manager_query": len(matching_recruits),
-        "sample_recruits": [
-            {
-                "name": r.get("name"),
-                "team_id": r.get("team_id", "NOT SET"),
-                "rm_id": r.get("rm_id", "")[:8] + "..." if r.get("rm_id") else "none",
-                "would_match_query": r.get("team_id") == user_team_id or r.get("team_id") is None or "team_id" not in r
-            }
-            for r in all_recruits[:20]
-        ]
+        "recruits_by_creator_role_in_my_team": recruits_by_creator_role,
+        "sample_recruits_in_scope": recruits_in_my_team[:10],
+        "sample_recruits_missing_team_id": recruits_missing_team_id[:10],
+        "sample_recruits_created_by_my_team_but_wrong_team_id": recruits_created_by_my_team_but_wrong_team_id[:10]
     }
 
 @api_router.post("/admin/migrate-recruits-team-id")
