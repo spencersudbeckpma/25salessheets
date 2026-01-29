@@ -4518,10 +4518,15 @@ async def admin_reset_password(reset_request: PasswordResetRequest, current_user
         
         # Find the target user
         target_user = None
-        for member in all_subordinates:
-            if member['id'] == reset_request.user_id:
-                target_user = member
-                break
+        
+        # Super admin can reset any user's password
+        if current_user['role'] == 'super_admin':
+            target_user = await db.users.find_one({"id": reset_request.user_id}, {"_id": 0, "password_hash": 0})
+        else:
+            for member in all_subordinates:
+                if member['id'] == reset_request.user_id:
+                    target_user = member
+                    break
         
         if not target_user:
             raise HTTPException(status_code=403, detail="User not found in your hierarchy")
