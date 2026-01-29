@@ -172,6 +172,11 @@ Team-based activity tracking and performance management application for insuranc
 - [x] Fix cross-team data leak - All endpoints now filter by team_id (FIXED 2025-12-19)
 - [x] Phase 1: Team Customization (COMPLETED 2025-12-19)
 - [x] Phase 2: View & Layout Customization (COMPLETED 2025-12-19)
+- [x] Phase 2 Verification (VERIFIED 2025-01-29):
+  - KPI card persistence: Order and visibility changes saved correctly
+  - Server-side enforcement: 403 returned for disabled sub-tabs (non-super_admin)
+  - Default KPI labels match live dashboard
+  - Frontend UI fully functional
 
 ### P1 - High Priority (PAUSED)
 - [ ] Refactor monolithic `server.py` into route-based structure (backend/routes/) - **PAUSED: App in active rollout**
