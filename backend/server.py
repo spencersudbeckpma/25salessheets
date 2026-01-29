@@ -5086,6 +5086,7 @@ async def get_me(current_user: dict = Depends(get_current_user)):
         "email": current_user['email'],
         "name": current_user['name'],
         "role": current_user['role'],
+        "team_id": current_user.get('team_id'),
         "manager_id": current_user.get('manager_id')
     }
 
