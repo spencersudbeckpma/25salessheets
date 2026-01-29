@@ -6849,6 +6849,8 @@ async def get_individual_member_averages(current_user: dict = Depends(get_curren
     if current_user['role'] not in ['super_admin', 'state_manager', 'regional_manager', 'district_manager']:
         raise HTTPException(status_code=403, detail="Only managers can access this")
     
+    team_id = current_user.get('team_id')
+    
     from datetime import timedelta
     
     central_tz = pytz_timezone('America/Chicago')
@@ -6864,13 +6866,13 @@ async def get_individual_member_averages(current_user: dict = Depends(get_curren
     
     start_date = period_map.get(period, today - timedelta(weeks=4))
     
-    # Get all subordinates
+    # Get all subordinates - SCOPED TO TEAM
     async def get_all_subordinates_with_info(user_id: str):
         result = []
-        subordinates = await db.users.find(
-            {"manager_id": user_id, "$or": [{"status": "active"}, {"status": {"$exists": False}}]},
-            {"_id": 0, "id": 1, "name": 1, "email": 1, "role": 1}
-        ).to_list(1000)
+        query = {"manager_id": user_id, "$or": [{"status": "active"}, {"status": {"$exists": False}}]}
+        if team_id:
+            query["team_id"] = team_id
+        subordinates = await db.users.find(query, {"_id": 0, "id": 1, "name": 1, "email": 1, "role": 1}).to_list(1000)
         for sub in subordinates:
             result.append(sub)
             result.extend(await get_all_subordinates_with_info(sub['id']))
@@ -6885,10 +6887,11 @@ async def get_individual_member_averages(current_user: dict = Depends(get_curren
     member_averages = []
     
     for member in team_members:
-        activities = await db.activities.find({
-            "user_id": member['id'],
-            "date": {"$gte": start_date.isoformat()}
-        }, {"_id": 0}).to_list(10000)
+        # SCOPE activities by team_id too
+        act_query = {"user_id": member['id'], "date": {"$gte": start_date.isoformat()}}
+        if team_id:
+            act_query["team_id"] = team_id
+        activities = await db.activities.find(act_query, {"_id": 0}).to_list(10000)
         
         totals = {
             "presentations": sum(a.get('presentations', 0) for a in activities),
