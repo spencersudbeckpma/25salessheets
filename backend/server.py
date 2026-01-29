@@ -3118,6 +3118,9 @@ async def get_all_new_face_customers(current_user: dict = Depends(get_current_us
     if current_user['role'] not in ['super_admin', 'state_manager', 'regional_manager', 'district_manager']:
         raise HTTPException(status_code=403, detail="Access denied")
     
+    # Check if New Faces sub-tab is enabled for this team (Phase 2 enforcement)
+    await check_subtab_access(current_user, 'new_faces')
+    
     team_id = current_user.get('team_id')
     
     # Get all team members recursively (exclude archived), scoped to team
