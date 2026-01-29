@@ -517,7 +517,59 @@ async def activities_team_diagnostic(current_user: dict = Depends(get_current_us
         }
     }
 
-@api_router.post("/admin/migrate-activities-team-id")
+@api_router.get("/admin/recruiting-diagnostic")
+async def recruiting_diagnostic(current_user: dict = Depends(get_current_user)):
+    """Diagnose recruiting/pipeline data distribution (super_admin only)
+    
+    This helps debug why State Manager might not see all recruits.
+    """
+    require_super_admin(current_user)
+    
+    user_team_id = current_user.get('team_id')
+    
+    # Get all teams
+    teams = await db.teams.find({}, {"_id": 0, "id": 1, "name": 1}).to_list(100)
+    team_names = {t["id"]: t["name"] for t in teams}
+    
+    # Count recruits by team_id
+    pipeline = [
+        {"$group": {"_id": "$team_id", "count": {"$sum": 1}}},
+        {"$sort": {"count": -1}}
+    ]
+    team_counts = await db.recruits.aggregate(pipeline).to_list(100)
+    
+    # Get sample of recruits with their team_id status
+    all_recruits = await db.recruits.find({}, {"_id": 0, "id": 1, "name": 1, "team_id": 1, "rm_id": 1, "dm_id": 1, "created_by": 1}).to_list(1000)
+    
+    # Build the query that state_manager would use
+    state_manager_query = {"$or": [{"team_id": user_team_id}, {"team_id": {"$exists": False}}, {"team_id": None}]} if user_team_id else {}
+    matching_recruits = await db.recruits.find(state_manager_query, {"_id": 0, "id": 1, "name": 1, "team_id": 1}).to_list(1000)
+    
+    return {
+        "current_user_team_id": user_team_id,
+        "current_user_team_name": team_names.get(user_team_id, "UNKNOWN"),
+        "recruits_by_team": [
+            {
+                "team_id": tc["_id"],
+                "team_name": team_names.get(tc["_id"], "NO TEAM" if tc["_id"] is None else "UNKNOWN"),
+                "count": tc["count"]
+            }
+            for tc in team_counts
+        ],
+        "total_recruits": len(all_recruits),
+        "recruits_matching_state_manager_query": len(matching_recruits),
+        "sample_recruits": [
+            {
+                "name": r.get("name"),
+                "team_id": r.get("team_id", "NOT SET"),
+                "rm_id": r.get("rm_id", "")[:8] + "..." if r.get("rm_id") else "none",
+                "would_match_query": r.get("team_id") == user_team_id or r.get("team_id") is None or "team_id" not in r
+            }
+            for r in all_recruits[:20]
+        ]
+    }
+
+@api_router.post("/admin/migrate-recruits-team-id")
 async def migrate_activities_team_id(current_user: dict = Depends(get_current_user)):
     """
     Backfill missing team_id on activities based on user's team_id.
