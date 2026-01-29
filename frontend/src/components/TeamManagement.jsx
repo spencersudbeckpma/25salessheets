@@ -1127,7 +1127,7 @@ const TeamManagement = ({ user }) => {
           )}
 
           {/* Archive Tab - Available to managers, scoped to their team */}
-          {['state_manager', 'regional_manager', 'district_manager'].includes(user.role) && (
+          {['super_admin', 'state_manager', 'regional_manager', 'district_manager'].includes(user.role) && (
           <TabsContent value="archive" className="space-y-6" data-testid="archive-content">
             <div className="bg-yellow-50 p-6 rounded-lg border border-yellow-200">
               <h3 className="font-semibold text-lg mb-4">Archive Users</h3>
