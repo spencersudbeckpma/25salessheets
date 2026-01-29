@@ -6771,24 +6771,26 @@ async def get_team_averages(current_user: dict = Depends(get_current_user)):
     if current_user['role'] not in ['super_admin', 'state_manager', 'regional_manager', 'district_manager']:
         raise HTTPException(status_code=403, detail="Only managers can access team analytics")
     
+    team_id = current_user.get('team_id')
+    
     from datetime import timedelta
     
     central_tz = pytz_timezone('America/Chicago')
     today = datetime.now(central_tz).date()
     
-    # Get all subordinates
-    async def get_all_subordinates(user_id: str):
+    # Get all subordinates - SCOPED TO TEAM
+    async def get_all_subordinates_scoped(user_id: str):
         ids = []
-        subordinates = await db.users.find(
-            {"manager_id": user_id, "$or": [{"status": "active"}, {"status": {"$exists": False}}]},
-            {"_id": 0, "id": 1}
-        ).to_list(1000)
+        query = {"manager_id": user_id, "$or": [{"status": "active"}, {"status": {"$exists": False}}]}
+        if team_id:
+            query["team_id"] = team_id
+        subordinates = await db.users.find(query, {"_id": 0, "id": 1}).to_list(1000)
         for sub in subordinates:
             ids.append(sub['id'])
-            ids.extend(await get_all_subordinates(sub['id']))
+            ids.extend(await get_all_subordinates_scoped(sub['id']))
         return ids
     
-    team_ids = await get_all_subordinates(current_user['id'])
+    team_ids = await get_all_subordinates_scoped(current_user['id'])
     team_ids.append(current_user['id'])  # Include manager's own numbers
     
     # Calculate for each period
@@ -6802,11 +6804,11 @@ async def get_team_averages(current_user: dict = Depends(get_current_user)):
     result = {}
     
     for period_name, start_date in periods.items():
-        # Get activities for entire team
-        activities = await db.activities.find({
-            "user_id": {"$in": team_ids},
-            "date": {"$gte": start_date.isoformat()}
-        }, {"_id": 0}).to_list(100000)
+        # Get activities for entire team - SCOPED TO TEAM
+        act_query = {"user_id": {"$in": team_ids}, "date": {"$gte": start_date.isoformat()}}
+        if team_id:
+            act_query["team_id"] = team_id
+        activities = await db.activities.find(act_query, {"_id": 0}).to_list(100000)
         
         # Calculate team totals
         team_totals = {
