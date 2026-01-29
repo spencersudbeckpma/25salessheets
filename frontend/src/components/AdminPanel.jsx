@@ -1874,6 +1874,196 @@ const AdminPanel = ({ user }) => {
               </CardContent>
             </Card>
           )}
+
+          {/* Sub-Tabs Diagnostic Section (New Faces, SNA, NPA) */}
+          <Card className="bg-purple-50 border-purple-200 mt-6">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-purple-800">
+                <Search className="w-5 h-5" />
+                Sub-Tabs Diagnostic (New Faces / SNA / NPA)
+              </CardTitle>
+              <CardDescription className="text-purple-700">
+                Diagnose data integrity issues affecting New Faces, SNA, and NPA rollups. 
+                Missing team_id causes data to not appear in team views.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              <div className="bg-white rounded-lg p-4 border border-purple-200">
+                <h4 className="font-medium text-slate-800 mb-2">How rollups work:</h4>
+                <ul className="text-sm text-slate-600 space-y-1">
+                  <li>• <strong>New Faces</strong>: Separate collection, requires team_id for team views</li>
+                  <li>• <strong>SNA</strong>: Calculated from activities.premium, requires team_id</li>
+                  <li>• <strong>NPA</strong>: Separate collection, premium pulled from activities</li>
+                  <li>• <strong>Missing team_id</strong> = data invisible to team rollups</li>
+                </ul>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                <Button
+                  onClick={runSubtabsDiagnostic}
+                  disabled={subtabsDiagnosticLoading}
+                  className="bg-purple-600 hover:bg-purple-700"
+                  data-testid="diagnose-subtabs-btn"
+                >
+                  {subtabsDiagnosticLoading ? <RefreshCw className="w-4 h-4 mr-2 animate-spin" /> : <Search className="w-4 h-4 mr-2" />}
+                  Diagnose Sub-Tabs
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Sub-Tabs Diagnostic Results */}
+          {subtabsDiagnostic && (
+            <Card data-testid="subtabs-diagnostic-results">
+              <CardHeader>
+                <CardTitle className="text-lg flex items-center gap-2">
+                  {subtabsDiagnostic.summary?.total_data_issues > 0 ? (
+                    <AlertTriangle className="w-5 h-5 text-orange-600" />
+                  ) : (
+                    <CheckCircle2 className="w-5 h-5 text-green-600" />
+                  )}
+                  Sub-Tabs Diagnostic Results
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {/* Summary Cards */}
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                  <div className={`p-4 rounded-lg text-center ${subtabsDiagnostic.summary?.total_data_issues > 0 ? 'bg-orange-50' : 'bg-green-50'}`}>
+                    <div className={`text-3xl font-bold ${subtabsDiagnostic.summary?.total_data_issues > 0 ? 'text-orange-800' : 'text-green-800'}`}>
+                      {subtabsDiagnostic.summary?.total_data_issues || 0}
+                    </div>
+                    <div className="text-sm text-slate-600">Total Issues</div>
+                  </div>
+                  <div className="bg-blue-50 p-4 rounded-lg text-center">
+                    <div className="text-3xl font-bold text-blue-800">
+                      {subtabsDiagnostic.new_face_customers?.missing_team_id || 0}
+                    </div>
+                    <div className="text-sm text-blue-600">New Faces Missing</div>
+                  </div>
+                  <div className="bg-purple-50 p-4 rounded-lg text-center">
+                    <div className="text-3xl font-bold text-purple-800">
+                      {subtabsDiagnostic.activities_with_premium?.missing_team_id || 0}
+                    </div>
+                    <div className="text-sm text-purple-600">Premium Activities Missing</div>
+                  </div>
+                  <div className="bg-indigo-50 p-4 rounded-lg text-center">
+                    <div className="text-3xl font-bold text-indigo-800">
+                      {subtabsDiagnostic.npa_agents?.missing_team_id || 0}
+                    </div>
+                    <div className="text-sm text-indigo-600">NPA Missing</div>
+                  </div>
+                </div>
+
+                {/* Activities with Premium Details */}
+                {subtabsDiagnostic.activities_with_premium?.missing_team_id_by_user?.length > 0 && (
+                  <div>
+                    <h4 className="font-medium text-slate-800 mb-2">Premium Activities Missing team_id (affects SNA/NPA):</h4>
+                    <div className="max-h-60 overflow-y-auto border rounded">
+                      <table className="w-full text-sm">
+                        <thead className="bg-slate-100 sticky top-0">
+                          <tr>
+                            <th className="px-3 py-2 text-left">User</th>
+                            <th className="px-3 py-2 text-left">Email</th>
+                            <th className="px-3 py-2 text-center">Activities</th>
+                            <th className="px-3 py-2 text-right">Premium</th>
+                            <th className="px-3 py-2 text-center">Fixable</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y">
+                          {subtabsDiagnostic.activities_with_premium.missing_team_id_by_user.map((user, idx) => (
+                            <tr key={idx} className="hover:bg-slate-50">
+                              <td className="px-3 py-2 font-medium">{user.user_name}</td>
+                              <td className="px-3 py-2 text-slate-600">{user.user_email || '-'}</td>
+                              <td className="px-3 py-2 text-center">{user.activities_count}</td>
+                              <td className="px-3 py-2 text-right font-bold">${user.total_premium?.toLocaleString()}</td>
+                              <td className="px-3 py-2 text-center">
+                                {user.fixable ? (
+                                  <span className="text-green-600">✓</span>
+                                ) : (
+                                  <span className="text-red-600">✗</span>
+                                )}
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                )}
+
+                {/* By Month Breakdown */}
+                {subtabsDiagnostic.activities_with_premium?.by_month && Object.keys(subtabsDiagnostic.activities_with_premium.by_month).length > 0 && (
+                  <div>
+                    <h4 className="font-medium text-slate-800 mb-2">Premium Activities by Month (all):</h4>
+                    <div className="flex flex-wrap gap-2">
+                      {Object.entries(subtabsDiagnostic.activities_with_premium.by_month).slice(0, 12).map(([month, data]) => (
+                        <div key={month} className="bg-slate-100 px-3 py-2 rounded text-sm">
+                          <span className="font-medium">{month}</span>: {data.count} records, ${data.premium?.toLocaleString()}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Fix Button */}
+                {subtabsDiagnostic.summary?.total_data_issues > 0 && (
+                  <div className="pt-4 border-t">
+                    <Button
+                      onClick={runSubtabsMigration}
+                      disabled={subtabsDiagnosticLoading}
+                      className="bg-green-600 hover:bg-green-700"
+                      data-testid="fix-subtabs-btn"
+                    >
+                      {subtabsDiagnosticLoading ? <RefreshCw className="w-4 h-4 mr-2 animate-spin" /> : <Wrench className="w-4 h-4 mr-2" />}
+                      Fix All Collections (Activities, New Faces, NPA)
+                    </Button>
+                    <p className="text-sm text-slate-500 mt-2">
+                      This will set team_id on all affected records based on the user's current team assignment.
+                    </p>
+                  </div>
+                )}
+
+                {/* Success State */}
+                {subtabsDiagnostic.summary?.total_data_issues === 0 && (
+                  <div className="bg-green-50 p-4 rounded-lg text-center">
+                    <CheckCircle2 className="w-8 h-8 text-green-600 mx-auto mb-2" />
+                    <div className="text-green-800 font-medium">All sub-tab data has team_id assigned!</div>
+                    <div className="text-green-600 text-sm">New Faces, SNA, and NPA rollups should be accurate.</div>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Sub-Tabs Migration Results */}
+          {subtabsMigrationResult && (
+            <Card className="border-green-200 bg-green-50">
+              <CardHeader>
+                <CardTitle className="text-lg text-green-800 flex items-center gap-2">
+                  <CheckCircle2 className="w-5 h-5" />
+                  Sub-Tabs Migration Results
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div className="bg-white p-4 rounded-lg border border-green-200">
+                    <h5 className="font-medium text-slate-800 mb-2">Activities</h5>
+                    <div className="text-2xl font-bold text-green-800">{subtabsMigrationResult.report?.activities?.updated || 0}</div>
+                    <div className="text-sm text-slate-600">Updated</div>
+                  </div>
+                  <div className="bg-white p-4 rounded-lg border border-green-200">
+                    <h5 className="font-medium text-slate-800 mb-2">New Faces</h5>
+                    <div className="text-2xl font-bold text-green-800">{subtabsMigrationResult.report?.new_face_customers?.updated || 0}</div>
+                    <div className="text-sm text-slate-600">Updated</div>
+                  </div>
+                  <div className="bg-white p-4 rounded-lg border border-green-200">
+                    <h5 className="font-medium text-slate-800 mb-2">NPA Agents</h5>
+                    <div className="text-2xl font-bold text-green-800">{subtabsMigrationResult.report?.npa_agents?.updated || 0}</div>
+                    <div className="text-sm text-slate-600">Updated</div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          )}
         </div>
       )}
 
