@@ -17,8 +17,8 @@ import { Button } from './ui/button';
 import { LogOut } from 'lucide-react';
 import { useBranding } from '../contexts/BrandingContext';
 
-const Dashboard = ({ user, setUser, branding: initialBranding, features: initialFeatures, uiSettings: initialUiSettings }) => {
-  const { branding, features, uiSettings, updateBranding, getDisplayName, getTagline, logoUrl, hasFeature } = useBranding();
+const Dashboard = ({ user, setUser, branding: initialBranding, features: initialFeatures, uiSettings: initialUiSettings, viewSettings: initialViewSettings }) => {
+  const { branding, features, uiSettings, viewSettings, updateBranding, getDisplayName, getTagline, logoUrl, hasFeature, isSubtabEnabled } = useBranding();
   
   // Initialize activeTab based on initial settings, default to 'activity'
   const [activeTab, setActiveTab] = useState(() => {
