@@ -7149,8 +7149,10 @@ async def get_true_field_averages(period: str = "last_4_weeks", current_user: di
     # Check feature access
     await check_feature_access(current_user, "analytics")
     
-    if current_user['role'] != 'state_manager':
+    if current_user['role'] not in ['super_admin', 'state_manager']:
         raise HTTPException(status_code=403, detail="Only State Managers can access true field averages")
+    
+    team_id = current_user.get('team_id')
     
     from datetime import timedelta
     
@@ -7172,10 +7174,12 @@ async def get_true_field_averages(period: str = "last_4_weeks", current_user: di
     
     start_date = periods[period]
     
-    # Get ALL activities in the period
-    activities = await db.activities.find({
-        "date": {"$gte": start_date.isoformat()}
-    }, {"_id": 0}).to_list(100000)
+    # Get activities in the period - SCOPED TO TEAM
+    query = {"date": {"$gte": start_date.isoformat()}}
+    if team_id:
+        query["team_id"] = team_id
+    
+    activities = await db.activities.find(query, {"_id": 0}).to_list(100000)
     
     # Get unique users who logged activity in this period
     active_user_ids = set()
