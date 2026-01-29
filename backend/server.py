@@ -373,6 +373,21 @@ async def get_team_filter(user: dict) -> dict:
     """
     return {"team_id": user.get('team_id')}
 
+def get_team_filter_with_legacy(team_id: str) -> dict:
+    """Get team filter that includes legacy records without team_id.
+    
+    This provides backwards compatibility for data created before team_id 
+    was added to collections like recruits, interviews, new_face_customers, etc.
+    
+    Returns a query filter that matches:
+    - Records with matching team_id
+    - Records where team_id doesn't exist
+    - Records where team_id is None
+    """
+    if team_id:
+        return {"$or": [{"team_id": team_id}, {"team_id": {"$exists": False}}, {"team_id": None}]}
+    return {}
+
 async def get_all_subordinates(user_id: str, team_id: str = None) -> List[str]:
     """Get all subordinates recursively (exclude archived), scoped to team"""
     subordinates = [user_id]
