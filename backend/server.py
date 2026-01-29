@@ -8562,13 +8562,10 @@ async def get_fact_finders(
     team_id = current_user.get('team_id')
     query = {}
     
-    # Team scoping
-    if current_user['role'] == 'super_admin':
-        pass  # Super admin sees all
-    elif team_id:
-        query["team_id"] = team_id
-    else:
+    # Team scoping - ALL users (including super_admin) are scoped to their assigned team
+    if not team_id:
         raise HTTPException(status_code=403, detail="You must be assigned to a team")
+    query["team_id"] = team_id
     
     # Access control - regular users see their own, managers see team
     if current_user['role'] not in ['super_admin', 'state_manager']:
@@ -8607,7 +8604,7 @@ async def create_fact_finder(data: FactFinderCreate, current_user: dict = Depend
     await check_feature_access(current_user, "fact_finder")
     
     team_id = current_user.get('team_id')
-    if not team_id and current_user['role'] != 'super_admin':
+    if not team_id:
         raise HTTPException(status_code=403, detail="You must be assigned to a team")
     
     now = datetime.now(timezone.utc)
