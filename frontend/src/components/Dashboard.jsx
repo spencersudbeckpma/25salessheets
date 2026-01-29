@@ -11,6 +11,7 @@ import PMABonuses from './PMABonuses';
 import PMADocuSphere from './PMADocuSphere';
 import Recruiting from './Recruiting';
 import SuitabilityForm from './SuitabilityForm';
+import FactFinder from './FactFinder';
 import AdminPanel from './AdminPanel';
 import { Button } from './ui/button';
 import { LogOut } from 'lucide-react';
