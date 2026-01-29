@@ -87,7 +87,7 @@ export const BrandingProvider = ({ children }) => {
     return '#' + (0x1000000 + R * 0x10000 + G * 0x100 + B).toString(16).slice(1);
   };
 
-  const updateBranding = useCallback((newBranding, newTeamName = null, newFeatures = null, newUiSettings = null) => {
+  const updateBranding = useCallback((newBranding, newTeamName = null, newFeatures = null, newUiSettings = null, newViewSettings = null) => {
     setBranding(newBranding || DEFAULT_BRANDING);
     if (newTeamName !== null) {
       setTeamName(newTeamName);
@@ -98,6 +98,9 @@ export const BrandingProvider = ({ children }) => {
     if (newUiSettings !== null) {
       setUiSettings({ ...DEFAULT_UI_SETTINGS, ...newUiSettings });
     }
+    if (newViewSettings !== null) {
+      setViewSettings({ ...DEFAULT_VIEW_SETTINGS, ...newViewSettings });
+    }
   }, []);
 
   const clearBranding = () => {
@@ -105,6 +108,7 @@ export const BrandingProvider = ({ children }) => {
     setTeamName(null);
     setFeatures(DEFAULT_FEATURES);
     setUiSettings(DEFAULT_UI_SETTINGS);
+    setViewSettings(DEFAULT_VIEW_SETTINGS);
     // Reset CSS variables
     const root = document.documentElement;
     root.style.setProperty('--brand-primary', DEFAULT_BRANDING.primary_color);
