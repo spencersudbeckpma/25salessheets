@@ -1101,7 +1101,7 @@ const TeamManagement = ({ user }) => {
           )}
 
           {/* Reorganize Tab - Available to managers, but scoped to their team */}
-          {['state_manager', 'regional_manager', 'district_manager'].includes(user.role) && (
+          {['super_admin', 'state_manager', 'regional_manager', 'district_manager'].includes(user.role) && (
           <TabsContent value="reorganize" className="space-y-6" data-testid="reorganize-content">
             <div className="bg-purple-50 p-6 rounded-lg border border-purple-200">
               <h3 className="font-semibold text-lg mb-4">Reorganize Team</h3>
