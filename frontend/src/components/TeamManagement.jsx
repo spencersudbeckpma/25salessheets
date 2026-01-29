@@ -745,7 +745,7 @@ const TeamManagement = ({ user }) => {
               <TabsTrigger value="invite" data-testid="invite-tab" className="py-2 px-3 text-xs md:text-sm whitespace-nowrap flex-shrink-0">Invites</TabsTrigger>
               <TabsTrigger value="edit" data-testid="edit-data-tab" className="py-2 px-3 text-xs md:text-sm whitespace-nowrap flex-shrink-0">Edit Data</TabsTrigger>
               {/* All Users and Reorganize tabs - restricted to same team hierarchy */}
-              {['state_manager', 'regional_manager', 'district_manager'].includes(user.role) && (
+              {['super_admin', 'state_manager', 'regional_manager', 'district_manager'].includes(user.role) && (
                 <>
                   <TabsTrigger value="all-users" data-testid="all-users-tab" className="py-2 px-3 text-xs md:text-sm whitespace-nowrap flex-shrink-0">My Team</TabsTrigger>
                   <TabsTrigger value="reorganize" data-testid="reorganize-tab" className="py-2 px-3 text-xs md:text-sm whitespace-nowrap flex-shrink-0">Reorganize</TabsTrigger>
@@ -753,7 +753,7 @@ const TeamManagement = ({ user }) => {
                 </>
               )}
               <TabsTrigger value="password" data-testid="password-tab" className="py-2 px-3 text-xs md:text-sm whitespace-nowrap flex-shrink-0">🔐 Password</TabsTrigger>
-              {user.role === 'state_manager' && (
+              {['super_admin', 'state_manager'].includes(user.role) && (
                 <TabsTrigger value="admin" data-testid="admin-tab" className="py-2 px-3 text-xs md:text-sm whitespace-nowrap flex-shrink-0">⚙️ Admin</TabsTrigger>
               )}
             </TabsList>
