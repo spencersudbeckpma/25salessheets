@@ -86,8 +86,65 @@ DEFAULT_TEAM_FEATURES = {
     "team_mgmt": True,
     "recruiting": False,  # Disabled by default - super_admin enables per team
     "interviews": True,
-    "fact_finder": True
+    "fact_finder": True,
+    "sna": True,  # SNA tracker sub-tab
+    "npa": True,  # NPA tracker sub-tab
+    "new_faces": True  # New Faces sub-tab
 }
+
+# Default role-based tab overrides (empty = no restrictions)
+DEFAULT_ROLE_TAB_OVERRIDES = {
+    "agent": {"hidden_tabs": []},
+    "district_manager": {"hidden_tabs": []},
+    "regional_manager": {"hidden_tabs": []}
+}
+
+# Default team UI settings
+DEFAULT_TEAM_UI_SETTINGS = {
+    "default_landing_tab": "activity",
+    "default_leaderboard_period": "weekly"
+}
+
+async def get_effective_features(user: dict, team: dict = None) -> dict:
+    """
+    Compute effective features for a user based on:
+    1. Team feature flags
+    2. Role-based tab overrides
+    3. User's role
+    
+    Returns the feature set this specific user should see.
+    State managers and super_admins are NOT subject to role overrides.
+    """
+    role = user.get('role', 'agent')
+    
+    # Super admins see ALL features
+    if role == 'super_admin':
+        return {k: True for k in DEFAULT_TEAM_FEATURES.keys()}
+    
+    # State managers see full team configuration (no role overrides)
+    # Start with team features merged with defaults
+    if team:
+        team_features = team.get('features', {})
+        effective = {**DEFAULT_TEAM_FEATURES, **team_features}
+    else:
+        effective = DEFAULT_TEAM_FEATURES.copy()
+    
+    # State managers are not subject to role overrides
+    if role == 'state_manager':
+        return effective
+    
+    # Apply role-based overrides for agents, DMs, and RMs
+    if team:
+        role_overrides = team.get('role_tab_overrides', DEFAULT_ROLE_TAB_OVERRIDES)
+        role_config = role_overrides.get(role, {})
+        hidden_tabs = role_config.get('hidden_tabs', [])
+        
+        # Disable hidden tabs for this role
+        for tab in hidden_tabs:
+            if tab in effective:
+                effective[tab] = False
+    
+    return effective
 
 class User(BaseModel):
     model_config = ConfigDict(extra="ignore")
