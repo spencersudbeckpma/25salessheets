@@ -6195,8 +6195,10 @@ async def delete_recruit(recruit_id: str, current_user: dict = Depends(get_curre
 
 @api_router.get("/interviews")
 async def get_interviews(current_user: dict = Depends(get_current_user)):
-    """Get all interviews - State Manager sees all in team, Regional sees own + their subordinates', District sees own only. 
-    Also includes interviews shared with the current user. Excludes archived."""
+    """Get interviews - STRICTLY scoped to current user's team_id.
+    
+    NO cross-team visibility allowed under any circumstance.
+    """
     # Check feature access
     await check_feature_access(current_user, "interviews")
     
@@ -6204,26 +6206,25 @@ async def get_interviews(current_user: dict = Depends(get_current_user)):
         raise HTTPException(status_code=403, detail="Only managers can access interviews")
     
     team_id = current_user.get('team_id')
+    
+    # CRITICAL: No team_id = no data. Prevents any cross-team leakage.
     if not team_id:
         return []
     
-    # Base query excludes archived interviews
+    # Base filters
     archived_filter = {"$or": [{"archived": {"$exists": False}}, {"archived": False}]}
-    # Team filter includes records with matching team_id OR no team_id (backwards compatibility for legacy data)
-    team_filter = {"$or": [{"team_id": team_id}, {"team_id": {"$exists": False}}, {"team_id": None}]}
+    # STRICT team filter - only exact match, no NULL/missing allowed
+    strict_team_filter = {"team_id": team_id}
     
     # Query for interviews shared with current user
     shared_with_filter = {"shared_with": current_user['id']}
     
-    # super_admin uses same team scoping as state_manager on product pages
     if current_user['role'] in ['super_admin', 'state_manager']:
-        # State manager and super_admin see ALL interviews in their team
-        query = {"$and": [archived_filter, team_filter]}
+        # State manager and super_admin see ALL interviews in THEIR team only
+        query = {"$and": [archived_filter, strict_team_filter]}
         interviews = await db.interviews.find(query, {"_id": 0}).sort("created_at", -1).to_list(1000)
     elif current_user['role'] == 'regional_manager':
-        # Regional managers see their OWN interviews + their subordinates' + shared with them
         subordinate_ids = await get_all_subordinates(current_user['id'], team_id)
-        # IMPORTANT: Include self in the list
         all_ids = list(set(subordinate_ids))
         all_ids.append(current_user['id'])
         
@@ -6233,7 +6234,7 @@ async def get_interviews(current_user: dict = Depends(get_current_user)):
                 shared_with_filter
             ]},
             archived_filter,
-            team_filter
+            strict_team_filter
         ]}
         interviews = await db.interviews.find(query, {"_id": 0}).sort("created_at", -1).to_list(1000)
     else:
@@ -6244,11 +6245,11 @@ async def get_interviews(current_user: dict = Depends(get_current_user)):
                 shared_with_filter
             ]},
             archived_filter,
-            team_filter
+            strict_team_filter
         ]}
         interviews = await db.interviews.find(query, {"_id": 0}).sort("created_at", -1).to_list(1000)
     
-    # Mark which interviews are shared (not owned by current user)
+    # Mark which interviews are shared
     for interview in interviews:
         interview['is_shared'] = interview.get('interviewer_id') != current_user['id'] and current_user['id'] in (interview.get('shared_with') or [])
     
