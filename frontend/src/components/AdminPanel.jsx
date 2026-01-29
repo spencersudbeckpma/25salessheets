@@ -1041,9 +1041,7 @@ const AdminPanel = ({ user }) => {
                   <Button
                     size="sm"
                     variant="outline"
-                    onClick={() => {
-                      window.open(`${API}/api/admin/teams/${team.id}/roster/pdf`, '_blank');
-                    }}
+                    onClick={() => handleDownloadPdf(`/api/admin/teams/${team.id}/roster/pdf`, `${team.name.replace(/\s+/g, '_')}_Roster.pdf`)}
                     className="border-green-300 text-green-700 hover:bg-green-50"
                     data-testid={`download-roster-pdf-${team.id}`}
                   >
@@ -1053,9 +1051,7 @@ const AdminPanel = ({ user }) => {
                   <Button
                     size="sm"
                     variant="outline"
-                    onClick={() => {
-                      window.open(`${API}/api/admin/teams/${team.id}/roster/csv`, '_blank');
-                    }}
+                    onClick={() => handleDownloadCsv(`/api/admin/teams/${team.id}/roster/csv`, `${team.name.replace(/\s+/g, '_')}_Roster.csv`)}
                     className="border-green-300 text-green-700 hover:bg-green-50"
                     data-testid={`download-roster-csv-${team.id}`}
                   >
@@ -1065,15 +1061,7 @@ const AdminPanel = ({ user }) => {
                   <Button
                     size="sm"
                     variant="default"
-                    onClick={async () => {
-                      // Download State Manager Pack (roster + guide)
-                      toast.info('Downloading State Manager Pack...');
-                      window.open(`${API}/api/admin/teams/${team.id}/roster/pdf`, '_blank');
-                      setTimeout(() => {
-                        window.open(`${API}/api/admin/guides/state-manager`, '_blank');
-                      }, 500);
-                      toast.success('State Manager Pack downloaded! (2 files)');
-                    }}
+                    onClick={() => handleDownloadSmPack(team.id, team.name)}
                     className="bg-blue-600 hover:bg-blue-700"
                     data-testid={`download-sm-pack-${team.id}`}
                   >
