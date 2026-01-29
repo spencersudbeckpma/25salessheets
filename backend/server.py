@@ -3526,6 +3526,8 @@ async def get_period_report(report_type: str, period: str, current_user: dict = 
     if current_user['role'] not in ['super_admin', 'state_manager', 'regional_manager', 'district_manager']:
         raise HTTPException(status_code=403, detail="Only Managers (State, Regional, District) can access period reports")
     
+    team_id = current_user.get('team_id')
+    
     # Use Central Time for date calculations
     central_tz = pytz_timezone('America/Chicago')
     today = datetime.now(central_tz).date()
