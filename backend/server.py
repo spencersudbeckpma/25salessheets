@@ -6636,6 +6636,9 @@ async def get_npa_agents(current_user: dict = Depends(get_current_user)):
     if current_user['role'] not in ['super_admin', 'state_manager', 'regional_manager', 'district_manager']:
         raise HTTPException(status_code=403, detail="Only managers can access NPA tracker")
     
+    # Check if NPA sub-tab is enabled for this team (Phase 2 enforcement)
+    await check_subtab_access(current_user, 'npa')
+    
     team_id = current_user.get('team_id')
     
     # Get NPA agents based on role, filtered by team
