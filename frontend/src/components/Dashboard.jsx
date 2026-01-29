@@ -18,28 +18,11 @@ import { LogOut } from 'lucide-react';
 import { useBranding } from '../contexts/BrandingContext';
 
 const Dashboard = ({ user, setUser, branding: initialBranding, features: initialFeatures, uiSettings: initialUiSettings }) => {
-  const { branding, features, uiSettings, updateBranding, getDisplayName, getTagline, logoUrl, hasFeature, getDefaultTab } = useBranding();
+  const { branding, features, uiSettings, updateBranding, getDisplayName, getTagline, logoUrl, hasFeature } = useBranding();
   
-  // Initialize activeTab to null, will be set after branding/settings load
-  const [activeTab, setActiveTab] = useState(null);
-
-  // Apply branding, features, and UI settings on mount
-  useEffect(() => {
-    if (initialBranding?.branding || initialFeatures || initialUiSettings) {
-      updateBranding(
-        initialBranding?.branding || null, 
-        initialBranding?.team_name || null,
-        initialFeatures || null,
-        initialUiSettings || null
-      );
-    }
-  }, [initialBranding, initialFeatures, initialUiSettings, updateBranding]);
-
-  // Set initial active tab based on team's default landing tab
-  useEffect(() => {
-    if (activeTab === null && uiSettings) {
-      const defaultTab = uiSettings.default_landing_tab || 'activity';
-      // Map feature names to tab names
+  // Initialize activeTab based on initial settings, default to 'activity'
+  const [activeTab, setActiveTab] = useState(() => {
+    if (initialUiSettings?.default_landing_tab) {
       const featureToTabMap = {
         'activity': 'activity',
         'stats': 'stats',
@@ -54,10 +37,22 @@ const Dashboard = ({ user, setUser, branding: initialBranding, features: initial
         'team_mgmt': 'manage',
         'recruiting': 'recruiting'
       };
-      const tabName = featureToTabMap[defaultTab] || 'activity';
-      setActiveTab(tabName);
+      return featureToTabMap[initialUiSettings.default_landing_tab] || 'activity';
     }
-  }, [activeTab, uiSettings]);
+    return 'activity';
+  });
+
+  // Apply branding, features, and UI settings on mount
+  useEffect(() => {
+    if (initialBranding?.branding || initialFeatures || initialUiSettings) {
+      updateBranding(
+        initialBranding?.branding || null, 
+        initialBranding?.team_name || null,
+        initialFeatures || null,
+        initialUiSettings || null
+      );
+    }
+  }, [initialBranding, initialFeatures, initialUiSettings, updateBranding]);
 
   // Determine which tab to show based on features
   const getValidTab = (requestedTab) => {
