@@ -5412,6 +5412,17 @@ async def get_my_stats(period: str, current_user: dict = Depends(get_current_use
 @api_router.get("/team/members")
 async def get_team_members(current_user: dict = Depends(get_current_user)):
     team_id = current_user.get('team_id')
+    user_role = current_user.get('role')
+    
+    # Super admin and state manager see all team members (for RM filter dropdowns)
+    if user_role in ['super_admin', 'state_manager']:
+        query = {"$or": [{"status": "active"}, {"status": {"$exists": False}}]}
+        if team_id:
+            query["team_id"] = team_id
+        members = await db.users.find(query, {"_id": 0, "password_hash": 0}).to_list(1000)
+        return members
+    
+    # Other roles see only their direct reports
     query = {"manager_id": current_user['id'], "$or": [{"status": "active"}, {"status": {"$exists": False}}]}
     if team_id:
         query["team_id"] = team_id
