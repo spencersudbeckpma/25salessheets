@@ -23,13 +23,22 @@ const DEFAULT_FEATURES = {
   reports: true,
   team_mgmt: true,
   recruiting: false,
-  interviews: true
+  interviews: true,
+  sna: true,
+  npa: true,
+  new_faces: true
+};
+
+const DEFAULT_UI_SETTINGS = {
+  default_landing_tab: 'activity',
+  default_leaderboard_period: 'weekly'
 };
 
 export const BrandingProvider = ({ children }) => {
   const [branding, setBranding] = useState(DEFAULT_BRANDING);
   const [teamName, setTeamName] = useState(null);
   const [features, setFeatures] = useState(DEFAULT_FEATURES);
+  const [uiSettings, setUiSettings] = useState(DEFAULT_UI_SETTINGS);
 
   // Apply CSS variables when branding changes
   useEffect(() => {
