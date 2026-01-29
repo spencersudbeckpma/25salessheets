@@ -454,6 +454,51 @@ const AdminPanel = ({ user }) => {
     }
   };
 
+  // Sub-tabs Diagnostic Functions (New Faces, SNA, NPA)
+  const runSubtabsDiagnostic = async () => {
+    setSubtabsDiagnosticLoading(true);
+    setSubtabsDiagnostic(null);
+    setSubtabsMigrationResult(null);
+    
+    try {
+      const res = await axios.get(`${API}/api/admin/diagnose-subtabs`, { headers });
+      setSubtabsDiagnostic(res.data);
+      
+      const totalIssues = res.data.summary?.total_data_issues || 0;
+      if (totalIssues > 0) {
+        toast.warning(`Found ${totalIssues} records with missing team_id affecting rollups`);
+      } else {
+        toast.success('All sub-tab data has team_id assigned!');
+      }
+    } catch (error) {
+      toast.error(error.response?.data?.detail || 'Failed to run diagnostics');
+    } finally {
+      setSubtabsDiagnosticLoading(false);
+    }
+  };
+
+  const runSubtabsMigration = async () => {
+    if (!subtabsDiagnostic || subtabsDiagnostic.summary?.total_data_issues === 0) {
+      toast.info('No issues to fix');
+      return;
+    }
+    
+    setSubtabsDiagnosticLoading(true);
+    
+    try {
+      const res = await axios.post(`${API}/api/admin/migrate-all-team-ids`, {}, { headers });
+      setSubtabsMigrationResult(res.data);
+      toast.success(res.data.message);
+      
+      // Re-run diagnostic to show updated state
+      await runSubtabsDiagnostic();
+    } catch (error) {
+      toast.error(error.response?.data?.detail || 'Failed to run migration');
+    } finally {
+      setSubtabsDiagnosticLoading(false);
+    }
+  };
+
   const handleCreateTeam = async () => {
     if (!newTeamName.trim()) {
       toast.error('Please enter a team name');
