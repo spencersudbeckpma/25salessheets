@@ -177,6 +177,17 @@ Team-based activity tracking and performance management application for insuranc
   - Server-side enforcement: 403 returned for disabled sub-tabs (non-super_admin)
   - Default KPI labels match live dashboard
   - Frontend UI fully functional
+- [x] Fix super_admin data scoping bypass (FIXED 2025-01-29):
+  - ISSUE: super_admin was bypassing team_id filters on ALL product pages (leaderboard, interviews, fact finders, etc.)
+  - FIX: Removed super_admin bypass from all product endpoints. Super admin now:
+    1. Bypasses feature flags ONLY (can see all tabs/features)
+    2. Is team-scoped on ALL product pages (same as state_manager)
+    3. Has cross-team visibility ONLY in Admin panel with explicit team selection
+  - ENDPOINTS FIXED: leaderboard, interviews, interviews/stats, users/archived/list, users/active/list, fact-finders, fact-finders/months/list, sna-tracker, npa-tracker, reports/manager-list
+  - ACCEPTANCE TESTS PASSED:
+    - Super Admin sees ONLY Team Sudbeck data on product pages
+    - Team Quick state_manager sees ONLY Team Quick data
+    - Admin panel cross-team config access works with explicit team_id
 
 ### P1 - High Priority (PAUSED)
 - [ ] Refactor monolithic `server.py` into route-based structure (backend/routes/) - **PAUSED: App in active rollout**
