@@ -4494,8 +4494,8 @@ async def admin_reset_password(reset_request: PasswordResetRequest, current_user
     """
     try:
         # Only State Managers can reset passwords
-        if current_user['role'] != 'state_manager':
-            raise HTTPException(status_code=403, detail="Only State Managers can reset passwords")
+        if current_user['role'] not in ['state_manager', 'super_admin']:
+            raise HTTPException(status_code=403, detail="Only State Managers and Super Admins can reset passwords")
         
         team_id = current_user.get('team_id')
         
