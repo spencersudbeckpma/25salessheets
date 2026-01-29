@@ -3104,16 +3104,18 @@ async def get_manager_hierarchy_report(manager_id: str, period: str, current_use
     # Check feature access
     await check_feature_access(current_user, "reports")
     
+    team_id = current_user.get('team_id')
+    
     if current_user['role'] not in ['super_admin', 'state_manager', 'regional_manager', 'district_manager']:
         raise HTTPException(status_code=403, detail="Only Managers can access hierarchy reports")
     
-    # Verify the requested manager is in current user's hierarchy
+    # Verify the requested manager is in current user's hierarchy - SCOPED TO TEAM
     async def get_all_subordinates(user_id: str):
         members = []
-        subordinates = await db.users.find(
-            {"manager_id": user_id, "$or": [{"status": "active"}, {"status": {"$exists": False}}]},
-            {"_id": 0, "password_hash": 0}
-        ).to_list(1000)
+        query = {"manager_id": user_id, "$or": [{"status": "active"}, {"status": {"$exists": False}}]}
+        if team_id:
+            query["team_id"] = team_id
+        subordinates = await db.users.find(query, {"_id": 0, "password_hash": 0}).to_list(1000)
         for sub in subordinates:
             members.append(sub)
             sub_members = await get_all_subordinates(sub['id'])
