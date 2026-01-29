@@ -101,15 +101,6 @@ const Dashboard = ({ user, setUser, branding: initialBranding, features: initial
     setUser(null);
   };
 
-  // Show loading state while activeTab is being set
-  if (activeTab === null) {
-    return (
-      <div className="min-h-screen bg-slate-100 flex items-center justify-center">
-        <div className="text-slate-600">Loading...</div>
-      </div>
-    );
-  }
-
   return (
     <div className="min-h-screen bg-slate-100 pb-8">
       <div className="container mx-auto px-2 md:px-4 py-4 md:py-6 max-w-7xl">
