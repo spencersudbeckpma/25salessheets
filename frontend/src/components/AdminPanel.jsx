@@ -2904,7 +2904,7 @@ const AdminPanel = ({ user }) => {
             <>
               {/* Tab navigation */}
               <div className="flex border-b mb-4">
-                {['features', 'role-overrides', 'ui-settings', 'branding'].map(tab => (
+                {['features', 'role-overrides', 'ui-settings', 'branding', 'views'].map(tab => (
                   <button
                     key={tab}
                     onClick={() => setCustomizationTab(tab)}
