@@ -157,6 +157,11 @@ const AdminPanel = ({ user }) => {
   const [subtabsDiagnosticLoading, setSubtabsDiagnosticLoading] = useState(false);
   const [subtabsMigrationResult, setSubtabsMigrationResult] = useState(null);
 
+  // Full Data Health Check states
+  const [fullHealthData, setFullHealthData] = useState(null);
+  const [fullHealthLoading, setFullHealthLoading] = useState(false);
+  const [backfillLoading, setBackfillLoading] = useState({});
+
   const token = localStorage.getItem('token');
   const headers = { Authorization: `Bearer ${token}` };
 
