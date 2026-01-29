@@ -129,7 +129,6 @@ export const BrandingProvider = ({ children }) => {
       hasFeature,
       getDefaultTab,
       getDefaultLeaderboardPeriod,
-      hasFeature,
       logoUrl: branding?.logo_url
     }}>
       {children}
