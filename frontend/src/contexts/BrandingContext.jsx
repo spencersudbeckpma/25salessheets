@@ -15,6 +15,7 @@ const DEFAULT_FEATURES = {
   stats: true,
   team_view: true,
   suitability: true,
+  fact_finder: true,
   pma_bonuses: true,
   docusphere: true,
   leaderboard: true,
