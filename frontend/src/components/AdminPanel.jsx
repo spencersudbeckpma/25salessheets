@@ -1101,28 +1101,16 @@ const AdminPanel = ({ user }) => {
                 <div className="flex flex-wrap items-center gap-2 pt-2 border-t">
                   <Button
                     size="sm"
-                    variant="outline"
+                    variant="default"
                     onClick={(e) => {
                       e.stopPropagation();
-                      openBrandingModal(team);
+                      loadTeamCustomization(team.id, team.name);
                     }}
-                    data-testid={`branding-btn-${team.id}`}
-                  >
-                    <Pencil className="w-3 h-3 mr-1" />
-                    Branding
-                  </Button>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      openFeaturesModal(team);
-                    }}
-                    className="border-purple-300 text-purple-700"
-                    data-testid={`features-btn-${team.id}`}
+                    className="bg-indigo-600 hover:bg-indigo-700"
+                    data-testid={`customize-btn-${team.id}`}
                   >
                     <Settings className="w-3 h-3 mr-1" />
-                    Features
+                    Customize
                   </Button>
                   <Button
                     size="sm"
