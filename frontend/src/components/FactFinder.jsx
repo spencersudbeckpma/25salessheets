@@ -444,7 +444,7 @@ const FactFinder = ({ user }) => {
                             <Edit className="w-3 h-3 mr-1" />
                             Edit
                           </Button>
-                          <Button size="sm" variant="outline" onClick={() => handleExportPDF(ff.id)} className="text-green-700 border-green-300" data-testid={`export-${ff.id}`}>
+                          <Button size="sm" variant="outline" onClick={() => handleExportPDF(ff.id, ff.client_info)} className="text-green-700 border-green-300" data-testid={`export-${ff.id}`}>
                             <Download className="w-3 h-3 mr-1" />
                             PDF
                           </Button>
