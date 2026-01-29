@@ -23,8 +23,6 @@ const Dashboard = ({ user, setUser, branding: initialBranding, features: initial
 
   // Apply branding and features on mount
   useEffect(() => {
-    console.log('Dashboard useEffect - initialFeatures recruiting:', initialFeatures?.recruiting);
-    console.log('Dashboard useEffect - initialFeatures keys:', initialFeatures ? Object.keys(initialFeatures) : 'null');
     if (initialBranding?.branding || initialFeatures) {
       updateBranding(
         initialBranding?.branding || null, 
@@ -33,12 +31,6 @@ const Dashboard = ({ user, setUser, branding: initialBranding, features: initial
       );
     }
   }, [initialBranding, initialFeatures, updateBranding]);
-
-  // Debug: Log features state
-  useEffect(() => {
-    console.log('Dashboard - context features recruiting:', features?.recruiting);
-    console.log('Dashboard - hasFeature recruiting:', hasFeature('recruiting'));
-  }, [features, hasFeature]);
 
   // Determine which tab to show based on features
   const getValidTab = (requestedTab) => {
