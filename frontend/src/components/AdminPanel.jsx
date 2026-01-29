@@ -163,6 +163,54 @@ const AdminPanel = ({ user }) => {
     }
   };
 
+  // Download CSV using blob (handles auth properly)
+  const handleDownloadCsv = async (endpoint, filename) => {
+    try {
+      toast.info('Generating CSV...');
+      const response = await axios.get(`${API}${endpoint}`, {
+        headers,
+        responseType: 'blob'
+      });
+      
+      // Create blob URL and trigger download
+      const blob = new Blob([response.data], { type: 'text/csv' });
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = filename;
+      
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+      
+      toast.success('CSV downloaded!');
+    } catch (error) {
+      console.error('Download error:', error);
+      toast.error(error.response?.data?.detail || 'Failed to download CSV');
+    }
+  };
+
+  // Download State Manager Pack (roster PDF + guide)
+  const handleDownloadSmPack = async (teamId, teamName) => {
+    try {
+      toast.info('Downloading State Manager Pack...');
+      const safeName = teamName.replace(/\s+/g, '_');
+      
+      // Download roster PDF
+      await handleDownloadPdf(`/api/admin/teams/${teamId}/roster/pdf`, `${safeName}_Roster.pdf`);
+      
+      // Small delay then download guide
+      setTimeout(async () => {
+        await handleDownloadPdf('/api/admin/guides/state-manager', 'State_Manager_Guide.pdf');
+        toast.success('State Manager Pack complete!');
+      }, 500);
+    } catch (error) {
+      console.error('SM Pack download error:', error);
+      toast.error('Failed to download State Manager Pack');
+    }
+  };
+
   // Fetch broken hierarchy for a team
   const fetchBrokenHierarchy = async (teamId) => {
     try {
