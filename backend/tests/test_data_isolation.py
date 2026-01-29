@@ -165,7 +165,8 @@ class TestDataIsolation:
     
     def test_reports_period_team_returns_200(self, auth_headers):
         """Test period team report endpoint"""
-        response = requests.get(f"{BASE_URL}/api/reports/period/team?month=2026-01", headers=auth_headers)
+        # Correct endpoint format: /reports/period/{report_type}?period=monthly&month=2026-01
+        response = requests.get(f"{BASE_URL}/api/reports/period/team?period=monthly&month=2026-01", headers=auth_headers)
         assert response.status_code == 200, f"Period team report failed: {response.text}"
         print("✓ Reports period team working")
     
