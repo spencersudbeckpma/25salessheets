@@ -1462,9 +1462,13 @@ async def get_my_team_features(current_user: dict = Depends(get_current_user)):
         team_ui = team.get('ui_settings', {})
         ui_settings = {**ui_settings, **team_ui}
     
+    # Get view settings (Phase 2) - KPI cards and subtabs
+    view_settings = await get_team_view_settings(team)
+    
     return {
         "features": effective_features,
         "ui_settings": ui_settings,
+        "view_settings": view_settings,
         "role": role
     }
 
