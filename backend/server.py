@@ -323,9 +323,17 @@ def require_super_admin(current_user: dict):
 
 async def check_feature_access(current_user: dict, feature_name: str):
     """
-    Check if user's team has access to a specific feature.
-    Super admins always have access. Returns True if allowed, raises 403 if not.
+    Check if user has access to a specific feature based on:
+    1. Team feature flags
+    2. Role-based tab overrides
+    
+    Super admins always have access.
+    State managers see full team config.
+    Other roles may have restrictions applied.
+    
+    Returns True if allowed, raises 403 if not.
     """
+    # Super admins always have access
     if current_user.get('role') == 'super_admin':
         return True
     
@@ -333,16 +341,16 @@ async def check_feature_access(current_user: dict, feature_name: str):
     if not team_id:
         raise HTTPException(status_code=403, detail=f"Access denied: {feature_name} is not available")
     
-    # Use find_one without projection to ensure we get the team doc even if features is missing
+    # Get team config
     team = await db.teams.find_one({"id": team_id}, {"_id": 0})
     if team is None:
         raise HTTPException(status_code=403, detail=f"Access denied: team not found")
     
-    features = team.get('features', {})
-    merged_features = {**DEFAULT_TEAM_FEATURES, **features}
+    # Get effective features for this user (includes role-based overrides)
+    effective_features = await get_effective_features(current_user, team)
     
-    if not merged_features.get(feature_name, False):
-        raise HTTPException(status_code=403, detail=f"Access denied: {feature_name} is not enabled for your team")
+    if not effective_features.get(feature_name, False):
+        raise HTTPException(status_code=403, detail=f"Access denied: {feature_name} is not enabled for your role")
     
     return True
 
