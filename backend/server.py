@@ -762,19 +762,23 @@ async def migrate_all_team_ids(current_user: dict = Depends(get_current_user)):
     require_super_admin(current_user)
     
     report = {
-        "activities": {"updated": 0, "skipped_no_user_team": 0, "skipped_user_not_found": 0},
-        "new_face_customers": {"updated": 0, "skipped_no_user_team": 0, "skipped_user_not_found": 0},
-        "npa_agents": {"updated": 0, "skipped_no_user_team": 0, "skipped_user_not_found": 0}
+        "activities": {"updated": 0, "skipped_no_user_team": 0, "skipped_user_not_found": 0, "skipped_details": []},
+        "new_face_customers": {"updated": 0, "skipped_no_user_team": 0, "skipped_user_not_found": 0, "skipped_details": []},
+        "npa_agents": {"updated": 0, "skipped_no_user_team": 0, "skipped_user_not_found": 0, "skipped_details": []}
     }
     
-    # Build user lookup
-    all_users = await db.users.find({}, {"_id": 0, "id": 1, "team_id": 1}).to_list(10000)
+    # Build user lookup with full info for reporting
+    all_users = await db.users.find({}, {"_id": 0, "id": 1, "name": 1, "email": 1, "team_id": 1}).to_list(10000)
     user_team_map = {u["id"]: u.get("team_id") for u in all_users}
+    user_info_map = {u["id"]: {"name": u.get("name"), "email": u.get("email"), "team_id": u.get("team_id")} for u in all_users}
+    
+    # Track skipped users for detailed reporting
+    skipped_users = {"activities": {}, "new_face_customers": {}, "npa_agents": {}}
     
     # ===== ACTIVITIES =====
     orphaned_activities = await db.activities.find(
         {"$or": [{"team_id": None}, {"team_id": {"$exists": False}}]},
-        {"_id": 0, "id": 1, "user_id": 1}
+        {"_id": 0, "id": 1, "user_id": 1, "date": 1, "premium": 1}
     ).to_list(10000)
     
     for act in orphaned_activities:
@@ -786,15 +790,30 @@ async def migrate_all_team_ids(current_user: dict = Depends(get_current_user)):
         team_id = user_team_map.get(user_id)
         if not team_id:
             report["activities"]["skipped_no_user_team"] += 1
+            # Track for detailed report
+            if user_id not in skipped_users["activities"]:
+                user_info = user_info_map.get(user_id, {})
+                skipped_users["activities"][user_id] = {
+                    "user_id": user_id,
+                    "user_name": user_info.get("name", "NOT FOUND"),
+                    "user_email": user_info.get("email"),
+                    "reason": "user_not_found" if user_id not in user_info_map else "no_team_assigned",
+                    "record_count": 0,
+                    "total_premium": 0
+                }
+            skipped_users["activities"][user_id]["record_count"] += 1
+            skipped_users["activities"][user_id]["total_premium"] += act.get("premium", 0)
             continue
         
         await db.activities.update_one({"id": act["id"]}, {"$set": {"team_id": team_id}})
         report["activities"]["updated"] += 1
     
+    report["activities"]["skipped_details"] = list(skipped_users["activities"].values())
+    
     # ===== NEW FACE CUSTOMERS =====
     orphaned_nfc = await db.new_face_customers.find(
         {"$or": [{"team_id": None}, {"team_id": {"$exists": False}}]},
-        {"_id": 0, "id": 1, "user_id": 1}
+        {"_id": 0, "id": 1, "user_id": 1, "policy_amount": 1}
     ).to_list(10000)
     
     for nfc in orphaned_nfc:
@@ -806,15 +825,27 @@ async def migrate_all_team_ids(current_user: dict = Depends(get_current_user)):
         team_id = user_team_map.get(user_id)
         if not team_id:
             report["new_face_customers"]["skipped_no_user_team"] += 1
+            if user_id not in skipped_users["new_face_customers"]:
+                user_info = user_info_map.get(user_id, {})
+                skipped_users["new_face_customers"][user_id] = {
+                    "user_id": user_id,
+                    "user_name": user_info.get("name", "NOT FOUND"),
+                    "user_email": user_info.get("email"),
+                    "reason": "user_not_found" if user_id not in user_info_map else "no_team_assigned",
+                    "record_count": 0
+                }
+            skipped_users["new_face_customers"][user_id]["record_count"] += 1
             continue
         
         await db.new_face_customers.update_one({"id": nfc["id"]}, {"$set": {"team_id": team_id}})
         report["new_face_customers"]["updated"] += 1
     
+    report["new_face_customers"]["skipped_details"] = list(skipped_users["new_face_customers"].values())
+    
     # ===== NPA AGENTS =====
     orphaned_npa = await db.npa_agents.find(
         {"$or": [{"team_id": None}, {"team_id": {"$exists": False}}]},
-        {"_id": 0, "id": 1, "user_id": 1, "added_by": 1}
+        {"_id": 0, "id": 1, "user_id": 1, "added_by": 1, "name": 1}
     ).to_list(10000)
     
     for npa in orphaned_npa:
@@ -822,21 +853,37 @@ async def migrate_all_team_ids(current_user: dict = Depends(get_current_user)):
         user_id = npa.get("user_id") or npa.get("added_by")
         if not user_id:
             report["npa_agents"]["skipped_user_not_found"] += 1
+            skipped_users["npa_agents"][npa.get("id", "unknown")] = {
+                "npa_name": npa.get("name"),
+                "reason": "no_user_id_or_added_by"
+            }
             continue
         
         team_id = user_team_map.get(user_id)
         if not team_id:
             report["npa_agents"]["skipped_no_user_team"] += 1
+            user_info = user_info_map.get(user_id, {})
+            skipped_users["npa_agents"][user_id] = {
+                "user_id": user_id,
+                "user_name": user_info.get("name", "NOT FOUND"),
+                "user_email": user_info.get("email"),
+                "npa_name": npa.get("name"),
+                "reason": "user_not_found" if user_id not in user_info_map else "no_team_assigned"
+            }
             continue
         
         await db.npa_agents.update_one({"id": npa["id"]}, {"$set": {"team_id": team_id}})
         report["npa_agents"]["updated"] += 1
+    
+    report["npa_agents"]["skipped_details"] = list(skipped_users["npa_agents"].values())
     
     total_updated = sum(r["updated"] for r in report.values())
     total_skipped = sum(r["skipped_no_user_team"] + r["skipped_user_not_found"] for r in report.values())
     
     return {
         "message": f"Migration complete. Updated {total_updated} records, skipped {total_skipped}.",
+        "total_updated": total_updated,
+        "total_skipped": total_skipped,
         "report": report
     }
 
