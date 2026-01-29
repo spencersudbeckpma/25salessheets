@@ -781,8 +781,8 @@ const Recruiting = ({ user }) => {
           </div>
         )}
 
-        {/* Regional Manager Sub-Tabs - Only show for State Manager */}
-        {user.role === 'state_manager' && regionalManagers.length > 0 && (
+        {/* Regional Manager Sub-Tabs - Show for State Manager and Super Admin */}
+        {(user.role === 'state_manager' || user.role === 'super_admin') && regionalManagers.length > 0 && (
           <div className="mb-4">
             <label className="block text-xs font-medium text-slate-500 mb-2">Filter by Regional Manager</label>
             <div className="flex gap-2 overflow-x-auto pb-2">
