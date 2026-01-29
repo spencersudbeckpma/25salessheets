@@ -39,6 +39,7 @@ const Dashboard = ({ user, setUser, branding: initialBranding, features: initial
       'stats': 'stats',
       'team': 'team_view',
       'suitability': 'suitability',
+      'fact-finder': 'fact_finder',
       'pma-bonuses': 'pma_bonuses',
       'docusphere': 'docusphere',
       'leaderboard': 'leaderboard',
