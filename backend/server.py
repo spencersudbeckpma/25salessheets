@@ -570,6 +570,63 @@ async def recruiting_diagnostic(current_user: dict = Depends(get_current_user)):
     }
 
 @api_router.post("/admin/migrate-recruits-team-id")
+async def migrate_recruits_team_id(current_user: dict = Depends(get_current_user)):
+    """
+    Backfill missing team_id on recruits based on created_by user's team_id.
+    GUARDRAILS:
+    - Only updates recruits where team_id is NULL or missing
+    - Sets recruit.team_id = creator_user.team_id
+    - Does NOT modify any other fields
+    - If created_by user not found, leaves recruit unchanged
+    (super_admin only)
+    """
+    require_super_admin(current_user)
+    
+    # Build user_id -> team_id mapping
+    users = await db.users.find({}, {"_id": 0, "id": 1, "team_id": 1}).to_list(10000)
+    user_team_map = {u["id"]: u.get("team_id") for u in users}
+    
+    # Find recruits with missing team_id
+    recruits_to_update = await db.recruits.find(
+        {"$or": [{"team_id": None}, {"team_id": {"$exists": False}}]},
+        {"_id": 1, "created_by": 1, "name": 1}
+    ).to_list(100000)
+    
+    total_scanned = len(recruits_to_update)
+    total_updated = 0
+    total_skipped_no_user = 0
+    total_skipped_user_no_team = 0
+    
+    for recruit in recruits_to_update:
+        created_by = recruit.get("created_by")
+        
+        if not created_by or created_by not in user_team_map:
+            total_skipped_no_user += 1
+            continue
+        
+        user_team_id = user_team_map[created_by]
+        
+        if not user_team_id:
+            total_skipped_user_no_team += 1
+            continue
+        
+        await db.recruits.update_one(
+            {"_id": recruit["_id"]},
+            {"$set": {"team_id": user_team_id}}
+        )
+        total_updated += 1
+    
+    return {
+        "migration_report": {
+            "total_recruits_in_db": await db.recruits.count_documents({}),
+            "total_scanned_missing_team_id": total_scanned,
+            "total_updated": total_updated,
+            "total_skipped_creator_not_found": total_skipped_no_user,
+            "total_skipped_creator_has_no_team": total_skipped_user_no_team
+        }
+    }
+
+@api_router.post("/admin/migrate-activities-team-id")
 async def migrate_activities_team_id(current_user: dict = Depends(get_current_user)):
     """
     Backfill missing team_id on activities based on user's team_id.
