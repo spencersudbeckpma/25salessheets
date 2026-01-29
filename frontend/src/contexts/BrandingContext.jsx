@@ -68,7 +68,7 @@ export const BrandingProvider = ({ children }) => {
     return '#' + (0x1000000 + R * 0x10000 + G * 0x100 + B).toString(16).slice(1);
   };
 
-  const updateBranding = (newBranding, newTeamName = null, newFeatures = null, newUiSettings = null) => {
+  const updateBranding = useCallback((newBranding, newTeamName = null, newFeatures = null, newUiSettings = null) => {
     setBranding(newBranding || DEFAULT_BRANDING);
     if (newTeamName !== null) {
       setTeamName(newTeamName);
@@ -79,7 +79,7 @@ export const BrandingProvider = ({ children }) => {
     if (newUiSettings !== null) {
       setUiSettings({ ...DEFAULT_UI_SETTINGS, ...newUiSettings });
     }
-  };
+  }, []);
 
   const clearBranding = () => {
     setBranding(DEFAULT_BRANDING);
