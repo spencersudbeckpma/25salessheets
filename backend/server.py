@@ -6083,20 +6083,23 @@ async def get_interview_stats(current_user: dict = Depends(get_current_user)):
     month_start = today.replace(day=1)
     year_start = today.replace(month=1, day=1)
     
+    # Team filter with legacy support
+    team_filter = get_team_filter_with_legacy(team_id)
+    
     # Build query based on role - NOTE: Stats include archived interviews to preserve totals
     # super_admin uses same team scoping as state_manager on product pages
     if current_user['role'] in ['super_admin', 'state_manager']:
         # State manager and super_admin see all in their team
-        base_query = {"team_id": team_id}
+        base_query = team_filter
     elif current_user['role'] == 'regional_manager':
         # Include own interviews + subordinates' interviews
         subordinate_ids = await get_all_subordinates(current_user['id'], team_id)
         all_ids = list(set(subordinate_ids))
         all_ids.append(current_user['id'])  # Include self
-        base_query = {"interviewer_id": {"$in": all_ids}, "team_id": team_id}
+        base_query = {"$and": [{"interviewer_id": {"$in": all_ids}}, team_filter]}
     else:
         # District manager sees only own
-        base_query = {"interviewer_id": current_user['id'], "team_id": team_id}
+        base_query = {"$and": [{"interviewer_id": current_user['id']}, team_filter]}
     
     # Get all interviews for stats
     all_interviews = await db.interviews.find(base_query, {"_id": 0}).to_list(10000)
