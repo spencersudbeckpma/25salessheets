@@ -1170,24 +1170,33 @@ async def copy_team_features(team_id: str, source_team_id: str, current_user: di
 
 @api_router.get("/teams/my-features")
 async def get_my_team_features(current_user: dict = Depends(get_current_user)):
-    """Get current user's team features (for frontend tab visibility)"""
+    """
+    Get current user's EFFECTIVE features for frontend tab visibility.
+    This includes team feature flags + role-based tab overrides.
+    Also returns UI settings (default landing tab, leaderboard period).
+    """
     team_id = current_user.get('team_id')
+    role = current_user.get('role', 'agent')
     
-    # Super admins see all features
-    if current_user.get('role') == 'super_admin':
-        return {"features": {k: True for k in DEFAULT_TEAM_FEATURES.keys()}}
+    # Get team config
+    team = None
+    if team_id:
+        team = await db.teams.find_one({"id": team_id}, {"_id": 0})
     
-    if not team_id:
-        return {"features": DEFAULT_TEAM_FEATURES}
+    # Get effective features (handles super_admin, state_manager, and role overrides)
+    effective_features = await get_effective_features(current_user, team)
     
-    team = await db.teams.find_one({"id": team_id}, {"_id": 0})
-    if not team:
-        return {"features": DEFAULT_TEAM_FEATURES}
+    # Get UI settings from team config (or defaults)
+    ui_settings = DEFAULT_TEAM_UI_SETTINGS.copy()
+    if team:
+        team_ui = team.get('ui_settings', {})
+        ui_settings = {**ui_settings, **team_ui}
     
-    features = team.get('features', {})
-    merged_features = {**DEFAULT_TEAM_FEATURES, **features}
-    
-    return {"features": merged_features}
+    return {
+        "features": effective_features,
+        "ui_settings": ui_settings,
+        "role": role
+    }
 
 @api_router.get("/admin/debug-teams")
 async def debug_teams(current_user: dict = Depends(get_current_user)):
