@@ -4660,8 +4660,9 @@ async def get_my_activities(current_user: dict = Depends(get_current_user)):
 # Manager editing team member activities
 @api_router.put("/users/{user_id}/activities/{date}")
 async def update_team_activity(user_id: str, date: str, activity_data: ActivityCreate, current_user: dict = Depends(get_current_user)):
-    # Get all subordinates
-    subordinates = await get_all_subordinates(current_user['id'])
+    # Get all subordinates - SCOPED TO TEAM
+    team_id = current_user.get('team_id')
+    subordinates = await get_all_subordinates(current_user['id'], team_id)
     
     if user_id not in subordinates or user_id == current_user['id']:
         raise HTTPException(status_code=403, detail="Not authorized to edit this user's data")
@@ -4703,7 +4704,9 @@ async def update_team_activity(user_id: str, date: str, activity_data: ActivityC
 
 @api_router.get("/users/{user_id}/activities")
 async def get_team_member_activities(user_id: str, current_user: dict = Depends(get_current_user)):
-    subordinates = await get_all_subordinates(current_user['id'])
+    # SCOPED TO TEAM
+    team_id = current_user.get('team_id')
+    subordinates = await get_all_subordinates(current_user['id'], team_id)
     
     if user_id not in subordinates:
         raise HTTPException(status_code=403, detail="Not authorized to view this user's data")
@@ -4982,7 +4985,9 @@ async def verify_invite(invite_code: str):
 # User Management
 @api_router.delete("/users/{user_id}")
 async def remove_user(user_id: str, current_user: dict = Depends(get_current_user)):
-    subordinates = await get_all_subordinates(current_user['id'])
+    # SCOPED TO TEAM
+    team_id = current_user.get('team_id')
+    subordinates = await get_all_subordinates(current_user['id'], team_id)
     
     if user_id not in subordinates or user_id == current_user['id']:
         raise HTTPException(status_code=403, detail="Not authorized to remove this user")
