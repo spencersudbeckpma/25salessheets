@@ -2981,7 +2981,7 @@ async def generate_excel_report(period: str, current_user: dict = Depends(get_cu
     else:
         raise HTTPException(status_code=400, detail="Invalid period")
     
-    # Get all subordinates recursively
+    # Get all subordinates recursively - SCOPED TO TEAM
     async def get_all_team_members(user_id: str):
         members = []
         user_doc = await db.users.find_one({"id": user_id}, {"_id": 0, "password_hash": 0})
@@ -2989,10 +2989,10 @@ async def generate_excel_report(period: str, current_user: dict = Depends(get_cu
             # Convert to dict to ensure it's serializable
             user = dict(user_doc)
             members.append(user)
-            subordinates = await db.users.find(
-                {"manager_id": user_id, "$or": [{"status": "active"}, {"status": {"$exists": False}}]},
-                {"_id": 0, "password_hash": 0}
-            ).to_list(1000)
+            query = {"manager_id": user_id, "$or": [{"status": "active"}, {"status": {"$exists": False}}]}
+            if team_id:
+                query["team_id"] = team_id
+            subordinates = await db.users.find(query, {"_id": 0, "password_hash": 0}).to_list(1000)
             for sub in subordinates:
                 sub_members = await get_all_team_members(sub['id'])
                 members.extend(sub_members)
@@ -3000,13 +3000,13 @@ async def generate_excel_report(period: str, current_user: dict = Depends(get_cu
     
     team_members = await get_all_team_members(current_user['id'])
     
-    # Get activities for each team member
+    # Get activities for each team member - SCOPED TO TEAM
     report_data = []
     for member in team_members:
-        activities = await db.activities.find({
-            "user_id": member['id'],
-            "date": {"$gte": start_date.isoformat()}
-        }, {"_id": 0}).to_list(1000)
+        act_query = {"user_id": member['id'], "date": {"$gte": start_date.isoformat()}}
+        if team_id:
+            act_query["team_id"] = team_id
+        activities = await db.activities.find(act_query, {"_id": 0}).to_list(1000)
         
         totals = {
             "name": str(member.get('name', 'Unknown')),
