@@ -669,6 +669,122 @@ async def migrate_recruits_team_id(current_user: dict = Depends(get_current_user
         }
     }
 
+@api_router.post("/admin/migrate-interviews-team-id")
+async def migrate_interviews_team_id(current_user: dict = Depends(get_current_user)):
+    """
+    Backfill missing team_id on interviews based on interviewer's team_id.
+    GUARDRAILS:
+    - Only updates interviews where team_id is NULL or missing
+    - Sets interview.team_id = interviewer_user.team_id
+    - Does NOT modify any other fields
+    - If interviewer_id not found, leaves interview unchanged
+    (super_admin only)
+    """
+    require_super_admin(current_user)
+    
+    # Build user_id -> team_id mapping
+    users = await db.users.find({}, {"_id": 0, "id": 1, "team_id": 1}).to_list(10000)
+    user_team_map = {u["id"]: u.get("team_id") for u in users}
+    
+    # Find interviews with missing team_id
+    interviews_to_update = await db.interviews.find(
+        {"$or": [{"team_id": None}, {"team_id": {"$exists": False}}]},
+        {"_id": 1, "interviewer_id": 1, "candidate_name": 1}
+    ).to_list(100000)
+    
+    total_scanned = len(interviews_to_update)
+    total_updated = 0
+    total_skipped_no_user = 0
+    total_skipped_user_no_team = 0
+    
+    for interview in interviews_to_update:
+        interviewer_id = interview.get("interviewer_id")
+        
+        if not interviewer_id or interviewer_id not in user_team_map:
+            total_skipped_no_user += 1
+            continue
+        
+        user_team_id = user_team_map[interviewer_id]
+        
+        if not user_team_id:
+            total_skipped_user_no_team += 1
+            continue
+        
+        await db.interviews.update_one(
+            {"_id": interview["_id"]},
+            {"$set": {"team_id": user_team_id}}
+        )
+        total_updated += 1
+    
+    return {
+        "migration_report": {
+            "collection": "interviews",
+            "total_in_db": await db.interviews.count_documents({}),
+            "total_scanned_missing_team_id": total_scanned,
+            "total_updated": total_updated,
+            "total_skipped_interviewer_not_found": total_skipped_no_user,
+            "total_skipped_interviewer_has_no_team": total_skipped_user_no_team
+        }
+    }
+
+@api_router.post("/admin/migrate-new-face-customers-team-id")
+async def migrate_new_face_customers_team_id(current_user: dict = Depends(get_current_user)):
+    """
+    Backfill missing team_id on new_face_customers based on user_id's team_id.
+    GUARDRAILS:
+    - Only updates records where team_id is NULL or missing
+    - Sets new_face_customer.team_id = user.team_id
+    - Does NOT modify any other fields
+    - If user_id not found, leaves record unchanged
+    (super_admin only)
+    """
+    require_super_admin(current_user)
+    
+    # Build user_id -> team_id mapping
+    users = await db.users.find({}, {"_id": 0, "id": 1, "team_id": 1}).to_list(10000)
+    user_team_map = {u["id"]: u.get("team_id") for u in users}
+    
+    # Find new_face_customers with missing team_id
+    records_to_update = await db.new_face_customers.find(
+        {"$or": [{"team_id": None}, {"team_id": {"$exists": False}}]},
+        {"_id": 1, "user_id": 1, "name": 1}
+    ).to_list(100000)
+    
+    total_scanned = len(records_to_update)
+    total_updated = 0
+    total_skipped_no_user = 0
+    total_skipped_user_no_team = 0
+    
+    for record in records_to_update:
+        user_id = record.get("user_id")
+        
+        if not user_id or user_id not in user_team_map:
+            total_skipped_no_user += 1
+            continue
+        
+        user_team_id = user_team_map[user_id]
+        
+        if not user_team_id:
+            total_skipped_user_no_team += 1
+            continue
+        
+        await db.new_face_customers.update_one(
+            {"_id": record["_id"]},
+            {"$set": {"team_id": user_team_id}}
+        )
+        total_updated += 1
+    
+    return {
+        "migration_report": {
+            "collection": "new_face_customers",
+            "total_in_db": await db.new_face_customers.count_documents({}),
+            "total_scanned_missing_team_id": total_scanned,
+            "total_updated": total_updated,
+            "total_skipped_user_not_found": total_skipped_no_user,
+            "total_skipped_user_has_no_team": total_skipped_user_no_team
+        }
+    }
+
 @api_router.post("/admin/migrate-activities-team-id")
 async def migrate_activities_team_id(current_user: dict = Depends(get_current_user)):
     """
