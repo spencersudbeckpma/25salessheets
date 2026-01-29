@@ -5143,7 +5143,9 @@ async def cleanup_all_duplicates(current_user: dict = Depends(get_current_user))
 @api_router.delete("/debug/delete-all-user-activities/{user_id}")
 async def delete_all_user_activities(user_id: str, current_user: dict = Depends(get_current_user)):
     """Delete ALL activities for a specific user (use with caution!)"""
-    subordinates = await get_all_subordinates(current_user['id'])
+    # SCOPED TO TEAM
+    team_id = current_user.get('team_id')
+    subordinates = await get_all_subordinates(current_user['id'], team_id)
     
     if user_id not in subordinates and user_id != current_user['id']:
         raise HTTPException(status_code=403, detail="Not authorized")
