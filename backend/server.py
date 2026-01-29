@@ -605,6 +605,241 @@ async def diagnose_orphaned_activities(current_user: dict = Depends(get_current_
         }
     }
 
+@api_router.get("/admin/diagnose-subtabs")
+async def diagnose_subtabs(current_user: dict = Depends(get_current_user)):
+    """
+    Comprehensive diagnostics for New Faces, SNA, and NPA sub-tabs.
+    Shows data integrity issues affecting rollups.
+    (super_admin only, read-only)
+    """
+    require_super_admin(current_user)
+    
+    results = {
+        "new_face_customers": {},
+        "npa_agents": {},
+        "activities_with_premium": {},
+        "summary": {}
+    }
+    
+    # ===== NEW FACE CUSTOMERS =====
+    nfc_total = await db.new_face_customers.count_documents({})
+    nfc_missing_team = await db.new_face_customers.count_documents(
+        {"$or": [{"team_id": None}, {"team_id": {"$exists": False}}]}
+    )
+    nfc_missing_user = await db.new_face_customers.count_documents(
+        {"$or": [{"user_id": None}, {"user_id": {"$exists": False}}, {"user_id": ""}]}
+    )
+    
+    # Group by year-month
+    nfc_pipeline = [
+        {"$addFields": {"month": {"$substr": ["$date", 0, 7]}}},
+        {"$group": {"_id": "$month", "count": {"$sum": 1}}},
+        {"$sort": {"_id": -1}}
+    ]
+    nfc_by_month = await db.new_face_customers.aggregate(nfc_pipeline).to_list(100)
+    
+    # Check for orphaned user_ids
+    nfc_user_ids = await db.new_face_customers.distinct("user_id")
+    existing_user_ids = await db.users.distinct("id")
+    nfc_orphaned_users = [uid for uid in nfc_user_ids if uid and uid not in existing_user_ids]
+    
+    results["new_face_customers"] = {
+        "total_records": nfc_total,
+        "missing_team_id": nfc_missing_team,
+        "missing_user_id": nfc_missing_user,
+        "orphaned_user_ids": len(nfc_orphaned_users),
+        "orphaned_user_ids_list": nfc_orphaned_users[:10],  # First 10
+        "by_month": {m["_id"]: m["count"] for m in nfc_by_month if m["_id"]},
+        "filters_used": "Query by user_id + team_id for team scoping"
+    }
+    
+    # ===== NPA AGENTS =====
+    npa_total = await db.npa_agents.count_documents({})
+    npa_missing_team = await db.npa_agents.count_documents(
+        {"$or": [{"team_id": None}, {"team_id": {"$exists": False}}]}
+    )
+    npa_missing_user = await db.npa_agents.count_documents(
+        {"$or": [{"user_id": None}, {"user_id": {"$exists": False}}, {"user_id": ""}]}
+    )
+    
+    # Group by year-month from created_at or start_date
+    npa_pipeline = [
+        {"$addFields": {"month": {"$substr": [{"$ifNull": ["$start_date", "$created_at"]}, 0, 7]}}},
+        {"$group": {"_id": "$month", "count": {"$sum": 1}}},
+        {"$sort": {"_id": -1}}
+    ]
+    npa_by_month = await db.npa_agents.aggregate(npa_pipeline).to_list(100)
+    
+    results["npa_agents"] = {
+        "total_records": npa_total,
+        "missing_team_id": npa_missing_team,
+        "missing_user_id_or_empty": npa_missing_user,
+        "by_month": {m["_id"]: m["count"] for m in npa_by_month if m["_id"]},
+        "filters_used": "NPA premium calculated from activities.premium WHERE team_id matches",
+        "note": "NPA with linked user_id pulls premium from activities collection"
+    }
+    
+    # ===== ACTIVITIES WITH PREMIUM (affects SNA/NPA rollups) =====
+    act_total = await db.activities.count_documents({"premium": {"$gt": 0}})
+    act_missing_team = await db.activities.count_documents(
+        {"premium": {"$gt": 0}, "$or": [{"team_id": None}, {"team_id": {"$exists": False}}]}
+    )
+    act_missing_user = await db.activities.count_documents(
+        {"premium": {"$gt": 0}, "$or": [{"user_id": None}, {"user_id": {"$exists": False}}, {"user_id": ""}]}
+    )
+    
+    # Group premium activities by year-month
+    act_pipeline = [
+        {"$match": {"premium": {"$gt": 0}}},
+        {"$addFields": {"month": {"$substr": ["$date", 0, 7]}}},
+        {"$group": {"_id": "$month", "count": {"$sum": 1}, "total_premium": {"$sum": "$premium"}}},
+        {"$sort": {"_id": -1}}
+    ]
+    act_by_month = await db.activities.aggregate(act_pipeline).to_list(100)
+    
+    # Activities missing team_id by team (via user lookup)
+    missing_team_activities = await db.activities.find(
+        {"premium": {"$gt": 0}, "$or": [{"team_id": None}, {"team_id": {"$exists": False}}]},
+        {"_id": 0, "user_id": 1, "date": 1, "premium": 1}
+    ).to_list(1000)
+    
+    # Group missing by user_id
+    missing_by_user = {}
+    for act in missing_team_activities:
+        uid = act.get("user_id", "unknown")
+        if uid not in missing_by_user:
+            missing_by_user[uid] = {"count": 0, "total_premium": 0}
+        missing_by_user[uid]["count"] += 1
+        missing_by_user[uid]["total_premium"] += act.get("premium", 0)
+    
+    # Lookup user info for missing activities
+    missing_users_detail = []
+    for uid, info in list(missing_by_user.items())[:20]:
+        user = await db.users.find_one({"id": uid}, {"_id": 0, "name": 1, "email": 1, "team_id": 1})
+        missing_users_detail.append({
+            "user_id": uid,
+            "user_name": user.get("name") if user else "NOT FOUND",
+            "user_email": user.get("email") if user else None,
+            "user_team_id": user.get("team_id") if user else None,
+            "activities_count": info["count"],
+            "total_premium": info["total_premium"],
+            "fixable": bool(user and user.get("team_id"))
+        })
+    
+    results["activities_with_premium"] = {
+        "total_records": act_total,
+        "missing_team_id": act_missing_team,
+        "missing_user_id": act_missing_user,
+        "by_month": {m["_id"]: {"count": m["count"], "premium": m["total_premium"]} for m in act_by_month if m["_id"]},
+        "missing_team_id_by_user": missing_users_detail,
+        "filters_used": "SNA/NPA queries filter by team_id - missing team_id = invisible to rollups",
+        "impact": "Activities without team_id do NOT appear in SNA tracker or NPA calculations"
+    }
+    
+    # ===== SUMMARY =====
+    fixable_premium_activities = sum(1 for u in missing_users_detail if u.get("fixable"))
+    unfixable_premium_activities = len(missing_users_detail) - fixable_premium_activities
+    
+    results["summary"] = {
+        "total_data_issues": nfc_missing_team + npa_missing_team + act_missing_team,
+        "new_face_customers_missing_team_id": nfc_missing_team,
+        "npa_agents_missing_team_id": npa_missing_team,
+        "premium_activities_missing_team_id": act_missing_team,
+        "fixable_users": fixable_premium_activities,
+        "unfixable_users": unfixable_premium_activities,
+        "recommendation": "Run POST /admin/migrate-all-team-ids to fix all collections"
+    }
+    
+    return results
+
+@api_router.post("/admin/migrate-all-team-ids")
+async def migrate_all_team_ids(current_user: dict = Depends(get_current_user)):
+    """
+    Migrate team_id for ALL collections: activities, new_face_customers, npa_agents.
+    Sets team_id based on the user's current team assignment.
+    (super_admin only)
+    """
+    require_super_admin(current_user)
+    
+    report = {
+        "activities": {"updated": 0, "skipped_no_user_team": 0, "skipped_user_not_found": 0},
+        "new_face_customers": {"updated": 0, "skipped_no_user_team": 0, "skipped_user_not_found": 0},
+        "npa_agents": {"updated": 0, "skipped_no_user_team": 0, "skipped_user_not_found": 0}
+    }
+    
+    # Build user lookup
+    all_users = await db.users.find({}, {"_id": 0, "id": 1, "team_id": 1}).to_list(10000)
+    user_team_map = {u["id"]: u.get("team_id") for u in all_users}
+    
+    # ===== ACTIVITIES =====
+    orphaned_activities = await db.activities.find(
+        {"$or": [{"team_id": None}, {"team_id": {"$exists": False}}]},
+        {"_id": 0, "id": 1, "user_id": 1}
+    ).to_list(10000)
+    
+    for act in orphaned_activities:
+        user_id = act.get("user_id")
+        if not user_id:
+            report["activities"]["skipped_user_not_found"] += 1
+            continue
+        
+        team_id = user_team_map.get(user_id)
+        if not team_id:
+            report["activities"]["skipped_no_user_team"] += 1
+            continue
+        
+        await db.activities.update_one({"id": act["id"]}, {"$set": {"team_id": team_id}})
+        report["activities"]["updated"] += 1
+    
+    # ===== NEW FACE CUSTOMERS =====
+    orphaned_nfc = await db.new_face_customers.find(
+        {"$or": [{"team_id": None}, {"team_id": {"$exists": False}}]},
+        {"_id": 0, "id": 1, "user_id": 1}
+    ).to_list(10000)
+    
+    for nfc in orphaned_nfc:
+        user_id = nfc.get("user_id")
+        if not user_id:
+            report["new_face_customers"]["skipped_user_not_found"] += 1
+            continue
+        
+        team_id = user_team_map.get(user_id)
+        if not team_id:
+            report["new_face_customers"]["skipped_no_user_team"] += 1
+            continue
+        
+        await db.new_face_customers.update_one({"id": nfc["id"]}, {"$set": {"team_id": team_id}})
+        report["new_face_customers"]["updated"] += 1
+    
+    # ===== NPA AGENTS =====
+    orphaned_npa = await db.npa_agents.find(
+        {"$or": [{"team_id": None}, {"team_id": {"$exists": False}}]},
+        {"_id": 0, "id": 1, "user_id": 1, "added_by": 1}
+    ).to_list(10000)
+    
+    for npa in orphaned_npa:
+        # Try user_id first, then added_by
+        user_id = npa.get("user_id") or npa.get("added_by")
+        if not user_id:
+            report["npa_agents"]["skipped_user_not_found"] += 1
+            continue
+        
+        team_id = user_team_map.get(user_id)
+        if not team_id:
+            report["npa_agents"]["skipped_no_user_team"] += 1
+            continue
+        
+        await db.npa_agents.update_one({"id": npa["id"]}, {"$set": {"team_id": team_id}})
+        report["npa_agents"]["updated"] += 1
+    
+    total_updated = sum(r["updated"] for r in report.values())
+    total_skipped = sum(r["skipped_no_user_team"] + r["skipped_user_not_found"] for r in report.values())
+    
+    return {
+        "message": f"Migration complete. Updated {total_updated} records, skipped {total_skipped}.",
+        "report": report
+    }
+
 @api_router.get("/admin/teams")
 async def get_all_teams(current_user: dict = Depends(get_current_user)):
     """Get all teams (super_admin only)"""
