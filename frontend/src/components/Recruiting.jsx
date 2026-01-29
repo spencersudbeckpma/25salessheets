@@ -791,7 +791,7 @@ const Recruiting = ({ user }) => {
         )}
 
         {/* Regional Manager Sub-Tabs - Show for State Manager and Super Admin */}
-        {(user.role === 'state_manager' || user.role === 'super_admin') && regionalManagers.length > 0 && (
+        {(user.role === 'state_manager' || user.role === 'super_admin') && getRMsWithRecruits().length > 0 && (
           <div className="mb-4">
             <label className="block text-xs font-medium text-slate-500 mb-2">Filter by Regional Manager</label>
             <div className="flex gap-2 overflow-x-auto pb-2">
@@ -805,7 +805,7 @@ const Recruiting = ({ user }) => {
               >
                 All RMs ({getCountForRM('all')})
               </button>
-              {regionalManagers.map(rm => (
+              {getRMsWithRecruits().map(rm => (
                 <button
                   key={rm.id}
                   onClick={() => setSelectedRM(rm.id)}
