@@ -6986,25 +6986,18 @@ async def get_archived_users(current_user: dict = Depends(get_current_user)):
         raise HTTPException(status_code=403, detail="Only managers can view archived users")
     
     team_id = current_user.get('team_id')
+    if not team_id:
+        return []
     
-    # super_admin sees all archived, others see only their team
-    if current_user['role'] == 'super_admin':
-        archived = await db.users.find(
-            {"status": "archived"}, 
-            {"_id": 0, "password_hash": 0}
-        ).sort("archived_at", -1).to_list(1000)
-    else:
-        # Get archived users from same team only
-        if not team_id:
-            return []
-        archived = await db.users.find(
-            {"status": "archived", "team_id": team_id}, 
-            {"_id": 0, "password_hash": 0}
-        ).sort("archived_at", -1).to_list(1000)
+    # ALL users (including super_admin) are scoped to their assigned team on product pages
+    archived = await db.users.find(
+        {"status": "archived", "team_id": team_id}, 
+        {"_id": 0, "password_hash": 0}
+    ).sort("archived_at", -1).to_list(1000)
     
     # Get activity stats for each archived user
     for user in archived:
-        activities = await db.activities.find({"user_id": user['id']}, {"_id": 0}).to_list(10000)
+        activities = await db.activities.find({"user_id": user['id'], "team_id": team_id}, {"_id": 0}).to_list(10000)
         total_stats = {
             "presentations": sum(a.get('presentations', 0) for a in activities),
             "appointments": sum(a.get('appointments', 0) for a in activities),
