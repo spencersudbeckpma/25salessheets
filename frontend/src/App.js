@@ -77,7 +77,7 @@ function App() {
           />
           <Route
             path="/*"
-            element={user ? <Dashboard user={user} setUser={setUser} branding={branding} setBranding={setBranding} features={features} /> : <Navigate to="/login" />}
+            element={user ? <Dashboard user={user} setUser={setUser} branding={branding} setBranding={setBranding} features={features} uiSettings={uiSettings} /> : <Navigate to="/login" />}
           />
         </Routes>
       </BrowserRouter>
