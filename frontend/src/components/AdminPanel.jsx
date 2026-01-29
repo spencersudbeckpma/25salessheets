@@ -220,6 +220,79 @@ const AdminPanel = ({ user }) => {
     }
   };
 
+  // Load team full configuration for customization modal
+  const loadTeamCustomization = async (teamId, teamName) => {
+    setSelectedTeamForCustomization({ id: teamId, name: teamName });
+    setCustomizationLoading(true);
+    setShowCustomizationModal(true);
+    
+    try {
+      const response = await axios.get(`${API}/api/admin/teams/${teamId}/full-config`, { headers });
+      setCustomizationForm({
+        features: response.data.features,
+        role_tab_overrides: response.data.role_tab_overrides,
+        ui_settings: response.data.ui_settings,
+        branding: response.data.branding
+      });
+    } catch (error) {
+      console.error('Error loading team config:', error);
+      toast.error('Failed to load team configuration');
+    } finally {
+      setCustomizationLoading(false);
+    }
+  };
+
+  // Save team customization
+  const saveTeamCustomization = async () => {
+    if (!selectedTeamForCustomization) return;
+    
+    setCustomizationLoading(true);
+    try {
+      await axios.put(
+        `${API}/api/admin/teams/${selectedTeamForCustomization.id}/full-config`,
+        customizationForm,
+        { headers }
+      );
+      toast.success('Team configuration saved!');
+      setShowCustomizationModal(false);
+      fetchData(); // Refresh teams list
+    } catch (error) {
+      console.error('Error saving config:', error);
+      toast.error(error.response?.data?.detail || 'Failed to save configuration');
+    } finally {
+      setCustomizationLoading(false);
+    }
+  };
+
+  // Toggle a feature flag
+  const toggleFeature = (feature) => {
+    setCustomizationForm(prev => ({
+      ...prev,
+      features: {
+        ...prev.features,
+        [feature]: !prev.features[feature]
+      }
+    }));
+  };
+
+  // Toggle a hidden tab for a role
+  const toggleRoleTab = (role, tab) => {
+    setCustomizationForm(prev => {
+      const currentHidden = prev.role_tab_overrides[role]?.hidden_tabs || [];
+      const newHidden = currentHidden.includes(tab)
+        ? currentHidden.filter(t => t !== tab)
+        : [...currentHidden, tab];
+      
+      return {
+        ...prev,
+        role_tab_overrides: {
+          ...prev.role_tab_overrides,
+          [role]: { hidden_tabs: newHidden }
+        }
+      };
+    });
+  };
+
   // Download State Manager Pack (roster PDF + guide)
   const handleDownloadSmPack = async (teamId, teamName) => {
     try {
