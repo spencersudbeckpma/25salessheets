@@ -4392,10 +4392,11 @@ async def login(login_data: UserLogin):
     
     token = create_jwt_token(user['id'], user['email'])
     
-    # Get team branding and features if user has a team
+    # Get team branding, features, and UI settings
     branding = None
     team_name = None
-    features = None
+    team = None
+    ui_settings = DEFAULT_TEAM_UI_SETTINGS.copy()
     
     if user.get('team_id'):
         team = await db.teams.find_one({"id": user['team_id']}, {"_id": 0})
@@ -4408,18 +4409,12 @@ async def login(login_data: UserLogin):
                 "display_name": None,
                 "tagline": None
             })
-            # Get features (merge with defaults) - but NOT for super_admin who sees all
-            if user.get('role') != 'super_admin':
-                team_features = team.get('features', {})
-                features = {**DEFAULT_TEAM_FEATURES, **team_features}
+            # Get UI settings
+            team_ui = team.get('ui_settings', {})
+            ui_settings = {**ui_settings, **team_ui}
     
-    # Super admins see ALL features enabled
-    if user.get('role') == 'super_admin':
-        features = {k: True for k in DEFAULT_TEAM_FEATURES.keys()}
-    
-    # Default features if none set
-    if features is None:
-        features = DEFAULT_TEAM_FEATURES
+    # Get EFFECTIVE features for this user (includes role-based overrides)
+    features = await get_effective_features(user, team)
     
     return {
         "token": token,
@@ -4433,7 +4428,8 @@ async def login(login_data: UserLogin):
             "manager_id": user.get('manager_id')
         },
         "branding": branding,
-        "features": features
+        "features": features,
+        "ui_settings": ui_settings
     }
 
 @api_router.get("/auth/branding")
