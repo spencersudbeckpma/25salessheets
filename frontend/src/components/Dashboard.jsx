@@ -174,6 +174,16 @@ const Dashboard = ({ user, setUser, branding: initialBranding, features: initial
                   📋 Suitability
                 </TabsTrigger>
               )}
+              {hasFeature('fact_finder') && (
+                <TabsTrigger 
+                  value="fact-finder" 
+                  data-testid="fact-finder-tab" 
+                  className="py-2.5 px-3 text-xs md:text-sm whitespace-nowrap flex-shrink-0 rounded-lg text-slate-600 data-[state=active]:text-white data-[state=active]:shadow-md"
+                  style={activeTab === 'fact-finder' ? { backgroundColor: branding?.primary_color || '#1e40af' } : {}}
+                >
+                  📝 Fact Finder
+                </TabsTrigger>
+              )}
               {hasFeature('pma_bonuses') && (
                 <TabsTrigger 
                   value="pma-bonuses" 
