@@ -6054,6 +6054,8 @@ async def get_interview_stats(current_user: dict = Depends(get_current_user)):
     now = datetime.now(central)
     
     team_id = current_user.get('team_id')
+    if not team_id:
+        return {"total": 0, "this_week": 0, "this_month": 0, "this_year": 0, "moving_forward": 0, "not_moving_forward": 0, "second_interview_scheduled": 0, "completed": 0}
     
     # Calculate date ranges
     today = now.date()
@@ -6062,26 +6064,19 @@ async def get_interview_stats(current_user: dict = Depends(get_current_user)):
     year_start = today.replace(month=1, day=1)
     
     # Build query based on role - NOTE: Stats include archived interviews to preserve totals
-    base_query = {}
-    if current_user['role'] == 'super_admin':
-        base_query = {}  # See all
-    elif current_user['role'] == 'state_manager':
-        # State manager sees all in their team
-        if team_id:
-            base_query = {"team_id": team_id}
+    # super_admin uses same team scoping as state_manager on product pages
+    if current_user['role'] in ['super_admin', 'state_manager']:
+        # State manager and super_admin see all in their team
+        base_query = {"team_id": team_id}
     elif current_user['role'] == 'regional_manager':
         # Include own interviews + subordinates' interviews
         subordinate_ids = await get_all_subordinates(current_user['id'], team_id)
         all_ids = list(set(subordinate_ids))
         all_ids.append(current_user['id'])  # Include self
-        base_query = {"interviewer_id": {"$in": all_ids}}
-        if team_id:
-            base_query["team_id"] = team_id
+        base_query = {"interviewer_id": {"$in": all_ids}, "team_id": team_id}
     else:
         # District manager sees only own
-        base_query = {"interviewer_id": current_user['id']}
-        if team_id:
-            base_query["team_id"] = team_id
+        base_query = {"interviewer_id": current_user['id'], "team_id": team_id}
     
     # Get all interviews for stats
     all_interviews = await db.interviews.find(base_query, {"_id": 0}).to_list(10000)
