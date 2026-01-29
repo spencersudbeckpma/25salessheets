@@ -3322,21 +3322,26 @@ async def get_new_face_customers_by_date(date: str, current_user: dict = Depends
 
 @api_router.get("/new-face-customers/all")
 async def get_all_new_face_customers(current_user: dict = Depends(get_current_user)):
-    """Get all new face customers from entire team (Managers only)"""
+    """Get new face customers - STRICTLY scoped to current user's team_id.
+    
+    NO cross-team visibility allowed under any circumstance.
+    """
     if current_user['role'] not in ['super_admin', 'state_manager', 'regional_manager', 'district_manager']:
         raise HTTPException(status_code=403, detail="Access denied")
     
-    # Check if New Faces sub-tab is enabled for this team (Phase 2 enforcement)
+    # Check if New Faces sub-tab is enabled for this team
     await check_subtab_access(current_user, 'new_faces')
     
     team_id = current_user.get('team_id')
     
-    # Get all team members recursively (exclude archived), scoped to team
+    # CRITICAL: No team_id = no data
+    if not team_id:
+        return []
+    
+    # Get all team members recursively (scoped to team)
     async def get_all_team_ids(user_id: str):
         ids = [user_id]
-        query = {"manager_id": user_id, "$or": [{"status": "active"}, {"status": {"$exists": False}}]}
-        if team_id:
-            query["team_id"] = team_id
+        query = {"manager_id": user_id, "team_id": team_id, "$or": [{"status": "active"}, {"status": {"$exists": False}}]}
         subordinates = await db.users.find(query, {"_id": 0, "id": 1}).to_list(1000)
         for sub in subordinates:
             ids.extend(await get_all_team_ids(sub['id']))
@@ -3344,10 +3349,11 @@ async def get_all_new_face_customers(current_user: dict = Depends(get_current_us
     
     team_ids = await get_all_team_ids(current_user['id'])
     
-    # Filter by team_id with legacy support (include records without team_id)
-    query = {"user_id": {"$in": team_ids}}
-    if team_id:
-        query = {"$and": [query, get_team_filter_with_legacy(team_id)]}
+    # STRICT: Only exact team_id match
+    query = {"$and": [
+        {"user_id": {"$in": team_ids}},
+        {"team_id": team_id}
+    ]}
     
     customers = await db.new_face_customers.find(query, {"_id": 0}).sort("date", -1).to_list(10000)
     
