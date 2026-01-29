@@ -5999,9 +5999,10 @@ async def get_interviews(current_user: dict = Depends(get_current_user)):
     if not team_id:
         return []
     
-    # Base query excludes archived interviews and filters by team
+    # Base query excludes archived interviews
     archived_filter = {"$or": [{"archived": {"$exists": False}}, {"archived": False}]}
-    team_filter = {"team_id": team_id}
+    # Team filter includes records with matching team_id OR no team_id (backwards compatibility for legacy data)
+    team_filter = {"$or": [{"team_id": team_id}, {"team_id": {"$exists": False}}, {"team_id": None}]}
     
     # Query for interviews shared with current user
     shared_with_filter = {"shared_with": current_user['id']}
