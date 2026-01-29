@@ -7849,6 +7849,8 @@ async def get_friday_report_export(
     from openpyxl.utils import get_column_letter
     import io
     
+    team_id = current_user.get('team_id')
+    
     # Calculate week boundaries (Monday to Sunday)
     today = datetime.now(timezone.utc).date()
     start_of_week = today - timedelta(days=today.weekday() + (week_offset * 7))
@@ -7861,9 +7863,9 @@ async def get_friday_report_export(
         "presentation_date": {"$gte": start_date, "$lte": end_date}
     }
     
-    # Managers see all team forms
+    # Managers see all team forms - SCOPED TO TEAM
     if current_user['role'] in ['super_admin', 'state_manager', 'regional_manager', 'district_manager']:
-        team_ids = await get_all_subordinates(current_user['id'])
+        team_ids = await get_all_subordinates(current_user['id'], team_id)
         query["submitted_by"] = {"$in": team_ids}
     else:
         query["submitted_by"] = current_user['id']
