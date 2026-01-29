@@ -7460,6 +7460,8 @@ async def get_team_goal_progress(current_user: dict = Depends(get_current_user))
     if current_user['role'] not in ['super_admin', 'state_manager', 'regional_manager', 'district_manager']:
         raise HTTPException(status_code=403, detail="Only managers can view team goals")
     
+    team_id = current_user.get('team_id')
+    
     central_tz = pytz_timezone('America/Chicago')
     today = datetime.now(central_tz).date()
     current_year = today.year
@@ -7476,13 +7478,13 @@ async def get_team_goal_progress(current_user: dict = Depends(get_current_user))
             "message": "No team goals set for this year"
         }
     
-    # Get all subordinates
+    # Get all subordinates - SCOPED TO TEAM
     async def get_all_subordinates(user_id: str):
         ids = []
-        subordinates = await db.users.find(
-            {"manager_id": user_id, "$or": [{"status": "active"}, {"status": {"$exists": False}}]},
-            {"_id": 0, "id": 1}
-        ).to_list(1000)
+        query = {"manager_id": user_id, "$or": [{"status": "active"}, {"status": {"$exists": False}}]}
+        if team_id:
+            query["team_id"] = team_id
+        subordinates = await db.users.find(query, {"_id": 0, "id": 1}).to_list(1000)
         for sub in subordinates:
             ids.append(sub['id'])
             ids.extend(await get_all_subordinates(sub['id']))
@@ -7491,12 +7493,12 @@ async def get_team_goal_progress(current_user: dict = Depends(get_current_user))
     team_ids = await get_all_subordinates(current_user['id'])
     team_ids.append(current_user['id'])  # Include manager
     
-    # Get YTD premium for entire team
+    # Get YTD premium for entire team - SCOPED TO TEAM
     year_start = today.replace(month=1, day=1)
-    activities = await db.activities.find({
-        "user_id": {"$in": team_ids},
-        "date": {"$gte": year_start.isoformat()}
-    }, {"_id": 0}).to_list(100000)
+    act_query = {"user_id": {"$in": team_ids}, "date": {"$gte": year_start.isoformat()}}
+    if team_id:
+        act_query["team_id"] = team_id
+    activities = await db.activities.find(act_query, {"_id": 0}).to_list(100000)
     
     ytd_premium = sum(a.get('premium', 0) for a in activities)
     
