@@ -6091,13 +6091,13 @@ SNA_TRACKING_DAYS = 90
 @api_router.get("/sna-tracker")
 async def get_sna_agents(current_user: dict = Depends(get_current_user)):
     """Get all SNA (new agents) being tracked - automatically based on first production"""
-    if current_user['role'] not in ['state_manager', 'regional_manager']:
+    if current_user['role'] not in ['super_admin', 'state_manager', 'regional_manager']:
         raise HTTPException(status_code=403, detail="Only State and Regional Managers can access SNA tracker")
     
     team_id = current_user.get('team_id')
     
     # Get all agents/DMs (potential SNAs) - only real accounts with @pmagent.net, scoped to team
-    if current_user['role'] == 'state_manager':
+    if current_user['role'] in ['super_admin', 'state_manager']:
         query = {"role": {"$in": ["agent", "district_manager"]}}
         if team_id:
             query["team_id"] = team_id
