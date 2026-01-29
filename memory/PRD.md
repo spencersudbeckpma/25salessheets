@@ -67,6 +67,26 @@ Team-based activity tracking and performance management application for insuranc
 
 ## Changelog
 
+### 2025-12-19 - CRITICAL: Cross-Team Data Leak Fix
+- **Fixed**: Critical security vulnerability - Multiple analytics, reports, and debug endpoints were missing `team_id` filters, allowing cross-team data leakage
+- **Root Cause**: Calls to `get_all_subordinates()` helper function were not passing `team_id` parameter
+- **Solution**: Added `team_id` filtering to all affected endpoints:
+  - `/users/{user_id}/activities/{date}` (PUT) - Manager activity editing
+  - `/users/{user_id}/activities` (GET) - Team member activities
+  - `/users/{user_id}` (DELETE) - User removal
+  - `/debug/user-activities/{user_id}` - Debug endpoint
+  - `/debug/cleanup-user-duplicates/{user_id}` - Cleanup endpoint
+  - `/debug/cleanup-all-duplicates` - All duplicates cleanup
+  - `/debug/delete-all-user-activities/{user_id}` - Delete all activities
+  - `/reports/excel/newface/{period}` - New face Excel report
+  - `/auth/admin-reset-password` - Admin password reset
+  - `/goals/team/progress` - Team goal progress
+  - `/suitability-forms/export` - Suitability export
+  - `/suitability-forms/friday-report` - Friday report
+  - `/suitability-forms/weekly-report` - Weekly report
+- **Testing**: All 28 backend tests pass (100% success rate)
+- **Impact**: Team data is now strictly isolated; users can only see data from their assigned team
+
 ### 2025-01-29 - Fact Finder Feature
 - **Added**: New main tab "Fact Finder" with full CRUD
 - **Added**: 4 rating sections (Health Expenses, Retirement Income, Final Expenses, Extended Care)
