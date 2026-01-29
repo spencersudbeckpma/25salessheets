@@ -36,14 +36,14 @@ const DEFAULT_UI_SETTINGS = {
 
 const DEFAULT_VIEW_SETTINGS = {
   kpi_cards: [
-    { id: 'dials', label: 'Dials', enabled: true },
     { id: 'contacts', label: 'Contacts', enabled: true },
     { id: 'appointments', label: 'Appointments', enabled: true },
     { id: 'presentations', label: 'Presentations', enabled: true },
-    { id: 'sales', label: 'Sales', enabled: true },
-    { id: 'premium', label: 'Premium', enabled: true },
     { id: 'referrals', label: 'Referrals', enabled: true },
-    { id: 'lives', label: 'Lives', enabled: true }
+    { id: 'testimonials', label: 'Testimonials', enabled: true },
+    { id: 'sales', label: 'Sales', enabled: true },
+    { id: 'new_face_sold', label: 'New Face Sold', enabled: true },
+    { id: 'premium', label: 'Total Premium', enabled: true }
   ],
   subtabs: {
     new_faces: true,
