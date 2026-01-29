@@ -85,7 +85,8 @@ DEFAULT_TEAM_FEATURES = {
     "reports": True,
     "team_mgmt": True,
     "recruiting": False,  # Disabled by default - super_admin enables per team
-    "interviews": True
+    "interviews": True,
+    "fact_finder": True
 }
 
 class User(BaseModel):
