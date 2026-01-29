@@ -142,6 +142,21 @@ Team-based activity tracking and performance management application for insuranc
 - **Added**: Admin UI for diagnosing orphaned activities
 - **Added**: Fix button for activities with NULL team_id
 
+### 2025-12-19 - Phase 1: Team Customization
+- **Added**: Team Feature Flags UI (toggle 16 features per team)
+- **Added**: Role-Based Tab Overrides (hide tabs per role, server-enforced)
+- **Added**: Team Defaults Panel (landing tab, leaderboard period)
+- **Added**: Full team branding (logo, colors, display name, tagline)
+- **Location**: Admin → Teams → Customize button
+
+### 2025-12-19 - Phase 2: Team View & Layout Customization
+- **Added**: KPI Cards configuration (toggle visibility, reorder)
+- **Added**: Sub-Tab Visibility (New Faces, SNA, NPA) with server-side 403 enforcement
+- **Added**: `team_settings.views` config field on team records
+- **Added**: `check_subtab_access()` helper for backend enforcement
+- **Added**: Views tab in Customization modal
+- **Constraint**: Config-driven, no per-team code branches, no redeploy needed
+
 ### Previous Session
 - Fixed Leaderboard bugs (migrated 600+ activities)
 - Implemented DocuSphere team scoping and role-based permissions
@@ -155,9 +170,11 @@ Team-based activity tracking and performance management application for insuranc
 
 ### P0 - Critical (COMPLETED)
 - [x] Fix cross-team data leak - All endpoints now filter by team_id (FIXED 2025-12-19)
+- [x] Phase 1: Team Customization (COMPLETED 2025-12-19)
+- [x] Phase 2: View & Layout Customization (COMPLETED 2025-12-19)
 
-### P1 - High Priority  
-- [ ] Refactor monolithic `server.py` into route-based structure (backend/routes/)
+### P1 - High Priority (PAUSED)
+- [ ] Refactor monolithic `server.py` into route-based structure (backend/routes/) - **PAUSED: App in active rollout**
 - [ ] Address 25 activity records with NULL team_id (users without team assignment)
 
 ### P2 - Medium Priority
