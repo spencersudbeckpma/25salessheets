@@ -365,9 +365,12 @@ async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(s
     return user
 
 async def get_team_filter(user: dict) -> dict:
-    """Get the team filter for queries based on user's team"""
-    if user.get('role') == 'super_admin':
-        return {}  # Super admins see all data (used for admin panel only)
+    """Get the team filter for queries based on user's team.
+    
+    IMPORTANT: ALL users (including super_admin) are scoped to their assigned team
+    on product pages. Cross-team visibility is ONLY available in Admin endpoints
+    where team_id is explicitly passed as a parameter.
+    """
     return {"team_id": user.get('team_id')}
 
 async def get_all_subordinates(user_id: str, team_id: str = None) -> List[str]:
