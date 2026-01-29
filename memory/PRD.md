@@ -11,7 +11,9 @@ Team-based activity tracking and performance management application for insuranc
 - **DocuSphere**: Team-scoped document library with role-based permissions (state_manager = write, others = read-only)
 - **Reports**: Manager hierarchy reports with period filters (daily, monthly, quarterly, yearly)
 - **Team Branding**: Custom branding per team (colors, logo, name)
-- **Feature Flags**: Team-based feature toggles
+- **Feature Flags**: Team-based feature toggles with server-side enforcement (403)
+- **Suitability Forms**: SNA/NPA client assessment forms
+- **Fact Finder**: Client assessment worksheets with 1-5 rating scales
 
 ## User Roles
 1. **Super Admin**: Full system access, cross-team visibility
@@ -33,6 +35,8 @@ Team-based activity tracking and performance management application for insuranc
 - `/api/leaderboard/{period}` - Team leaderboard rankings
 - `/api/reports/manager-hierarchy/{manager_id}` - Detailed manager reports
 - `/api/docusphere/*` - Document library CRUD
+- `/api/fact-finders/*` - Fact Finder CRUD + PDF export
+- `/api/suitability-forms/*` - Suitability forms CRUD
 
 ## Data Models
 - **users**: id, name, email, role, team_id, manager_id, status
@@ -40,52 +44,82 @@ Team-based activity tracking and performance management application for insuranc
 - **teams**: id, name, branding, features
 - **docusphere_folders**: id, name, parent_id, team_id, created_by
 - **docusphere_documents**: id, filename, folder_id, team_id, uploaded_by
+- **fact_finders**: id, team_id, created_by, month_key, client_info, health_expenses, retirement_income, final_expenses, extended_care, producer info, notes, status
+
+## Feature Flags (DEFAULT_TEAM_FEATURES)
+| Feature | Default | Description |
+|---------|---------|-------------|
+| activity | ON | Daily activity logging |
+| stats | ON | Personal statistics |
+| team_view | ON | Hierarchy tree |
+| suitability | ON | SNA/NPA forms |
+| fact_finder | ON | Client worksheets |
+| pma_bonuses | ON | Bonus PDFs |
+| docusphere | ON | Document library |
+| leaderboard | ON | Rankings |
+| analytics | ON | Charts/trends |
+| reports | ON | Manager reports |
+| team_mgmt | ON | Team management |
+| interviews | ON | Interview tracking |
+| recruiting | OFF | Recruiting pipeline |
 
 ---
 
 ## Changelog
 
+### 2025-01-29 - Fact Finder Feature
+- **Added**: New main tab "Fact Finder" with full CRUD
+- **Added**: 4 rating sections (Health Expenses, Retirement Income, Final Expenses, Extended Care)
+- **Added**: List view with search, month grouping, filters
+- **Added**: PDF export with proper filename format
+- **Added**: Team scoping and role-based permissions
+- **Added**: Feature flag `fact_finder` with server enforcement
+
+### 2025-01-28 - Admin Documents & Feature Enforcement
+- **Added**: Admin UI for downloading Playbook, State Manager Guide, Team Rosters
+- **Added**: State Manager Pack (roster + guide bundle)
+- **Added**: Backend feature flag enforcement on all endpoints (403 if disabled)
+- **Added**: Enforcement for pma_bonuses, suitability endpoints
+
 ### 2025-01-28 - Team Rollup Bug Fix
 - **Fixed**: State manager's personal activities were not included in team hierarchy rollups
-- **Root Cause**: `/api/team/hierarchy/{period}` was filtering activity queries by `team_id`, excluding activities without team_id
-- **Solution**: Removed team_id filter from activity query in `build_hierarchy()` to match `/stats/my/{period}` behavior
-- **File Modified**: `backend/server.py` (lines 4046-4058)
+- **Root Cause**: Activity query filtered by team_id, excluding some records
+- **Solution**: Removed team_id filter from build_hierarchy() activity query
 
-### Previous Session (from handoff)
-- Fixed Leaderboard bugs (migrated 600+ activities with team_id)
+### 2025-01-28 - Orphaned Activities Diagnostic
+- **Added**: Admin UI for diagnosing orphaned activities
+- **Added**: Fix button for activities with NULL team_id
+
+### Previous Session
+- Fixed Leaderboard bugs (migrated 600+ activities)
 - Implemented DocuSphere team scoping and role-based permissions
-- Fixed DocuSphere data visibility (migrated 22 folders, 185 documents)
-- Fixed personal rollup bug for state_manager
+- Fixed DocuSphere data visibility
 - Resolved super_admin branding bug
-- Completed feature flag enforcement on all endpoints
-- Removed debug UI indicators
+- Completed feature flag enforcement
 
 ---
 
 ## Pending Tasks
 
-### P0 - Critical
-- ✅ Team rollup bug (FIXED 2025-01-28)
-
 ### P1 - High Priority  
-- [ ] Verify fix in production with acceptance test
 - [ ] Address 25 activity records with NULL team_id (users without team assignment)
 
 ### P2 - Medium Priority
-- [ ] Refactor monolithic `server.py` into route-based structure (`backend/routes/`)
+- [ ] Refactor monolithic `server.py` into route-based structure
 - [ ] Remove temporary migration/diagnostic endpoints after stability confirmed
 
 ### P3 - Future/Backlog
 - [ ] Granular feature flags for sub-features
 - [ ] "All-Time" leaderboard period option
-- [ ] Additional enhancements as requested
 
 ---
 
 ## Test Credentials (Preview)
 - **Super Admin**: admin@pmagent.net / Bizlink25
 
-## Known Technical Debt
-- `backend/server.py` is a monolith (~7000+ lines) containing all logic
-- Multiple temporary migration endpoints need cleanup
-- Some legacy activities may not have team_id set
+## Files Reference
+- `backend/server.py` - All API logic (~8000+ lines, needs refactoring)
+- `frontend/src/components/FactFinder.jsx` - Fact Finder UI
+- `frontend/src/components/Dashboard.jsx` - Main dashboard with tabs
+- `frontend/src/components/AdminPanel.jsx` - Admin functionality
+- `frontend/src/components/PMADocuSphere.jsx` - Document library
