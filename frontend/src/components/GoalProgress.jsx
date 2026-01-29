@@ -124,12 +124,23 @@ const GoalProgress = ({ user }) => {
   const handleSaveTeamGoals = async () => {
     try {
       const token = localStorage.getItem('token');
+      
+      // Handle empty values
+      const goalInput = teamGoals.goal_premium;
+      const stretchInput = teamGoals.stretch_goal_premium;
+      
+      if (goalInput === '' || goalInput === null || goalInput === undefined ||
+          stretchInput === '' || stretchInput === null || stretchInput === undefined) {
+        toast.error('Please enter both goal amounts');
+        return;
+      }
+      
       // Remove commas from input before parsing
-      const goalValue = parseFloat(String(teamGoals.goal_premium).replace(/,/g, ''));
-      const stretchValue = parseFloat(String(teamGoals.stretch_goal_premium).replace(/,/g, ''));
+      const goalValue = parseFloat(String(goalInput).replace(/,/g, ''));
+      const stretchValue = parseFloat(String(stretchInput).replace(/,/g, ''));
       
       if (isNaN(goalValue) || isNaN(stretchValue) || goalValue <= 0 || stretchValue <= 0) {
-        toast.error('Please enter valid goal amounts');
+        toast.error('Please enter valid positive goal amounts');
         return;
       }
       
