@@ -2808,6 +2808,292 @@ const AdminPanel = ({ user }) => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Team Customization Modal (Phase 1) */}
+      <Dialog open={showCustomizationModal} onOpenChange={setShowCustomizationModal}>
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Settings className="w-5 h-5 text-indigo-600" />
+              Customize Team: {selectedTeamForCustomization?.name}
+            </DialogTitle>
+            <DialogDescription>
+              Control what this team sees and how their dashboard appears
+            </DialogDescription>
+          </DialogHeader>
+
+          {customizationLoading ? (
+            <div className="flex items-center justify-center py-8">
+              <RefreshCw className="w-6 h-6 animate-spin text-indigo-600" />
+            </div>
+          ) : (
+            <>
+              {/* Tab navigation */}
+              <div className="flex border-b mb-4">
+                {['features', 'role-overrides', 'ui-settings', 'branding'].map(tab => (
+                  <button
+                    key={tab}
+                    onClick={() => setCustomizationTab(tab)}
+                    className={`px-4 py-2 text-sm font-medium transition-colors ${
+                      customizationTab === tab 
+                        ? 'border-b-2 border-indigo-600 text-indigo-600' 
+                        : 'text-slate-500 hover:text-slate-700'
+                    }`}
+                  >
+                    {tab === 'features' && 'Feature Flags'}
+                    {tab === 'role-overrides' && 'Role Overrides'}
+                    {tab === 'ui-settings' && 'UI Settings'}
+                    {tab === 'branding' && 'Branding'}
+                  </button>
+                ))}
+              </div>
+
+              {/* Feature Flags Tab */}
+              {customizationTab === 'features' && (
+                <div className="space-y-4">
+                  <p className="text-sm text-slate-600">Toggle which features are visible to this team. Disabled features will be hidden from navigation and return 403 if accessed directly.</p>
+                  <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                    {Object.entries(customizationForm.features || {}).map(([feature, enabled]) => (
+                      <div key={feature} className="flex items-center justify-between p-3 bg-slate-50 rounded-lg border">
+                        <Label className="text-sm capitalize">{feature.replace(/_/g, ' ')}</Label>
+                        <Switch
+                          checked={enabled}
+                          onCheckedChange={() => toggleFeature(feature)}
+                          data-testid={`feature-toggle-${feature}`}
+                        />
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Role-Based Tab Overrides Tab */}
+              {customizationTab === 'role-overrides' && (
+                <div className="space-y-4">
+                  <p className="text-sm text-slate-600">Hide specific tabs for certain roles. State Managers always see full team configuration.</p>
+                  
+                  {['agent', 'district_manager', 'regional_manager'].map(role => (
+                    <div key={role} className="border rounded-lg p-4">
+                      <h4 className="font-medium text-slate-900 mb-3 capitalize">{role.replace(/_/g, ' ')}</h4>
+                      <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+                        {Object.keys(customizationForm.features || {}).map(tab => {
+                          const isHidden = customizationForm.role_tab_overrides?.[role]?.hidden_tabs?.includes(tab);
+                          return (
+                            <button
+                              key={tab}
+                              onClick={() => toggleRoleTab(role, tab)}
+                              className={`px-3 py-2 text-xs rounded-md transition-colors ${
+                                isHidden 
+                                  ? 'bg-red-100 text-red-700 border border-red-200' 
+                                  : 'bg-green-50 text-green-700 border border-green-200'
+                              }`}
+                              data-testid={`role-override-${role}-${tab}`}
+                            >
+                              {isHidden ? '❌' : '✓'} {tab.replace(/_/g, ' ')}
+                            </button>
+                          );
+                        })}
+                      </div>
+                      <p className="text-xs text-slate-500 mt-2">
+                        Click to toggle. Red = hidden from this role.
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {/* UI Settings Tab */}
+              {customizationTab === 'ui-settings' && (
+                <div className="space-y-6">
+                  <p className="text-sm text-slate-600">Configure default UI behavior for this team.</p>
+                  
+                  <div className="grid gap-4">
+                    <div>
+                      <Label>Default Landing Tab</Label>
+                      <Select
+                        value={customizationForm.ui_settings?.default_landing_tab || 'activity'}
+                        onValueChange={(value) => setCustomizationForm(prev => ({
+                          ...prev,
+                          ui_settings: { ...prev.ui_settings, default_landing_tab: value }
+                        }))}
+                      >
+                        <SelectTrigger className="w-full mt-1">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {Object.keys(customizationForm.features || {}).map(tab => (
+                            <SelectItem key={tab} value={tab}>
+                              {tab.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <p className="text-xs text-slate-500 mt-1">The tab users see after login</p>
+                    </div>
+
+                    <div>
+                      <Label>Default Leaderboard Period</Label>
+                      <Select
+                        value={customizationForm.ui_settings?.default_leaderboard_period || 'weekly'}
+                        onValueChange={(value) => setCustomizationForm(prev => ({
+                          ...prev,
+                          ui_settings: { ...prev.ui_settings, default_leaderboard_period: value }
+                        }))}
+                      >
+                        <SelectTrigger className="w-full mt-1">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="weekly">Weekly</SelectItem>
+                          <SelectItem value="monthly">Monthly</SelectItem>
+                          <SelectItem value="quarterly">Quarterly</SelectItem>
+                          <SelectItem value="yearly">Yearly</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <p className="text-xs text-slate-500 mt-1">Default period shown on leaderboard</p>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Branding Tab */}
+              {customizationTab === 'branding' && (
+                <div className="space-y-4">
+                  <p className="text-sm text-slate-600">Customize the visual appearance for this team.</p>
+                  
+                  <div className="grid gap-4">
+                    <div>
+                      <Label htmlFor="logo_url">Logo URL</Label>
+                      <Input
+                        id="logo_url"
+                        value={customizationForm.branding?.logo_url || ''}
+                        onChange={(e) => setCustomizationForm(prev => ({
+                          ...prev,
+                          branding: { ...prev.branding, logo_url: e.target.value }
+                        }))}
+                        placeholder="https://example.com/logo.png"
+                        className="mt-1"
+                      />
+                    </div>
+                    
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <Label htmlFor="primary_color">Primary Color</Label>
+                        <div className="flex items-center gap-2 mt-1">
+                          <input
+                            type="color"
+                            id="primary_color"
+                            value={customizationForm.branding?.primary_color || '#1e40af'}
+                            onChange={(e) => setCustomizationForm(prev => ({
+                              ...prev,
+                              branding: { ...prev.branding, primary_color: e.target.value }
+                            }))}
+                            className="w-10 h-10 rounded cursor-pointer"
+                          />
+                          <Input
+                            value={customizationForm.branding?.primary_color || '#1e40af'}
+                            onChange={(e) => setCustomizationForm(prev => ({
+                              ...prev,
+                              branding: { ...prev.branding, primary_color: e.target.value }
+                            }))}
+                            className="flex-1"
+                          />
+                        </div>
+                      </div>
+                      
+                      <div>
+                        <Label htmlFor="accent_color">Accent Color</Label>
+                        <div className="flex items-center gap-2 mt-1">
+                          <input
+                            type="color"
+                            id="accent_color"
+                            value={customizationForm.branding?.accent_color || '#3b82f6'}
+                            onChange={(e) => setCustomizationForm(prev => ({
+                              ...prev,
+                              branding: { ...prev.branding, accent_color: e.target.value }
+                            }))}
+                            className="w-10 h-10 rounded cursor-pointer"
+                          />
+                          <Input
+                            value={customizationForm.branding?.accent_color || '#3b82f6'}
+                            onChange={(e) => setCustomizationForm(prev => ({
+                              ...prev,
+                              branding: { ...prev.branding, accent_color: e.target.value }
+                            }))}
+                            className="flex-1"
+                          />
+                        </div>
+                      </div>
+                    </div>
+                    
+                    <div>
+                      <Label htmlFor="display_name">Display Name</Label>
+                      <Input
+                        id="display_name"
+                        value={customizationForm.branding?.display_name || ''}
+                        onChange={(e) => setCustomizationForm(prev => ({
+                          ...prev,
+                          branding: { ...prev.branding, display_name: e.target.value }
+                        }))}
+                        placeholder="Leave empty to use team name"
+                        className="mt-1"
+                      />
+                    </div>
+                    
+                    <div>
+                      <Label htmlFor="tagline">Tagline</Label>
+                      <Input
+                        id="tagline"
+                        value={customizationForm.branding?.tagline || ''}
+                        onChange={(e) => setCustomizationForm(prev => ({
+                          ...prev,
+                          branding: { ...prev.branding, tagline: e.target.value }
+                        }))}
+                        placeholder="Optional tagline"
+                        className="mt-1"
+                      />
+                    </div>
+
+                    {/* Preview */}
+                    <div className="mt-4 p-4 rounded-lg" style={{
+                      background: `linear-gradient(to right, ${customizationForm.branding?.primary_color || '#1e40af'}, ${customizationForm.branding?.accent_color || '#3b82f6'})`
+                    }}>
+                      <div className="flex items-center gap-3">
+                        {customizationForm.branding?.logo_url ? (
+                          <img src={customizationForm.branding.logo_url} alt="Preview" className="h-10 w-10 object-contain bg-white rounded p-1" />
+                        ) : (
+                          <div className="h-10 w-10 bg-white/20 rounded flex items-center justify-center text-white text-xs">Logo</div>
+                        )}
+                        <div className="text-white">
+                          <div className="font-semibold">{customizationForm.branding?.display_name || selectedTeamForCustomization?.name}</div>
+                          {customizationForm.branding?.tagline && (
+                            <div className="text-sm text-white/80">{customizationForm.branding.tagline}</div>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </>
+          )}
+
+          <DialogFooter className="mt-6">
+            <Button variant="outline" onClick={() => setShowCustomizationModal(false)}>
+              Cancel
+            </Button>
+            <Button 
+              onClick={saveTeamCustomization} 
+              className="bg-indigo-600 hover:bg-indigo-700"
+              disabled={customizationLoading}
+              data-testid="save-customization-btn"
+            >
+              {customizationLoading ? <RefreshCw className="w-4 h-4 animate-spin mr-2" /> : null}
+              Save Changes
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
