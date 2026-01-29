@@ -3389,10 +3389,11 @@ async def get_daily_report(report_type: str, date: str, current_user: dict = Dep
         
         report_data = []
         for member in team_members:
-            activity = await db.activities.find_one({
-                "user_id": member['id'],
-                "date": report_date
-            }, {"_id": 0})
+            # SCOPED TO TEAM
+            act_query = {"user_id": member['id'], "date": report_date}
+            if team_id:
+                act_query["team_id"] = team_id
+            activity = await db.activities.find_one(act_query, {"_id": 0})
             
             report_data.append({
                 "name": member.get('name', 'Unknown'),
