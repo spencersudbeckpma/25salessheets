@@ -6523,9 +6523,7 @@ async def get_sna_agents(current_user: dict = Depends(get_current_user)):
         days_remaining = max(0, SNA_TRACKING_DAYS - days_in)
         
         # Get total premium since first production (scoped to team)
-        act_query2 = {"user_id": user['id'], "date": {"$gte": sna_start[:10]}}
-        if team_id:
-            act_query2["team_id"] = team_id
+        act_query2 = {"user_id": user['id'], "date": {"$gte": sna_start[:10]}, "team_id": team_id}
         activities = await db.activities.find(act_query2, {"_id": 0}).to_list(10000)
         
         total_premium = sum(a.get('premium', 0) for a in activities)
