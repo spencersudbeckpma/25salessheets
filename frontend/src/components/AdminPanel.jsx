@@ -79,6 +79,23 @@ const AdminPanel = ({ user }) => {
       accent_color: '#3b82f6',
       display_name: '',
       tagline: ''
+    },
+    view_settings: {
+      kpi_cards: [
+        { id: 'dials', label: 'Dials', enabled: true },
+        { id: 'contacts', label: 'Contacts', enabled: true },
+        { id: 'appointments', label: 'Appointments', enabled: true },
+        { id: 'presentations', label: 'Presentations', enabled: true },
+        { id: 'sales', label: 'Sales', enabled: true },
+        { id: 'premium', label: 'Premium', enabled: true },
+        { id: 'referrals', label: 'Referrals', enabled: true },
+        { id: 'lives', label: 'Lives', enabled: true }
+      ],
+      subtabs: {
+        new_faces: true,
+        sna: true,
+        npa: true
+      }
     }
   });
   const [customizationLoading, setCustomizationLoading] = useState(false);
