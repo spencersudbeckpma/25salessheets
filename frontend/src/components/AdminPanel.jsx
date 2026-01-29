@@ -857,9 +857,7 @@ const AdminPanel = ({ user }) => {
                 </div>
                 <div className="flex flex-wrap gap-2">
                   <Button
-                    onClick={() => {
-                      window.open(`${API}/api/admin/guides/admin-playbook`, '_blank');
-                    }}
+                    onClick={() => handleDownloadPdf('/api/admin/guides/admin-playbook', 'Admin_Playbook.pdf')}
                     variant="outline"
                     className="border-slate-400"
                     data-testid="download-admin-playbook-btn"
@@ -868,9 +866,7 @@ const AdminPanel = ({ user }) => {
                     Admin Playbook
                   </Button>
                   <Button
-                    onClick={() => {
-                      window.open(`${API}/api/admin/guides/state-manager`, '_blank');
-                    }}
+                    onClick={() => handleDownloadPdf('/api/admin/guides/state-manager', 'State_Manager_Guide.pdf')}
                     variant="outline"
                     className="border-slate-400"
                     data-testid="download-sm-guide-btn"
