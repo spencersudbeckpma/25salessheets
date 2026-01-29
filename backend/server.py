@@ -374,19 +374,18 @@ async def get_team_filter(user: dict) -> dict:
     return {"team_id": user.get('team_id')}
 
 def get_team_filter_with_legacy(team_id: str) -> dict:
-    """Get team filter that includes legacy records without team_id.
+    """Get STRICT team filter - NO cross-team visibility allowed.
     
-    This provides backwards compatibility for data created before team_id 
-    was added to collections like recruits, interviews, new_face_customers, etc.
+    CRITICAL: This filter ONLY matches records that explicitly belong to the given team.
+    Records with NULL/missing team_id are EXCLUDED to prevent cross-team leakage.
     
-    Returns a query filter that matches:
-    - Records with matching team_id
-    - Records where team_id doesn't exist
-    - Records where team_id is None
+    Use the migration endpoint to backfill team_id on legacy records BEFORE they 
+    will appear in team views.
     """
     if team_id:
-        return {"$or": [{"team_id": team_id}, {"team_id": {"$exists": False}}, {"team_id": None}]}
-    return {}
+        # STRICT: Only exact team_id match. No NULL/missing allowed.
+        return {"team_id": team_id}
+    return {"team_id": {"$exists": False}}  # If no team_id provided, match nothing meaningful
 
 async def get_all_subordinates(user_id: str, team_id: str = None) -> List[str]:
     """Get all subordinates recursively (exclude archived), scoped to team"""
