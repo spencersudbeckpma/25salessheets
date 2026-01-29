@@ -1360,7 +1360,7 @@ async def update_team_ui_settings(team_id: str, data: TeamUISettingsUpdate, curr
 
 @api_router.get("/admin/teams/{team_id}/full-config")
 async def get_team_full_config(team_id: str, current_user: dict = Depends(get_current_user)):
-    """Get complete team configuration including features, role overrides, UI settings, and branding (super_admin only)"""
+    """Get complete team configuration including features, role overrides, UI settings, view settings, and branding (super_admin only)"""
     require_super_admin(current_user)
     
     team = await db.teams.find_one({"id": team_id}, {"_id": 0})
@@ -1371,6 +1371,7 @@ async def get_team_full_config(team_id: str, current_user: dict = Depends(get_cu
     features = {**DEFAULT_TEAM_FEATURES, **team.get('features', {})}
     role_overrides = {**DEFAULT_ROLE_TAB_OVERRIDES, **team.get('role_tab_overrides', {})}
     ui_settings = {**DEFAULT_TEAM_UI_SETTINGS, **team.get('ui_settings', {})}
+    view_settings = await get_team_view_settings(team)
     branding = team.get('branding', {
         "logo_url": None,
         "primary_color": "#1e40af",
@@ -1385,10 +1386,12 @@ async def get_team_full_config(team_id: str, current_user: dict = Depends(get_cu
         "features": features,
         "role_tab_overrides": role_overrides,
         "ui_settings": ui_settings,
+        "view_settings": view_settings,
         "branding": branding,
         "available_tabs": list(DEFAULT_TEAM_FEATURES.keys()),
         "available_roles": ["agent", "district_manager", "regional_manager"],
-        "available_periods": ["weekly", "monthly", "quarterly", "yearly"]
+        "available_periods": ["weekly", "monthly", "quarterly", "yearly"],
+        "available_kpi_cards": [card["id"] for card in DEFAULT_TEAM_VIEW_SETTINGS["kpi_cards"]]
     }
 
 @api_router.put("/admin/teams/{team_id}/full-config")
@@ -1418,6 +1421,10 @@ async def update_team_full_config(team_id: str, config: dict, current_user: dict
     # Update UI settings if provided
     if 'ui_settings' in config:
         update_data['ui_settings'] = config['ui_settings']
+    
+    # Update view settings if provided (Phase 2)
+    if 'view_settings' in config:
+        update_data['team_settings.views'] = config['view_settings']
     
     # Update branding if provided
     if 'branding' in config:
