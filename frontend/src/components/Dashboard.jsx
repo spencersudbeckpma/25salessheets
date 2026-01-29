@@ -37,8 +37,8 @@ const Dashboard = ({ user, setUser, branding: initialBranding, features: initial
 
   // Set initial active tab based on team's default landing tab
   useEffect(() => {
-    if (activeTab === null) {
-      const defaultTab = getDefaultTab();
+    if (activeTab === null && uiSettings) {
+      const defaultTab = uiSettings.default_landing_tab || 'activity';
       // Map feature names to tab names
       const featureToTabMap = {
         'activity': 'activity',
@@ -57,7 +57,7 @@ const Dashboard = ({ user, setUser, branding: initialBranding, features: initial
       const tabName = featureToTabMap[defaultTab] || 'activity';
       setActiveTab(tabName);
     }
-  }, [activeTab, getDefaultTab]);
+  }, [activeTab, uiSettings]);
 
   // Determine which tab to show based on features
   const getValidTab = (requestedTab) => {
