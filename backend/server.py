@@ -1168,6 +1168,204 @@ async def copy_team_features(team_id: str, source_team_id: str, current_user: di
         "features": source_features
     }
 
+# ==================== TEAM ROLE TAB OVERRIDES ====================
+
+class RoleTabOverridesUpdate(BaseModel):
+    role_tab_overrides: Dict[str, Dict[str, list]]
+
+@api_router.get("/admin/teams/{team_id}/role-overrides")
+async def get_team_role_overrides(team_id: str, current_user: dict = Depends(get_current_user)):
+    """Get team role-based tab overrides (super_admin only)"""
+    require_super_admin(current_user)
+    
+    team = await db.teams.find_one({"id": team_id}, {"_id": 0})
+    if not team:
+        raise HTTPException(status_code=404, detail="Team not found")
+    
+    role_overrides = team.get('role_tab_overrides', DEFAULT_ROLE_TAB_OVERRIDES)
+    
+    return {
+        "team_id": team_id,
+        "team_name": team.get('name'),
+        "role_tab_overrides": role_overrides,
+        "available_tabs": list(DEFAULT_TEAM_FEATURES.keys())
+    }
+
+@api_router.put("/admin/teams/{team_id}/role-overrides")
+async def update_team_role_overrides(team_id: str, data: RoleTabOverridesUpdate, current_user: dict = Depends(get_current_user)):
+    """Update team role-based tab overrides (super_admin only)"""
+    require_super_admin(current_user)
+    
+    team = await db.teams.find_one({"id": team_id}, {"_id": 0})
+    if not team:
+        raise HTTPException(status_code=404, detail="Team not found")
+    
+    # Validate role names
+    valid_roles = ['agent', 'district_manager', 'regional_manager']
+    for role in data.role_tab_overrides.keys():
+        if role not in valid_roles:
+            raise HTTPException(status_code=400, detail=f"Invalid role: {role}. Must be one of {valid_roles}")
+    
+    # Validate tab names
+    valid_tabs = list(DEFAULT_TEAM_FEATURES.keys())
+    for role, config in data.role_tab_overrides.items():
+        hidden_tabs = config.get('hidden_tabs', [])
+        for tab in hidden_tabs:
+            if tab not in valid_tabs:
+                raise HTTPException(status_code=400, detail=f"Invalid tab: {tab}. Must be one of {valid_tabs}")
+    
+    await db.teams.update_one(
+        {"id": team_id},
+        {"$set": {"role_tab_overrides": data.role_tab_overrides}}
+    )
+    
+    return {
+        "message": "Role tab overrides updated",
+        "role_tab_overrides": data.role_tab_overrides
+    }
+
+# ==================== TEAM UI SETTINGS ====================
+
+class TeamUISettingsUpdate(BaseModel):
+    default_landing_tab: Optional[str] = None
+    default_leaderboard_period: Optional[str] = None
+
+@api_router.get("/admin/teams/{team_id}/ui-settings")
+async def get_team_ui_settings(team_id: str, current_user: dict = Depends(get_current_user)):
+    """Get team UI settings (super_admin only)"""
+    require_super_admin(current_user)
+    
+    team = await db.teams.find_one({"id": team_id}, {"_id": 0})
+    if not team:
+        raise HTTPException(status_code=404, detail="Team not found")
+    
+    ui_settings = team.get('ui_settings', DEFAULT_TEAM_UI_SETTINGS)
+    merged_settings = {**DEFAULT_TEAM_UI_SETTINGS, **ui_settings}
+    
+    return {
+        "team_id": team_id,
+        "team_name": team.get('name'),
+        "ui_settings": merged_settings,
+        "available_tabs": list(DEFAULT_TEAM_FEATURES.keys()),
+        "available_periods": ["weekly", "monthly", "quarterly", "yearly"]
+    }
+
+@api_router.put("/admin/teams/{team_id}/ui-settings")
+async def update_team_ui_settings(team_id: str, data: TeamUISettingsUpdate, current_user: dict = Depends(get_current_user)):
+    """Update team UI settings (super_admin only)"""
+    require_super_admin(current_user)
+    
+    team = await db.teams.find_one({"id": team_id}, {"_id": 0})
+    if not team:
+        raise HTTPException(status_code=404, detail="Team not found")
+    
+    # Validate landing tab
+    valid_tabs = list(DEFAULT_TEAM_FEATURES.keys())
+    if data.default_landing_tab and data.default_landing_tab not in valid_tabs:
+        raise HTTPException(status_code=400, detail=f"Invalid landing tab. Must be one of {valid_tabs}")
+    
+    # Validate leaderboard period
+    valid_periods = ["weekly", "monthly", "quarterly", "yearly"]
+    if data.default_leaderboard_period and data.default_leaderboard_period not in valid_periods:
+        raise HTTPException(status_code=400, detail=f"Invalid period. Must be one of {valid_periods}")
+    
+    # Build update object
+    update_data = {}
+    if data.default_landing_tab:
+        update_data["ui_settings.default_landing_tab"] = data.default_landing_tab
+    if data.default_leaderboard_period:
+        update_data["ui_settings.default_leaderboard_period"] = data.default_leaderboard_period
+    
+    if update_data:
+        await db.teams.update_one(
+            {"id": team_id},
+            {"$set": update_data}
+        )
+    
+    # Get updated settings
+    team = await db.teams.find_one({"id": team_id}, {"_id": 0})
+    ui_settings = team.get('ui_settings', DEFAULT_TEAM_UI_SETTINGS)
+    
+    return {
+        "message": "UI settings updated",
+        "ui_settings": {**DEFAULT_TEAM_UI_SETTINGS, **ui_settings}
+    }
+
+# ==================== FULL TEAM CONFIG (Combined View) ====================
+
+@api_router.get("/admin/teams/{team_id}/full-config")
+async def get_team_full_config(team_id: str, current_user: dict = Depends(get_current_user)):
+    """Get complete team configuration including features, role overrides, UI settings, and branding (super_admin only)"""
+    require_super_admin(current_user)
+    
+    team = await db.teams.find_one({"id": team_id}, {"_id": 0})
+    if not team:
+        raise HTTPException(status_code=404, detail="Team not found")
+    
+    # Merge with defaults
+    features = {**DEFAULT_TEAM_FEATURES, **team.get('features', {})}
+    role_overrides = {**DEFAULT_ROLE_TAB_OVERRIDES, **team.get('role_tab_overrides', {})}
+    ui_settings = {**DEFAULT_TEAM_UI_SETTINGS, **team.get('ui_settings', {})}
+    branding = team.get('branding', {
+        "logo_url": None,
+        "primary_color": "#1e40af",
+        "accent_color": "#3b82f6",
+        "display_name": None,
+        "tagline": None
+    })
+    
+    return {
+        "team_id": team_id,
+        "team_name": team.get('name'),
+        "features": features,
+        "role_tab_overrides": role_overrides,
+        "ui_settings": ui_settings,
+        "branding": branding,
+        "available_tabs": list(DEFAULT_TEAM_FEATURES.keys()),
+        "available_roles": ["agent", "district_manager", "regional_manager"],
+        "available_periods": ["weekly", "monthly", "quarterly", "yearly"]
+    }
+
+@api_router.put("/admin/teams/{team_id}/full-config")
+async def update_team_full_config(team_id: str, config: dict, current_user: dict = Depends(get_current_user)):
+    """Update complete team configuration (super_admin only)"""
+    require_super_admin(current_user)
+    
+    team = await db.teams.find_one({"id": team_id}, {"_id": 0})
+    if not team:
+        raise HTTPException(status_code=404, detail="Team not found")
+    
+    update_data = {}
+    
+    # Update features if provided
+    if 'features' in config:
+        update_data['features'] = config['features']
+    
+    # Update role overrides if provided
+    if 'role_tab_overrides' in config:
+        # Validate roles
+        valid_roles = ['agent', 'district_manager', 'regional_manager']
+        for role in config['role_tab_overrides'].keys():
+            if role not in valid_roles:
+                raise HTTPException(status_code=400, detail=f"Invalid role: {role}")
+        update_data['role_tab_overrides'] = config['role_tab_overrides']
+    
+    # Update UI settings if provided
+    if 'ui_settings' in config:
+        update_data['ui_settings'] = config['ui_settings']
+    
+    # Update branding if provided
+    if 'branding' in config:
+        update_data['branding'] = config['branding']
+    
+    if update_data:
+        await db.teams.update_one(
+            {"id": team_id},
+            {"$set": update_data}
+        )
+    
+    return {"message": "Team configuration updated", "updated_fields": list(update_data.keys())}
+
 @api_router.get("/teams/my-features")
 async def get_my_team_features(current_user: dict = Depends(get_current_user)):
     """
