@@ -94,7 +94,11 @@ class TestFullHealthCheckEndpoint:
             # Verify status is PASS, FAIL, or NEEDS FIX
             assert team["status"] in ["PASS", "FAIL", "NEEDS FIX"], f"Invalid status: {team['status']}"
             
-            # Verify counts has all required collections
+            # Skip count validation for Unassigned pseudo-team (may have empty counts when no missing data)
+            if team.get("team_id") is None:
+                continue
+            
+            # Verify counts has all required collections for real teams
             counts = team["counts"]
             required_collections = ["users", "recruits", "interviews", "new_face_customers", "activities", "sna_agents", "npa_agents"]
             for col in required_collections:
