@@ -82,6 +82,15 @@ const Recruiting = ({ user }) => {
     }
   };
 
+  // Get RMs that have recruits (for the filter tabs)
+  const getRMsWithRecruits = () => {
+    // Get unique rm_ids from recruits
+    const rmIdsWithRecruits = [...new Set(recruits.map(r => r.rm_id).filter(Boolean))];
+    
+    // Return only RMs that have at least one recruit assigned
+    return regionalManagers.filter(rm => rmIdsWithRecruits.includes(rm.id));
+  };
+
   const fetchDistrictManagers = async () => {
     try {
       const token = localStorage.getItem('token');
