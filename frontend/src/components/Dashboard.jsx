@@ -306,6 +306,10 @@ const Dashboard = ({ user, setUser, branding: initialBranding, features: initial
             <SuitabilityForm user={user} />
           </TabsContent>
 
+          <TabsContent value="fact-finder" data-testid="fact-finder-content" className="mt-4 md:mt-6">
+            <FactFinder user={user} />
+          </TabsContent>
+
           <TabsContent value="manage" data-testid="manage-content" className="mt-4 md:mt-6">
             <TeamManagement user={user} />
           </TabsContent>
