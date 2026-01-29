@@ -6265,7 +6265,7 @@ async def get_npa_agents(current_user: dict = Depends(get_current_user)):
     team_id = current_user.get('team_id')
     
     # Get NPA agents based on role, filtered by team
-    if current_user['role'] == 'state_manager':
+    if current_user['role'] in ['super_admin', 'state_manager']:
         query = {}
         if team_id:
             query["team_id"] = team_id
