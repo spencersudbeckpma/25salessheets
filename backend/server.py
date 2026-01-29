@@ -105,6 +105,71 @@ DEFAULT_TEAM_UI_SETTINGS = {
     "default_leaderboard_period": "weekly"
 }
 
+# Default team view settings (Phase 2)
+DEFAULT_TEAM_VIEW_SETTINGS = {
+    # KPI cards configuration - order determines display order
+    "kpi_cards": [
+        {"id": "dials", "label": "Dials", "enabled": True},
+        {"id": "contacts", "label": "Contacts", "enabled": True},
+        {"id": "appointments", "label": "Appointments", "enabled": True},
+        {"id": "presentations", "label": "Presentations", "enabled": True},
+        {"id": "sales", "label": "Sales", "enabled": True},
+        {"id": "premium", "label": "Premium", "enabled": True},
+        {"id": "referrals", "label": "Referrals", "enabled": True},
+        {"id": "lives", "label": "Lives", "enabled": True}
+    ],
+    # Sub-tab visibility (enforced server-side)
+    "subtabs": {
+        "new_faces": True,
+        "sna": True,
+        "npa": True
+    }
+}
+
+async def get_team_view_settings(team: dict) -> dict:
+    """Get team view settings with defaults merged"""
+    if not team:
+        return DEFAULT_TEAM_VIEW_SETTINGS.copy()
+    
+    team_settings = team.get('team_settings', {})
+    views = team_settings.get('views', {})
+    
+    # Merge KPI cards (preserve order from team config if exists)
+    kpi_cards = views.get('kpi_cards', DEFAULT_TEAM_VIEW_SETTINGS['kpi_cards'])
+    
+    # Merge subtabs
+    subtabs = {**DEFAULT_TEAM_VIEW_SETTINGS['subtabs'], **views.get('subtabs', {})}
+    
+    return {
+        "kpi_cards": kpi_cards,
+        "subtabs": subtabs
+    }
+
+async def check_subtab_access(current_user: dict, subtab_name: str):
+    """
+    Check if user's team has access to a specific sub-tab.
+    Enforced server-side - returns 403 if disabled.
+    Super admins always have access.
+    """
+    if current_user.get('role') == 'super_admin':
+        return True
+    
+    team_id = current_user.get('team_id')
+    if not team_id:
+        raise HTTPException(status_code=403, detail=f"Access denied: {subtab_name} is not available")
+    
+    team = await db.teams.find_one({"id": team_id}, {"_id": 0})
+    if not team:
+        raise HTTPException(status_code=403, detail=f"Access denied: team not found")
+    
+    view_settings = await get_team_view_settings(team)
+    subtabs = view_settings.get('subtabs', {})
+    
+    if not subtabs.get(subtab_name, True):
+        raise HTTPException(status_code=403, detail=f"Access denied: {subtab_name} is not enabled for your team")
+    
+    return True
+
 async def get_effective_features(user: dict, team: dict = None) -> dict:
     """
     Compute effective features for a user based on:
