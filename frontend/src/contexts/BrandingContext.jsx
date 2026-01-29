@@ -139,12 +139,26 @@ export const BrandingProvider = ({ children }) => {
     return uiSettings.default_leaderboard_period || 'weekly';
   };
 
+  // Phase 2: View settings getters
+  const getKpiCards = () => {
+    return viewSettings.kpi_cards || DEFAULT_VIEW_SETTINGS.kpi_cards;
+  };
+
+  const getEnabledKpiCards = () => {
+    return (viewSettings.kpi_cards || DEFAULT_VIEW_SETTINGS.kpi_cards).filter(card => card.enabled);
+  };
+
+  const isSubtabEnabled = (subtabName) => {
+    return viewSettings.subtabs?.[subtabName] ?? true;
+  };
+
   return (
     <BrandingContext.Provider value={{
       branding,
       teamName,
       features,
       uiSettings,
+      viewSettings,
       updateBranding,
       clearBranding,
       getDisplayName,
@@ -152,6 +166,9 @@ export const BrandingProvider = ({ children }) => {
       hasFeature,
       getDefaultTab,
       getDefaultLeaderboardPeriod,
+      getKpiCards,
+      getEnabledKpiCards,
+      isSubtabEnabled,
       logoUrl: branding?.logo_url
     }}>
       {children}
