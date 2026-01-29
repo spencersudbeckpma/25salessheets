@@ -2954,6 +2954,8 @@ async def generate_excel_report(period: str, current_user: dict = Depends(get_cu
     # Check feature access
     await check_feature_access(current_user, "reports")
     
+    team_id = current_user.get('team_id')
+    
     from openpyxl import Workbook
     from openpyxl.styles import Font, PatternFill, Alignment
     from io import BytesIO
