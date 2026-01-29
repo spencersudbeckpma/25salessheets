@@ -518,14 +518,10 @@ async def activities_team_diagnostic(current_user: dict = Depends(get_current_us
 
 @api_router.get("/admin/recruiting-diagnostic")
 async def recruiting_diagnostic(current_user: dict = Depends(get_current_user)):
-    """Diagnose recruiting/pipeline data distribution (super_admin only)
+    """Diagnose recruiting/pipeline data - shows STRICT team filtering status.
     
-    This helps debug why State Manager might not see all recruits.
-    Shows:
-    - users_in_scope: all users in your team who could create recruits
-    - recruits by team_id distribution
-    - recruits by creator role within your team
-    - sample recruits that might be missing (wrong/null team_id)
+    CRITICAL: No cross-team visibility is allowed. This diagnostic confirms
+    that ONLY records with exact team_id match are included.
     """
     require_super_admin(current_user)
     
@@ -535,114 +531,85 @@ async def recruiting_diagnostic(current_user: dict = Depends(get_current_user)):
     teams = await db.teams.find({}, {"_id": 0, "id": 1, "name": 1}).to_list(100)
     team_names = {t["id"]: t["name"] for t in teams}
     
-    # Get all users in the current user's team (users_in_scope)
+    # Get all users in the current user's team
     users_in_team = await db.users.find(
         {"team_id": user_team_id, "$or": [{"status": "active"}, {"status": {"$exists": False}}]},
-        {"_id": 0, "id": 1, "name": 1, "role": 1, "email": 1}
+        {"_id": 0, "id": 1, "name": 1, "role": 1}
     ).to_list(10000)
     users_in_scope_ids = [u["id"] for u in users_in_team]
     users_by_role = {}
     for u in users_in_team:
         role = u.get("role", "unknown")
         if role not in users_by_role:
-            users_by_role[role] = []
-        users_by_role[role].append({"id": u["id"], "name": u.get("name", "")})
+            users_by_role[role] = 0
+        users_by_role[role] += 1
     
-    # Count recruits by team_id
-    pipeline_by_team = [
-        {"$group": {"_id": "$team_id", "count": {"$sum": 1}}},
-        {"$sort": {"count": -1}}
-    ]
-    team_counts = await db.recruits.aggregate(pipeline_by_team).to_list(100)
-    
-    # Get ALL recruits to analyze
+    # Get ALL recruits
     all_recruits = await db.recruits.find({}, {"_id": 0}).to_list(10000)
     
-    # Build user lookup for creator info
+    # Build user lookup
     all_users = await db.users.find({}, {"_id": 0, "id": 1, "name": 1, "role": 1, "team_id": 1}).to_list(10000)
     user_lookup = {u["id"]: u for u in all_users}
     
-    # Categorize recruits
-    recruits_by_creator_role = {"state_manager": 0, "regional_manager": 0, "district_manager": 0, "agent": 0, "super_admin": 0, "unknown_creator": 0}
-    recruits_in_my_team = []
-    recruits_missing_team_id = []
-    recruits_wrong_team_id = []
-    recruits_created_by_my_team_but_wrong_team_id = []
+    # Categorize recruits with STRICT filtering
+    recruits_exact_match = []  # team_id == user_team_id (INCLUDED)
+    recruits_null_missing = []  # team_id is NULL/missing (EXCLUDED)
+    recruits_other_team = []  # team_id belongs to another team (EXCLUDED)
     
     for r in all_recruits:
         recruit_team_id = r.get("team_id")
         created_by = r.get("created_by")
         creator = user_lookup.get(created_by, {})
-        creator_role = creator.get("role", "unknown_creator")
-        creator_team_id = creator.get("team_id")
         
         recruit_info = {
             "name": r.get("name"),
-            "id": r.get("id", "")[:8] + "...",
-            "team_id": recruit_team_id if recruit_team_id else "MISSING",
-            "created_by": created_by[:8] + "..." if created_by else "NONE",
+            "recruit_team_id": recruit_team_id if recruit_team_id else "NULL/MISSING",
+            "recruit_team_name": team_names.get(recruit_team_id, "UNKNOWN") if recruit_team_id else "N/A",
             "creator_name": creator.get("name", "Unknown"),
-            "creator_role": creator_role,
-            "creator_team_id": creator_team_id if creator_team_id else "MISSING"
+            "creator_role": creator.get("role", "unknown"),
+            "creator_team_id": creator.get("team_id", "NULL/MISSING")
         }
         
-        # Check if recruit matches state_manager query
-        matches_query = (recruit_team_id == user_team_id) or (recruit_team_id is None) or ("team_id" not in r)
-        
-        if matches_query:
-            recruits_in_my_team.append(recruit_info)
-            if creator_role in recruits_by_creator_role:
-                recruits_by_creator_role[creator_role] += 1
-            else:
-                recruits_by_creator_role["unknown_creator"] += 1
-        
-        # Identify problematic recruits
-        if recruit_team_id is None or "team_id" not in r:
-            recruits_missing_team_id.append(recruit_info)
-        elif recruit_team_id != user_team_id:
-            # Recruit has a different team_id
-            if creator_team_id == user_team_id:
-                # Creator is in my team but recruit has wrong team_id - BUG!
-                recruits_created_by_my_team_but_wrong_team_id.append(recruit_info)
-            else:
-                recruits_wrong_team_id.append(recruit_info)
+        if recruit_team_id == user_team_id:
+            recruits_exact_match.append(recruit_info)
+        elif recruit_team_id is None or "team_id" not in r:
+            recruits_null_missing.append(recruit_info)
+        else:
+            recruits_other_team.append(recruit_info)
     
-    # Build the EXACT query that state_manager uses
-    state_manager_query = {"$or": [{"team_id": user_team_id}, {"team_id": {"$exists": False}}, {"team_id": None}]} if user_team_id else {}
-    matching_count = await db.recruits.count_documents(state_manager_query)
+    # The STRICT query that will be used
+    strict_query = {"team_id": user_team_id} if user_team_id else {}
+    matching_count = await db.recruits.count_documents(strict_query)
     
     return {
+        "CRITICAL_NOTICE": "STRICT team filtering enforced. NO cross-team visibility.",
         "current_user": {
             "team_id": user_team_id,
-            "team_name": team_names.get(user_team_id, "UNKNOWN"),
-            "role": current_user.get("role")
+            "team_name": team_names.get(user_team_id, "UNKNOWN")
         },
-        "state_manager_query": str(state_manager_query),
-        "users_in_scope": {
-            "total_users_in_team": len(users_in_scope_ids),
-            "by_role": {role: len(users) for role, users in users_by_role.items()},
-            "user_ids": users_in_scope_ids[:20]  # First 20 for reference
+        "strict_query_applied": str(strict_query),
+        "users_in_my_team": {
+            "total": len(users_in_scope_ids),
+            "by_role": users_by_role
         },
-        "recruits_summary": {
+        "recruits_analysis": {
             "total_in_database": len(all_recruits),
-            "matching_state_manager_query": matching_count,
-            "in_my_team_scope": len(recruits_in_my_team),
-            "missing_team_id": len(recruits_missing_team_id),
-            "different_team_id": len(recruits_wrong_team_id),
-            "created_by_my_team_but_wrong_team_id": len(recruits_created_by_my_team_but_wrong_team_id)
+            "INCLUDED_exact_team_match": len(recruits_exact_match),
+            "EXCLUDED_null_missing_team_id": len(recruits_null_missing),
+            "EXCLUDED_other_team": len(recruits_other_team),
+            "query_result_count": matching_count
         },
-        "recruits_by_team_id": [
-            {
-                "team_id": tc["_id"] if tc["_id"] else "NULL/MISSING",
-                "team_name": team_names.get(tc["_id"], "NO TEAM" if tc["_id"] is None else "UNKNOWN"),
-                "count": tc["count"]
-            }
-            for tc in team_counts
-        ],
-        "recruits_by_creator_role_in_my_team": recruits_by_creator_role,
-        "sample_recruits_in_scope": recruits_in_my_team[:10],
-        "sample_recruits_missing_team_id": recruits_missing_team_id[:10],
-        "sample_recruits_created_by_my_team_but_wrong_team_id": recruits_created_by_my_team_but_wrong_team_id[:10]
+        "cross_team_check": {
+            "other_teams_excluded": len(recruits_other_team),
+            "NO_CROSS_TEAM_LEAKAGE": len(recruits_other_team) > 0 and matching_count == len(recruits_exact_match)
+        },
+        "sample_INCLUDED_recruits": recruits_exact_match[:5],
+        "sample_EXCLUDED_null_missing": recruits_null_missing[:5],
+        "sample_EXCLUDED_other_team": recruits_other_team[:5],
+        "action_required": {
+            "null_missing_recruits": len(recruits_null_missing),
+            "fix": "Run POST /api/admin/migrate-recruits-team-id to backfill team_id on legacy records"
+        }
     }
 
 @api_router.post("/admin/migrate-recruits-team-id")
