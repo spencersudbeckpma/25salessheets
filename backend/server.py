@@ -7012,25 +7012,22 @@ async def get_archived_users(current_user: dict = Depends(get_current_user)):
 async def get_active_users_for_reassignment(current_user: dict = Depends(get_current_user)):
     """Get active users within the user's team and hierarchy for team reorganization.
     
-    - super_admin: Can see ALL users (only in Admin tab)
-    - state_manager: Can see ALL users in their team (they're at the top of hierarchy)
+    ALL users (including super_admin) are scoped to their assigned team on product pages.
+    Cross-team visibility is ONLY available in Admin endpoints where team_id is explicitly passed.
+    
+    - super_admin/state_manager: Can see ALL users in their team (they're at the top of hierarchy)
     - regional_manager/district_manager: Can see only their downline
     """
     if current_user['role'] not in ['super_admin', 'state_manager', 'regional_manager', 'district_manager']:
         raise HTTPException(status_code=403, detail="Only managers can access this")
     
     team_id = current_user.get('team_id')
+    if not team_id:
+        return []
     
-    # super_admin can see all users - but this is ONLY used in Admin panel
-    if current_user['role'] == 'super_admin':
-        users = await db.users.find(
-            {"$or": [{"status": "active"}, {"status": {"$exists": False}}]},
-            {"_id": 0, "password_hash": 0}
-        ).to_list(10000)
-    elif current_user['role'] == 'state_manager':
-        # State manager sees ALL users in their team (they're at the top)
-        if not team_id:
-            return []
+    # super_admin uses same team scoping as state_manager on product pages
+    if current_user['role'] in ['super_admin', 'state_manager']:
+        # State manager and super_admin see ALL users in their team (they're at the top)
         users = await db.users.find(
             {
                 "team_id": team_id,
@@ -7040,9 +7037,6 @@ async def get_active_users_for_reassignment(current_user: dict = Depends(get_cur
         ).to_list(10000)
     else:
         # For regional/district managers: filter by team_id AND hierarchy
-        if not team_id:
-            return []
-        
         # Get only users within their downline hierarchy (same team)
         subordinate_ids = await get_all_subordinates(current_user['id'], team_id)
         
