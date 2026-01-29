@@ -6013,7 +6013,10 @@ async def delete_docusphere_document(doc_id: str, current_user: dict = Depends(g
 
 @api_router.get("/recruiting")
 async def get_recruits(current_user: dict = Depends(get_current_user)):
-    """Get recruits - super_admin/State Manager sees all, Regional sees own + DMs', District sees own only"""
+    """Get recruits - STRICTLY scoped to current user's team_id.
+    
+    NO cross-team visibility allowed under any circumstance.
+    """
     # Check feature access
     await check_feature_access(current_user, "recruiting")
     
@@ -6022,33 +6025,38 @@ async def get_recruits(current_user: dict = Depends(get_current_user)):
     
     team_id = current_user.get('team_id')
     
-    # Team filter that includes records with matching team_id OR no team_id (backwards compatibility)
-    def get_team_filter_query(team_id):
-        if team_id:
-            return {"$or": [{"team_id": team_id}, {"team_id": {"$exists": False}}, {"team_id": None}]}
-        return {}
+    # CRITICAL: No team_id = no data. Prevents any cross-team leakage.
+    if not team_id:
+        return []
+    
+    # STRICT team filter - only exact match, no NULL/missing allowed
+    strict_team_filter = {"team_id": team_id}
     
     if current_user['role'] == 'regional_manager':
-        # Regional Manager sees their own recruits + their District Managers' recruits (scoped to team)
+        # Regional Manager sees their own recruits + their District Managers' recruits
+        # ALL scoped to their team_id
         subordinates = await get_all_subordinates(current_user['id'], team_id)
-        subordinate_ids = subordinates  # get_all_subordinates returns list of IDs
-        subordinate_ids.append(current_user['id'])  # Include self
+        subordinate_ids = subordinates
+        subordinate_ids.append(current_user['id'])
         
-        # Find recruits where rm_id matches OR dm_id is one of the subordinates
-        query = {"$or": [{"rm_id": current_user['id']}, {"dm_id": {"$in": subordinate_ids}}]}
-        if team_id:
-            query = {"$and": [query, get_team_filter_query(team_id)]}
+        query = {"$and": [
+            {"$or": [{"rm_id": current_user['id']}, {"dm_id": {"$in": subordinate_ids}}]},
+            strict_team_filter
+        ]}
         recruits = await db.recruits.find(query, {"_id": 0}).sort("created_at", -1).to_list(1000)
     elif current_user['role'] == 'district_manager':
-        # District Manager only sees their own recruits (assigned to them as DM)
-        query = {"dm_id": current_user['id']}
-        if team_id:
-            query = {"$and": [query, get_team_filter_query(team_id)]}
+        # District Manager only sees their own recruits, scoped to team
+        query = {"$and": [
+            {"dm_id": current_user['id']},
+            strict_team_filter
+        ]}
         recruits = await db.recruits.find(query, {"_id": 0}).sort("created_at", -1).to_list(1000)
     else:
-        # super_admin or State Manager sees all within their team (including legacy records without team_id)
-        query = get_team_filter_query(team_id)
+        # super_admin or State Manager sees ALL recruits in THEIR team only
+        # STRICT: No cross-team visibility, no NULL/missing team_id included
+        query = strict_team_filter
         recruits = await db.recruits.find(query, {"_id": 0}).sort("created_at", -1).to_list(1000)
+    
     return recruits
 
 @api_router.post("/recruiting")
