@@ -3440,12 +3440,12 @@ async def get_daily_report(report_type: str, date: str, current_user: dict = Dep
         
         report_data = []
         
-        # Add each individual team member's data
+        # Add each individual team member's data - SCOPED TO TEAM
         for member in all_team_members:
-            activity = await db.activities.find_one({
-                "user_id": member['id'],
-                "date": report_date
-            }, {"_id": 0})
+            act_query = {"user_id": member['id'], "date": report_date}
+            if team_id:
+                act_query["team_id"] = team_id
+            activity = await db.activities.find_one(act_query, {"_id": 0})
             
             member_totals = {
                 "contacts": activity.get('contacts', 0) if activity else 0,
