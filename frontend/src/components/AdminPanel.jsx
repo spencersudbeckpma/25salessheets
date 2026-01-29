@@ -105,6 +105,11 @@ const AdminPanel = ({ user }) => {
   const [orphanedActivitiesLoading, setOrphanedActivitiesLoading] = useState(false);
   const [showFixOrphanedModal, setShowFixOrphanedModal] = useState(false);
   const [fixOrphanedResult, setFixOrphanedResult] = useState(null);
+  
+  // Sub-tabs diagnostic states (New Faces, SNA, NPA)
+  const [subtabsDiagnostic, setSubtabsDiagnostic] = useState(null);
+  const [subtabsDiagnosticLoading, setSubtabsDiagnosticLoading] = useState(false);
+  const [subtabsMigrationResult, setSubtabsMigrationResult] = useState(null);
 
   const token = localStorage.getItem('token');
   const headers = { Authorization: `Bearer ${token}` };
