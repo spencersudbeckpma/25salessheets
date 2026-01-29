@@ -15,6 +15,7 @@ function App() {
   const [branding, setBranding] = useState(null);
   const [features, setFeatures] = useState(null);
   const [uiSettings, setUiSettings] = useState(null);
+  const [viewSettings, setViewSettings] = useState(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -35,6 +36,7 @@ function App() {
           setBranding(brandingRes.data);
           setFeatures(featuresRes.data.features);
           setUiSettings(featuresRes.data.ui_settings);
+          setViewSettings(featuresRes.data.view_settings);
           setLoading(false);
         })
         .catch(() => {
@@ -57,6 +59,7 @@ function App() {
     }
     if (data.features) setFeatures(data.features);
     if (data.ui_settings) setUiSettings(data.ui_settings);
+    if (data.view_settings) setViewSettings(data.view_settings);
   };
 
   if (loading) {
