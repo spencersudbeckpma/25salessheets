@@ -1588,6 +1588,268 @@ const AdminPanel = ({ user }) => {
       {/* Diagnostics Tab */}
       {activeTab === 'diagnostics' && (
         <div className="space-y-6" data-testid="diagnostics-tab-content">
+          {/* ==================== FULL DATA HEALTH CHECK ==================== */}
+          <Card className="bg-gradient-to-r from-emerald-50 to-teal-50 border-emerald-300 shadow-lg">
+            <CardHeader className="pb-3">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                <div>
+                  <CardTitle className="flex items-center gap-2 text-emerald-800 text-xl">
+                    <BarChart3 className="w-6 h-6" />
+                    Full Data Health Check
+                  </CardTitle>
+                  <CardDescription className="text-emerald-700">
+                    Complete team-by-team data integrity check. Run this from your phone - no terminal needed.
+                  </CardDescription>
+                </div>
+                <Button
+                  onClick={runFullHealthCheck}
+                  disabled={fullHealthLoading}
+                  className="bg-emerald-600 hover:bg-emerald-700 text-white px-6 py-3 text-base"
+                  data-testid="run-full-health-check-btn"
+                >
+                  {fullHealthLoading ? <RefreshCw className="w-5 h-5 mr-2 animate-spin" /> : <Search className="w-5 h-5 mr-2" />}
+                  Run Health Check
+                </Button>
+              </div>
+            </CardHeader>
+          </Card>
+
+          {/* Full Health Check Results */}
+          {fullHealthData && (
+            <Card className="border-slate-200" data-testid="full-health-results">
+              <CardHeader className="pb-2 border-b">
+                {/* Build Info Banner */}
+                <div className="bg-slate-100 rounded-lg p-3 mb-3">
+                  <div className="flex flex-wrap items-center gap-4 text-sm">
+                    <div className="flex items-center gap-2">
+                      <span className="font-medium text-slate-600">Version:</span>
+                      <span className="font-mono bg-slate-200 px-2 py-0.5 rounded">{fullHealthData.build_info?.version || 'N/A'}</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className="font-medium text-slate-600">Build:</span>
+                      <span className="font-mono text-xs bg-slate-200 px-2 py-0.5 rounded">{fullHealthData.build_info?.timestamp || 'N/A'}</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className="font-medium text-slate-600">Checked:</span>
+                      <span className="text-slate-700">{fullHealthData.build_info?.deployed_at || 'N/A'}</span>
+                    </div>
+                  </div>
+                </div>
+                
+                {/* Overall Status */}
+                <div className={`flex items-center justify-between p-4 rounded-lg ${fullHealthData.summary?.overall_status === 'PASS' ? 'bg-green-100' : 'bg-red-100'}`}>
+                  <div className="flex items-center gap-3">
+                    {fullHealthData.summary?.overall_status === 'PASS' ? (
+                      <CheckCircle2 className="w-8 h-8 text-green-600" />
+                    ) : (
+                      <AlertTriangle className="w-8 h-8 text-red-600" />
+                    )}
+                    <div>
+                      <div className={`text-2xl font-bold ${fullHealthData.summary?.overall_status === 'PASS' ? 'text-green-800' : 'text-red-800'}`}>
+                        {fullHealthData.summary?.overall_status}
+                      </div>
+                      <div className="text-sm text-slate-600">
+                        {fullHealthData.summary?.total_teams} teams checked
+                      </div>
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <div className="text-sm text-slate-600">Missing team_id:</div>
+                    <div className={`text-xl font-bold ${fullHealthData.summary?.total_records_missing_team_id > 0 ? 'text-red-700' : 'text-green-700'}`}>
+                      {fullHealthData.summary?.total_records_missing_team_id || 0}
+                    </div>
+                  </div>
+                </div>
+              </CardHeader>
+              
+              <CardContent className="pt-4 space-y-6">
+                {/* Backfill Buttons - One-Click Actions */}
+                {fullHealthData.summary?.total_records_missing_team_id > 0 && (
+                  <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
+                    <h4 className="font-semibold text-amber-800 mb-3 flex items-center gap-2">
+                      <Wrench className="w-5 h-5" />
+                      One-Click Backfill Actions
+                    </h4>
+                    <p className="text-sm text-amber-700 mb-4">
+                      Click to backfill missing team_id based on each record's owner. Only affects records with missing team_id.
+                    </p>
+                    <div className="flex flex-wrap gap-2">
+                      {fullHealthData.backfill_available?.recruits && (
+                        <Button
+                          onClick={() => runBackfill('recruits')}
+                          disabled={backfillLoading.recruits}
+                          className="bg-blue-600 hover:bg-blue-700"
+                          data-testid="backfill-recruits-btn"
+                        >
+                          {backfillLoading.recruits ? <RefreshCw className="w-4 h-4 mr-2 animate-spin" /> : <Wrench className="w-4 h-4 mr-2" />}
+                          Backfill Recruits ({fullHealthData.summary?.missing_by_collection?.recruits || 0})
+                        </Button>
+                      )}
+                      {fullHealthData.backfill_available?.interviews && (
+                        <Button
+                          onClick={() => runBackfill('interviews')}
+                          disabled={backfillLoading.interviews}
+                          className="bg-purple-600 hover:bg-purple-700"
+                          data-testid="backfill-interviews-btn"
+                        >
+                          {backfillLoading.interviews ? <RefreshCw className="w-4 h-4 mr-2 animate-spin" /> : <Wrench className="w-4 h-4 mr-2" />}
+                          Backfill Interviews ({fullHealthData.summary?.missing_by_collection?.interviews || 0})
+                        </Button>
+                      )}
+                      {fullHealthData.backfill_available?.new_face_customers && (
+                        <Button
+                          onClick={() => runBackfill('new_face_customers')}
+                          disabled={backfillLoading.new_face_customers}
+                          className="bg-teal-600 hover:bg-teal-700"
+                          data-testid="backfill-new-faces-btn"
+                        >
+                          {backfillLoading.new_face_customers ? <RefreshCw className="w-4 h-4 mr-2 animate-spin" /> : <Wrench className="w-4 h-4 mr-2" />}
+                          Backfill New Faces ({fullHealthData.summary?.missing_by_collection?.new_face_customers || 0})
+                        </Button>
+                      )}
+                      {fullHealthData.backfill_available?.activities && (
+                        <Button
+                          onClick={() => runBackfill('activities')}
+                          disabled={backfillLoading.activities}
+                          className="bg-orange-600 hover:bg-orange-700"
+                          data-testid="backfill-activities-btn"
+                        >
+                          {backfillLoading.activities ? <RefreshCw className="w-4 h-4 mr-2 animate-spin" /> : <Wrench className="w-4 h-4 mr-2" />}
+                          Backfill Activities ({fullHealthData.summary?.missing_by_collection?.activities || 0})
+                        </Button>
+                      )}
+                      {fullHealthData.backfill_available?.sna_agents && (
+                        <Button
+                          onClick={() => runBackfill('sna_agents')}
+                          disabled={backfillLoading.sna_agents}
+                          className="bg-indigo-600 hover:bg-indigo-700"
+                          data-testid="backfill-sna-btn"
+                        >
+                          {backfillLoading.sna_agents ? <RefreshCw className="w-4 h-4 mr-2 animate-spin" /> : <Wrench className="w-4 h-4 mr-2" />}
+                          Backfill SNA ({fullHealthData.summary?.missing_by_collection?.sna_agents || 0})
+                        </Button>
+                      )}
+                      {fullHealthData.backfill_available?.npa_agents && (
+                        <Button
+                          onClick={() => runBackfill('npa_agents')}
+                          disabled={backfillLoading.npa_agents}
+                          className="bg-pink-600 hover:bg-pink-700"
+                          data-testid="backfill-npa-btn"
+                        >
+                          {backfillLoading.npa_agents ? <RefreshCw className="w-4 h-4 mr-2 animate-spin" /> : <Wrench className="w-4 h-4 mr-2" />}
+                          Backfill NPA ({fullHealthData.summary?.missing_by_collection?.npa_agents || 0})
+                        </Button>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                {/* Team-by-Team Results Table */}
+                <div>
+                  <h4 className="font-semibold text-slate-800 mb-3">Team-by-Team Health Check</h4>
+                  <div className="overflow-x-auto border rounded-lg">
+                    <table className="w-full text-sm" data-testid="health-check-table">
+                      <thead className="bg-slate-100">
+                        <tr>
+                          <th className="px-3 py-3 text-left font-medium text-slate-700 sticky left-0 bg-slate-100">Team</th>
+                          <th className="px-3 py-3 text-center font-medium text-slate-700">Status</th>
+                          <th className="px-3 py-3 text-center font-medium text-slate-700">Users</th>
+                          <th className="px-3 py-3 text-center font-medium text-slate-700">Recruits</th>
+                          <th className="px-3 py-3 text-center font-medium text-slate-700">Interviews</th>
+                          <th className="px-3 py-3 text-center font-medium text-slate-700">New Faces</th>
+                          <th className="px-3 py-3 text-center font-medium text-slate-700">SNA</th>
+                          <th className="px-3 py-3 text-center font-medium text-slate-700">NPA</th>
+                          <th className="px-3 py-3 text-center font-medium text-slate-700">Activities</th>
+                          <th className="px-3 py-3 text-left font-medium text-slate-700">Issues</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y">
+                        {fullHealthData.teams?.filter(t => t.team_id !== null).map((team) => (
+                          <tr key={team.team_id} className={`hover:bg-slate-50 ${team.status === 'FAIL' ? 'bg-red-50' : ''}`}>
+                            <td className="px-3 py-3 font-medium text-slate-800 sticky left-0 bg-inherit whitespace-nowrap">
+                              {team.team_name}
+                            </td>
+                            <td className="px-3 py-3 text-center">
+                              {team.status === 'PASS' ? (
+                                <span className="inline-flex items-center gap-1 text-green-700 bg-green-100 px-2 py-1 rounded text-xs font-medium">
+                                  <CheckCircle2 className="w-3 h-3" /> PASS
+                                </span>
+                              ) : (
+                                <span className="inline-flex items-center gap-1 text-red-700 bg-red-100 px-2 py-1 rounded text-xs font-medium">
+                                  <AlertTriangle className="w-3 h-3" /> FAIL
+                                </span>
+                              )}
+                            </td>
+                            <td className="px-3 py-3 text-center">{team.counts?.users || 0}</td>
+                            <td className="px-3 py-3 text-center">{team.counts?.recruits || 0}</td>
+                            <td className="px-3 py-3 text-center">{team.counts?.interviews || 0}</td>
+                            <td className="px-3 py-3 text-center">{team.counts?.new_face_customers || 0}</td>
+                            <td className="px-3 py-3 text-center">{team.counts?.sna_agents || 0}</td>
+                            <td className="px-3 py-3 text-center">{team.counts?.npa_agents || 0}</td>
+                            <td className="px-3 py-3 text-center">{team.counts?.activities || 0}</td>
+                            <td className="px-3 py-3 text-xs text-slate-600 max-w-xs">
+                              {team.issues?.length > 0 ? (
+                                <ul className="list-disc list-inside">
+                                  {team.issues.map((issue, idx) => (
+                                    <li key={idx} className="text-red-600">{issue}</li>
+                                  ))}
+                                </ul>
+                              ) : (
+                                <span className="text-green-600">None</span>
+                              )}
+                            </td>
+                          </tr>
+                        ))}
+                        {/* Unassigned Row */}
+                        {fullHealthData.teams?.filter(t => t.team_id === null).map((team) => (
+                          <tr key="unassigned" className="bg-amber-50 hover:bg-amber-100">
+                            <td className="px-3 py-3 font-medium text-amber-800 sticky left-0 bg-inherit whitespace-nowrap">
+                              ⚠️ {team.team_name}
+                            </td>
+                            <td className="px-3 py-3 text-center">
+                              <span className="inline-flex items-center gap-1 text-amber-700 bg-amber-200 px-2 py-1 rounded text-xs font-medium">
+                                <AlertTriangle className="w-3 h-3" /> NEEDS FIX
+                              </span>
+                            </td>
+                            <td className="px-3 py-3 text-center font-bold text-amber-800">{team.counts?.users || 0}</td>
+                            <td className="px-3 py-3 text-center font-bold text-amber-800">{team.counts?.recruits || 0}</td>
+                            <td className="px-3 py-3 text-center font-bold text-amber-800">{team.counts?.interviews || 0}</td>
+                            <td className="px-3 py-3 text-center font-bold text-amber-800">{team.counts?.new_face_customers || 0}</td>
+                            <td className="px-3 py-3 text-center font-bold text-amber-800">{team.counts?.sna_agents || 0}</td>
+                            <td className="px-3 py-3 text-center font-bold text-amber-800">{team.counts?.npa_agents || 0}</td>
+                            <td className="px-3 py-3 text-center font-bold text-amber-800">{team.counts?.activities || 0}</td>
+                            <td className="px-3 py-3 text-xs text-amber-700 max-w-xs">
+                              Use backfill buttons above to fix
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+
+                {/* All PASS Message */}
+                {fullHealthData.summary?.overall_status === 'PASS' && (
+                  <div className="bg-green-50 p-4 rounded-lg text-center border border-green-200">
+                    <CheckCircle2 className="w-10 h-10 text-green-600 mx-auto mb-2" />
+                    <div className="text-green-800 font-semibold text-lg">All Data Health Checks Passed!</div>
+                    <div className="text-green-600 text-sm">No cross-team issues or missing team_id records detected.</div>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Separator */}
+          <div className="relative">
+            <div className="absolute inset-0 flex items-center">
+              <span className="w-full border-t border-slate-200" />
+            </div>
+            <div className="relative flex justify-center text-sm">
+              <span className="px-3 bg-slate-50 text-slate-500">Other Diagnostic Tools</span>
+            </div>
+          </div>
+
           {/* Header */}
           <Card className="bg-purple-50 border-purple-200">
             <CardHeader>
