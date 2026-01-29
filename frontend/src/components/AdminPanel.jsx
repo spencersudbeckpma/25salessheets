@@ -3150,6 +3150,115 @@ const AdminPanel = ({ user }) => {
                   </div>
                 </div>
               )}
+
+              {/* Views Tab (Phase 2) - KPI Cards & Sub-tabs */}
+              {customizationTab === 'views' && (
+                <div className="space-y-6">
+                  <p className="text-sm text-slate-600">Configure dashboard layout and sub-tab visibility. Changes take effect immediately for all team members.</p>
+                  
+                  {/* KPI Cards Section */}
+                  <div>
+                    <h4 className="font-medium text-slate-900 mb-3 flex items-center gap-2">
+                      <BarChart3 className="w-4 h-4" />
+                      KPI Cards
+                    </h4>
+                    <p className="text-xs text-slate-500 mb-3">Toggle visibility and reorder cards. Drag or use arrows to reorder.</p>
+                    <div className="space-y-2">
+                      {(customizationForm.view_settings?.kpi_cards || []).map((card, index) => (
+                        <div 
+                          key={card.id} 
+                          className={`flex items-center justify-between p-3 rounded-lg border transition-colors ${
+                            card.enabled ? 'bg-white border-slate-200' : 'bg-slate-50 border-slate-100'
+                          }`}
+                        >
+                          <div className="flex items-center gap-3">
+                            <div className="flex flex-col gap-1">
+                              <button
+                                onClick={() => moveKpiCardUp(index)}
+                                disabled={index === 0}
+                                className="p-0.5 text-slate-400 hover:text-slate-600 disabled:opacity-30"
+                              >
+                                <ChevronUp className="w-4 h-4" />
+                              </button>
+                              <button
+                                onClick={() => moveKpiCardDown(index)}
+                                disabled={index === (customizationForm.view_settings?.kpi_cards?.length || 0) - 1}
+                                className="p-0.5 text-slate-400 hover:text-slate-600 disabled:opacity-30"
+                              >
+                                <ChevronDown className="w-4 h-4" />
+                              </button>
+                            </div>
+                            <span className="text-xs text-slate-400 w-6">{index + 1}.</span>
+                            <span className={`text-sm font-medium ${card.enabled ? 'text-slate-900' : 'text-slate-400'}`}>
+                              {card.label}
+                            </span>
+                          </div>
+                          <Switch
+                            checked={card.enabled}
+                            onCheckedChange={() => toggleKpiCard(card.id)}
+                            data-testid={`kpi-toggle-${card.id}`}
+                          />
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Sub-tabs Section */}
+                  <div className="border-t pt-6">
+                    <h4 className="font-medium text-slate-900 mb-3 flex items-center gap-2">
+                      <Users className="w-4 h-4" />
+                      Sub-Tab Visibility
+                    </h4>
+                    <p className="text-xs text-slate-500 mb-3">Enable or disable sub-tabs for this team. Disabled sub-tabs return 403 if accessed directly.</p>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      {/* New Faces */}
+                      <div className={`p-4 rounded-lg border ${
+                        customizationForm.view_settings?.subtabs?.new_faces ? 'bg-green-50 border-green-200' : 'bg-red-50 border-red-200'
+                      }`}>
+                        <div className="flex items-center justify-between mb-2">
+                          <span className="font-medium text-sm">New Faces</span>
+                          <Switch
+                            checked={customizationForm.view_settings?.subtabs?.new_faces ?? true}
+                            onCheckedChange={() => toggleSubtab('new_faces')}
+                            data-testid="subtab-toggle-new_faces"
+                          />
+                        </div>
+                        <p className="text-xs text-slate-500">Track new customer acquisitions</p>
+                      </div>
+
+                      {/* SNA Tracker */}
+                      <div className={`p-4 rounded-lg border ${
+                        customizationForm.view_settings?.subtabs?.sna ? 'bg-green-50 border-green-200' : 'bg-red-50 border-red-200'
+                      }`}>
+                        <div className="flex items-center justify-between mb-2">
+                          <span className="font-medium text-sm">SNA Tracker</span>
+                          <Switch
+                            checked={customizationForm.view_settings?.subtabs?.sna ?? true}
+                            onCheckedChange={() => toggleSubtab('sna')}
+                            data-testid="subtab-toggle-sna"
+                          />
+                        </div>
+                        <p className="text-xs text-slate-500">Supervised New Agent tracking</p>
+                      </div>
+
+                      {/* NPA Tracker */}
+                      <div className={`p-4 rounded-lg border ${
+                        customizationForm.view_settings?.subtabs?.npa ? 'bg-green-50 border-green-200' : 'bg-red-50 border-red-200'
+                      }`}>
+                        <div className="flex items-center justify-between mb-2">
+                          <span className="font-medium text-sm">NPA Tracker</span>
+                          <Switch
+                            checked={customizationForm.view_settings?.subtabs?.npa ?? true}
+                            onCheckedChange={() => toggleSubtab('npa')}
+                            data-testid="subtab-toggle-npa"
+                          />
+                        </div>
+                        <p className="text-xs text-slate-500">Non-Producing Agent tracking</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
             </>
           )}
 
