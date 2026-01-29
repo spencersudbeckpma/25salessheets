@@ -7819,6 +7819,503 @@ async def get_weekly_suitability_report(
         "forms": forms
     }
 
+# ==================== FACT FINDER ====================
+
+class FactFinderHealthExpenses(BaseModel):
+    choose_physician: Optional[int] = None
+    coverage_traveling: Optional[int] = None
+    personal_agent: Optional[int] = None
+    affordability: Optional[int] = None
+    critical_illness: Optional[int] = None
+
+class FactFinderRetirementIncome(BaseModel):
+    safety_principal: Optional[int] = None
+    transferring_assets: Optional[int] = None
+    minimizing_taxes: Optional[int] = None
+    accessibility_money: Optional[int] = None
+    rate_return: Optional[int] = None
+    outliving_assets: Optional[int] = None
+
+class FactFinderFinalExpenses(BaseModel):
+    funeral_costs: Optional[int] = None
+    survivor_income: Optional[int] = None
+    legacy_giving: Optional[int] = None
+    charitable_giving: Optional[int] = None
+    living_benefits: Optional[int] = None
+
+class FactFinderExtendedCare(BaseModel):
+    remaining_independent: Optional[int] = None
+    protecting_assets: Optional[int] = None
+    care_location_choices: Optional[int] = None
+    not_burdening_family: Optional[int] = None
+    how_remembered: Optional[int] = None
+
+class FactFinderClientInfo(BaseModel):
+    first_name: Optional[str] = ""
+    last_name: Optional[str] = ""
+    birth_date: Optional[str] = ""
+    spouse_first: Optional[str] = ""
+    spouse_last: Optional[str] = ""
+    spouse_birth_date: Optional[str] = ""
+    address: Optional[str] = ""
+    city: Optional[str] = ""
+    state: Optional[str] = ""
+    zip_code: Optional[str] = ""
+    employer: Optional[str] = ""
+    employer_retired: Optional[bool] = False
+    spouse_employer: Optional[str] = ""
+    spouse_employer_retired: Optional[bool] = False
+    email: Optional[str] = ""
+    phone: Optional[str] = ""
+
+class FactFinderCreate(BaseModel):
+    client_info: FactFinderClientInfo
+    health_expenses: FactFinderHealthExpenses
+    retirement_income: FactFinderRetirementIncome
+    final_expenses: FactFinderFinalExpenses
+    extended_care: FactFinderExtendedCare
+    producer_name_1: Optional[str] = ""
+    producer_name_2: Optional[str] = ""
+    agent_number_1: Optional[str] = ""
+    agent_number_2: Optional[str] = ""
+    notes: Optional[str] = ""
+    status: Optional[str] = "draft"
+
+@api_router.get("/fact-finders")
+async def get_fact_finders(
+    current_user: dict = Depends(get_current_user),
+    month: Optional[str] = None,
+    search: Optional[str] = None,
+    created_by: Optional[str] = None
+):
+    """Get fact finders for user's team"""
+    await check_feature_access(current_user, "fact_finder")
+    
+    team_id = current_user.get('team_id')
+    query = {}
+    
+    # Team scoping
+    if current_user['role'] == 'super_admin':
+        pass  # Super admin sees all
+    elif team_id:
+        query["team_id"] = team_id
+    else:
+        raise HTTPException(status_code=403, detail="You must be assigned to a team")
+    
+    # Access control - regular users see their own, managers see team
+    if current_user['role'] not in ['super_admin', 'state_manager']:
+        query["created_by"] = current_user['id']
+    
+    # Filters
+    if month:
+        query["month_key"] = month
+    
+    if created_by:
+        query["created_by"] = created_by
+    
+    if search:
+        query["$or"] = [
+            {"client_info.first_name": {"$regex": search, "$options": "i"}},
+            {"client_info.last_name": {"$regex": search, "$options": "i"}},
+            {"client_info.email": {"$regex": search, "$options": "i"}},
+            {"client_info.city": {"$regex": search, "$options": "i"}}
+        ]
+    
+    fact_finders = await db.fact_finders.find(query, {"_id": 0}).sort("created_at", -1).to_list(1000)
+    
+    # Add creator name
+    user_ids = list(set(ff.get('created_by') for ff in fact_finders if ff.get('created_by')))
+    users = await db.users.find({"id": {"$in": user_ids}}, {"_id": 0, "id": 1, "name": 1}).to_list(1000)
+    user_map = {u['id']: u['name'] for u in users}
+    
+    for ff in fact_finders:
+        ff['creator_name'] = user_map.get(ff.get('created_by'), 'Unknown')
+    
+    return fact_finders
+
+@api_router.post("/fact-finders")
+async def create_fact_finder(data: FactFinderCreate, current_user: dict = Depends(get_current_user)):
+    """Create a new fact finder"""
+    await check_feature_access(current_user, "fact_finder")
+    
+    team_id = current_user.get('team_id')
+    if not team_id and current_user['role'] != 'super_admin':
+        raise HTTPException(status_code=403, detail="You must be assigned to a team")
+    
+    now = datetime.now(timezone.utc)
+    
+    fact_finder = {
+        "id": str(uuid.uuid4()),
+        "team_id": team_id,
+        "created_by": current_user['id'],
+        "created_at": now.isoformat(),
+        "updated_at": now.isoformat(),
+        "month_key": now.strftime("%Y-%m"),
+        "client_info": data.client_info.model_dump(),
+        "health_expenses": data.health_expenses.model_dump(),
+        "retirement_income": data.retirement_income.model_dump(),
+        "final_expenses": data.final_expenses.model_dump(),
+        "extended_care": data.extended_care.model_dump(),
+        "producer_name_1": data.producer_name_1,
+        "producer_name_2": data.producer_name_2,
+        "agent_number_1": data.agent_number_1,
+        "agent_number_2": data.agent_number_2,
+        "notes": data.notes,
+        "status": data.status
+    }
+    
+    await db.fact_finders.insert_one(fact_finder)
+    fact_finder.pop('_id', None)
+    
+    return {"message": "Fact Finder created", "fact_finder": fact_finder}
+
+@api_router.get("/fact-finders/{fact_finder_id}")
+async def get_fact_finder(fact_finder_id: str, current_user: dict = Depends(get_current_user)):
+    """Get a specific fact finder"""
+    await check_feature_access(current_user, "fact_finder")
+    
+    fact_finder = await db.fact_finders.find_one({"id": fact_finder_id}, {"_id": 0})
+    if not fact_finder:
+        raise HTTPException(status_code=404, detail="Fact Finder not found")
+    
+    # Access check
+    team_id = current_user.get('team_id')
+    if current_user['role'] != 'super_admin':
+        if fact_finder.get('team_id') != team_id:
+            raise HTTPException(status_code=403, detail="Access denied")
+        if current_user['role'] not in ['state_manager'] and fact_finder.get('created_by') != current_user['id']:
+            raise HTTPException(status_code=403, detail="Access denied")
+    
+    return fact_finder
+
+@api_router.put("/fact-finders/{fact_finder_id}")
+async def update_fact_finder(fact_finder_id: str, data: FactFinderCreate, current_user: dict = Depends(get_current_user)):
+    """Update a fact finder"""
+    await check_feature_access(current_user, "fact_finder")
+    
+    existing = await db.fact_finders.find_one({"id": fact_finder_id}, {"_id": 0})
+    if not existing:
+        raise HTTPException(status_code=404, detail="Fact Finder not found")
+    
+    # Access check
+    team_id = current_user.get('team_id')
+    if current_user['role'] != 'super_admin':
+        if existing.get('team_id') != team_id:
+            raise HTTPException(status_code=403, detail="Access denied")
+        if current_user['role'] not in ['state_manager'] and existing.get('created_by') != current_user['id']:
+            raise HTTPException(status_code=403, detail="Only the creator can edit")
+    
+    update_data = {
+        "updated_at": datetime.now(timezone.utc).isoformat(),
+        "client_info": data.client_info.model_dump(),
+        "health_expenses": data.health_expenses.model_dump(),
+        "retirement_income": data.retirement_income.model_dump(),
+        "final_expenses": data.final_expenses.model_dump(),
+        "extended_care": data.extended_care.model_dump(),
+        "producer_name_1": data.producer_name_1,
+        "producer_name_2": data.producer_name_2,
+        "agent_number_1": data.agent_number_1,
+        "agent_number_2": data.agent_number_2,
+        "notes": data.notes,
+        "status": data.status
+    }
+    
+    await db.fact_finders.update_one({"id": fact_finder_id}, {"$set": update_data})
+    
+    updated = await db.fact_finders.find_one({"id": fact_finder_id}, {"_id": 0})
+    return updated
+
+@api_router.delete("/fact-finders/{fact_finder_id}")
+async def delete_fact_finder(fact_finder_id: str, current_user: dict = Depends(get_current_user)):
+    """Delete a fact finder (creator or state_manager only)"""
+    await check_feature_access(current_user, "fact_finder")
+    
+    existing = await db.fact_finders.find_one({"id": fact_finder_id}, {"_id": 0})
+    if not existing:
+        raise HTTPException(status_code=404, detail="Fact Finder not found")
+    
+    # Access check
+    team_id = current_user.get('team_id')
+    if current_user['role'] != 'super_admin':
+        if existing.get('team_id') != team_id:
+            raise HTTPException(status_code=403, detail="Access denied")
+        if current_user['role'] not in ['state_manager'] and existing.get('created_by') != current_user['id']:
+            raise HTTPException(status_code=403, detail="Only the creator or State Manager can delete")
+    
+    await db.fact_finders.delete_one({"id": fact_finder_id})
+    return {"message": "Fact Finder deleted"}
+
+@api_router.post("/fact-finders/{fact_finder_id}/duplicate")
+async def duplicate_fact_finder(fact_finder_id: str, current_user: dict = Depends(get_current_user)):
+    """Duplicate a fact finder"""
+    await check_feature_access(current_user, "fact_finder")
+    
+    existing = await db.fact_finders.find_one({"id": fact_finder_id}, {"_id": 0})
+    if not existing:
+        raise HTTPException(status_code=404, detail="Fact Finder not found")
+    
+    # Access check
+    team_id = current_user.get('team_id')
+    if current_user['role'] != 'super_admin':
+        if existing.get('team_id') != team_id:
+            raise HTTPException(status_code=403, detail="Access denied")
+    
+    now = datetime.now(timezone.utc)
+    
+    new_fact_finder = {
+        **existing,
+        "id": str(uuid.uuid4()),
+        "created_by": current_user['id'],
+        "created_at": now.isoformat(),
+        "updated_at": now.isoformat(),
+        "month_key": now.strftime("%Y-%m"),
+        "status": "draft"
+    }
+    
+    # Update client name to indicate it's a copy
+    if new_fact_finder.get('client_info', {}).get('last_name'):
+        new_fact_finder['client_info']['last_name'] += " (Copy)"
+    
+    await db.fact_finders.insert_one(new_fact_finder)
+    new_fact_finder.pop('_id', None)
+    
+    return {"message": "Fact Finder duplicated", "fact_finder": new_fact_finder}
+
+@api_router.get("/fact-finders/{fact_finder_id}/pdf")
+async def export_fact_finder_pdf(fact_finder_id: str, current_user: dict = Depends(get_current_user)):
+    """Export fact finder as PDF"""
+    await check_feature_access(current_user, "fact_finder")
+    from reportlab.lib import colors
+    from reportlab.lib.pagesizes import letter
+    from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer
+    from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+    from reportlab.lib.units import inch
+    import io
+    
+    fact_finder = await db.fact_finders.find_one({"id": fact_finder_id}, {"_id": 0})
+    if not fact_finder:
+        raise HTTPException(status_code=404, detail="Fact Finder not found")
+    
+    # Access check
+    team_id = current_user.get('team_id')
+    if current_user['role'] != 'super_admin':
+        if fact_finder.get('team_id') != team_id:
+            raise HTTPException(status_code=403, detail="Access denied")
+    
+    client_info = fact_finder.get('client_info', {})
+    health = fact_finder.get('health_expenses', {})
+    retirement = fact_finder.get('retirement_income', {})
+    final = fact_finder.get('final_expenses', {})
+    extended = fact_finder.get('extended_care', {})
+    
+    buffer = io.BytesIO()
+    doc = SimpleDocTemplate(buffer, pagesize=letter, topMargin=30, bottomMargin=30, leftMargin=40, rightMargin=40)
+    elements = []
+    styles = getSampleStyleSheet()
+    
+    # Custom styles
+    title_style = ParagraphStyle('Title', parent=styles['Heading1'], fontSize=16, alignment=1, textColor=colors.HexColor('#8B4513'))
+    section_style = ParagraphStyle('Section', parent=styles['Heading2'], fontSize=11, spaceBefore=10, spaceAfter=5, textColor=colors.HexColor('#1e40af'))
+    
+    # Header
+    elements.append(Paragraph("PMA USA - Fact Finder", title_style))
+    elements.append(Paragraph("You may have spent a lifetime accumulating assets", ParagraphStyle('Subtitle', parent=styles['Normal'], fontSize=12, alignment=1, textColor=colors.HexColor('#8B4513'), spaceAfter=15)))
+    
+    def rating_display(value):
+        """Convert rating value to visual display"""
+        if value is None:
+            return "○ ○ ○ ○ ○"
+        circles = ["○"] * 5
+        if 1 <= value <= 5:
+            circles[value - 1] = "●"
+        return " ".join(circles)
+    
+    def build_rating_table(title, items, data):
+        """Build a rating section table"""
+        header = [title, '1', '2', '3', '4', '5']
+        rows = [header]
+        for label, key in items:
+            val = data.get(key)
+            row = [label]
+            for i in range(1, 6):
+                row.append("●" if val == i else "○")
+            rows.append(row)
+        
+        table = Table(rows, colWidths=[180, 25, 25, 25, 25, 25])
+        table.setStyle(TableStyle([
+            ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#d4a574')),
+            ('TEXTCOLOR', (0, 0), (-1, 0), colors.black),
+            ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+            ('FONTSIZE', (0, 0), (-1, -1), 8),
+            ('ALIGN', (1, 0), (-1, -1), 'CENTER'),
+            ('GRID', (0, 0), (-1, -1), 0.5, colors.HexColor('#8B7355')),
+            ('BACKGROUND', (0, 1), (-1, -1), colors.HexColor('#FFF8DC')),
+            ('TOPPADDING', (0, 0), (-1, -1), 4),
+            ('BOTTOMPADDING', (0, 0), (-1, -1), 4),
+        ]))
+        return table
+    
+    # Health Expenses
+    health_items = [
+        ("Choose your physician", "choose_physician"),
+        ("Coverage when traveling", "coverage_traveling"),
+        ("Personal agent", "personal_agent"),
+        ("Affordability", "affordability"),
+        ("Coverage for Critical Illness", "critical_illness"),
+    ]
+    
+    # Retirement Income
+    retirement_items = [
+        ("Safety of principal", "safety_principal"),
+        ("Transferring assets", "transferring_assets"),
+        ("Minimizing taxes", "minimizing_taxes"),
+        ("Accessibility of money", "accessibility_money"),
+        ("Rate of return", "rate_return"),
+        ("Outliving assets", "outliving_assets"),
+    ]
+    
+    # Final Expenses
+    final_items = [
+        ("Funeral costs", "funeral_costs"),
+        ("Survivor income", "survivor_income"),
+        ("Legacy giving", "legacy_giving"),
+        ("Charitable giving", "charitable_giving"),
+        ("Living benefits of Life Insurance", "living_benefits"),
+    ]
+    
+    # Extended Care
+    extended_items = [
+        ("Remaining independent", "remaining_independent"),
+        ("Protecting assets", "protecting_assets"),
+        ("Having choices in care location", "care_location_choices"),
+        ("Not burdening friends or family", "not_burdening_family"),
+        ("How you are remembered", "how_remembered"),
+    ]
+    
+    # Two-column layout for rating sections
+    left_col = []
+    right_col = []
+    
+    left_col.append(build_rating_table("Health Expenses:", health_items, health))
+    left_col.append(Spacer(1, 10))
+    left_col.append(build_rating_table("Final Expenses:", final_items, final))
+    
+    right_col.append(build_rating_table("Retirement Income:", retirement_items, retirement))
+    right_col.append(Spacer(1, 10))
+    right_col.append(build_rating_table("Extended Care:", extended_items, extended))
+    
+    # Create side-by-side layout
+    from reportlab.platypus import KeepTogether
+    
+    # Add rating sections as a 2-column table
+    rating_table = Table([[
+        left_col[0], right_col[0]
+    ]], colWidths=[280, 280])
+    rating_table.setStyle(TableStyle([
+        ('VALIGN', (0, 0), (-1, -1), 'TOP'),
+    ]))
+    elements.append(rating_table)
+    elements.append(Spacer(1, 10))
+    
+    rating_table2 = Table([[
+        left_col[2], right_col[2]
+    ]], colWidths=[280, 280])
+    rating_table2.setStyle(TableStyle([
+        ('VALIGN', (0, 0), (-1, -1), 'TOP'),
+    ]))
+    elements.append(rating_table2)
+    elements.append(Spacer(1, 15))
+    
+    # Producer Info
+    producer_data = [
+        ["Producer's name:", fact_finder.get('producer_name_1', ''), "Bankers Life Agent Number:", fact_finder.get('agent_number_1', '')],
+        ["Producer's name:", fact_finder.get('producer_name_2', ''), "Bankers Life Agent Number:", fact_finder.get('agent_number_2', '')],
+    ]
+    producer_table = Table(producer_data, colWidths=[90, 150, 140, 150])
+    producer_table.setStyle(TableStyle([
+        ('FONTSIZE', (0, 0), (-1, -1), 9),
+        ('BOTTOMPADDING', (0, 0), (-1, -1), 5),
+    ]))
+    elements.append(producer_table)
+    elements.append(Spacer(1, 15))
+    
+    # Client Information Section
+    elements.append(Paragraph("Client Information", section_style))
+    
+    client_data = [
+        ["First Name:", client_info.get('first_name', ''), "Last Name:", client_info.get('last_name', ''), "Birth Date:", client_info.get('birth_date', '')],
+        ["Spouse First:", client_info.get('spouse_first', ''), "Last:", client_info.get('spouse_last', ''), "Birth Date:", client_info.get('spouse_birth_date', '')],
+        ["Address:", client_info.get('address', ''), "City:", client_info.get('city', ''), "State:", client_info.get('state', ''), "Zip:", client_info.get('zip_code', '')],
+        ["Employer:", client_info.get('employer', ''), "Retired:", "☑" if client_info.get('employer_retired') else "☐", "Spouse Employer:", client_info.get('spouse_employer', ''), "Retired:", "☑" if client_info.get('spouse_employer_retired') else "☐"],
+        ["E-mail:", client_info.get('email', ''), "", "", "Phone #:", client_info.get('phone', '')],
+    ]
+    
+    client_table = Table(client_data, colWidths=[60, 100, 50, 100, 55, 50, 35, 60])
+    client_table.setStyle(TableStyle([
+        ('BACKGROUND', (0, 0), (-1, -1), colors.HexColor('#FFFACD')),
+        ('FONTSIZE', (0, 0), (-1, -1), 8),
+        ('GRID', (0, 0), (-1, -1), 0.5, colors.HexColor('#8B7355')),
+        ('TOPPADDING', (0, 0), (-1, -1), 5),
+        ('BOTTOMPADDING', (0, 0), (-1, -1), 5),
+    ]))
+    elements.append(client_table)
+    elements.append(Spacer(1, 15))
+    
+    # Notes
+    if fact_finder.get('notes'):
+        elements.append(Paragraph("Notes", section_style))
+        notes_table = Table([[fact_finder.get('notes', '')]], colWidths=[530])
+        notes_table.setStyle(TableStyle([
+            ('BACKGROUND', (0, 0), (-1, -1), colors.HexColor('#FFFACD')),
+            ('FONTSIZE', (0, 0), (-1, -1), 9),
+            ('GRID', (0, 0), (-1, -1), 0.5, colors.HexColor('#8B7355')),
+            ('TOPPADDING', (0, 0), (-1, -1), 8),
+            ('BOTTOMPADDING', (0, 0), (-1, -1), 8),
+        ]))
+        elements.append(notes_table)
+    
+    doc.build(elements)
+    pdf_content = buffer.getvalue()
+    
+    # Build filename
+    last_name = client_info.get('last_name', 'Unknown').replace(' ', '_')
+    first_name = client_info.get('first_name', 'Client').replace(' ', '_')
+    date_str = datetime.now().strftime('%Y-%m-%d')
+    filename = f"FactFinder_{last_name}_{first_name}_{date_str}.pdf"
+    
+    return Response(
+        content=pdf_content,
+        media_type="application/pdf",
+        headers={"Content-Disposition": f"attachment; filename={filename}"}
+    )
+
+@api_router.get("/fact-finders/months/list")
+async def get_fact_finder_months(current_user: dict = Depends(get_current_user)):
+    """Get list of months that have fact finders"""
+    await check_feature_access(current_user, "fact_finder")
+    
+    team_id = current_user.get('team_id')
+    query = {}
+    
+    if current_user['role'] == 'super_admin':
+        pass
+    elif team_id:
+        query["team_id"] = team_id
+    else:
+        raise HTTPException(status_code=403, detail="You must be assigned to a team")
+    
+    if current_user['role'] not in ['super_admin', 'state_manager']:
+        query["created_by"] = current_user['id']
+    
+    pipeline = [
+        {"$match": query},
+        {"$group": {"_id": "$month_key", "count": {"$sum": 1}}},
+        {"$sort": {"_id": -1}}
+    ]
+    
+    months = await db.fact_finders.aggregate(pipeline).to_list(100)
+    return [{"month": m["_id"], "count": m["count"]} for m in months]
+
 # Health check endpoint accessible via /api/health
 @api_router.get("/health")
 async def api_health_check():
