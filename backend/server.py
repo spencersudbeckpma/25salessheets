@@ -9273,6 +9273,275 @@ async def get_fact_finder_months(current_user: dict = Depends(get_current_user))
     months = await db.fact_finders.aggregate(pipeline).to_list(100)
     return [{"month": m["_id"], "count": m["count"]} for m in months]
 
+# ==================== FULL DATA HEALTH CHECK (Admin UI) ====================
+
+# Build info for deployment verification
+BUILD_VERSION = "2.1.0"
+BUILD_TIMESTAMP = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S UTC")
+
+@api_router.get("/admin/full-health-check")
+async def full_data_health_check(current_user: dict = Depends(get_current_user)):
+    """
+    Comprehensive data health check across ALL teams.
+    Shows counts, missing team_id records, and cross-team data issues.
+    (super_admin only)
+    """
+    require_super_admin(current_user)
+    
+    # Get all teams
+    teams = await db.teams.find({}, {"_id": 0, "id": 1, "name": 1}).to_list(100)
+    team_lookup = {t["id"]: t["name"] for t in teams}
+    
+    # Get all users with their team_id for cross-referencing
+    all_users = await db.users.find({}, {"_id": 0, "id": 1, "name": 1, "team_id": 1}).to_list(100000)
+    user_team_map = {u["id"]: u.get("team_id") for u in all_users}
+    
+    # Collections to check
+    collections_config = [
+        {"name": "users", "collection": db.users, "user_field": None, "team_field": "team_id"},
+        {"name": "recruits", "collection": db.recruits, "user_field": "created_by", "team_field": "team_id"},
+        {"name": "interviews", "collection": db.interviews, "user_field": "interviewer_id", "team_field": "team_id"},
+        {"name": "new_face_customers", "collection": db.new_face_customers, "user_field": "user_id", "team_field": "team_id"},
+        {"name": "activities", "collection": db.activities, "user_field": "user_id", "team_field": "team_id"},
+        {"name": "sna_agents", "collection": db.sna_agents, "user_field": "user_id", "team_field": "team_id"},
+        {"name": "npa_agents", "collection": db.npa_agents, "user_field": "user_id", "team_field": "team_id"},
+    ]
+    
+    # Build results per team
+    team_results = {}
+    overall_missing = {col["name"]: 0 for col in collections_config}
+    overall_cross_team = {col["name"]: 0 for col in collections_config}
+    
+    for team in teams:
+        team_id = team["id"]
+        team_name = team["name"]
+        team_results[team_id] = {
+            "team_id": team_id,
+            "team_name": team_name,
+            "counts": {},
+            "missing_team_id": {},
+            "cross_team_issues": {},
+            "status": "PASS",
+            "issues": []
+        }
+    
+    # Add "Unassigned" pseudo-team for records without team_id
+    team_results["__unassigned__"] = {
+        "team_id": None,
+        "team_name": "Unassigned (Missing team_id)",
+        "counts": {},
+        "missing_team_id": {},
+        "cross_team_issues": {},
+        "status": "FAIL",
+        "issues": []
+    }
+    
+    # Check each collection
+    for col_config in collections_config:
+        col_name = col_config["name"]
+        collection = col_config["collection"]
+        user_field = col_config["user_field"]
+        
+        # Count by team_id
+        pipeline = [
+            {"$group": {"_id": "$team_id", "count": {"$sum": 1}}}
+        ]
+        counts_by_team = await collection.aggregate(pipeline).to_list(1000)
+        
+        for count_result in counts_by_team:
+            tid = count_result["_id"]
+            count = count_result["count"]
+            
+            if tid is None:
+                team_results["__unassigned__"]["counts"][col_name] = count
+                overall_missing[col_name] = count
+            elif tid in team_results:
+                team_results[tid]["counts"][col_name] = count
+        
+        # Count records with missing team_id per collection
+        missing_count = await collection.count_documents(
+            {"$or": [{"team_id": None}, {"team_id": {"$exists": False}}]}
+        )
+        
+        if missing_count > 0:
+            team_results["__unassigned__"]["missing_team_id"][col_name] = missing_count
+            team_results["__unassigned__"]["issues"].append(
+                f"{missing_count} {col_name} records missing team_id"
+            )
+        
+        # Check for cross-team issues (record team_id doesn't match owner's team_id)
+        if user_field and col_name != "users":
+            # Get all records with team_id
+            records = await collection.find(
+                {"team_id": {"$exists": True, "$ne": None}},
+                {"_id": 0, "id": 1, user_field: 1, "team_id": 1}
+            ).to_list(100000)
+            
+            cross_team_by_team = {}
+            for record in records:
+                record_team_id = record.get("team_id")
+                owner_id = record.get(user_field)
+                
+                if owner_id and owner_id in user_team_map:
+                    owner_team_id = user_team_map[owner_id]
+                    
+                    if owner_team_id and record_team_id != owner_team_id:
+                        # Cross-team issue detected!
+                        if record_team_id not in cross_team_by_team:
+                            cross_team_by_team[record_team_id] = 0
+                        cross_team_by_team[record_team_id] += 1
+            
+            for tid, count in cross_team_by_team.items():
+                if tid in team_results:
+                    team_results[tid]["cross_team_issues"][col_name] = count
+                    team_results[tid]["status"] = "FAIL"
+                    team_results[tid]["issues"].append(
+                        f"{count} {col_name} records have cross-team owner mismatch"
+                    )
+                    overall_cross_team[col_name] += count
+    
+    # Mark teams with missing team_id records as FAIL
+    for tid, result in team_results.items():
+        if tid == "__unassigned__":
+            continue
+        
+        # Check if any records in this team's view have issues
+        total_missing = sum(result["missing_team_id"].values()) if result["missing_team_id"] else 0
+        total_cross = sum(result["cross_team_issues"].values()) if result["cross_team_issues"] else 0
+        
+        if total_missing > 0 or total_cross > 0:
+            result["status"] = "FAIL"
+        
+        # Ensure all collection counts exist (default to 0)
+        for col_config in collections_config:
+            if col_config["name"] not in result["counts"]:
+                result["counts"][col_config["name"]] = 0
+    
+    # Calculate summary
+    total_unassigned = sum(team_results["__unassigned__"]["counts"].values())
+    total_cross_team = sum(overall_cross_team.values())
+    
+    return {
+        "build_info": {
+            "version": BUILD_VERSION,
+            "timestamp": BUILD_TIMESTAMP,
+            "deployed_at": datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S UTC")
+        },
+        "summary": {
+            "total_teams": len(teams),
+            "total_records_missing_team_id": total_unassigned,
+            "total_cross_team_issues": total_cross_team,
+            "overall_status": "PASS" if total_unassigned == 0 and total_cross_team == 0 else "FAIL",
+            "missing_by_collection": overall_missing,
+            "cross_team_by_collection": overall_cross_team
+        },
+        "teams": list(team_results.values()),
+        "backfill_available": {
+            "recruits": overall_missing.get("recruits", 0) > 0,
+            "interviews": overall_missing.get("interviews", 0) > 0,
+            "new_face_customers": overall_missing.get("new_face_customers", 0) > 0,
+            "activities": overall_missing.get("activities", 0) > 0,
+            "sna_agents": overall_missing.get("sna_agents", 0) > 0,
+            "npa_agents": overall_missing.get("npa_agents", 0) > 0
+        }
+    }
+
+@api_router.post("/admin/backfill-sna-agents-team-id")
+async def backfill_sna_agents_team_id(current_user: dict = Depends(get_current_user)):
+    """
+    Backfill missing team_id on sna_agents based on user_id's team_id.
+    (super_admin only)
+    """
+    require_super_admin(current_user)
+    
+    # Build user_id -> team_id mapping
+    users = await db.users.find({}, {"_id": 0, "id": 1, "team_id": 1}).to_list(10000)
+    user_team_map = {u["id"]: u.get("team_id") for u in users}
+    
+    # Find sna_agents with missing team_id
+    records = await db.sna_agents.find(
+        {"$or": [{"team_id": None}, {"team_id": {"$exists": False}}]},
+        {"_id": 1, "id": 1, "user_id": 1, "added_by": 1}
+    ).to_list(100000)
+    
+    total_updated = 0
+    total_skipped = 0
+    
+    for record in records:
+        # Try user_id first, then added_by
+        owner_id = record.get("user_id") or record.get("added_by")
+        
+        if not owner_id or owner_id not in user_team_map:
+            total_skipped += 1
+            continue
+        
+        team_id = user_team_map[owner_id]
+        if not team_id:
+            total_skipped += 1
+            continue
+        
+        # Update using _id for safety
+        await db.sna_agents.update_one(
+            {"_id": record["_id"]},
+            {"$set": {"team_id": team_id}}
+        )
+        total_updated += 1
+    
+    return {
+        "collection": "sna_agents",
+        "total_scanned": len(records),
+        "total_updated": total_updated,
+        "total_skipped": total_skipped
+    }
+
+@api_router.post("/admin/backfill-npa-agents-team-id")
+async def backfill_npa_agents_team_id(current_user: dict = Depends(get_current_user)):
+    """
+    Backfill missing team_id on npa_agents based on user_id's team_id.
+    (super_admin only)
+    """
+    require_super_admin(current_user)
+    
+    # Build user_id -> team_id mapping
+    users = await db.users.find({}, {"_id": 0, "id": 1, "team_id": 1}).to_list(10000)
+    user_team_map = {u["id"]: u.get("team_id") for u in users}
+    
+    # Find npa_agents with missing team_id
+    records = await db.npa_agents.find(
+        {"$or": [{"team_id": None}, {"team_id": {"$exists": False}}]},
+        {"_id": 1, "id": 1, "user_id": 1, "added_by": 1}
+    ).to_list(100000)
+    
+    total_updated = 0
+    total_skipped = 0
+    
+    for record in records:
+        # Try user_id first, then added_by
+        owner_id = record.get("user_id") or record.get("added_by")
+        
+        if not owner_id or owner_id not in user_team_map:
+            total_skipped += 1
+            continue
+        
+        team_id = user_team_map[owner_id]
+        if not team_id:
+            total_skipped += 1
+            continue
+        
+        # Update using _id for safety
+        await db.npa_agents.update_one(
+            {"_id": record["_id"]},
+            {"$set": {"team_id": team_id}}
+        )
+        total_updated += 1
+    
+    return {
+        "collection": "npa_agents",
+        "total_scanned": len(records),
+        "total_updated": total_updated,
+        "total_skipped": total_skipped
+    }
+
 # Health check endpoint accessible via /api/health
 @api_router.get("/health")
 async def api_health_check():
