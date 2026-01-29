@@ -2825,6 +2825,8 @@ async def generate_newface_report(period: str, current_user: dict = Depends(get_
     if current_user['role'] != 'state_manager':
         raise HTTPException(status_code=403, detail="Access denied")
     
+    team_id = current_user.get('team_id')
+    
     from openpyxl import Workbook
     from openpyxl.styles import Font, PatternFill, Alignment
     from io import BytesIO
@@ -2847,24 +2849,24 @@ async def generate_newface_report(period: str, current_user: dict = Depends(get_
     else:
         raise HTTPException(status_code=400, detail="Invalid period")
     
-    # Get all team members recursively (exclude archived)
+    # Get all team members recursively (exclude archived) - SCOPED TO TEAM
     async def get_all_team_ids(user_id: str):
         ids = [user_id]
-        subordinates = await db.users.find(
-            {"manager_id": user_id, "$or": [{"status": "active"}, {"status": {"$exists": False}}]},
-            {"_id": 0, "id": 1}
-        ).to_list(1000)
+        query = {"manager_id": user_id, "$or": [{"status": "active"}, {"status": {"$exists": False}}]}
+        if team_id:
+            query["team_id"] = team_id
+        subordinates = await db.users.find(query, {"_id": 0, "id": 1}).to_list(1000)
         for sub in subordinates:
             ids.extend(await get_all_team_ids(sub['id']))
         return ids
     
     team_ids = await get_all_team_ids(current_user['id'])
     
-    # Get new face customers for the period
-    customers = await db.new_face_customers.find({
-        "user_id": {"$in": team_ids},
-        "date": {"$gte": start_date.isoformat()}
-    }, {"_id": 0}).sort("date", -1).to_list(10000)
+    # Get new face customers for the period - SCOPED TO TEAM
+    query = {"user_id": {"$in": team_ids}, "date": {"$gte": start_date.isoformat()}}
+    if team_id:
+        query["team_id"] = team_id
+    customers = await db.new_face_customers.find(query, {"_id": 0}).sort("date", -1).to_list(10000)
     
     # Create Excel workbook
     wb = Workbook()
