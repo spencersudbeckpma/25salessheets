@@ -42,17 +42,18 @@ const Dashboard = ({ user, setUser, branding: initialBranding, features: initial
     return 'activity';
   });
 
-  // Apply branding, features, and UI settings on mount
+  // Apply branding, features, UI settings, and view settings on mount
   useEffect(() => {
-    if (initialBranding?.branding || initialFeatures || initialUiSettings) {
+    if (initialBranding?.branding || initialFeatures || initialUiSettings || initialViewSettings) {
       updateBranding(
         initialBranding?.branding || null, 
         initialBranding?.team_name || null,
         initialFeatures || null,
-        initialUiSettings || null
+        initialUiSettings || null,
+        initialViewSettings || null
       );
     }
-  }, [initialBranding, initialFeatures, initialUiSettings, updateBranding]);
+  }, [initialBranding, initialFeatures, initialUiSettings, initialViewSettings, updateBranding]);
 
   // Determine which tab to show based on features
   const getValidTab = (requestedTab) => {
