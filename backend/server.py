@@ -108,15 +108,16 @@ DEFAULT_TEAM_UI_SETTINGS = {
 # Default team view settings (Phase 2)
 DEFAULT_TEAM_VIEW_SETTINGS = {
     # KPI cards configuration - order determines display order
+    # Labels must match live dashboard (StatsView.jsx, ActivityInput.jsx)
     "kpi_cards": [
-        {"id": "dials", "label": "Dials", "enabled": True},
         {"id": "contacts", "label": "Contacts", "enabled": True},
         {"id": "appointments", "label": "Appointments", "enabled": True},
         {"id": "presentations", "label": "Presentations", "enabled": True},
-        {"id": "sales", "label": "Sales", "enabled": True},
-        {"id": "premium", "label": "Premium", "enabled": True},
         {"id": "referrals", "label": "Referrals", "enabled": True},
-        {"id": "lives", "label": "Lives", "enabled": True}
+        {"id": "testimonials", "label": "Testimonials", "enabled": True},
+        {"id": "sales", "label": "Sales", "enabled": True},
+        {"id": "new_face_sold", "label": "New Face Sold", "enabled": True},
+        {"id": "premium", "label": "Total Premium", "enabled": True}
     ],
     # Sub-tab visibility (enforced server-side)
     "subtabs": {
