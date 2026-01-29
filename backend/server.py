@@ -5001,7 +5001,9 @@ async def remove_user(user_id: str, current_user: dict = Depends(get_current_use
 @api_router.get("/debug/user-activities/{user_id}")
 async def debug_user_activities(user_id: str, current_user: dict = Depends(get_current_user)):
     """Debug endpoint to check a user's activities for duplicates"""
-    subordinates = await get_all_subordinates(current_user['id'])
+    # SCOPED TO TEAM
+    team_id = current_user.get('team_id')
+    subordinates = await get_all_subordinates(current_user['id'], team_id)
     
     if user_id not in subordinates and user_id != current_user['id']:
         raise HTTPException(status_code=403, detail="Not authorized")
@@ -5040,7 +5042,9 @@ async def debug_user_activities(user_id: str, current_user: dict = Depends(get_c
 @api_router.post("/debug/cleanup-user-duplicates/{user_id}")
 async def cleanup_user_duplicates(user_id: str, current_user: dict = Depends(get_current_user)):
     """Remove duplicate activities for a user, keeping the most recent one"""
-    subordinates = await get_all_subordinates(current_user['id'])
+    # SCOPED TO TEAM
+    team_id = current_user.get('team_id')
+    subordinates = await get_all_subordinates(current_user['id'], team_id)
     
     if user_id not in subordinates and user_id != current_user['id']:
         raise HTTPException(status_code=403, detail="Not authorized")
@@ -5089,8 +5093,9 @@ async def cleanup_user_duplicates(user_id: str, current_user: dict = Depends(get
 @api_router.post("/debug/cleanup-all-duplicates")
 async def cleanup_all_duplicates(current_user: dict = Depends(get_current_user)):
     """Remove all duplicate activities in the system (keeps most recent)"""
-    # Get all subordinates
-    subordinate_ids = await get_all_subordinates(current_user['id'])
+    # Get all subordinates - SCOPED TO TEAM
+    team_id = current_user.get('team_id')
+    subordinate_ids = await get_all_subordinates(current_user['id'], team_id)
     
     # Get all activities for subordinates
     activities = await db.activities.find({"user_id": {"$in": subordinate_ids}}, {"_id": 0}).to_list(10000)
