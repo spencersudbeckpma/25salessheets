@@ -18,11 +18,17 @@ const ReorganizeUserCard = ({ member, availableManagers, onReassign }) => {
   const [selectedManager, setSelectedManager] = useState(member.manager_id || '');
   const [hasChanges, setHasChanges] = useState(false);
 
+  // Sync local state when member prop changes (after save + refetch)
+  useEffect(() => {
+    setSelectedRole(member.role);
+    setSelectedManager(member.manager_id || '');
+  }, [member.role, member.manager_id]);
+
   useEffect(() => {
     const roleChanged = selectedRole !== member.role;
     const managerChanged = selectedManager !== (member.manager_id || '');
     setHasChanges(roleChanged || managerChanged);
-  }, [selectedRole, selectedManager, member]);
+  }, [selectedRole, selectedManager, member.role, member.manager_id]);
 
   const handleSave = () => {
     onReassign(member.id, selectedRole, selectedManager);
