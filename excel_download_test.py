@@ -28,7 +28,7 @@ from openpyxl import load_workbook
 import io
 
 # Configuration
-BACKEND_URL = "https://secure-analytics-2.preview.emergentagent.com/api"
+BACKEND_URL = "https://custom-dashboard-5.preview.emergentagent.com/api"
 
 class Colors:
     GREEN = '\033[92m'
