@@ -2918,6 +2918,7 @@ const AdminPanel = ({ user }) => {
                     {tab === 'role-overrides' && 'Role Overrides'}
                     {tab === 'ui-settings' && 'UI Settings'}
                     {tab === 'branding' && 'Branding'}
+                    {tab === 'views' && 'Views'}
                   </button>
                 ))}
               </div>
