@@ -5568,24 +5568,24 @@ async def get_leaderboard(period: str, current_user: dict = Depends(get_current_
     
     # LEADERBOARD: Show ALL team members regardless of role or hierarchy position
     # A leaderboard is a team-wide ranking - everyone should see the same top performers
-    if team_id:
-        all_users_query = {"team_id": team_id, "$or": [{"status": "active"}, {"status": {"$exists": False}}]}
-    else:
-        all_users_query = {"$or": [{"status": "active"}, {"status": {"$exists": False}}]}
+    # ALL users (including super_admin) are scoped to their assigned team
+    if not team_id:
+        return {"presentations": [], "referrals": [], "testimonials": [], "new_face_sold": [], "premium": []}
+    
+    all_users_query = {"team_id": team_id, "$or": [{"status": "active"}, {"status": {"$exists": False}}]}
     all_user_ids = [u["id"] for u in await db.users.find(all_users_query, {"_id": 0, "id": 1}).to_list(1000)]
     
     # Get all users info
     users = await db.users.find({"id": {"$in": all_user_ids}}, {"_id": 0, "password_hash": 0}).to_list(1000)
     user_dict = {u['id']: u for u in users}
     
-    # Get all activities for the period for the ENTIRE organization (scoped to team)
+    # Get all activities for the period for the team
     # Query uses >= start_date AND <= end_date
     act_query = {
         "user_id": {"$in": all_user_ids}, 
-        "date": {"$gte": start_date.isoformat(), "$lte": end_date.isoformat()}
+        "date": {"$gte": start_date.isoformat(), "$lte": end_date.isoformat()},
+        "team_id": team_id
     }
-    if team_id:
-        act_query["team_id"] = team_id
     activities = await db.activities.find(act_query, {"_id": 0}).to_list(10000)
     
     # Aggregate by user
