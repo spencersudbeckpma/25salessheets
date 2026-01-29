@@ -314,6 +314,59 @@ const AdminPanel = ({ user }) => {
     });
   };
 
+  // Toggle KPI card visibility
+  const toggleKpiCard = (cardId) => {
+    setCustomizationForm(prev => ({
+      ...prev,
+      view_settings: {
+        ...prev.view_settings,
+        kpi_cards: prev.view_settings.kpi_cards.map(card =>
+          card.id === cardId ? { ...card, enabled: !card.enabled } : card
+        )
+      }
+    }));
+  };
+
+  // Move KPI card up in order
+  const moveKpiCardUp = (index) => {
+    if (index === 0) return;
+    setCustomizationForm(prev => {
+      const cards = [...prev.view_settings.kpi_cards];
+      [cards[index - 1], cards[index]] = [cards[index], cards[index - 1]];
+      return {
+        ...prev,
+        view_settings: { ...prev.view_settings, kpi_cards: cards }
+      };
+    });
+  };
+
+  // Move KPI card down in order
+  const moveKpiCardDown = (index) => {
+    setCustomizationForm(prev => {
+      const cards = [...prev.view_settings.kpi_cards];
+      if (index >= cards.length - 1) return prev;
+      [cards[index], cards[index + 1]] = [cards[index + 1], cards[index]];
+      return {
+        ...prev,
+        view_settings: { ...prev.view_settings, kpi_cards: cards }
+      };
+    });
+  };
+
+  // Toggle sub-tab visibility
+  const toggleSubtab = (subtab) => {
+    setCustomizationForm(prev => ({
+      ...prev,
+      view_settings: {
+        ...prev.view_settings,
+        subtabs: {
+          ...prev.view_settings.subtabs,
+          [subtab]: !prev.view_settings.subtabs[subtab]
+        }
+      }
+    }));
+  };
+
   // Download State Manager Pack (roster PDF + guide)
   const handleDownloadSmPack = async (teamId, teamName) => {
     try {
