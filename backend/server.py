@@ -6469,18 +6469,19 @@ async def get_sna_agents(current_user: dict = Depends(get_current_user)):
     await check_subtab_access(current_user, 'sna')
     
     team_id = current_user.get('team_id')
+    if not team_id:
+        return {"active": [], "graduated": [], "goal": SNA_GOAL, "tracking_days": SNA_TRACKING_DAYS}
     
     # Get all agents/DMs (potential SNAs) - only real accounts with @pmagent.net, scoped to team
+    # ALL users (including super_admin) are scoped to their assigned team
     if current_user['role'] in ['super_admin', 'state_manager']:
-        query = {"role": {"$in": ["agent", "district_manager"]}}
-        if team_id:
-            query["team_id"] = team_id
+        query = {"role": {"$in": ["agent", "district_manager"]}, "team_id": team_id}
         potential_snas = await db.users.find(query, {"_id": 0, "password_hash": 0}).to_list(1000)
     else:
         # Regional managers see only their subordinates (scoped to team)
         subordinate_ids = await get_all_subordinates(current_user['id'], team_id)
         potential_snas = await db.users.find(
-            {"role": {"$in": ["agent", "district_manager"]}, "id": {"$in": subordinate_ids}},
+            {"role": {"$in": ["agent", "district_manager"]}, "id": {"$in": subordinate_ids}, "team_id": team_id},
             {"_id": 0, "password_hash": 0}
         ).to_list(1000)
     
@@ -6496,9 +6497,7 @@ async def get_sna_agents(current_user: dict = Depends(get_current_user)):
     
     for user in potential_snas:
         # Find their FIRST production (first activity with premium > 0), scoped to team
-        act_query = {"user_id": user['id'], "premium": {"$gt": 0}}
-        if team_id:
-            act_query["team_id"] = team_id
+        act_query = {"user_id": user['id'], "premium": {"$gt": 0}, "team_id": team_id}
         first_production = await db.activities.find_one(
             act_query,
             {"_id": 0},
