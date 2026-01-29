@@ -3669,16 +3669,6 @@ async def get_available_managers(current_user: dict = Depends(get_current_user))
         ).to_list(1000)
         # Remove self from list (will be added back)
         team_members = [m for m in team_members if m['id'] != current_user['id']]
-    elif current_user['role'] == 'state_manager':
-        # State manager sees ALL users in their team (they're at the top)
-        if not team_id:
-            return {"managers": []}
-        team_members = await db.users.find(
-            {"team_id": team_id, "$or": [{"status": "active"}, {"status": {"$exists": False}}]},
-            {"_id": 0, "password_hash": 0}
-        ).to_list(1000)
-        # Remove self from list (will be added back)
-        team_members = [m for m in team_members if m['id'] != current_user['id']]
     else:
         # For regional/district managers, enforce team + hierarchy filtering
         if not team_id:
