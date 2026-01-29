@@ -1017,7 +1017,7 @@ const TeamManagement = ({ user }) => {
 
 
           {/* All Users Tab - Now restricted to managers showing only their downline */}
-          {['state_manager', 'regional_manager', 'district_manager'].includes(user.role) && (
+          {['super_admin', 'state_manager', 'regional_manager', 'district_manager'].includes(user.role) && (
           <TabsContent value="all-users" className="space-y-6" data-testid="all-users-content">
             <div className="bg-blue-50 p-6 rounded-lg border border-blue-200">
               <h3 className="font-semibold text-lg mb-4">My Team Users</h3>
