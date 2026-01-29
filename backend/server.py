@@ -3345,6 +3345,8 @@ async def get_daily_report(report_type: str, date: str, current_user: dict = Dep
     if current_user['role'] not in ['super_admin', 'state_manager', 'regional_manager', 'district_manager']:
         raise HTTPException(status_code=403, detail="Only Managers (State, Regional, District) can access daily reports")
     
+    team_id = current_user.get('team_id')
+    
     # Validate date format - keep it simple like other endpoints
     try:
         # Simple validation - just ensure format is correct
@@ -3353,13 +3355,13 @@ async def get_daily_report(report_type: str, date: str, current_user: dict = Dep
     except ValueError:
         raise HTTPException(status_code=400, detail="Invalid date format. Use YYYY-MM-DD")
     
-    # Helper function to get all subordinates recursively (exclude archived)
+    # Helper function to get all subordinates recursively (exclude archived) - SCOPED TO TEAM
     async def get_all_subordinates(user_id: str):
         members = []
-        subordinates = await db.users.find(
-            {"manager_id": user_id, "$or": [{"status": "active"}, {"status": {"$exists": False}}]},
-            {"_id": 0, "password_hash": 0}
-        ).to_list(1000)
+        query = {"manager_id": user_id, "$or": [{"status": "active"}, {"status": {"$exists": False}}]}
+        if team_id:
+            query["team_id"] = team_id
+        subordinates = await db.users.find(query, {"_id": 0, "password_hash": 0}).to_list(1000)
         for sub in subordinates:
             members.append(sub)
             sub_members = await get_all_subordinates(sub['id'])
