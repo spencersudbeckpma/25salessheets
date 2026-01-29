@@ -756,6 +756,63 @@ const AdminPanel = ({ user }) => {
     }
   };
 
+  // Full Data Health Check functions
+  const runFullHealthCheck = async () => {
+    setFullHealthLoading(true);
+    setFullHealthData(null);
+    
+    try {
+      const res = await axios.get(`${API}/api/admin/full-health-check`, { headers });
+      setFullHealthData(res.data);
+      
+      if (res.data.summary.overall_status === 'PASS') {
+        toast.success('All data health checks passed!');
+      } else {
+        const missing = res.data.summary.total_records_missing_team_id;
+        const crossTeam = res.data.summary.total_cross_team_issues;
+        toast.warning(`Found issues: ${missing} records missing team_id, ${crossTeam} cross-team issues`);
+      }
+    } catch (error) {
+      toast.error(error.response?.data?.detail || 'Failed to run health check');
+    } finally {
+      setFullHealthLoading(false);
+    }
+  };
+
+  const runBackfill = async (collection) => {
+    setBackfillLoading(prev => ({ ...prev, [collection]: true }));
+    
+    // Map collection names to API endpoints
+    const endpointMap = {
+      'recruits': '/api/admin/migrate-recruits-team-id',
+      'interviews': '/api/admin/migrate-interviews-team-id',
+      'new_face_customers': '/api/admin/migrate-new-face-customers-team-id',
+      'activities': '/api/admin/migrate-activities-team-id',
+      'sna_agents': '/api/admin/backfill-sna-agents-team-id',
+      'npa_agents': '/api/admin/backfill-npa-agents-team-id'
+    };
+    
+    const endpoint = endpointMap[collection];
+    if (!endpoint) {
+      toast.error(`Unknown collection: ${collection}`);
+      setBackfillLoading(prev => ({ ...prev, [collection]: false }));
+      return;
+    }
+    
+    try {
+      const res = await axios.post(`${API}${endpoint}`, {}, { headers });
+      const updated = res.data.total_updated || res.data.migration_report?.total_updated || 0;
+      toast.success(`Backfilled ${updated} ${collection} records`);
+      
+      // Re-run health check to show updated state
+      await runFullHealthCheck();
+    } catch (error) {
+      toast.error(error.response?.data?.detail || `Failed to backfill ${collection}`);
+    } finally {
+      setBackfillLoading(prev => ({ ...prev, [collection]: false }));
+    }
+  };
+
   const handleCreateTeam = async () => {
     if (!newTeamName.trim()) {
       toast.error('Please enter a team name');
