@@ -3682,12 +3682,12 @@ async def get_period_report(report_type: str, period: str, current_user: dict = 
         
         report_data = []
         
-        # Add each individual team member's data
+        # Add each individual team member's data - SCOPED TO TEAM
         for member in all_team_members:
-            activities = await db.activities.find({
-                "user_id": member['id'],
-                "date": {"$gte": start_date.isoformat()}
-            }, {"_id": 0}).to_list(10000)
+            act_query = {"user_id": member['id'], "date": {"$gte": start_date.isoformat()}}
+            if team_id:
+                act_query["team_id"] = team_id
+            activities = await db.activities.find(act_query, {"_id": 0}).to_list(10000)
             
             member_totals = {
                 "contacts": sum(a.get('contacts', 0) for a in activities),
