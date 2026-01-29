@@ -3159,10 +3159,10 @@ async def get_all_new_face_customers(current_user: dict = Depends(get_current_us
     
     team_ids = await get_all_team_ids(current_user['id'])
     
-    # Filter by team_id for data isolation
+    # Filter by team_id with legacy support (include records without team_id)
     query = {"user_id": {"$in": team_ids}}
     if team_id:
-        query["team_id"] = team_id
+        query = {"$and": [query, get_team_filter_with_legacy(team_id)]}
     
     customers = await db.new_face_customers.find(query, {"_id": 0}).sort("date", -1).to_list(10000)
     
