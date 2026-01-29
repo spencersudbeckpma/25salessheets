@@ -10,7 +10,7 @@ from datetime import datetime, timedelta
 import sys
 
 # Configuration
-BACKEND_URL = "https://data-integrity-36.preview.emergentagent.com/api"
+BACKEND_URL = "https://secure-analytics-2.preview.emergentagent.com/api"
 
 class Colors:
     GREEN = '\033[92m'

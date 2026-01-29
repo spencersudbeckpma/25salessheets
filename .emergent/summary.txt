@@ -1,152 +1,146 @@
 <analysis>An analysis of the conversation and codebase has been completed. Here is the summary to assist the next agent.
 
-**original_problem_statement**: The user initially reported several critical issues, starting with incorrect branding for the  user. Investigation revealed this was due to a missing . After fixing this, a series of deeper data integrity problems were uncovered and resolved through multiple data migrations.
+**original_problem_statement**: The user initially reported a bug with team rollup calculations. After fixing that, a series of feature requests were implemented, including adding admin diagnostics, documentation generation, and UI download buttons. A major Fact Finder feature was also built.
 
-The most significant issue was that the leaderboard displayed incorrect data for non-admin users. This was traced back to the fact that hundreds of  records in the production database were missing a , causing team-scoped queries to fail. A migration was performed to backfill the  for all activities based on the user's assigned team.
-
-A similar issue was found in the DocuSphere, where documents and folders were not visible because they also lacked a . A migration was performed to fix this, and strict team-scoping and role-based permissions ( gets write access, all others are read-only) were implemented as requested.
-
-Finally, the  user reported their personal activity was not rolling up correctly. This was also due to their own activity records missing a , which was resolved with a final, targeted migration. After all fixes, the user confirmed the application was working correctly.
+The two most recent and critical issues are:
+1.  A rollup bug where New Faces, SNA, and NPA sub-tabs were not updating correctly. This was addressed by adding diagnostics and a migration to backfill missing s in the relevant collections. The user reported that the SNA tracker was still failing, which was traced to a missing role permission for .
+2.  A critical cross-team data leak where users in one team could see analytics data from another team. This was traced to multiple analytics and reporting endpoints missing  filters in their database queries. The agent was in the process of a comprehensive audit and fix when the session ended.
 
 **User's preferred language**: English
 
 **what currently exists?**
-- A full-stack application with team-based branding and feature flags.
-- All major data integrity issues have been resolved. Activity records and DocuSphere content are now correctly associated with a .
-- The Leaderboard correctly displays team-wide data for all user roles, with periods (Weekly, Monthly, etc.) calculating correctly.
-- The DocuSphere is now fully team-scoped. Only users from a specific team can see that team's documents.
-- DocuSphere has role-based permissions: only  can create/upload/edit/delete content. All other roles have read-only access.
-- The UI has been cleaned of all temporary debugging information and build version indicators.
+- A full-stack application with a React frontend, a monolithic FastAPI backend (), and a MongoDB database.
+- Features include team-based data scoping, role-based access control, feature flags, a leaderboard, a document sphere, and various analytics/reporting tools.
+- A complete Fact Finder feature for creating, listing, and exporting client worksheets as PDFs.
+- An Admin Panel with UI-driven diagnostics and data migration tools for fixing data integrity issues.
+- UI buttons in the Admin Panel to download an Admin Playbook, a State Manager Guide, and per-team user rosters as PDFs and CSVs.
 
 **Last working item**:
-- **Last item agent was working**: The user, who is a , reported their personal activity was not being included in their leaderboard totals. The agent diagnosed that the user's 25 activity records were missing a  in the production database. A migration script was created and executed to backfill the  on these records.
-- **Status**: COMPLETED
-- **Agent Testing Done**: Y
-- **Which testing method agent to use?**: NA
-- **User Testing Done**: Y
+- **Last item agent was working**: Fixing a critical cross-team data leak. An audit revealed that numerous analytics and reporting endpoints in  were not filtering database queries by , allowing data to be seen across different teams. The agent was systematically adding  filters to all affected endpoints and helper functions.
+- **Status**: IN PROGRESS
+- **Agent Testing Done**: N
+- **Which testing method agent to use?**: both
+- **User Testing Done**: N
 
 **All Pending/In progress Issue list**:
-  - **Issue 1**: Minor Data Inconsistency (P2)
-  
-  **Issues Detail**:
-  - **Issue 1**: 
-     - **Description**: The final migration report noted that 25 activity records still have a  . This is because the users associated with those activities do not have a team assignment. This is a low-priority data cleanup task.
-     - **Attempted fixes**: None. This was an outcome of the migration script which correctly skipped users without a team.
-     - **Next debug checklist**:
-       1.  Run a query to identify the 25 users who have activities but no .
-       2.  Decide with the user whether to assign these users to a default team or handle them differently.
-       3.  Update the user records and re-run the activity migration for them if necessary.
-     - **Why fix this issue and what will be achieved with the fix?**: It will ensure 100% data integrity and that all activity is accounted for in team rollups.
-     - **Status**: NOT STARTED
-     - **Is recurring issue?**: N
-     - **Should Test frontend/backend/both after fix?**: Backend.
-     - **Blocked on other issue**: None.
+- **Issue 1**: Critical Cross-Team Data Leak (P0)
+
+**Issues Detail**:
+- **Issue 1**:
+  - **Description**: Multiple analytics and reporting endpoints (, , SNA/NPA trackers) are missing  filters. This allows users from one team to view the sensitive performance data of another team, which is a critical security and data isolation failure.
+  - **Attempted fixes**: The agent identified the root cause and began a comprehensive audit. Fixes were applied to several endpoints (, , etc.) and the  helper by adding a  filter. The audit is not yet complete.
+  - **Next debug checklist**:
+    1.  Resume the audit of  to find and fix any remaining database queries (especially on the  collection) that are missing a  filter where one is required.
+    2.  Pay special attention to the remaining  queries flagged in the last audit step.
+    3.  Ensure that shared helper functions like  and  are correctly team-scoped at every call site.
+    4.  Verify that for a , standard views (Analytics, Leaderboard, etc.) are scoped to their *currently assigned team*, as requested by the user. Cross-team data should only be accessible via explicit admin-only tools.
+    5.  After fixes are complete, perform a thorough regression test by impersonating users from different teams (, ) to confirm data is strictly isolated.
+  - **Why fix this issue and what will be achieved with the fix?**: This will resolve a critical data privacy violation, ensuring teams can only see their own data and restoring trust in the application's security.
+  - **Status**: IN PROGRESS
+  - **Is recurring issue?**: Y
+  - **Should Test frontend/backend/both after fix?**: Both.
+  - **Blocked on other issue**: None.
 
 **In progress Task List**:
   - None.
 
 **Upcoming and Future Tasks**
 - **Upcoming Tasks**:
-    - **Code Refactoring (P0)**: The  file is a monolith containing all application logic, migrations, and diagnostics. It is the highest source of technical debt and must be refactored. The plan is to create a  directory and split the endpoints into separate, feature-specific files (e.g., , , , ).
+    - **Code Refactoring (P1)**: The  file is a monolith and the primary source of technical debt, contributing to recurring data scoping bugs. Once the data leak is fixed and the system is stable, the highest priority is to refactor this file by splitting endpoints into a  directory.
 - **Future Tasks**:
-    - **Cleanup Migration Endpoints (P2)**: Remove the temporary, one-time migration and diagnostic endpoints from  (e.g., , ).
-    - **Granular Feature Flags (P2)**: The user has previously mentioned adding more granular feature flags for sub-features within the application.
-    - **All-Time Leaderboard (P2)**: Consider adding an all-time period option to the leaderboard view.
+    - **Cleanup Migration Endpoints (P2)**: Remove the temporary, one-time migration and diagnostic endpoints from .
+    - **Granular Feature Flags (P2)**: Implement more granular feature flags for sub-features within the application.
+    - **All-Time Leaderboard (P2)**: Add an all-time period option to the leaderboard view.
 
 **Completed work in this session**
-- **Fixed Leaderboard Bugs**: Resolved a critical bug where non-admin users saw incorrect leaderboard data by migrating over 600 activity records to include the correct .
-- **Implemented DocuSphere Scoping & Permissions**: Made the DocuSphere strictly team-scoped and enforced role-based permissions, allowing only state managers to modify content.
-- **Fixed DocuSphere Data Visibility**: Migrated all existing DocuSphere folders (22) and documents (185) to assign them the correct , making them visible again after scoping was implemented.
-- **Fixed Personal Rollup Bug**: Corrected an issue where the state manager's personal activities weren't included in their totals by backfilling the  on their specific records.
-- **Resolved  Branding Bug**: Fixed an initial bug where the  saw incorrect branding by assigning them to the correct team.
-- **Completed Feature Flag Enforcement**: Added backend security checks () to all relevant API endpoints to enforce the team-based feature flags.
-- **Added/Removed Debug UI**: Implemented and later removed a build/environment indicator on the UI to help debug deployment and caching issues.
+- **Fixed Team Rollup Bug**: Resolved an issue where a state manager's own activities were not included in team totals.
+- **Fixed SNA Tracker Access**: Granted  role permission to access the SNA tracker endpoint.
+- **Added Admin Diagnostics & Fixes UI**: Implemented a UI in the Admin Panel with buttons to diagnose and fix data integrity issues related to orphaned activities and sub-tabs (New Faces/SNA/NPA).
+- **Hardened Feature Flag Enforcement**: Added server-side  calls to previously unprotected endpoints.
+- **Built Document Generation & Download UI**: Implemented backend logic and frontend buttons for admins to download an Admin Playbook, State Manager Guide, and team rosters (PDF/CSV) directly from the UI.
+- **Implemented Fact Finder Feature**: Built a full-stack feature for creating, viewing, searching, and exporting Fact Finder client worksheets.
+- **Fixed Fact Finder PDF Download**: Corrected the PDF download to handle token authentication correctly by using a blob-based download method.
+- **Addressed Sub-Tab Rollup Bug**: Implemented a migration () and diagnostics to fix historical data for New Faces, SNA, and NPA.
 
 **Earlier issues found/mentioned but not fixed**
    - **Issue 1**: Monolithic  codebase.
      - **Debug checklist**: This is a technical debt issue. The plan is to create a  directory and split the endpoints from  into separate, feature-specific files.
-     - **Why to solve this issue and what will be achieved with this?**: Refactoring will dramatically improve code readability, maintainability, and developer velocity, reducing the risk of introducing regressions.
+     - **Why to solve this issue and what will be achieved with this?**: Refactoring will dramatically improve code readability, maintainability, and developer velocity, reducing the risk of introducing regressions like the current data leak.
      - **Should Test frontend/backend/both after fix**: Both (full regression test required).
      - **Is recurring issue?**: Y
 
 **Known issue recurrence from previous fork**
-  - **Monolithic Codebase**: The  file has been a known issue and continues to grow, making development increasingly complex and risky. This is the top priority for refactoring.
+  - **Monolithic Codebase**: The  file has been a known issue and continues to grow, making development complex and risky.
+  - **Data Scoping Issues**: The failure to consistently apply  filters to database queries has recurred, evolving from incorrect rollups to a critical cross-team data leak.
 
 **Code Architecture**
 
 
 **Key Technical Concepts**
-- **Data Migration**: Using temporary, admin-only API endpoints to perform large-scale, controlled data updates on a live database to fix data integrity issues (backfilling ).
-- **Team-Scoped Data**: Filtering database queries by  to ensure users only see data belonging to their team.
-- **Role-Based Access Control (RBAC)**: Restricting write actions (e.g., in DocuSphere) to specific user roles ().
-- **Recursive Data Aggregation**: Using a recursive function on the frontend to calculate the total number of documents in a folder and all its subfolders.
-- **Environment Discrepancies**: Debugging issues arising from differences between  and  environments, including separate databases and user data.
+- **Data Scoping Audit**: Systematically reviewing the entire codebase for a specific class of bug (missing  filters) across dozens of endpoints and helper functions.
+- **Dynamic PDF/CSV Generation**: Using  and  in FastAPI to generate and serve downloadable files from database content.
+- **Blob-based File Downloads**: Using  on the frontend to fetch binary data (like a PDF) and trigger a browser download, which correctly handles authentication headers unlike .
 
 **key DB schema**
-  - **activities**:  (The  field was backfilled via migration).
-  - **docusphere_folders**:  (The  field was backfilled via migration).
-  - **docusphere_documents**:  (The  field was backfilled via migration).
-  - **users**: 
-  - **teams**: 
+- **fact_finders**:  (New)
+- **activities**:  (team_id is critical for scoping)
+- **new_face_customers**: 
+- **npa_agents**: 
 
 **All files of reference**
-- : Contains all logic. It was heavily modified to add feature enforcement, multiple migration/diagnostic endpoints, and fixes for the leaderboard and DocuSphere queries.
-- : Updated to implement recursive document counting and a read-only view for non-manager roles.
-- : Minor changes to fix a potential stale closure bug and to add/remove a debug panel.
-- : Temporarily modified to show a build version indicator.
-- : Temporarily modified to show a build version indicator.
+- : The single most important file. It contains the data leak bugs and all attempted fixes. The ongoing audit and further modifications will happen here.
+- : Contains the UI for diagnostics and document downloads.
+- : The new component for the Fact Finder feature.
 
 **Areas that need refactoring**:
-- ****: This file is critically unmaintainable. It must be broken down into a route-based structure as the next major task.
+- ****: This file is critically unmaintainable and is the root cause of recurring data scoping issues. It must be broken down into a route-based structure after the data leak is patched.
 
 **key api endpoints**
-- **Modified Endpoints**:
-    - : Logic updated to ensure all users see the full team-wide leaderboard, not just their hierarchy.
-    - : All DocuSphere endpoints now enforce team-scoping via  and role-based permissions for write access.
-- **Temporary Migration Endpoints (candidates for removal)**:
-    - 
-    - 
-    - 
-    - 
+- : **(CRITICAL - BUGGY)** Multiple endpoints in this group were found to be leaking data across teams.
+- : **(CRITICAL - BUGGY)** Multiple endpoints in this group were also found to be leaking data.
+- : A new set of CRUD endpoints for the Fact Finder feature.
+- : New endpoints for generating and downloading documents and rosters.
+- : New endpoint to diagnose data integrity for New Faces/SNA/NPA.
+- : New endpoint to backfill  across multiple collections.
 
 **Critical Info for New Agent**
-- **Refactoring is Priority #1**: The most important next step is to refactor the monolithic  file. Do not add new features until this is addressed.
-- **Environment Awareness**: The application has distinct  and  environments with separate databases. Production user data is NOT in the preview database. Be mindful of which environment you are targeting during testing and debugging.
-- **Data is Now Stable**: Multiple large-scale data migrations have been completed. The critical data integrity issues (missing ) are resolved. Do not attempt further broad migrations unless a new, specific data issue is confirmed.
-- **Temporary Code**:  contains several temporary endpoints used for diagnostics and one-time migrations. These should be removed as part of the refactoring effort.
+- **PRIORITY #1 IS THE DATA LEAK**: Your immediate task is to complete the audit of  and fix the cross-team data leak. The user is waiting on this fix and has a clear testing protocol. Do not proceed to other tasks until this is resolved and verified by the user.
+- **User's Requirement for Super Admin**: When fixing the data leak, remember the user's specific instruction:  views in the standard UI must be scoped to their *current team* by default. Cross-team visibility is only for explicit admin tools.
+- **Refactor After Stability**: Once the data leak is patched and the application is stable, the next task is to refactor the  monolith. Do not add new features until this technical debt is addressed.
 
 **documents and test reports created in this job**
--  (Updated)
+- 
+- 
+- 
 
 **Last 10 User Messages and any pending HUMAN messages**
-10. **User**: Reports that their personal activity isn't rolling up correctly on the leaderboard. (Status: IN PROGRESS)
-9.  **Agent**: Diagnoses that the user's own activity records are missing a . (Status: IN PROGRESS)
-8.  **User**: Confirms deployment is ready for the fix. (Status: IN PROGRESS)
-7.  **Agent**: Runs a targeted migration script to fix the user's 25 activity records. (Status: COMPLETED)
-6.  **Agent**: Confirms the fix and verifies the user's new totals. (Status: COMPLETED)
-5.  **User**: It looks like it finally worked. (Status: COMPLETED)
-4.  **User**: Asks to hide the debug/build version indicators. (Status: IN PROGRESS)
-3.  **Agent**: Removes all debug indicators from the UI and backend response. (Status: COMPLETED)
-2.  **User**: Reports that DocuSphere files are missing after the migrations. (Status: IN PROGRESS)
-1.  **Agent**: Investigates the DocuSphere issue. The final resolution involved implementing strict team-scoping, role-based permissions, and migrating existing documents to have the correct . (This summary condenses a long back-and-forth into the final outcome). (Status: COMPLETED)
+10. **User**: Approves the cross-team data leak fix for deployment but asks for confirmation that *all* related endpoints are fixed and that  views are safely scoped by default. (Status: PENDING)
+9. **Agent**: Begins a comprehensive audit of all relevant endpoints to satisfy the user's request. (Status: IN PROGRESS)
+8. **Agent**: Finds and fixes multiple new data leaks in various reporting endpoints during the audit. (Status: IN PROGRESS)
+7. **Agent**: Continues the audit, identifying a list of remaining queries to review for scoping issues. (Status: IN PROGRESS)
+6. **Agent**: Enhances the migration summary to include more detailed information about skipped records, as a self-correction.
+5. **Agent**: Confirms all of the user's pre-deployment conditions have been met after enhancing the migration summary.
+4. **User**: Reports that after deployment and migration, the SNA tracker is throwing an error and showing no data. (Status: IN PROGRESS)
+3. **Agent**: Diagnoses that the SNA endpoint was missing a role check for , preventing access. Fixes the permission issue. (Status: COMPLETED)
+2. **User**: Provides a screenshot showing that Team Quick is able to see data belonging to Team Sudbeck in the Analytics tab. This is a critical data leak. (Status: IN PROGRESS)
+1. **Agent**: Immediately identifies the bug in the  endpoint (a missing  filter) and begins fixing it and auditing all related analytics endpoints. (Status: IN PROGRESS)
 
 **Project Health Check:**
-- **Broken**: None. All user-reported issues have been resolved.
+- **Broken**: The Analytics and Reporting features are critically broken due to an active cross-team data leak.
 - **Mocked**: None.
 
 **3rd Party Integrations**
-- **openpyxl**: Used for generating  Excel reports.
+- **openpyxl**: For generating  Excel reports.
+- **reportlab**: For generating  files.
 
 **Testing status**
-  - **Testing agent used after significant changes**: NO
-  - **Troubleshoot agent used after agent stuck in loop**: NO
-  - **Test files created**: []
-  - **Known regressions**: None.
+- **Testing agent used after significant changes**: NO
+- **Troubleshoot agent used after agent stuck in loop**: NO
+- **Test files created**: []
+- **Known regressions**: A critical regression was introduced causing a cross-team data leak in multiple analytics and reporting endpoints.
 
 **Credentials to test flow:**
 - **Super Admin (Preview)**:  / 
-- **Production users mentioned**: , , . Credentials for production are unknown.
 
 **What agent forgot to execute**
-- The agent correctly identified the need to refactor  but has not yet started. This is the main piece of pending technical debt.
-- The temporary migration/diagnostic endpoints were not cleaned up, but this was not explicitly requested by the user. It should be done as part of the refactoring.</analysis>
+- The agent was in the middle of a comprehensive audit to fix the data leak and had not yet reviewed all  potentially unscoped queries that were flagged in the last step of the audit. This audit must be completed to ensure the fix is comprehensive.</analysis>
