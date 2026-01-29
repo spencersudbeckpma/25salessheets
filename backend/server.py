@@ -3657,9 +3657,18 @@ async def get_available_managers(current_user: dict = Depends(get_current_user))
             members.extend(sub_members)
         return members
     
-    # super_admin can see all
-    if current_user['role'] == 'super_admin':
-        team_members = await get_subordinates_with_info(current_user['id'], None)
+    # super_admin uses same team scoping as state_manager on product pages
+    # Cross-team visibility is ONLY available in Admin endpoints
+    if current_user['role'] in ['super_admin', 'state_manager']:
+        # State manager and super_admin see ALL users in their team (they're at the top)
+        if not team_id:
+            return {"managers": []}
+        team_members = await db.users.find(
+            {"team_id": team_id, "$or": [{"status": "active"}, {"status": {"$exists": False}}]},
+            {"_id": 0, "password_hash": 0}
+        ).to_list(1000)
+        # Remove self from list (will be added back)
+        team_members = [m for m in team_members if m['id'] != current_user['id']]
     elif current_user['role'] == 'state_manager':
         # State manager sees ALL users in their team (they're at the top)
         if not team_id:
