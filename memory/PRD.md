@@ -37,14 +37,46 @@ Team-based activity tracking and performance management application for insuranc
 - `/api/docusphere/*` - Document library CRUD
 - `/api/fact-finders/*` - Fact Finder CRUD + PDF export
 - `/api/suitability-forms/*` - Suitability forms CRUD
+- `/api/admin/teams/{id}/full-config` - Complete team configuration (Phase 1+2)
+- `/api/teams/my-features` - User's effective features + view settings
 
 ## Data Models
 - **users**: id, name, email, role, team_id, manager_id, status
 - **activities**: id, user_id, team_id, date, contacts, appointments, presentations, referrals, testimonials, sales, new_face_sold, premium
-- **teams**: id, name, branding, features
+- **teams**: id, name, branding, features, role_tab_overrides, ui_settings, team_settings.views
 - **docusphere_folders**: id, name, parent_id, team_id, created_by
 - **docusphere_documents**: id, filename, folder_id, team_id, uploaded_by
 - **fact_finders**: id, team_id, created_by, month_key, client_info, health_expenses, retirement_income, final_expenses, extended_care, producer info, notes, status
+
+## Team Configuration Schema (Phase 1 + 2)
+```json
+{
+  "features": { ... },              // Tab visibility flags
+  "role_tab_overrides": {           // Role-based tab restrictions
+    "agent": { "hidden_tabs": [] },
+    "district_manager": { "hidden_tabs": [] },
+    "regional_manager": { "hidden_tabs": [] }
+  },
+  "ui_settings": {
+    "default_landing_tab": "activity",
+    "default_leaderboard_period": "weekly"
+  },
+  "team_settings": {
+    "views": {
+      "kpi_cards": [                // Order + visibility
+        { "id": "dials", "label": "Dials", "enabled": true },
+        ...
+      ],
+      "subtabs": {                  // Server-enforced (403 if disabled)
+        "new_faces": true,
+        "sna": true,
+        "npa": true
+      }
+    }
+  },
+  "branding": { ... }
+}
+```
 
 ## Feature Flags (DEFAULT_TEAM_FEATURES)
 | Feature | Default | Description |
