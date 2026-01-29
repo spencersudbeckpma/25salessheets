@@ -285,6 +285,8 @@ const GoalProgress = ({ user }) => {
                     <Label>Goal Premium ($)</Label>
                     <Input
                       type="number"
+                      min="1"
+                      step="1000"
                       placeholder="100000"
                       value={individualGoals.goal_premium}
                       onChange={(e) => setIndividualGoals({...individualGoals, goal_premium: e.target.value})}
@@ -294,6 +296,8 @@ const GoalProgress = ({ user }) => {
                     <Label>Stretch Goal Premium ($)</Label>
                     <Input
                       type="number"
+                      min="1"
+                      step="1000"
                       placeholder="150000"
                       value={individualGoals.stretch_goal_premium}
                       onChange={(e) => setIndividualGoals({...individualGoals, stretch_goal_premium: e.target.value})}
