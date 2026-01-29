@@ -8960,14 +8960,11 @@ async def get_fact_finder_months(current_user: dict = Depends(get_current_user))
     await check_feature_access(current_user, "fact_finder")
     
     team_id = current_user.get('team_id')
-    query = {}
-    
-    if current_user['role'] == 'super_admin':
-        pass
-    elif team_id:
-        query["team_id"] = team_id
-    else:
+    if not team_id:
         raise HTTPException(status_code=403, detail="You must be assigned to a team")
+    
+    # ALL users (including super_admin) are scoped to their assigned team
+    query = {"team_id": team_id}
     
     if current_user['role'] not in ['super_admin', 'state_manager']:
         query["created_by"] = current_user['id']
