@@ -6931,6 +6931,8 @@ async def get_manager_team_averages(current_user: dict = Depends(get_current_use
     if current_user['role'] not in ['super_admin', 'state_manager', 'regional_manager', 'district_manager']:
         raise HTTPException(status_code=403, detail="Only managers can access this")
     
+    team_id = current_user.get('team_id')
+    
     from datetime import timedelta
     
     central_tz = pytz_timezone('America/Chicago')
@@ -6948,23 +6950,23 @@ async def get_manager_team_averages(current_user: dict = Depends(get_current_use
     days_in_period = (today - start_date).days
     weeks_in_period = max(days_in_period / 7, 1)
     
-    # Get direct report managers (only managers, not agents)
-    direct_managers = await db.users.find(
-        {
-            "manager_id": current_user['id'],
-            "role": {"$in": ["state_manager", "regional_manager", "district_manager"]},
-            "$or": [{"status": "active"}, {"status": {"$exists": False}}]
-        },
-        {"_id": 0, "id": 1, "name": 1, "email": 1, "role": 1}
-    ).to_list(1000)
+    # Get direct report managers (only managers, not agents) - SCOPED TO TEAM
+    dm_query = {
+        "manager_id": current_user['id'],
+        "role": {"$in": ["state_manager", "regional_manager", "district_manager"]},
+        "$or": [{"status": "active"}, {"status": {"$exists": False}}]
+    }
+    if team_id:
+        dm_query["team_id"] = team_id
+    direct_managers = await db.users.find(dm_query, {"_id": 0, "id": 1, "name": 1, "email": 1, "role": 1}).to_list(1000)
     
-    # For each manager, calculate their team's averages
+    # For each manager, calculate their team's averages - SCOPED TO TEAM
     async def get_team_ids(manager_id: str):
         ids = []
-        subordinates = await db.users.find(
-            {"manager_id": manager_id, "$or": [{"status": "active"}, {"status": {"$exists": False}}]},
-            {"_id": 0, "id": 1}
-        ).to_list(1000)
+        query = {"manager_id": manager_id, "$or": [{"status": "active"}, {"status": {"$exists": False}}]}
+        if team_id:
+            query["team_id"] = team_id
+        subordinates = await db.users.find(query, {"_id": 0, "id": 1}).to_list(1000)
         for sub in subordinates:
             ids.append(sub['id'])
             ids.extend(await get_team_ids(sub['id']))
@@ -6974,15 +6976,15 @@ async def get_manager_team_averages(current_user: dict = Depends(get_current_use
     
     for manager in direct_managers:
         # Get all team member IDs under this manager (including the manager themselves)
-        team_ids = await get_team_ids(manager['id'])
-        team_ids.append(manager['id'])  # Include manager's own numbers
-        team_size = len(team_ids)
+        team_member_ids = await get_team_ids(manager['id'])
+        team_member_ids.append(manager['id'])  # Include manager's own numbers
+        team_size = len(team_member_ids)
         
-        # Get activities for this manager's entire team
-        activities = await db.activities.find({
-            "user_id": {"$in": team_ids},
-            "date": {"$gte": start_date.isoformat()}
-        }, {"_id": 0}).to_list(100000)
+        # Get activities for this manager's entire team - SCOPED TO TEAM
+        act_query = {"user_id": {"$in": team_member_ids}, "date": {"$gte": start_date.isoformat()}}
+        if team_id:
+            act_query["team_id"] = team_id
+        activities = await db.activities.find(act_query, {"_id": 0}).to_list(100000)
         
         # Calculate totals
         totals = {
