@@ -6637,20 +6637,19 @@ async def get_npa_agents(current_user: dict = Depends(get_current_user)):
     await check_subtab_access(current_user, 'npa')
     
     team_id = current_user.get('team_id')
+    if not team_id:
+        return {"active": [], "achieved": [], "goal": NPA_GOAL}
     
     # Get NPA agents based on role, filtered by team
+    # ALL users (including super_admin) are scoped to their assigned team
     if current_user['role'] in ['super_admin', 'state_manager']:
-        query = {}
-        if team_id:
-            query["team_id"] = team_id
+        query = {"team_id": team_id}
         npa_agents = await db.npa_agents.find(query, {"_id": 0}).to_list(1000)
     else:
         # Managers see only their own added agents (within team)
         subordinate_ids = await get_all_subordinates(current_user['id'], team_id)
         subordinate_ids.append(current_user['id'])
-        query = {"added_by": {"$in": subordinate_ids}}
-        if team_id:
-            query["team_id"] = team_id
+        query = {"added_by": {"$in": subordinate_ids}, "team_id": team_id}
         npa_agents = await db.npa_agents.find(query, {"_id": 0}).to_list(1000)
     
     npa_data = []
@@ -6661,9 +6660,7 @@ async def get_npa_agents(current_user: dict = Depends(get_current_user)):
         user_id = agent.get('user_id', '')
         if user_id:
             # Get all activities for this user and sum premium (scoped to team)
-            act_query = {"user_id": user_id, "premium": {"$gt": 0}}
-            if team_id:
-                act_query["team_id"] = team_id
+            act_query = {"user_id": user_id, "premium": {"$gt": 0}, "team_id": team_id}
             activities = await db.activities.find(act_query, {"_id": 0, "premium": 1}).to_list(10000)
             total_premium = sum(a.get('premium', 0) for a in activities)
         else:
