@@ -4323,10 +4323,6 @@ async def login(login_data: UserLogin):
     team_name = None
     features = None
     
-    if user.get('role') == 'super_admin':
-        # Super admins see all features
-        features = {k: True for k in DEFAULT_TEAM_FEATURES.keys()}
-    
     if user.get('team_id'):
         team = await db.teams.find_one({"id": user['team_id']}, {"_id": 0})
         if team:
@@ -4338,9 +4334,14 @@ async def login(login_data: UserLogin):
                 "display_name": None,
                 "tagline": None
             })
-            # Get features (merge with defaults)
-            team_features = team.get('features', {})
-            features = {**DEFAULT_TEAM_FEATURES, **team_features}
+            # Get features (merge with defaults) - but NOT for super_admin who sees all
+            if user.get('role') != 'super_admin':
+                team_features = team.get('features', {})
+                features = {**DEFAULT_TEAM_FEATURES, **team_features}
+    
+    # Super admins see ALL features enabled
+    if user.get('role') == 'super_admin':
+        features = {k: True for k in DEFAULT_TEAM_FEATURES.keys()}
     
     # Default features if none set
     if features is None:
