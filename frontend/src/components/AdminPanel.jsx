@@ -135,6 +135,34 @@ const AdminPanel = ({ user }) => {
     }
   };
 
+  // Download PDF using blob (handles auth properly)
+  const handleDownloadPdf = async (endpoint, filename) => {
+    try {
+      toast.info('Generating PDF...');
+      const response = await axios.get(`${API}${endpoint}`, {
+        headers,
+        responseType: 'blob'
+      });
+      
+      // Create blob URL and trigger download
+      const blob = new Blob([response.data], { type: 'application/pdf' });
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = filename;
+      
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+      
+      toast.success('PDF downloaded!');
+    } catch (error) {
+      console.error('Download error:', error);
+      toast.error(error.response?.data?.detail || 'Failed to download PDF');
+    }
+  };
+
   // Fetch broken hierarchy for a team
   const fetchBrokenHierarchy = async (teamId) => {
     try {
