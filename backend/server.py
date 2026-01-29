@@ -3207,17 +3207,15 @@ async def get_manager_hierarchy_report(manager_id: str, period: str, current_use
     hierarchy_data = []
     
     for member in manager_hierarchy:
-        # Get activities for the period
+        # Get activities for the period - SCOPED TO TEAM
+        act_query = {"user_id": member['id'], "date": date_filter}
+        if team_id:
+            act_query["team_id"] = team_id
+        
         if period == "daily":
-            activities = await db.activities.find({
-                "user_id": member['id'],
-                "date": date_filter
-            }, {"_id": 0}).to_list(1000)
+            activities = await db.activities.find(act_query, {"_id": 0}).to_list(1000)
         else:
-            activities = await db.activities.find({
-                "user_id": member['id'],
-                "date": date_filter
-            }, {"_id": 0}).to_list(10000)
+            activities = await db.activities.find(act_query, {"_id": 0}).to_list(10000)
         
         # Calculate totals
         if period == "daily":
