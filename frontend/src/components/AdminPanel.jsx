@@ -249,7 +249,11 @@ const AdminPanel = ({ user }) => {
         features: response.data.features,
         role_tab_overrides: response.data.role_tab_overrides,
         ui_settings: response.data.ui_settings,
-        branding: response.data.branding
+        branding: response.data.branding,
+        view_settings: response.data.view_settings || {
+          kpi_cards: [],
+          subtabs: { new_faces: true, sna: true, npa: true }
+        }
       });
     } catch (error) {
       console.error('Error loading team config:', error);
