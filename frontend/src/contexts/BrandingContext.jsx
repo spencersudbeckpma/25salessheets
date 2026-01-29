@@ -34,11 +34,30 @@ const DEFAULT_UI_SETTINGS = {
   default_leaderboard_period: 'weekly'
 };
 
+const DEFAULT_VIEW_SETTINGS = {
+  kpi_cards: [
+    { id: 'dials', label: 'Dials', enabled: true },
+    { id: 'contacts', label: 'Contacts', enabled: true },
+    { id: 'appointments', label: 'Appointments', enabled: true },
+    { id: 'presentations', label: 'Presentations', enabled: true },
+    { id: 'sales', label: 'Sales', enabled: true },
+    { id: 'premium', label: 'Premium', enabled: true },
+    { id: 'referrals', label: 'Referrals', enabled: true },
+    { id: 'lives', label: 'Lives', enabled: true }
+  ],
+  subtabs: {
+    new_faces: true,
+    sna: true,
+    npa: true
+  }
+};
+
 export const BrandingProvider = ({ children }) => {
   const [branding, setBranding] = useState(DEFAULT_BRANDING);
   const [teamName, setTeamName] = useState(null);
   const [features, setFeatures] = useState(DEFAULT_FEATURES);
   const [uiSettings, setUiSettings] = useState(DEFAULT_UI_SETTINGS);
+  const [viewSettings, setViewSettings] = useState(DEFAULT_VIEW_SETTINGS);
 
   // Apply CSS variables when branding changes
   useEffect(() => {
