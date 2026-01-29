@@ -17,20 +17,47 @@ import { Button } from './ui/button';
 import { LogOut } from 'lucide-react';
 import { useBranding } from '../contexts/BrandingContext';
 
-const Dashboard = ({ user, setUser, branding: initialBranding, features: initialFeatures }) => {
-  const [activeTab, setActiveTab] = useState('activity');
-  const { branding, features, updateBranding, getDisplayName, getTagline, logoUrl, hasFeature } = useBranding();
+const Dashboard = ({ user, setUser, branding: initialBranding, features: initialFeatures, uiSettings: initialUiSettings }) => {
+  const { branding, features, uiSettings, updateBranding, getDisplayName, getTagline, logoUrl, hasFeature, getDefaultTab } = useBranding();
+  
+  // Initialize activeTab to null, will be set after branding/settings load
+  const [activeTab, setActiveTab] = useState(null);
 
-  // Apply branding and features on mount
+  // Apply branding, features, and UI settings on mount
   useEffect(() => {
-    if (initialBranding?.branding || initialFeatures) {
+    if (initialBranding?.branding || initialFeatures || initialUiSettings) {
       updateBranding(
         initialBranding?.branding || null, 
         initialBranding?.team_name || null,
-        initialFeatures || null
+        initialFeatures || null,
+        initialUiSettings || null
       );
     }
-  }, [initialBranding, initialFeatures, updateBranding]);
+  }, [initialBranding, initialFeatures, initialUiSettings, updateBranding]);
+
+  // Set initial active tab based on team's default landing tab
+  useEffect(() => {
+    if (activeTab === null) {
+      const defaultTab = getDefaultTab();
+      // Map feature names to tab names
+      const featureToTabMap = {
+        'activity': 'activity',
+        'stats': 'stats',
+        'team_view': 'team',
+        'suitability': 'suitability',
+        'fact_finder': 'fact-finder',
+        'pma_bonuses': 'pma-bonuses',
+        'docusphere': 'docusphere',
+        'leaderboard': 'leaderboard',
+        'analytics': 'analytics',
+        'reports': 'reports',
+        'team_mgmt': 'manage',
+        'recruiting': 'recruiting'
+      };
+      const tabName = featureToTabMap[defaultTab] || 'activity';
+      setActiveTab(tabName);
+    }
+  }, [activeTab, getDefaultTab]);
 
   // Determine which tab to show based on features
   const getValidTab = (requestedTab) => {
