@@ -121,11 +121,14 @@ Team-based activity tracking and performance management application for insuranc
 
 ## Pending Tasks
 
+### P0 - Critical (COMPLETED)
+- [x] Fix cross-team data leak - All endpoints now filter by team_id (FIXED 2025-12-19)
+
 ### P1 - High Priority  
+- [ ] Refactor monolithic `server.py` into route-based structure (backend/routes/)
 - [ ] Address 25 activity records with NULL team_id (users without team assignment)
 
 ### P2 - Medium Priority
-- [ ] Refactor monolithic `server.py` into route-based structure
 - [ ] Remove temporary migration/diagnostic endpoints after stability confirmed
 
 ### P3 - Future/Backlog
