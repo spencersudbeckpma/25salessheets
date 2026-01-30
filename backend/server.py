@@ -5606,9 +5606,9 @@ async def get_all_team_members(current_user: dict = Depends(get_current_user)):
     """Get ALL team members in the hierarchy (for NPA/SNA tracker dropdowns)"""
     team_id = current_user.get('team_id')
     
-    if current_user['role'] == 'state_manager':
-        # State manager sees everyone in their team except other state managers
-        query = {"role": {"$ne": "state_manager"}, "$or": [{"status": "active"}, {"status": {"$exists": False}}]}
+    if current_user['role'] in ['super_admin', 'state_manager']:
+        # Super admin and state manager see everyone in their team except other state managers and super_admin
+        query = {"role": {"$nin": ["state_manager", "super_admin"]}, "$or": [{"status": "active"}, {"status": {"$exists": False}}]}
         if team_id:
             query["team_id"] = team_id
         members = await db.users.find(query, {"_id": 0, "password_hash": 0}).to_list(1000)
