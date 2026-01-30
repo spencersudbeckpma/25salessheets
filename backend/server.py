@@ -4829,7 +4829,9 @@ async def download_daily_report_excel(report_type: str, date: str, current_user:
             ws.cell(row=row_num, column=8).value = data['testimonials']
             ws.cell(row=row_num, column=9).value = data['sales']
             ws.cell(row=row_num, column=10).value = data['new_face_sold']
-            ws.cell(row=row_num, column=11).value = data['premium']
+            ws.cell(row=row_num, column=11).value = data.get('fact_finders', 0)
+            ws.cell(row=row_num, column=12).value = data.get('bankers_premium', 0)
+            ws.cell(row=row_num, column=13).value = data['premium']
         
         # Add totals row for team reports
         if report_json['data']:
