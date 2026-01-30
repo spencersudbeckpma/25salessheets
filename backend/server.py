@@ -3738,17 +3738,17 @@ async def generate_excel_report(period: str, current_user: dict = Depends(get_cu
     ws = wb.active
     ws.title = f"{period.capitalize()} Report"
     
-    # Add title
-    ws.merge_cells('A1:K1')
+    # Add title - include 2 new columns for new metrics (13 total columns now)
+    ws.merge_cells('A1:M1')
     title_cell = ws['A1']
     title_cell.value = f"Sales Activity Report - {period_name}"
     title_cell.font = Font(size=16, bold=True, color="FFFFFF")
     title_cell.alignment = Alignment(horizontal='center')
     title_cell.fill = PatternFill(start_color="4472C4", end_color="4472C4", fill_type="solid")
     
-    # Add headers
+    # Add headers - includes Fact Finders and Bankers Premium (separate from Total Premium)
     headers = ["Name", "Email", "Role", "Contacts", "Appointments", "Presentations", 
-               "Referrals", "Testimonials", "Sales", "New Face Sold", "Total Premium"]
+               "Referrals", "Testimonials", "Sales", "New Face Sold", "Fact Finders", "Bankers Premium", "Total Premium"]
     for col_num, header in enumerate(headers, 1):
         cell = ws.cell(row=2, column=col_num)
         cell.value = header
@@ -3756,7 +3756,7 @@ async def generate_excel_report(period: str, current_user: dict = Depends(get_cu
         cell.fill = PatternFill(start_color="D9E1F2", end_color="D9E1F2", fill_type="solid")
         cell.alignment = Alignment(horizontal='center')
     
-    # Add data
+    # Add data - CRITICAL: premium and bankers_premium are separate columns
     for row_num, data in enumerate(report_data, 3):
         ws.cell(row=row_num, column=1).value = data['name']
         ws.cell(row=row_num, column=2).value = data['email']
@@ -3768,10 +3768,12 @@ async def generate_excel_report(period: str, current_user: dict = Depends(get_cu
         ws.cell(row=row_num, column=8).value = data['testimonials']
         ws.cell(row=row_num, column=9).value = data['sales']
         ws.cell(row=row_num, column=10).value = data['new_face_sold']
-        ws.cell(row=row_num, column=11).value = f"${data['premium']:.2f}"
+        ws.cell(row=row_num, column=11).value = data.get('fact_finders', 0)
+        ws.cell(row=row_num, column=12).value = f"${data.get('bankers_premium', 0):.2f}"
+        ws.cell(row=row_num, column=13).value = f"${data['premium']:.2f}"
     
     # Auto-size columns
-    for col_idx in range(1, 12):  # 11 columns (A to K)
+    for col_idx in range(1, 14):  # 13 columns (A to M)
         column_letter = ws.cell(row=2, column=col_idx).column_letter
         max_length = 0
         for row in ws.iter_rows(min_row=2, max_row=ws.max_row, min_col=col_idx, max_col=col_idx):
