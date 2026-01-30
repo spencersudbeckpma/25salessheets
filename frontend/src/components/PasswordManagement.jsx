@@ -134,7 +134,7 @@ const PasswordManagement = ({ user }) => {
     <div className="space-y-6">
       {/* Tab Selection */}
       <div className="flex space-x-4 border-b border-gray-200">
-        {user.role === 'state_manager' && (
+        {canAdminReset && (
           <button
             onClick={() => setActiveTab('admin-reset')}
             className={`px-4 py-2 font-medium border-b-2 transition-colors ${
