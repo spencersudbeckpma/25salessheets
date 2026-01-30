@@ -393,7 +393,7 @@ const NPATracker = ({ user }) => {
           <Button 
             onClick={onSubmit}
             className="bg-amber-600 hover:bg-amber-700 text-white"
-            disabled={!isEdit && addMode === 'select' && !selectedMemberId}
+            disabled={!isEdit && !selectedMemberId}
           >
             {isEdit ? 'Update Agent' : 'Add to Tracking'}
           </Button>
