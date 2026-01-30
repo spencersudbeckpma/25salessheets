@@ -7262,7 +7262,7 @@ async def get_npa_agents(current_user: dict = Depends(get_current_user)):
 
 @api_router.post("/npa-tracker")
 async def add_npa_agent(data: dict, current_user: dict = Depends(get_current_user)):
-    """Add an existing system user to NPA tracking (no manual entry)"""
+    """Add an existing system user (agent only) to NPA tracking"""
     if current_user['role'] not in ['super_admin', 'state_manager', 'regional_manager', 'district_manager']:
         raise HTTPException(status_code=403, detail="Only managers can add NPA agents")
     
@@ -7275,6 +7275,10 @@ async def add_npa_agent(data: dict, current_user: dict = Depends(get_current_use
     user = await db.users.find_one({"id": user_id}, {"_id": 0})
     if not user:
         raise HTTPException(status_code=404, detail="User not found in the system")
+    
+    # RULE: Only agents can be added to NPA tracker, not managers
+    if user.get('role') != 'agent':
+        raise HTTPException(status_code=400, detail=f"Only agents can be tracked in NPA. {user.get('name')} is a {user.get('role', 'unknown').replace('_', ' ')}.")
     
     # Check if already being tracked
     existing = await db.npa_agents.find_one({"user_id": user_id})
