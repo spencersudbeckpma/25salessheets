@@ -308,6 +308,8 @@ const DailyReport = ({ user, embedded = false }) => {
                 <th className="px-4 py-3 text-center text-sm font-semibold">Testimonials</th>
                 <th className="px-4 py-3 text-center text-sm font-semibold">Sales</th>
                 <th className="px-4 py-3 text-center text-sm font-semibold">New Face</th>
+                <th className="px-4 py-3 text-center text-sm font-semibold">Fact Finders</th>
+                <th className="px-4 py-3 text-center text-sm font-semibold">Bankers Premium</th>
                 <th className="px-4 py-3 text-center text-sm font-semibold">Premium</th>
                 <th className="px-4 py-3 text-center text-sm font-semibold">Actions</th>
               </tr>
