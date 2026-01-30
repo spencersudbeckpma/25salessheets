@@ -7223,6 +7223,7 @@ async def get_npa_agents(current_user: dict = Depends(get_current_user)):
             "achievement_date": agent.get('achievement_date', None),
             "added_by": agent.get('added_by', ''),
             "added_by_name": agent.get('added_by_name', ''),
+            "auto_added": agent.get('auto_added', False),
             "created_at": agent.get('created_at', ''),
             "notes": agent.get('notes', '')
         }
