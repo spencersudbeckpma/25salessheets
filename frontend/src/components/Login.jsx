@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { toast } from 'sonner';
 import { Button } from './ui/button';
@@ -19,6 +19,20 @@ const Login = ({ setUser, setBranding }) => {
   const [inviteData, setInviteData] = useState(null);
   const [loading, setLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
+  const [storageBlocked, setStorageBlocked] = useState(false);
+
+  // Check if localStorage is available (blocked in Safari Private Browsing)
+  useEffect(() => {
+    try {
+      const testKey = '__storage_test__';
+      localStorage.setItem(testKey, testKey);
+      localStorage.removeItem(testKey);
+      setStorageBlocked(false);
+    } catch (e) {
+      setStorageBlocked(true);
+      console.error('[STORAGE_BLOCKED]', e);
+    }
+  }, []);
 
   // Helper to extract error message from API response
   const getErrorMessage = (error) => {
