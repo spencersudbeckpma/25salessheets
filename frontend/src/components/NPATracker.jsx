@@ -353,15 +353,26 @@ const NPATracker = ({ user }) => {
                 Goal: ${goal.toLocaleString()}
               </span>
             </label>
-            <Input
-              name="total_premium"
-              type="number"
-              min="0"
-              step="0.01"
-              value={formData.total_premium}
-              onChange={handleInputChange}
-              placeholder="0.00"
-            />
+            {isEdit ? (
+              <Input
+                name="total_premium"
+                type="number"
+                min="0"
+                step="0.01"
+                value={formData.total_premium}
+                onChange={handleInputChange}
+                placeholder="0.00"
+              />
+            ) : (
+              <div className="p-3 bg-gray-100 rounded-lg text-gray-600">
+                <p className="text-sm">Premium is automatically calculated from logged activities.</p>
+                {selectedMemberId && (
+                  <p className="text-lg font-semibold text-gray-800 mt-1">
+                    Current: ${formData.total_premium?.toLocaleString() || 0}
+                  </p>
+                )}
+              </div>
+            )}
             {formData.total_premium >= goal && (
               <p className="text-sm text-green-600 mt-1 flex items-center gap-1">
                 <CheckCircle size={14} /> Agent has achieved NPA status!
