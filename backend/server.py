@@ -5025,6 +5025,7 @@ async def login(login_data: UserLogin, request: Request):
     
     if not user:
         logging.warning(f"[LOGIN_FAILED] email={login_identifier}, reason=user_not_found, ip={client_ip}")
+        await log_login_failure(login_identifier, "No account found", "user_not_found", client_ip, user_agent)
         raise HTTPException(
             status_code=401, 
             detail={"code": "user_not_found", "message": "No account found with this email or username"}
@@ -5034,6 +5035,7 @@ async def login(login_data: UserLogin, request: Request):
     user_status = user.get('status', 'active')
     if user_status == 'archived':
         logging.warning(f"[LOGIN_FAILED] email={login_identifier}, reason=user_archived, user_id={user['id']}, ip={client_ip}")
+        await log_login_failure(login_identifier, "Account is archived", "user_archived", client_ip, user_agent, user['id'])
         raise HTTPException(
             status_code=403, 
             detail={"code": "user_archived", "message": "Account is archived. Please contact your administrator."}
@@ -5041,6 +5043,7 @@ async def login(login_data: UserLogin, request: Request):
     
     if user_status == 'disabled':
         logging.warning(f"[LOGIN_FAILED] email={login_identifier}, reason=user_disabled, user_id={user['id']}, ip={client_ip}")
+        await log_login_failure(login_identifier, "Account is disabled", "user_disabled", client_ip, user_agent, user['id'])
         raise HTTPException(
             status_code=403, 
             detail={"code": "user_disabled", "message": "Account is disabled. Please contact your administrator."}
@@ -5051,6 +5054,7 @@ async def login(login_data: UserLogin, request: Request):
         password_valid = verify_password(password, user['password_hash'])
     except Exception as e:
         logging.error(f"[LOGIN_FAILED] email={login_identifier}, reason=password_verification_error, error={str(e)}, ip={client_ip}")
+        await log_login_failure(login_identifier, f"Password verification error: {str(e)}", "server_error", client_ip, user_agent, user['id'])
         raise HTTPException(
             status_code=500, 
             detail={"code": "server_error", "message": "Error verifying credentials. Please try again."}
@@ -5058,6 +5062,7 @@ async def login(login_data: UserLogin, request: Request):
     
     if not password_valid:
         logging.warning(f"[LOGIN_FAILED] email={login_identifier}, reason=invalid_credentials, user_id={user['id']}, ip={client_ip}")
+        await log_login_failure(login_identifier, "Incorrect password", "invalid_credentials", client_ip, user_agent, user['id'])
         raise HTTPException(
             status_code=401, 
             detail={"code": "invalid_credentials", "message": "Incorrect password"}
@@ -5068,6 +5073,7 @@ async def login(login_data: UserLogin, request: Request):
         token = create_jwt_token(user['id'], user['email'])
     except Exception as e:
         logging.error(f"[LOGIN_FAILED] email={login_identifier}, reason=token_creation_failed, error={str(e)}, ip={client_ip}")
+        await log_login_failure(login_identifier, f"Token creation failed: {str(e)}", "token_creation_failed", client_ip, user_agent, user['id'])
         raise HTTPException(
             status_code=500, 
             detail={"code": "token_creation_failed", "message": "Failed to create login session. Please try again."}
