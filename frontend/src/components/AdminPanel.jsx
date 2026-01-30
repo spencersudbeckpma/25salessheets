@@ -91,6 +91,17 @@ const AdminPanel = ({ user }) => {
         { id: 'new_face_sold', label: 'New Face Sold', enabled: true },
         { id: 'premium', label: 'Total Premium', enabled: true }
       ],
+      leaderboard_metrics: [
+        { id: 'premium', label: 'Premium', enabled: true },
+        { id: 'presentations', label: 'Presentations', enabled: true },
+        { id: 'sales', label: 'Sales', enabled: true },
+        { id: 'apps', label: 'Apps', enabled: true },
+        { id: 'contacts', label: 'Contacts', enabled: true },
+        { id: 'appointments', label: 'Appointments', enabled: true },
+        { id: 'referrals', label: 'Referrals', enabled: true },
+        { id: 'testimonials', label: 'Testimonials', enabled: true },
+        { id: 'new_face_sold', label: 'New Faces Sold', enabled: true }
+      ],
       subtabs: {
         new_faces: true,
         sna: true,
