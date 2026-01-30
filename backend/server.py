@@ -4439,13 +4439,18 @@ async def get_period_report(report_type: str, period: str, current_user: dict = 
             }
             report_data.append(totals)
         
+        # Filter data by enabled KPIs
+        filtered_data = [build_report_row(row, enabled_metrics) for row in report_data]
+        
         return {
             "report_type": "individual",
             "period": period,
             "period_name": period_name,
             "start_date": start_date.isoformat(),
-            "data": report_data,
-            "selected_user": user_id
+            "data": filtered_data,
+            "selected_user": user_id,
+            "enabled_metrics": enabled_metrics,
+            "filter_by_kpi": filter_by_kpi
         }
     
     elif report_type == "team":
