@@ -65,10 +65,30 @@ const Login = ({ setUser, setBranding }) => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
+    setErrorMessage('');
+
+    // Client-side validation
+    const trimmedEmail = email.trim().toLowerCase();
+    const trimmedPassword = password.trim();
+    
+    if (!trimmedEmail) {
+      setErrorMessage('Please enter your email or username');
+      setLoading(false);
+      return;
+    }
+    
+    if (!trimmedPassword) {
+      setErrorMessage('Please enter your password');
+      setLoading(false);
+      return;
+    }
 
     try {
       if (isLogin) {
-        const response = await axios.post(`${API}/auth/login`, { email, password });
+        const response = await axios.post(`${API}/auth/login`, { 
+          email: trimmedEmail, 
+          password: trimmedPassword 
+        });
         localStorage.setItem('token', response.data.token);
         setUser(response.data.user);
         // Set branding and features from login response
@@ -82,8 +102,8 @@ const Login = ({ setUser, setBranding }) => {
         toast.success('Login successful!');
       } else {
         const response = await axios.post(`${API}/auth/register`, {
-          email,
-          password,
+          email: trimmedEmail,
+          password: trimmedPassword,
           name,
           role,
           invite_code: inviteCode || null
@@ -93,7 +113,15 @@ const Login = ({ setUser, setBranding }) => {
         toast.success('Registration successful!');
       }
     } catch (error) {
-      toast.error(error.response?.data?.detail || 'An error occurred');
+      const message = getErrorMessage(error);
+      setErrorMessage(message);
+      toast.error(message);
+      console.error('[LOGIN_ERROR]', {
+        status: error.response?.status,
+        code: error.response?.data?.detail?.code,
+        message: message,
+        email: trimmedEmail
+      });
     } finally {
       setLoading(false);
     }
