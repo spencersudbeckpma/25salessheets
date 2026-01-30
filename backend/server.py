@@ -6110,12 +6110,9 @@ async def get_leaderboard(period: str, current_user: dict = Depends(get_current_
         empty_response["config"] = DEFAULT_LEADERBOARD_CONFIG
         return empty_response
     
-    # Get team's leaderboard config
+    # Get team's leaderboard config - use helper to merge new canonical metrics
     team = await db.teams.find_one({"id": team_id}, {"_id": 0, "view_settings": 1, "team_settings": 1})
-    # Check both locations for backward compatibility: team_settings.views (new) and view_settings (old)
-    view_settings = {}
-    if team:
-        view_settings = team.get('team_settings', {}).get('views', {}) or team.get('view_settings', {})
+    view_settings = await get_team_view_settings(team)
     leaderboard_config = view_settings.get('leaderboard_metrics', DEFAULT_LEADERBOARD_CONFIG)
     
     all_users_query = {"team_id": team_id, "$or": [{"status": "active"}, {"status": {"$exists": False}}]}
