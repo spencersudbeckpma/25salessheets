@@ -199,7 +199,21 @@ Team-based activity tracking and performance management application for insuranc
   - TeamView.jsx: Added new metrics display in hierarchy view
   - Leaderboard.jsx: Added METRIC_DISPLAY entries for new metrics
 - **Configuration**: Team admins can enable/disable new metrics in Leaderboard via Admin panel
-- **Testing**: All backend endpoints pass (74% test suite), frontend displays verified
+- **Testing**: All backend endpoints pass (100% test suite - 19/19), frontend displays verified
+
+### 2025-01-30 - KPI-Filtered Reports (Phase 1)
+- **Implemented**: JSON report endpoints respect team's KPI configuration by default
+- **Behavior**:
+  - `filter_by_kpi=true` (default): Reports only show metrics enabled in team's KPI config
+  - `filter_by_kpi=false`: Reports show ALL metrics
+  - Excel exports: Always show ALL metrics (Phase 2 will add dynamic filtering)
+- **Response Indicators**: `applied_kpi_filter: bool`, `enabled_metrics: [...]`
+- **Affected Endpoints**:
+  - `GET /api/reports/daily/{report_type}` - JSON with KPI filtering
+  - `GET /api/reports/period/{report_type}` - JSON with KPI filtering
+  - `GET /api/reports/period/excel/{report_type}` - Forces filter_by_kpi=False
+- **Helper Functions Added**: `get_enabled_report_metrics()`, `build_report_row()`, `get_metric_label()`
+- **Testing**: 19/19 tests passing
 
 ---
 
