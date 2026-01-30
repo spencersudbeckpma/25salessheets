@@ -1868,6 +1868,106 @@ const AdminPanel = ({ user }) => {
             </Card>
           )}
 
+          {/* ==================== LOGIN FAILURES VIEWER ==================== */}
+          <Card className="bg-gradient-to-r from-red-50 to-orange-50 border-red-200 shadow-lg">
+            <CardHeader className="pb-3">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                <div>
+                  <CardTitle className="flex items-center gap-2 text-red-800 text-xl">
+                    <AlertTriangle className="w-6 h-6" />
+                    Recent Login Failures
+                  </CardTitle>
+                  <CardDescription className="text-red-700">
+                    View failed login attempts to diagnose user access issues
+                  </CardDescription>
+                </div>
+                <div className="flex gap-2">
+                  <Button
+                    onClick={fetchLoginFailures}
+                    disabled={loginFailuresLoading}
+                    className="bg-red-600 hover:bg-red-700 text-white"
+                    data-testid="fetch-login-failures-btn"
+                  >
+                    {loginFailuresLoading ? <RefreshCw className="w-4 h-4 mr-2 animate-spin" /> : <Search className="w-4 h-4 mr-2" />}
+                    Load Failures
+                  </Button>
+                  {loginFailures?.total > 0 && (
+                    <Button
+                      onClick={clearLoginFailures}
+                      variant="outline"
+                      className="border-red-300 text-red-700 hover:bg-red-100"
+                    >
+                      <Trash2 className="w-4 h-4 mr-2" />
+                      Clear
+                    </Button>
+                  )}
+                </div>
+              </div>
+            </CardHeader>
+            
+            {loginFailures && (
+              <CardContent className="pt-0">
+                <div className="text-sm text-slate-600 mb-3">
+                  Showing {loginFailures.showing} of {loginFailures.total} failures
+                </div>
+                
+                {loginFailures.failures.length === 0 ? (
+                  <div className="bg-green-50 p-4 rounded-lg text-center border border-green-200">
+                    <CheckCircle2 className="w-8 h-8 text-green-600 mx-auto mb-2" />
+                    <div className="text-green-800 font-medium">No login failures recorded</div>
+                    <div className="text-green-600 text-sm">All recent login attempts succeeded</div>
+                  </div>
+                ) : (
+                  <div className="overflow-x-auto border rounded-lg">
+                    <table className="w-full text-sm" data-testid="login-failures-table">
+                      <thead className="bg-red-100">
+                        <tr>
+                          <th className="px-3 py-2 text-left font-medium text-red-800">Time</th>
+                          <th className="px-3 py-2 text-left font-medium text-red-800">Email</th>
+                          <th className="px-3 py-2 text-left font-medium text-red-800">Reason</th>
+                          <th className="px-3 py-2 text-left font-medium text-red-800">Code</th>
+                          <th className="px-3 py-2 text-left font-medium text-red-800 hidden md:table-cell">IP</th>
+                          <th className="px-3 py-2 text-left font-medium text-red-800 hidden lg:table-cell">Browser</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y">
+                        {loginFailures.failures.map((failure, idx) => (
+                          <tr key={failure.id || idx} className="hover:bg-red-50">
+                            <td className="px-3 py-2 text-slate-700 whitespace-nowrap text-xs">
+                              {new Date(failure.timestamp).toLocaleString()}
+                            </td>
+                            <td className="px-3 py-2 font-medium text-slate-800">
+                              {failure.email}
+                            </td>
+                            <td className="px-3 py-2 text-slate-600">
+                              {failure.reason}
+                            </td>
+                            <td className="px-3 py-2">
+                              <span className={`px-2 py-0.5 rounded text-xs font-medium ${
+                                failure.code === 'user_not_found' ? 'bg-yellow-100 text-yellow-800' :
+                                failure.code === 'invalid_credentials' ? 'bg-red-100 text-red-800' :
+                                failure.code === 'user_archived' ? 'bg-gray-100 text-gray-800' :
+                                'bg-orange-100 text-orange-800'
+                              }`}>
+                                {failure.code}
+                              </span>
+                            </td>
+                            <td className="px-3 py-2 text-slate-500 text-xs hidden md:table-cell">
+                              {failure.ip}
+                            </td>
+                            <td className="px-3 py-2 text-slate-500 text-xs hidden lg:table-cell max-w-[200px] truncate" title={failure.user_agent}>
+                              {failure.user_agent?.substring(0, 50)}...
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </CardContent>
+            )}
+          </Card>
+
           {/* Separator */}
           <div className="relative">
             <div className="absolute inset-0 flex items-center">
