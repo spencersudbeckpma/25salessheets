@@ -289,8 +289,9 @@ class Activity(BaseModel):
     apps: int = 0
     sales: int = 0
     new_face_sold: float = 0.0
-    bankers_premium: float = 0.0
-    premium: float = 0.0
+    fact_finders: int = 0  # New field - tracked separately
+    bankers_premium: float = 0.0  # Tracked separately - NEVER added to premium
+    premium: float = 0.0  # Total Premium - standalone, does NOT include bankers_premium
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     edited_by: Optional[str] = None
     edited_at: Optional[datetime] = None
@@ -305,8 +306,9 @@ class ActivityCreate(BaseModel):
     apps: int = 0
     sales: int = 0
     new_face_sold: float = 0.0
-    bankers_premium: float = 0.0
-    premium: float = 0.0
+    fact_finders: int = 0  # New field - tracked separately
+    bankers_premium: float = 0.0  # Tracked separately - NEVER added to premium
+    premium: float = 0.0  # Total Premium - standalone, does NOT include bankers_premium
 
 class NewFaceCustomer(BaseModel):
     model_config = ConfigDict(extra="ignore")
