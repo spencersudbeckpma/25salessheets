@@ -201,6 +201,24 @@ Team-based activity tracking and performance management application for insuranc
 - **Configuration**: Team admins can enable/disable new metrics in Leaderboard via Admin panel
 - **Testing**: All backend endpoints pass (100% test suite - 19/19), frontend displays verified
 
+### 2025-01-30 - Team View Metric Toggles
+- **Added**: Admin control over which metrics appear in Team View / Daily Activity section
+- **Location**: Admin → Teams → Customize → Views tab → "Team View / Daily Activity Metrics"
+- **Behavior**:
+  - Admins can enable/disable each metric's visibility in Team View
+  - Admins can reorder metrics using up/down arrows
+  - Backend always computes all metrics; this controls visibility only
+  - `bankers_premium` and `fact_finders` are disabled by default
+- **Backend Changes**:
+  - Added `CANONICAL_TEAM_ACTIVITY_METRICS` list (10 metrics)
+  - Added `DEFAULT_TEAM_ACTIVITY_CONFIG` with default enabled/order states
+  - `/api/team/hierarchy/{period}` returns `team_activity_config` and `enabled_activity_metrics`
+  - `get_team_view_settings()` merges new canonical metrics with saved config
+- **Frontend Changes**:
+  - AdminPanel.jsx: Added "Team View / Daily Activity Metrics" section with toggles
+  - TeamView.jsx: Uses `isMetricEnabled()` to conditionally render metrics
+- **Testing**: 100% backend and frontend tests passing (iteration_7.json)
+
 ### 2025-01-30 - KPI-Filtered Reports (Phase 1)
 - **Implemented**: JSON report endpoints respect team's KPI configuration by default
 - **Behavior**:
