@@ -301,6 +301,7 @@ const NPATracker = ({ user }) => {
                 value={formData.phone}
                 onChange={handleInputChange}
                 placeholder="555-123-4567"
+                disabled={!isEdit && selectedMemberId}
               />
             </div>
             <div>
@@ -311,7 +312,7 @@ const NPATracker = ({ user }) => {
                 value={formData.email}
                 onChange={handleInputChange}
                 placeholder="agent@email.com"
-                disabled={addMode === 'select' && selectedMemberId}
+                disabled={!isEdit && selectedMemberId}
               />
             </div>
           </div>
