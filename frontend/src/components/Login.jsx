@@ -18,6 +18,31 @@ const Login = ({ setUser, setBranding }) => {
   const [inviteCode, setInviteCode] = useState('');
   const [inviteData, setInviteData] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [errorMessage, setErrorMessage] = useState('');
+
+  // Helper to extract error message from API response
+  const getErrorMessage = (error) => {
+    if (error.response?.data?.detail) {
+      const detail = error.response.data.detail;
+      // Handle structured error response
+      if (typeof detail === 'object' && detail.message) {
+        return detail.message;
+      }
+      // Handle string error response
+      if (typeof detail === 'string') {
+        return detail;
+      }
+    }
+    // Network errors
+    if (error.code === 'ERR_NETWORK') {
+      return 'Unable to connect to server. Please check your internet connection.';
+    }
+    if (error.code === 'ECONNABORTED') {
+      return 'Request timed out. Please try again.';
+    }
+    // Fallback with more info for debugging
+    return `Login failed: ${error.message || 'Unknown error'}`;
+  };
 
   const handleVerifyInvite = async () => {
     if (!inviteCode) {
