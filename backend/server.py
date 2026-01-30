@@ -107,9 +107,12 @@ DEFAULT_TEAM_UI_SETTINGS = {
 
 # Canonical leaderboard metrics - maps 1:1 to Daily Activity fields
 # This is the single source of truth for leaderboard metric keys
+# NOTE: bankers_premium is tracked SEPARATELY from premium - never combined
 CANONICAL_LEADERBOARD_METRICS = [
-    {"id": "premium", "label": "Premium", "field": "premium", "format": "currency"},
+    {"id": "premium", "label": "Total Premium", "field": "premium", "format": "currency"},
+    {"id": "bankers_premium", "label": "Bankers Premium", "field": "bankers_premium", "format": "currency"},
     {"id": "presentations", "label": "Presentations", "field": "presentations", "format": "number"},
+    {"id": "fact_finders", "label": "Fact Finders", "field": "fact_finders", "format": "number"},
     {"id": "sales", "label": "Sales", "field": "sales", "format": "number"},
     {"id": "apps", "label": "Apps", "field": "apps", "format": "number"},
     {"id": "contacts", "label": "Contacts", "field": "contacts", "format": "number"},
