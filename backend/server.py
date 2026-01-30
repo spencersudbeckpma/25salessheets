@@ -4848,6 +4848,8 @@ async def download_daily_report_excel(report_type: str, date: str, current_user:
             total_testimonials = sum(data['testimonials'] for data in report_json['data'])
             total_sales = sum(data['sales'] for data in report_json['data'])
             total_new_face = sum(data['new_face_sold'] for data in report_json['data'])
+            total_fact_finders = sum(data.get('fact_finders', 0) for data in report_json['data'])
+            total_bankers_premium = sum(data.get('bankers_premium', 0) for data in report_json['data'])
             total_premium = sum(data['premium'] for data in report_json['data'])
             
             ws.cell(row=totals_row, column=4).value = total_contacts
