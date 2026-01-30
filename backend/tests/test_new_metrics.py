@@ -355,10 +355,10 @@ class TestActivityInputFields:
     
     def test_activity_accepts_fact_finders_integer(self, auth_headers):
         """Test that fact_finders accepts integer values"""
-        today = datetime.now().strftime('%Y-%m-%d')
+        test_date = get_unique_test_date(days_offset=4)
         
         activity_data = {
-            "date": today,
+            "date": test_date,
             "contacts": 0,
             "appointments": 0,
             "presentations": 0,
@@ -372,16 +372,16 @@ class TestActivityInputFields:
             "premium": 0
         }
         
-        response = requests.post(f"{BASE_URL}/api/activities", json=activity_data, headers=auth_headers)
+        response = requests.put(f"{BASE_URL}/api/activities/{test_date}", json=activity_data, headers=auth_headers)
         assert response.status_code in [200, 201], f"Failed: {response.text}"
-        print("fact_finders accepts integer values")
+        print(f"fact_finders accepts integer values (date: {test_date})")
     
     def test_activity_accepts_bankers_premium_float(self, auth_headers):
         """Test that bankers_premium accepts float values"""
-        today = datetime.now().strftime('%Y-%m-%d')
+        test_date = get_unique_test_date(days_offset=5)
         
         activity_data = {
-            "date": today,
+            "date": test_date,
             "contacts": 0,
             "appointments": 0,
             "presentations": 0,
@@ -395,9 +395,9 @@ class TestActivityInputFields:
             "premium": 0
         }
         
-        response = requests.post(f"{BASE_URL}/api/activities", json=activity_data, headers=auth_headers)
+        response = requests.put(f"{BASE_URL}/api/activities/{test_date}", json=activity_data, headers=auth_headers)
         assert response.status_code in [200, 201], f"Failed: {response.text}"
-        print("bankers_premium accepts float values")
+        print(f"bankers_premium accepts float values (date: {test_date})")
 
 
 if __name__ == "__main__":
