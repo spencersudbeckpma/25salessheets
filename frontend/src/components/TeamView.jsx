@@ -178,34 +178,66 @@ const TeamView = ({ user }) => {
                 </div>
               </div>
               <div className="mt-3 flex flex-wrap gap-x-8 gap-y-2 text-sm">
-                <div data-testid={`member-contacts-${node.id}`}>
-                  <span className="text-gray-600">Contacts</span>
-                  <span className="ml-2 font-semibold text-gray-900">{node.stats.contacts}</span>
-                </div>
-                <div data-testid={`member-presentations-${node.id}`}>
-                  <span className="text-gray-600">Presentations</span>
-                  <span className="ml-2 font-semibold text-gray-900">{node.stats.presentations}</span>
-                </div>
-                <div data-testid={`member-appointments-${node.id}`}>
-                  <span className="text-gray-600">Appointments</span>
-                  <span className="ml-2 font-semibold text-gray-900">{node.stats.appointments}</span>
-                </div>
-                <div data-testid={`member-sales-${node.id}`}>
-                  <span className="text-gray-600">Sales</span>
-                  <span className="ml-2 font-semibold text-gray-900">{node.stats.sales}</span>
-                </div>
-                <div data-testid={`member-fact-finders-${node.id}`}>
-                  <span className="text-gray-600">Fact Finders</span>
-                  <span className="ml-2 font-semibold text-gray-900">{node.stats.fact_finders || 0}</span>
-                </div>
-                <div data-testid={`member-bankers-premium-${node.id}`}>
-                  <span className="text-gray-600">Bankers Premium</span>
-                  <span className="ml-2 font-semibold text-gray-900">${(node.stats.bankers_premium || 0).toFixed(2)}</span>
-                </div>
-                <div data-testid={`member-premium-${node.id}`}>
-                  <span className="text-gray-600">Premium</span>
-                  <span className="ml-2 font-semibold text-gray-900">${node.stats.premium.toFixed(2)}</span>
-                </div>
+                {isMetricEnabled('contacts') && (
+                  <div data-testid={`member-contacts-${node.id}`}>
+                    <span className="text-gray-600">Contacts</span>
+                    <span className="ml-2 font-semibold text-gray-900">{node.stats.contacts}</span>
+                  </div>
+                )}
+                {isMetricEnabled('presentations') && (
+                  <div data-testid={`member-presentations-${node.id}`}>
+                    <span className="text-gray-600">Presentations</span>
+                    <span className="ml-2 font-semibold text-gray-900">{node.stats.presentations}</span>
+                  </div>
+                )}
+                {isMetricEnabled('appointments') && (
+                  <div data-testid={`member-appointments-${node.id}`}>
+                    <span className="text-gray-600">Appointments</span>
+                    <span className="ml-2 font-semibold text-gray-900">{node.stats.appointments}</span>
+                  </div>
+                )}
+                {isMetricEnabled('sales') && (
+                  <div data-testid={`member-sales-${node.id}`}>
+                    <span className="text-gray-600">Sales</span>
+                    <span className="ml-2 font-semibold text-gray-900">{node.stats.sales}</span>
+                  </div>
+                )}
+                {isMetricEnabled('referrals') && (
+                  <div data-testid={`member-referrals-${node.id}`}>
+                    <span className="text-gray-600">Referrals</span>
+                    <span className="ml-2 font-semibold text-gray-900">{node.stats.referrals || 0}</span>
+                  </div>
+                )}
+                {isMetricEnabled('testimonials') && (
+                  <div data-testid={`member-testimonials-${node.id}`}>
+                    <span className="text-gray-600">Testimonials</span>
+                    <span className="ml-2 font-semibold text-gray-900">{node.stats.testimonials || 0}</span>
+                  </div>
+                )}
+                {isMetricEnabled('new_face_sold') && (
+                  <div data-testid={`member-new-face-sold-${node.id}`}>
+                    <span className="text-gray-600">New Faces Sold</span>
+                    <span className="ml-2 font-semibold text-gray-900">{node.stats.new_face_sold || 0}</span>
+                  </div>
+                )}
+                {isMetricEnabled('fact_finders') && (
+                  <div data-testid={`member-fact-finders-${node.id}`}>
+                    <span className="text-gray-600">Fact Finders</span>
+                    <span className="ml-2 font-semibold text-gray-900">{node.stats.fact_finders || 0}</span>
+                  </div>
+                )}
+                {isMetricEnabled('bankers_premium') && (
+                  <div data-testid={`member-bankers-premium-${node.id}`}>
+                    <span className="text-gray-600">Bankers Premium</span>
+                    <span className="ml-2 font-semibold text-gray-900">${(node.stats.bankers_premium || 0).toFixed(2)}</span>
+                  </div>
+                )}
+                {isMetricEnabled('premium') && (
+                  <div data-testid={`member-premium-${node.id}`}>
+                    <span className="text-gray-600">Premium</span>
+                    <span className="ml-2 font-semibold text-gray-900">${node.stats.premium.toFixed(2)}</span>
+                  </div>
+                )}
               </div>
               
               {/* View Details Button */}
