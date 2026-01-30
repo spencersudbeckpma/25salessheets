@@ -374,6 +374,8 @@ const DailyReport = ({ user, embedded = false }) => {
                   <td className="px-4 py-3 text-sm text-center font-bold text-amber-900">{totals.testimonials}</td>
                   <td className="px-4 py-3 text-sm text-center font-bold text-amber-900">{totals.sales}</td>
                   <td className="px-4 py-3 text-sm text-center font-bold text-amber-900">{totals.new_face_sold}</td>
+                  <td className="px-4 py-3 text-sm text-center font-bold text-amber-900">{totals.fact_finders}</td>
+                  <td className="px-4 py-3 text-sm text-center font-bold text-amber-700">${totals.bankers_premium.toFixed(2)}</td>
                   <td className="px-4 py-3 text-sm text-center font-bold text-green-700">${totals.premium.toFixed(2)}</td>
                   <td className="px-4 py-3 text-sm text-center"></td>
                 </tr>
