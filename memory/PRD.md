@@ -288,6 +288,12 @@ Team-based activity tracking and performance management application for insuranc
   - 10 configurable metrics with enable/disable and reorder functionality
   - bankers_premium and fact_finders disabled by default
   - Backend returns enabled_activity_metrics in /api/team/hierarchy/{period}
+- [x] Suitability Flexible Reporting (COMPLETED 2025-01-30):
+  - Report periods: Weekly (any week), Monthly (calendar month), All-Time (lifetime)
+  - All existing data preserved - no deletion, filter-based only
+  - State Manager sees full team (team_id scoped)
+  - Agents see My Forms only; Managers see My Forms + Reports
+  - Excel export for all periods
 
 ### P1 - High Priority (PAUSED)
 - [ ] Refactor monolithic `server.py` into route-based structure (backend/routes/) - **PAUSED: App in active rollout**
