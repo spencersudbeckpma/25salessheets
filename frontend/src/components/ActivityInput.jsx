@@ -238,6 +238,7 @@ const ActivityInput = ({ user }) => {
                 step={
                   (cat.key === 'premium' || cat.key === 'bankers_premium') ? '0.01' : 
                   (cat.key === 'presentations' || cat.key === 'contacts' || cat.key === 'appointments' || cat.key === 'new_face_sold') ? '0.5' : 
+                  (cat.key === 'fact_finders') ? '1' :
                   '1'
                 }
                 value={activity[cat.key] === 0 ? '' : activity[cat.key]}
