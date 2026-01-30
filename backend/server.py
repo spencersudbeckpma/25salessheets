@@ -4334,6 +4334,8 @@ async def get_period_report(report_type: str, period: str, current_user: dict = 
                 "testimonials": sum(a.get('testimonials', 0) for a in activities),
                 "sales": sum(a.get('sales', 0) for a in activities),
                 "new_face_sold": sum(a.get('new_face_sold', 0) for a in activities),
+                "fact_finders": sum(a.get('fact_finders', 0) or 0 for a in activities),
+                "bankers_premium": sum(float(a.get('bankers_premium', 0) or 0) for a in activities),
                 "premium": sum(a.get('premium', 0) for a in activities)
             }
             report_data.append(totals)
