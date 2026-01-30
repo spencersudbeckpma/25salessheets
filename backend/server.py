@@ -128,6 +128,36 @@ DEFAULT_LEADERBOARD_CONFIG = [
     for i, m in enumerate(CANONICAL_LEADERBOARD_METRICS)
 ]
 
+# Canonical Team Activity metrics for Team View / Daily Activity section
+# NOTE: Dials is explicitly excluded - we do not track or use this metric
+# NOTE: bankers_premium is tracked SEPARATELY from premium - never combined
+CANONICAL_TEAM_ACTIVITY_METRICS = [
+    {"id": "contacts", "label": "Contacts", "format": "number"},
+    {"id": "appointments", "label": "Appointments", "format": "number"},
+    {"id": "presentations", "label": "Presentations", "format": "number"},
+    {"id": "sales", "label": "Sales", "format": "number"},
+    {"id": "premium", "label": "Total Premium", "format": "currency"},
+    {"id": "bankers_premium", "label": "Bankers Premium", "format": "currency"},
+    {"id": "referrals", "label": "Referrals", "format": "number"},
+    {"id": "testimonials", "label": "Testimonials", "format": "number"},
+    {"id": "new_face_sold", "label": "New Faces Sold", "format": "number"},
+    {"id": "fact_finders", "label": "Fact Finders", "format": "number"},
+]
+
+# Default Team Activity config - existing metrics enabled, new metrics (fact_finders, bankers_premium) disabled by default
+DEFAULT_TEAM_ACTIVITY_CONFIG = [
+    {"id": "contacts", "label": "Contacts", "enabled": True, "order": 0},
+    {"id": "appointments", "label": "Appointments", "enabled": True, "order": 1},
+    {"id": "presentations", "label": "Presentations", "enabled": True, "order": 2},
+    {"id": "sales", "label": "Sales", "enabled": True, "order": 3},
+    {"id": "premium", "label": "Total Premium", "enabled": True, "order": 4},
+    {"id": "bankers_premium", "label": "Bankers Premium", "enabled": False, "order": 5},  # New metric - OFF by default
+    {"id": "referrals", "label": "Referrals", "enabled": True, "order": 6},
+    {"id": "testimonials", "label": "Testimonials", "enabled": True, "order": 7},
+    {"id": "new_face_sold", "label": "New Faces Sold", "enabled": True, "order": 8},
+    {"id": "fact_finders", "label": "Fact Finders", "enabled": False, "order": 9},  # New metric - OFF by default
+]
+
 # Default team view settings (Phase 2)
 DEFAULT_TEAM_VIEW_SETTINGS = {
     # KPI cards configuration - order determines display order
@@ -146,6 +176,8 @@ DEFAULT_TEAM_VIEW_SETTINGS = {
     ],
     # Leaderboard metrics configuration - order determines display order
     "leaderboard_metrics": DEFAULT_LEADERBOARD_CONFIG.copy(),
+    # Team Activity metrics for Team View - controls visibility only
+    "team_activity_metrics": DEFAULT_TEAM_ACTIVITY_CONFIG.copy(),
     # Sub-tab visibility (enforced server-side)
     "subtabs": {
         "new_faces": True,
