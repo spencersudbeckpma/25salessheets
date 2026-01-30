@@ -6077,6 +6077,7 @@ async def get_leaderboard(period: str, current_user: dict = Depends(get_current_
     activities = await db.activities.find(act_query, {"_id": 0}).to_list(10000)
     
     # Aggregate by user - include ALL canonical metrics
+    # NOTE: bankers_premium is tracked SEPARATELY - never added to premium
     user_stats = {}
     for activity in activities:
         uid = activity['user_id']
@@ -6084,9 +6085,11 @@ async def get_leaderboard(period: str, current_user: dict = Depends(get_current_
             user_stats[uid] = {
                 "user_id": uid,
                 "name": user_dict.get(uid, {}).get('name', 'Unknown'),
-                # Initialize all canonical metrics to 0
-                "premium": 0.0,
+                # Initialize all canonical metrics to 0 (backward compatible with missing fields)
+                "premium": 0.0,  # Total Premium - standalone
+                "bankers_premium": 0.0,  # Bankers Premium - SEPARATE from premium
                 "presentations": 0,
+                "fact_finders": 0,  # New field
                 "sales": 0,
                 "apps": 0,
                 "contacts": 0,
@@ -6096,8 +6099,11 @@ async def get_leaderboard(period: str, current_user: dict = Depends(get_current_
                 "new_face_sold": 0,
             }
         # Aggregate all metrics from Daily Activity
+        # CRITICAL: premium and bankers_premium are SEPARATE - never combined
         user_stats[uid]['premium'] += float(activity.get('premium', 0) or 0)
+        user_stats[uid]['bankers_premium'] += float(activity.get('bankers_premium', 0) or 0)
         user_stats[uid]['presentations'] += int(activity.get('presentations', 0) or 0)
+        user_stats[uid]['fact_finders'] += int(activity.get('fact_finders', 0) or 0)
         user_stats[uid]['sales'] += int(activity.get('sales', 0) or 0)
         user_stats[uid]['apps'] += int(activity.get('apps', 0) or 0)
         user_stats[uid]['contacts'] += int(activity.get('contacts', 0) or 0)
