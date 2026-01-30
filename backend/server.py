@@ -4925,6 +4925,54 @@ async def populate_todays_activities(current_user: dict = Depends(get_current_us
         "total_users": len(all_users)
     }
 
+# Helper function to log login failures to database
+async def log_login_failure(email: str, reason: str, code: str, ip: str, user_agent: str, user_id: str = None):
+    """Store login failure in database for admin review"""
+    try:
+        await db.login_failures.insert_one({
+            "id": str(uuid.uuid4()),
+            "email": email,
+            "reason": reason,
+            "code": code,
+            "user_id": user_id,
+            "ip": ip,
+            "user_agent": user_agent,
+            "timestamp": datetime.now(timezone.utc).isoformat()
+        })
+        # Keep only last 500 records to prevent unbounded growth
+        count = await db.login_failures.count_documents({})
+        if count > 500:
+            oldest = await db.login_failures.find().sort("timestamp", 1).limit(count - 500).to_list(count - 500)
+            if oldest:
+                oldest_ids = [r["id"] for r in oldest]
+                await db.login_failures.delete_many({"id": {"$in": oldest_ids}})
+    except Exception as e:
+        logging.error(f"Failed to log login failure: {e}")
+
+@api_router.get("/admin/login-failures")
+async def get_login_failures(current_user: dict = Depends(get_current_user), limit: int = 50):
+    """Get recent login failures (super_admin only)"""
+    require_super_admin(current_user)
+    
+    failures = await db.login_failures.find(
+        {}, 
+        {"_id": 0}
+    ).sort("timestamp", -1).limit(limit).to_list(limit)
+    
+    return {
+        "total": await db.login_failures.count_documents({}),
+        "showing": len(failures),
+        "failures": failures
+    }
+
+@api_router.delete("/admin/login-failures")
+async def clear_login_failures(current_user: dict = Depends(get_current_user)):
+    """Clear all login failures (super_admin only)"""
+    require_super_admin(current_user)
+    
+    result = await db.login_failures.delete_many({})
+    return {"message": f"Cleared {result.deleted_count} login failure records"}
+
 @api_router.post("/auth/login")
 async def login(login_data: UserLogin, request: Request):
     """
