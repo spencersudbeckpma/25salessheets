@@ -87,6 +87,8 @@ const StatsView = ({ user }) => {
     { key: 'testimonials', label: 'Testimonials', color: 'bg-pink-500', icon: '⭐' },
     { key: 'sales', label: 'Sales', color: 'bg-indigo-500', icon: '💰' },
     { key: 'new_face_sold', label: 'New Face Sold', color: 'bg-red-500', icon: '🎯' },
+    { key: 'fact_finders', label: 'Fact Finders', color: 'bg-orange-500', icon: '📋' },
+    { key: 'bankers_premium', label: 'Bankers Premium', color: 'bg-amber-500', icon: '🏦' },
     { key: 'premium', label: 'Total Premium', color: 'bg-emerald-500', icon: '💵' }
   ];
 
