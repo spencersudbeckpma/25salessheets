@@ -4449,8 +4449,8 @@ async def get_period_report(report_type: str, period: str, current_user: dict = 
             "start_date": start_date.isoformat(),
             "data": filtered_data,
             "selected_user": user_id,
-            "enabled_metrics": enabled_metrics,
-            "filter_by_kpi": filter_by_kpi
+            "applied_kpi_filter": filter_by_kpi,
+            "enabled_metrics": enabled_metrics
         }
     
     elif report_type == "team":
