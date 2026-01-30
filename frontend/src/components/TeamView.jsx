@@ -15,6 +15,7 @@ const TeamView = ({ user }) => {
   const [period, setPeriod] = useState('weekly');
   const [selectedMember, setSelectedMember] = useState(null);
   const [memberStats, setMemberStats] = useState(null);
+  const [enabledMetrics, setEnabledMetrics] = useState(null);  // Track enabled metrics from config
 
   useEffect(() => {
     setSelectedMember(null);
@@ -31,11 +32,22 @@ const TeamView = ({ user }) => {
       });
       setHierarchy(response.data);
       setExpandedNodes({ [response.data.id]: true });
+      // Store enabled metrics from response
+      if (response.data.enabled_activity_metrics) {
+        setEnabledMetrics(response.data.enabled_activity_metrics);
+      }
     } catch (error) {
       toast.error('Failed to fetch team hierarchy');
     } finally {
       setLoading(false);
     }
+  };
+
+  // Helper to check if a metric is enabled
+  const isMetricEnabled = (metricId) => {
+    // If no config received, show all metrics (backward compatibility)
+    if (!enabledMetrics) return true;
+    return enabledMetrics.includes(metricId);
   };
 
   const fetchMemberStats = async (memberId) => {
