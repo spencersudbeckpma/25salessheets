@@ -381,7 +381,7 @@ const SuitabilityForm = ({ user }) => {
       </CardHeader>
       <CardContent className="p-4 sm:p-6">
         <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="grid grid-cols-3 mb-6">
+          <TabsList className={`grid mb-6 ${canViewReports ? 'grid-cols-3' : 'grid-cols-2'}`}>
             <TabsTrigger value="new" className="flex items-center gap-2">
               <Plus size={16} />
               <span className="hidden sm:inline">New Form</span>
@@ -392,11 +392,13 @@ const SuitabilityForm = ({ user }) => {
               <span className="hidden sm:inline">My Forms</span>
               <span className="sm:hidden">Forms</span>
             </TabsTrigger>
-            <TabsTrigger value="weekly" className="flex items-center gap-2">
-              <Calendar size={16} />
-              <span className="hidden sm:inline">Weekly Report</span>
-              <span className="sm:hidden">Report</span>
-            </TabsTrigger>
+            {canViewReports && (
+              <TabsTrigger value="reports" className="flex items-center gap-2">
+                <Users size={16} />
+                <span className="hidden sm:inline">Reports</span>
+                <span className="sm:hidden">Reports</span>
+              </TabsTrigger>
+            )}
           </TabsList>
 
           {/* New Form Tab */}
