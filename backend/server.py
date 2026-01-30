@@ -4560,8 +4560,8 @@ async def get_period_report(report_type: str, period: str, current_user: dict = 
             "start_date": start_date.isoformat(),
             "total_members": len(all_members),
             "data": filtered_totals,
-            "enabled_metrics": enabled_metrics,
-            "filter_by_kpi": filter_by_kpi
+            "applied_kpi_filter": filter_by_kpi,
+            "enabled_metrics": enabled_metrics
         }
     
     else:
