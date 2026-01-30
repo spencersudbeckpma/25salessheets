@@ -201,6 +201,28 @@ Team-based activity tracking and performance management application for insuranc
 - **Configuration**: Team admins can enable/disable new metrics in Leaderboard via Admin panel
 - **Testing**: All backend endpoints pass (100% test suite - 19/19), frontend displays verified
 
+### 2025-01-30 - Suitability Flexible Reporting (Lifetime Retention)
+- **Problem Solved**: Suitability tab was "weekly only" with no access to historical data
+- **New Features**:
+  - Report periods: Weekly (any week via date picker), Monthly (calendar month), All-Time (lifetime)
+  - Existing records preserved - no deletion, filter-based reporting only
+  - State Manager sees full team (team_id scoped, not limited by subordinates)
+  - DM/RM see their downline via get_all_subordinates()
+  - Agents see only their own forms (My Forms tab only, no Reports tab)
+- **Backend Changes**:
+  - Added `GET /api/suitability-forms/report` with params: period (weekly|monthly|all-time), week_start_date, month
+  - Added `GET /api/suitability-forms/report/excel` for Excel export of any period
+  - Access control: agent=own, DM/RM=downline, state_manager/super_admin=full team
+- **Frontend Changes**:
+  - SuitabilityForm.jsx: Renamed "Weekly Report" to "Reports" tab (managers only)
+  - Added period selector (Weekly/Monthly/All-Time)
+  - Added week date picker (visible when Weekly selected)
+  - Added month picker (visible when Monthly selected)
+  - Agents see only 2 tabs: New Form, My Forms
+  - Managers see 3 tabs: New Form, My Forms, Reports
+- **Data Retention**: All existing Suitability records remain accessible in All-Time view
+- **Testing**: 100% backend and frontend tests passing (iteration_8.json)
+
 ### 2025-01-30 - Team View Metric Toggles
 - **Added**: Admin control over which metrics appear in Team View / Daily Activity section
 - **Location**: Admin → Teams → Customize → Views tab → "Team View / Daily Activity Metrics"
