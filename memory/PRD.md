@@ -184,6 +184,23 @@ Team-based activity tracking and performance management application for insuranc
 - Resolved super_admin branding bug
 - Completed feature flag enforcement
 
+### 2025-01-30 - New Metrics Implementation
+- **Added**: Two new metrics to Daily Activity tracking: `fact_finders` (int) and `bankers_premium` (float)
+- **CRITICAL CONSTRAINT**: `bankers_premium` is tracked SEPARATELY from `premium` - never combined
+- **Backend Updates**:
+  - Activity model updated with new fields (lines 281-314)
+  - `/api/stats/my/{period}` returns fact_finders and bankers_premium
+  - `/api/team/hierarchy/{period}` includes new metrics in rolled-up stats
+  - `/api/leaderboard/{period}` includes new metrics as separate categories
+  - Reports endpoints updated to include new metrics
+- **Frontend Updates**:
+  - ActivityInput.jsx: Added "Fact Finders" input field
+  - StatsView.jsx: Added stat cards for Fact Finders and Bankers Premium
+  - TeamView.jsx: Added new metrics display in hierarchy view
+  - Leaderboard.jsx: Added METRIC_DISPLAY entries for new metrics
+- **Configuration**: Team admins can enable/disable new metrics in Leaderboard via Admin panel
+- **Testing**: All backend endpoints pass (74% test suite), frontend displays verified
+
 ---
 
 ## Pending Tasks
@@ -208,6 +225,10 @@ Team-based activity tracking and performance management application for insuranc
     - Super Admin sees ONLY Team Sudbeck data on product pages
     - Team Quick state_manager sees ONLY Team Quick data
     - Admin panel cross-team config access works with explicit team_id
+- [x] Add fact_finders and bankers_premium metrics (COMPLETED 2025-01-30):
+  - New metrics tracked across all Daily Activity flows
+  - bankers_premium kept separate from premium (never combined)
+  - Available in stats, leaderboard, hierarchy, reports
 
 ### P1 - High Priority (PAUSED)
 - [ ] Refactor monolithic `server.py` into route-based structure (backend/routes/) - **PAUSED: App in active rollout**
@@ -215,6 +236,7 @@ Team-based activity tracking and performance management application for insuranc
 ### P2 - Medium Priority
 - [ ] Remove temporary migration/diagnostic endpoints after stability confirmed
 - [ ] Cleanup migration endpoints after production data is fully migrated
+- [ ] Add "Copy leaderboard settings from another team" feature to Admin UI
 
 ### P3 - Future/Backlog
 - [ ] Granular feature flags for sub-features
@@ -227,7 +249,11 @@ Team-based activity tracking and performance management application for insuranc
 
 ## Files Reference
 - `backend/server.py` - All API logic (~8000+ lines, needs refactoring)
+- `frontend/src/components/ActivityInput.jsx` - Daily Activity input with new metrics
 - `frontend/src/components/FactFinder.jsx` - Fact Finder UI
 - `frontend/src/components/Dashboard.jsx` - Main dashboard with tabs
 - `frontend/src/components/AdminPanel.jsx` - Admin functionality
 - `frontend/src/components/PMADocuSphere.jsx` - Document library
+- `frontend/src/components/StatsView.jsx` - Personal statistics with new metrics
+- `frontend/src/components/TeamView.jsx` - Team hierarchy with new metrics
+- `frontend/src/components/Leaderboard.jsx` - Configurable leaderboard
