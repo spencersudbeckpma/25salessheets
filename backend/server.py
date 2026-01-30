@@ -4194,11 +4194,16 @@ async def get_daily_report(report_type: str, date: str, current_user: dict = Dep
                 "premium": activity.get('premium', 0) if activity else 0
             })
         
+        # Filter data by enabled KPIs
+        filtered_data = [build_report_row(row, enabled_metrics) for row in report_data]
+        
         return {
             "report_type": "individual",
             "date": report_date,
-            "data": report_data,
-            "selected_user": user_id
+            "data": filtered_data,
+            "selected_user": user_id,
+            "applied_kpi_filter": filter_by_kpi,
+            "enabled_metrics": enabled_metrics
         }
     
     elif report_type == "team":
