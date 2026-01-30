@@ -12,7 +12,9 @@ const API = `${BACKEND_URL}/api`;
 // This ensures consistent icons/colors even if backend config changes
 const METRIC_DISPLAY = {
   premium: { icon: '💵', color: 'border-green-500', format: 'currency' },
+  bankers_premium: { icon: '🏦', color: 'border-amber-500', format: 'currency' },
   presentations: { icon: '📊', color: 'border-purple-500', format: 'number' },
+  fact_finders: { icon: '📋', color: 'border-orange-500', format: 'number' },
   sales: { icon: '💰', color: 'border-emerald-500', format: 'number' },
   apps: { icon: '📝', color: 'border-teal-500', format: 'number' },
   contacts: { icon: '📞', color: 'border-cyan-500', format: 'number' },
