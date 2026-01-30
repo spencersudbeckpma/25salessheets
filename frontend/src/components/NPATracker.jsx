@@ -246,22 +246,22 @@ const NPATracker = ({ user }) => {
           {/* Team Member Selection - Only for Add modal */}
           {!isEdit && (
             <div>
-              <label className="block text-sm font-medium mb-2">Select Team Member *</label>
+              <label className="block text-sm font-medium mb-2">Select Agent *</label>
               <select
                 value={selectedMemberId}
                 onChange={(e) => handleMemberSelect(e.target.value)}
                 className="w-full border rounded-lg p-3"
               >
-                <option value="">-- Select a team member --</option>
+                <option value="">-- Select an agent --</option>
                 {availableMembers.map(member => (
                   <option key={member.id} value={member.id}>
-                    {member.name} ({member.role?.replace('_', ' ')})
+                    {member.name}
                   </option>
                 ))}
               </select>
               {availableMembers.length === 0 && (
                 <p className="text-sm text-amber-600 mt-2">
-                  All team members are already being tracked or have exceeded NPA goal automatically.
+                  All agents are already being tracked or have exceeded NPA goal automatically.
                 </p>
               )}
             </div>
