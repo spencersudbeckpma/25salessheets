@@ -4809,7 +4809,7 @@ async def download_daily_report_excel(report_type: str, date: str, current_user:
     elif report_type == "team":
         # Add headers
         headers = ["Team Name", "Manager", "Role", "Contacts", "Appointments", "Presentations", 
-                   "Referrals", "Testimonials", "Sales", "New Face Sold", "Total Premium"]
+                   "Referrals", "Testimonials", "Sales", "New Face Sold", "Fact Finders", "Bankers Premium", "Total Premium"]
         for col_num, header in enumerate(headers, 1):
             cell = ws.cell(row=2, column=col_num)
             cell.value = header
