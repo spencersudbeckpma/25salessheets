@@ -817,6 +817,30 @@ const AdminPanel = ({ user }) => {
     }
   };
 
+  // Login Failures functions
+  const fetchLoginFailures = async () => {
+    setLoginFailuresLoading(true);
+    try {
+      const res = await axios.get(`${API}/api/admin/login-failures?limit=50`, { headers });
+      setLoginFailures(res.data);
+    } catch (error) {
+      toast.error(error.response?.data?.detail || 'Failed to fetch login failures');
+    } finally {
+      setLoginFailuresLoading(false);
+    }
+  };
+
+  const clearLoginFailures = async () => {
+    if (!window.confirm('Clear all login failure records?')) return;
+    try {
+      await axios.delete(`${API}/api/admin/login-failures`, { headers });
+      toast.success('Login failures cleared');
+      setLoginFailures({ total: 0, showing: 0, failures: [] });
+    } catch (error) {
+      toast.error(error.response?.data?.detail || 'Failed to clear login failures');
+    }
+  };
+
   const handleCreateTeam = async () => {
     if (!newTeamName.trim()) {
       toast.error('Please enter a team name');
