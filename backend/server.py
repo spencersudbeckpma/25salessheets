@@ -5385,6 +5385,10 @@ async def create_activity(activity_data: ActivityCreate, current_user: dict = De
     
     await db.activities.insert_one(doc)
     
+    # Check if user should be auto-added to NPA tracker (real-time)
+    if activity_data.premium and activity_data.premium > 0:
+        await check_and_auto_add_to_npa(current_user['id'], current_user.get('team_id'))
+    
     return {"message": "Activity created", "activity": activity.model_dump()}
 
 @api_router.put("/activities/{date}")
