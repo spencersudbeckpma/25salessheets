@@ -178,6 +178,14 @@ const TeamView = ({ user }) => {
                   <span className="text-gray-600">Sales</span>
                   <span className="ml-2 font-semibold text-gray-900">{node.stats.sales}</span>
                 </div>
+                <div data-testid={`member-fact-finders-${node.id}`}>
+                  <span className="text-gray-600">Fact Finders</span>
+                  <span className="ml-2 font-semibold text-gray-900">{node.stats.fact_finders || 0}</span>
+                </div>
+                <div data-testid={`member-bankers-premium-${node.id}`}>
+                  <span className="text-gray-600">Bankers Premium</span>
+                  <span className="ml-2 font-semibold text-gray-900">${(node.stats.bankers_premium || 0).toFixed(2)}</span>
+                </div>
                 <div data-testid={`member-premium-${node.id}`}>
                   <span className="text-gray-600">Premium</span>
                   <span className="ml-2 font-semibold text-gray-900">${node.stats.premium.toFixed(2)}</span>
