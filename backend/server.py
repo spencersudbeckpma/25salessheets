@@ -5572,15 +5572,20 @@ async def get_my_stats(period: str, current_user: dict = Depends(get_current_use
     }, {"_id": 0}).to_list(1000)
     
     # Aggregate stats
+    # CRITICAL: premium and bankers_premium are SEPARATE - never combined
+    # Using .get() with default 0 for backward compatibility with records missing new fields
     stats = {
-        "contacts": sum(a['contacts'] for a in activities),
-        "appointments": sum(a['appointments'] for a in activities),
-        "presentations": sum(a['presentations'] for a in activities),
-        "referrals": sum(a['referrals'] for a in activities),
-        "testimonials": sum(a['testimonials'] for a in activities),
-        "sales": sum(a['sales'] for a in activities),
-        "new_face_sold": sum(a['new_face_sold'] for a in activities),
-        "premium": sum(a['premium'] for a in activities)
+        "contacts": sum(a.get('contacts', 0) or 0 for a in activities),
+        "appointments": sum(a.get('appointments', 0) or 0 for a in activities),
+        "presentations": sum(a.get('presentations', 0) or 0 for a in activities),
+        "referrals": sum(a.get('referrals', 0) or 0 for a in activities),
+        "testimonials": sum(a.get('testimonials', 0) or 0 for a in activities),
+        "sales": sum(a.get('sales', 0) or 0 for a in activities),
+        "apps": sum(a.get('apps', 0) or 0 for a in activities),
+        "new_face_sold": sum(a.get('new_face_sold', 0) or 0 for a in activities),
+        "fact_finders": sum(a.get('fact_finders', 0) or 0 for a in activities),
+        "bankers_premium": sum(float(a.get('bankers_premium', 0) or 0) for a in activities),
+        "premium": sum(float(a.get('premium', 0) or 0) for a in activities)  # Total Premium - does NOT include bankers_premium
     }
     
     return stats
