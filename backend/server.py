@@ -9116,6 +9116,304 @@ async def get_weekly_suitability_report(
         "forms": forms
     }
 
+@api_router.get("/suitability-forms/report")
+async def get_suitability_report(
+    current_user: dict = Depends(get_current_user),
+    period: str = "weekly",
+    week_start_date: Optional[str] = None,
+    month: Optional[str] = None
+):
+    """
+    Flexible suitability report endpoint supporting Weekly, Monthly, and All-Time periods.
+    
+    - period: 'weekly', 'monthly', or 'all-time'
+    - week_start_date: YYYY-MM-DD for selecting a specific week (defaults to current week)
+    - month: YYYY-MM for selecting a specific month (defaults to current month)
+    
+    Access control:
+    - Agent: own forms only
+    - DM/RM: downline forms via get_all_subordinates()
+    - State Manager / Super Admin: full team (team_id scoped, not limited by subordinates)
+    """
+    await check_feature_access(current_user, "suitability")
+    
+    team_id = current_user.get('team_id')
+    role = current_user['role']
+    
+    query = {}
+    
+    # Team filtering for multi-tenancy (always applied)
+    if team_id:
+        query["team_id"] = team_id
+    
+    # Period-based date filtering
+    today = datetime.now(timezone.utc).date()
+    period_label = ""
+    start_date = None
+    end_date = None
+    
+    if period == "weekly":
+        # Use provided week_start_date or default to current week
+        if week_start_date:
+            try:
+                base_date = datetime.strptime(week_start_date, "%Y-%m-%d").date()
+            except ValueError:
+                raise HTTPException(status_code=400, detail="Invalid week_start_date format. Use YYYY-MM-DD")
+        else:
+            base_date = today
+        
+        # Calculate week boundaries (Monday to Sunday)
+        start_of_week = base_date - timedelta(days=base_date.weekday())
+        end_of_week = start_of_week + timedelta(days=6)
+        
+        start_date = start_of_week.isoformat()
+        end_date = end_of_week.isoformat()
+        period_label = f"Week of {start_of_week.strftime('%b %d, %Y')}"
+        
+        query["presentation_date"] = {"$gte": start_date, "$lte": end_date}
+        
+    elif period == "monthly":
+        # Use provided month or default to current month
+        if month:
+            try:
+                year, month_num = month.split("-")
+                year = int(year)
+                month_num = int(month_num)
+            except (ValueError, AttributeError):
+                raise HTTPException(status_code=400, detail="Invalid month format. Use YYYY-MM")
+        else:
+            year = today.year
+            month_num = today.month
+        
+        # Calculate month boundaries
+        import calendar
+        _, last_day = calendar.monthrange(year, month_num)
+        start_date = f"{year}-{month_num:02d}-01"
+        end_date = f"{year}-{month_num:02d}-{last_day:02d}"
+        period_label = f"{calendar.month_name[month_num]} {year}"
+        
+        query["presentation_date"] = {"$gte": start_date, "$lte": end_date}
+        
+    elif period == "all-time":
+        period_label = "All Time"
+        # No date filter - returns all records
+    else:
+        raise HTTPException(status_code=400, detail="Invalid period. Use 'weekly', 'monthly', or 'all-time'")
+    
+    # Access control based on role
+    if role == 'agent':
+        # Agents see only their own forms
+        query["submitted_by"] = current_user['id']
+    elif role in ['district_manager', 'regional_manager']:
+        # DM/RM see their downline via get_all_subordinates()
+        subordinate_ids = await get_all_subordinates(current_user['id'], team_id)
+        subordinate_ids.append(current_user['id'])  # Include self
+        query["submitted_by"] = {"$in": subordinate_ids}
+    elif role in ['state_manager', 'super_admin']:
+        # State Manager / Super Admin see full team (team_id scoped)
+        # NOT limited by get_all_subordinates() - just team_id filter
+        # query already has team_id filter applied above
+        pass
+    
+    # Fetch forms
+    forms = await db.suitability_forms.find(query, {"_id": 0}).sort("presentation_date", -1).to_list(10000)
+    
+    # Calculate stats
+    total_forms = len(forms)
+    sales_made = sum(1 for f in forms if f.get('sale_made'))
+    
+    # Group by agent
+    by_agent = {}
+    for form in forms:
+        name = form.get('submitted_by_name', 'Unknown')
+        if name not in by_agent:
+            by_agent[name] = {"total": 0, "sales": 0}
+        by_agent[name]["total"] += 1
+        if form.get('sale_made'):
+            by_agent[name]["sales"] += 1
+    
+    return {
+        "period": period,
+        "period_label": period_label,
+        "start_date": start_date,
+        "end_date": end_date,
+        "total_forms": total_forms,
+        "sales_made": sales_made,
+        "conversion_rate": round((sales_made / total_forms * 100), 1) if total_forms > 0 else 0,
+        "by_agent": by_agent,
+        "forms": forms
+    }
+
+@api_router.get("/suitability-forms/report/excel")
+async def export_suitability_report_excel(
+    current_user: dict = Depends(get_current_user),
+    period: str = "weekly",
+    week_start_date: Optional[str] = None,
+    month: Optional[str] = None
+):
+    """
+    Export suitability report as Excel file for any period.
+    Same access control as /suitability-forms/report endpoint.
+    """
+    await check_feature_access(current_user, "suitability")
+    from openpyxl import Workbook
+    from openpyxl.styles import Font, PatternFill, Border, Side, Alignment
+    import io
+    
+    team_id = current_user.get('team_id')
+    role = current_user['role']
+    
+    query = {}
+    
+    # Team filtering
+    if team_id:
+        query["team_id"] = team_id
+    
+    # Period-based date filtering
+    today = datetime.now(timezone.utc).date()
+    period_label = ""
+    start_date = None
+    end_date = None
+    
+    if period == "weekly":
+        if week_start_date:
+            try:
+                base_date = datetime.strptime(week_start_date, "%Y-%m-%d").date()
+            except ValueError:
+                raise HTTPException(status_code=400, detail="Invalid week_start_date format")
+        else:
+            base_date = today
+        
+        start_of_week = base_date - timedelta(days=base_date.weekday())
+        end_of_week = start_of_week + timedelta(days=6)
+        start_date = start_of_week.isoformat()
+        end_date = end_of_week.isoformat()
+        period_label = f"Week of {start_of_week.strftime('%b %d, %Y')}"
+        query["presentation_date"] = {"$gte": start_date, "$lte": end_date}
+        
+    elif period == "monthly":
+        if month:
+            try:
+                year, month_num = month.split("-")
+                year = int(year)
+                month_num = int(month_num)
+            except (ValueError, AttributeError):
+                raise HTTPException(status_code=400, detail="Invalid month format")
+        else:
+            year = today.year
+            month_num = today.month
+        
+        import calendar
+        _, last_day = calendar.monthrange(year, month_num)
+        start_date = f"{year}-{month_num:02d}-01"
+        end_date = f"{year}-{month_num:02d}-{last_day:02d}"
+        period_label = f"{calendar.month_name[month_num]} {year}"
+        query["presentation_date"] = {"$gte": start_date, "$lte": end_date}
+        
+    elif period == "all-time":
+        period_label = "All Time"
+    else:
+        raise HTTPException(status_code=400, detail="Invalid period")
+    
+    # Access control
+    if role == 'agent':
+        query["submitted_by"] = current_user['id']
+    elif role in ['district_manager', 'regional_manager']:
+        subordinate_ids = await get_all_subordinates(current_user['id'], team_id)
+        subordinate_ids.append(current_user['id'])
+        query["submitted_by"] = {"$in": subordinate_ids}
+    # state_manager/super_admin: team_id filter only
+    
+    forms = await db.suitability_forms.find(query, {"_id": 0}).sort([("submitted_by_name", 1), ("presentation_date", 1)]).to_list(10000)
+    
+    if not forms:
+        raise HTTPException(status_code=404, detail=f"No forms found for {period_label}")
+    
+    # Get labels
+    income_labels = {r['value']: r['label'] for r in SUITABILITY_FORM_CONFIG['income_ranges']}
+    savings_labels = {r['value']: r['label'] for r in SUITABILITY_FORM_CONFIG['savings_ranges']}
+    net_worth_labels = {r['value']: r['label'] for r in SUITABILITY_FORM_CONFIG['net_worth_ranges']}
+    
+    # Create Excel
+    wb = Workbook()
+    ws = wb.active
+    ws.title = "Suitability Report"
+    
+    # Styles
+    title_font = Font(name='Arial', size=16, bold=True, color='FFFFFF')
+    title_fill = PatternFill(start_color='1F4E79', end_color='1F4E79', fill_type='solid')
+    header_font = Font(name='Arial', size=10, bold=True, color='FFFFFF')
+    header_fill = PatternFill(start_color='2E75B6', end_color='2E75B6', fill_type='solid')
+    thin_border = Border(
+        left=Side(style='thin'), right=Side(style='thin'),
+        top=Side(style='thin'), bottom=Side(style='thin')
+    )
+    
+    # Title
+    ws.merge_cells('A1:J1')
+    cell = ws.cell(row=1, column=1, value=f"SUITABILITY REPORT - {period_label.upper()}")
+    cell.font = title_font
+    cell.fill = title_fill
+    cell.alignment = Alignment(horizontal='center')
+    ws.row_dimensions[1].height = 30
+    
+    # Date range row
+    if start_date and end_date:
+        ws.merge_cells('A2:J2')
+        ws.cell(row=2, column=1, value=f"Period: {start_date} to {end_date}").font = Font(italic=True)
+    
+    # Headers
+    headers = ['Agent', 'Date', 'Client Name', 'Phone', 'Location', 'Annual Income', 
+               'Monthly Savings', 'Net Worth', 'Sale Made', 'Notes']
+    row = 4
+    for col, header in enumerate(headers, 1):
+        cell = ws.cell(row=row, column=col, value=header)
+        cell.font = header_font
+        cell.fill = header_fill
+        cell.border = thin_border
+        cell.alignment = Alignment(horizontal='center')
+    
+    # Data rows
+    row = 5
+    for form in forms:
+        ws.cell(row=row, column=1, value=form.get('submitted_by_name', '')).border = thin_border
+        ws.cell(row=row, column=2, value=form.get('presentation_date', '')).border = thin_border
+        ws.cell(row=row, column=3, value=form.get('client_name', '')).border = thin_border
+        ws.cell(row=row, column=4, value=form.get('client_phone', '')).border = thin_border
+        ws.cell(row=row, column=5, value=form.get('presentation_location', '')).border = thin_border
+        ws.cell(row=row, column=6, value=income_labels.get(form.get('annual_income'), form.get('annual_income', ''))).border = thin_border
+        ws.cell(row=row, column=7, value=savings_labels.get(form.get('monthly_savings'), form.get('monthly_savings', ''))).border = thin_border
+        ws.cell(row=row, column=8, value=net_worth_labels.get(form.get('liquid_net_worth'), form.get('liquid_net_worth', ''))).border = thin_border
+        ws.cell(row=row, column=9, value='Yes' if form.get('sale_made') else 'No').border = thin_border
+        ws.cell(row=row, column=10, value=form.get('notes', '')).border = thin_border
+        row += 1
+    
+    # Summary row
+    row += 1
+    total_forms = len(forms)
+    sales_made = sum(1 for f in forms if f.get('sale_made'))
+    ws.cell(row=row, column=1, value="TOTAL:").font = Font(bold=True)
+    ws.cell(row=row, column=2, value=f"{total_forms} forms")
+    ws.cell(row=row, column=9, value=f"{sales_made} sales ({round(sales_made/total_forms*100, 1) if total_forms else 0}%)")
+    
+    # Column widths
+    widths = [20, 12, 25, 15, 20, 18, 18, 18, 10, 30]
+    for i, width in enumerate(widths, 1):
+        ws.column_dimensions[chr(64 + i)].width = width
+    
+    # Save to buffer
+    buffer = io.BytesIO()
+    wb.save(buffer)
+    buffer.seek(0)
+    
+    filename = f"Suitability_Report_{period}_{start_date or 'all'}_{end_date or 'time'}.xlsx"
+    
+    return Response(
+        content=buffer.getvalue(),
+        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        headers={"Content-Disposition": f"attachment; filename={filename}"}
+    )
+
 # ==================== FACT FINDER ====================
 
 class FactFinderHealthExpenses(BaseModel):
