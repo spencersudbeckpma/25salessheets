@@ -5449,11 +5449,16 @@ async def update_team_activity(user_id: str, date: str, activity_data: ActivityC
     if user_id not in subordinates or user_id == current_user['id']:
         raise HTTPException(status_code=403, detail="Not authorized to edit this user's data")
     
+    # Get the target user's team_id
+    target_user = await db.users.find_one({"id": user_id}, {"_id": 0, "team_id": 1})
+    target_team_id = target_user.get('team_id') if target_user else team_id
+    
     existing = await db.activities.find_one({"user_id": user_id, "date": date})
     
     update_data = activity_data.model_dump()
     update_data['edited_by'] = current_user['id']
     update_data['edited_at'] = datetime.now(timezone.utc).isoformat()
+    update_data['team_id'] = target_team_id  # Ensure team_id is set
     
     if existing:
         await db.activities.update_one({"user_id": user_id, "date": date}, {"$set": update_data})
@@ -5462,6 +5467,7 @@ async def update_team_activity(user_id: str, date: str, activity_data: ActivityC
         data_dict = activity_data.model_dump()
         activity = Activity(
             user_id=user_id,
+            team_id=target_team_id,  # Set team_id
             date=date,
             contacts=data_dict['contacts'],
             appointments=data_dict['appointments'],
@@ -5481,6 +5487,10 @@ async def update_team_activity(user_id: str, date: str, activity_data: ActivityC
         if doc.get('edited_at'):
             doc['edited_at'] = doc['edited_at'].isoformat()
         await db.activities.insert_one(doc)
+    
+    # Check if the user should be auto-added to NPA tracker (real-time)
+    if activity_data.premium and activity_data.premium > 0:
+        await check_and_auto_add_to_npa(user_id, target_team_id)
     
     return {"message": "Team member activity updated"}
 
