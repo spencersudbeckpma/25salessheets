@@ -160,8 +160,8 @@ const PasswordManagement = ({ user }) => {
         </button>
       </div>
 
-      {/* Admin Reset Password (State Managers Only) */}
-      {activeTab === 'admin-reset' && user.role === 'state_manager' && (
+      {/* Admin Reset Password (State Managers and Super Admin) */}
+      {activeTab === 'admin-reset' && canAdminReset && (
         <Card className="shadow-lg bg-white">
           <CardHeader>
             <CardTitle className="text-xl flex items-center gap-2">
