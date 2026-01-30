@@ -3705,6 +3705,59 @@ const AdminPanel = ({ user }) => {
                     </div>
                   </div>
 
+                  {/* Leaderboard Metrics Section */}
+                  <div className="border-t pt-6">
+                    <h4 className="font-medium text-slate-900 mb-3 flex items-center gap-2">
+                      <Trophy className="w-4 h-4" />
+                      Leaderboard Metrics
+                    </h4>
+                    <p className="text-xs text-slate-500 mb-3">
+                      Control which Daily Activity metrics appear on the Leaderboard and in what order. 
+                      All values come directly from Daily Activity logs.
+                    </p>
+                    <div className="space-y-2">
+                      {(customizationForm.view_settings?.leaderboard_metrics || []).map((metric, index) => (
+                        <div 
+                          key={metric.id} 
+                          className={`flex items-center justify-between p-3 rounded-lg border transition-colors ${
+                            metric.enabled ? 'bg-amber-50 border-amber-200' : 'bg-slate-50 border-slate-100'
+                          }`}
+                        >
+                          <div className="flex items-center gap-3">
+                            <div className="flex flex-col gap-1">
+                              <button
+                                onClick={() => moveLeaderboardMetricUp(index)}
+                                disabled={index === 0}
+                                className="p-0.5 text-slate-400 hover:text-slate-600 disabled:opacity-30"
+                              >
+                                <ChevronUp className="w-4 h-4" />
+                              </button>
+                              <button
+                                onClick={() => moveLeaderboardMetricDown(index)}
+                                disabled={index === (customizationForm.view_settings?.leaderboard_metrics?.length || 0) - 1}
+                                className="p-0.5 text-slate-400 hover:text-slate-600 disabled:opacity-30"
+                              >
+                                <ChevronDown className="w-4 h-4" />
+                              </button>
+                            </div>
+                            <span className="text-xs text-slate-400 w-6">{index + 1}.</span>
+                            <span className={`text-sm font-medium ${metric.enabled ? 'text-amber-800' : 'text-slate-400'}`}>
+                              {metric.label}
+                            </span>
+                          </div>
+                          <Switch
+                            checked={metric.enabled}
+                            onCheckedChange={() => toggleLeaderboardMetric(metric.id)}
+                            data-testid={`leaderboard-toggle-${metric.id}`}
+                          />
+                        </div>
+                      ))}
+                    </div>
+                    <p className="text-xs text-slate-400 mt-3 italic">
+                      Note: Backend always computes all metrics. This controls visibility only.
+                    </p>
+                  </div>
+
                   {/* Sub-tabs Section */}
                   <div className="border-t pt-6">
                     <h4 className="font-medium text-slate-900 mb-3 flex items-center gap-2">
