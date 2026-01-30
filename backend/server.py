@@ -140,6 +140,8 @@ DEFAULT_TEAM_VIEW_SETTINGS = {
         {"id": "testimonials", "label": "Testimonials", "enabled": True},
         {"id": "sales", "label": "Sales", "enabled": True},
         {"id": "new_face_sold", "label": "New Face Sold", "enabled": True},
+        {"id": "fact_finders", "label": "Fact Finders", "enabled": True},
+        {"id": "bankers_premium", "label": "Bankers Premium", "enabled": True},
         {"id": "premium", "label": "Total Premium", "enabled": True}
     ],
     # Leaderboard metrics configuration - order determines display order
