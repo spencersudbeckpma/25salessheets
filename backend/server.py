@@ -6035,7 +6035,15 @@ async def get_leaderboard(period: str, current_user: dict = Depends(get_current_
     # A leaderboard is a team-wide ranking - everyone should see the same top performers
     # ALL users (including super_admin) are scoped to their assigned team
     if not team_id:
-        return {"presentations": [], "referrals": [], "testimonials": [], "new_face_sold": [], "premium": []}
+        # Return empty but stable response shape
+        empty_response = {m["id"]: [] for m in CANONICAL_LEADERBOARD_METRICS}
+        empty_response["config"] = DEFAULT_LEADERBOARD_CONFIG
+        return empty_response
+    
+    # Get team's leaderboard config
+    team = await db.teams.find_one({"id": team_id}, {"_id": 0, "view_settings": 1})
+    view_settings = team.get('view_settings', {}) if team else {}
+    leaderboard_config = view_settings.get('leaderboard_metrics', DEFAULT_LEADERBOARD_CONFIG)
     
     all_users_query = {"team_id": team_id, "$or": [{"status": "active"}, {"status": {"$exists": False}}]}
     all_user_ids = [u["id"] for u in await db.users.find(all_users_query, {"_id": 0, "id": 1}).to_list(1000)]
@@ -6053,7 +6061,7 @@ async def get_leaderboard(period: str, current_user: dict = Depends(get_current_
     }
     activities = await db.activities.find(act_query, {"_id": 0}).to_list(10000)
     
-    # Aggregate by user
+    # Aggregate by user - include ALL canonical metrics
     user_stats = {}
     for activity in activities:
         uid = activity['user_id']
@@ -6061,26 +6069,41 @@ async def get_leaderboard(period: str, current_user: dict = Depends(get_current_
             user_stats[uid] = {
                 "user_id": uid,
                 "name": user_dict.get(uid, {}).get('name', 'Unknown'),
+                # Initialize all canonical metrics to 0
+                "premium": 0.0,
                 "presentations": 0,
+                "sales": 0,
+                "apps": 0,
+                "contacts": 0,
+                "appointments": 0,
                 "referrals": 0,
                 "testimonials": 0,
                 "new_face_sold": 0,
-                "premium": 0.0
             }
-        user_stats[uid]['presentations'] += activity.get('presentations', 0)
-        user_stats[uid]['referrals'] += activity.get('referrals', 0)
-        user_stats[uid]['testimonials'] += activity.get('testimonials', 0)
-        user_stats[uid]['new_face_sold'] += activity.get('new_face_sold', 0)
-        user_stats[uid]['premium'] += activity.get('premium', 0)
+        # Aggregate all metrics from Daily Activity
+        user_stats[uid]['premium'] += float(activity.get('premium', 0) or 0)
+        user_stats[uid]['presentations'] += int(activity.get('presentations', 0) or 0)
+        user_stats[uid]['sales'] += int(activity.get('sales', 0) or 0)
+        user_stats[uid]['apps'] += int(activity.get('apps', 0) or 0)
+        user_stats[uid]['contacts'] += int(activity.get('contacts', 0) or 0)
+        user_stats[uid]['appointments'] += int(activity.get('appointments', 0) or 0)
+        user_stats[uid]['referrals'] += int(activity.get('referrals', 0) or 0)
+        user_stats[uid]['testimonials'] += int(activity.get('testimonials', 0) or 0)
+        user_stats[uid]['new_face_sold'] += int(activity.get('new_face_sold', 0) or 0)
     
-    # Create leaderboards for each category - Top 5 from ENTIRE organization
-    leaderboard = {
-        "presentations": sorted(user_stats.values(), key=lambda x: x['presentations'], reverse=True)[:5],
-        "referrals": sorted(user_stats.values(), key=lambda x: x['referrals'], reverse=True)[:5],
-        "testimonials": sorted(user_stats.values(), key=lambda x: x['testimonials'], reverse=True)[:5],
-        "new_face_sold": sorted(user_stats.values(), key=lambda x: x['new_face_sold'], reverse=True)[:5],
-        "premium": sorted(user_stats.values(), key=lambda x: x['premium'], reverse=True)[:5]
-    }
+    # Create leaderboards for ALL canonical metrics - Top 5 from ENTIRE team
+    # Always return full payload for backward compatibility
+    leaderboard = {}
+    for metric in CANONICAL_LEADERBOARD_METRICS:
+        metric_id = metric["id"]
+        leaderboard[metric_id] = sorted(
+            user_stats.values(), 
+            key=lambda x: x.get(metric_id, 0), 
+            reverse=True
+        )[:5]
+    
+    # Include config so frontend knows what to display and in what order
+    leaderboard["config"] = leaderboard_config
     
     return leaderboard
 
