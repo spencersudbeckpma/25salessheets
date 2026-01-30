@@ -620,39 +620,52 @@ const DailyReport = ({ user, embedded = false }) => {
           </div>
           <div className="bg-green-50 p-4 rounded-lg border-l-4 border-green-500">
             <div className="text-sm text-gray-600">Contacts</div>
-            <div className="text-2xl font-bold text-green-700">{data.contacts}</div>
+            <div className="text-2xl font-bold text-green-700">{data.contacts || 0}</div>
           </div>
           <div className="bg-purple-50 p-4 rounded-lg border-l-4 border-purple-500">
             <div className="text-sm text-gray-600">Appointments</div>
-            <div className="text-2xl font-bold text-purple-700">{data.appointments}</div>
+            <div className="text-2xl font-bold text-purple-700">{data.appointments || 0}</div>
           </div>
           <div className="bg-orange-50 p-4 rounded-lg border-l-4 border-orange-500">
             <div className="text-sm text-gray-600">Presentations</div>
-            <div className="text-2xl font-bold text-orange-700">{data.presentations}</div>
+            <div className="text-2xl font-bold text-orange-700">{data.presentations || 0}</div>
           </div>
         </div>
 
-        <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
           <div className="bg-pink-50 p-4 rounded-lg border-l-4 border-pink-500">
             <div className="text-sm text-gray-600">Referrals</div>
-            <div className="text-2xl font-bold text-pink-700">{data.referrals}</div>
+            <div className="text-2xl font-bold text-pink-700">{data.referrals || 0}</div>
           </div>
           <div className="bg-indigo-50 p-4 rounded-lg border-l-4 border-indigo-500">
             <div className="text-sm text-gray-600">Testimonials</div>
-            <div className="text-2xl font-bold text-indigo-700">{data.testimonials}</div>
+            <div className="text-2xl font-bold text-indigo-700">{data.testimonials || 0}</div>
           </div>
           <div className="bg-red-50 p-4 rounded-lg border-l-4 border-red-500">
             <div className="text-sm text-gray-600">Sales</div>
-            <div className="text-2xl font-bold text-red-700">{data.sales}</div>
+            <div className="text-2xl font-bold text-red-700">{data.sales || 0}</div>
           </div>
           <div className="bg-teal-50 p-4 rounded-lg border-l-4 border-teal-500">
             <div className="text-sm text-gray-600">New Face Sold</div>
-            <div className="text-2xl font-bold text-teal-700">{data.new_face_sold}</div>
+            <div className="text-2xl font-bold text-teal-700">{data.new_face_sold || 0}</div>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+          <div className="bg-cyan-50 p-4 rounded-lg border-l-4 border-cyan-500">
+            <div className="text-sm text-gray-600">Fact Finders</div>
+            <div className="text-2xl font-bold text-cyan-700">{data.fact_finders || 0}</div>
+          </div>
+          <div className="bg-amber-50 p-4 rounded-lg border-l-4 border-amber-500">
+            <div className="text-sm text-gray-600">Bankers Premium</div>
+            <div className="text-2xl font-bold text-amber-700">
+              ${typeof data.bankers_premium === 'number' ? data.bankers_premium.toFixed(2) : (data.bankers_premium || 0)}
+            </div>
           </div>
           <div className="bg-emerald-50 p-4 rounded-lg border-l-4 border-emerald-500">
             <div className="text-sm text-gray-600">Total Premium</div>
             <div className="text-2xl font-bold text-emerald-700">
-              ${typeof data.premium === 'number' ? data.premium.toFixed(2) : data.premium}
+              ${typeof data.premium === 'number' ? data.premium.toFixed(2) : (data.premium || 0)}
             </div>
           </div>
         </div>
