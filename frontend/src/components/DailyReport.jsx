@@ -964,7 +964,8 @@ const DailyReport = ({ user, embedded = false }) => {
             <li>• <strong>Monthly:</strong> Current month totals (1st through last day)</li>
             <li>• <strong>Quarterly:</strong> Current quarter totals (Q1-Q4)</li>
             <li>• <strong>Yearly:</strong> Current year totals (January 1st through December 31st)</li>
-            <li>• All reports include 8 activity categories plus total premium</li>
+            <li>• All reports include 10 activity categories: Contacts, Appointments, Presentations, Referrals, Testimonials, Sales, New Face Sold, Fact Finders, Bankers Premium, and Total Premium</li>
+            <li>• <strong>Note:</strong> Bankers Premium is tracked separately from Total Premium</li>
             <li>• Excel downloads are formatted and ready to use</li>
           </ul>
         </div>
