@@ -3898,6 +3898,7 @@ async def get_manager_hierarchy_report(manager_id: str, period: str, current_use
             activities = await db.activities.find(act_query, {"_id": 0}).to_list(10000)
         
         # Calculate totals
+        # CRITICAL: premium and bankers_premium are SEPARATE - never combined
         if period == "daily":
             # For daily, show the single day's data
             activity = activities[0] if activities else {}
@@ -3909,7 +3910,9 @@ async def get_manager_hierarchy_report(manager_id: str, period: str, current_use
                 "testimonials": activity.get('testimonials', 0),
                 "sales": activity.get('sales', 0),
                 "new_face_sold": activity.get('new_face_sold', 0),
-                "premium": activity.get('premium', 0)
+                "fact_finders": activity.get('fact_finders', 0),
+                "bankers_premium": float(activity.get('bankers_premium', 0) or 0),
+                "premium": float(activity.get('premium', 0) or 0)
             }
         else:
             # For periods, sum all activities
@@ -3921,7 +3924,9 @@ async def get_manager_hierarchy_report(manager_id: str, period: str, current_use
                 "testimonials": sum(a.get('testimonials', 0) for a in activities),
                 "sales": sum(a.get('sales', 0) for a in activities),
                 "new_face_sold": sum(a.get('new_face_sold', 0) for a in activities),
-                "premium": sum(a.get('premium', 0) for a in activities)
+                "fact_finders": sum(a.get('fact_finders', 0) or 0 for a in activities),
+                "bankers_premium": sum(float(a.get('bankers_premium', 0) or 0) for a in activities),
+                "premium": sum(float(a.get('premium', 0) or 0) for a in activities)
             }
         
         # Determine relationship to target manager
