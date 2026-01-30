@@ -290,14 +290,14 @@ class TestCriticalSeparation:
     
     def test_activity_creation_preserves_separation(self, auth_headers):
         """Test that creating activity keeps premium and bankers_premium separate"""
-        today = datetime.now().strftime('%Y-%m-%d')
+        test_date = get_unique_test_date(days_offset=3)
         
         # Create activity with specific values
         test_premium = 2000.00
         test_bankers_premium = 500.00
         
         activity_data = {
-            "date": today,
+            "date": test_date,
             "contacts": 1,
             "appointments": 1,
             "presentations": 1,
@@ -311,7 +311,7 @@ class TestCriticalSeparation:
             "premium": test_premium
         }
         
-        response = requests.post(f"{BASE_URL}/api/activities", json=activity_data, headers=auth_headers)
+        response = requests.put(f"{BASE_URL}/api/activities/{test_date}", json=activity_data, headers=auth_headers)
         assert response.status_code in [200, 201], f"Failed to create activity: {response.text}"
         
         # Verify the values are stored separately
