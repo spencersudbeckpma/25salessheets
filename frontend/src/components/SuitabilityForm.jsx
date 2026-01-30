@@ -18,13 +18,30 @@ const SuitabilityForm = ({ user }) => {
   const [forms, setForms] = useState([]);
   const [config, setConfig] = useState(null);
   const [loading, setLoading] = useState(false);
-  const [weekOffset, setWeekOffset] = useState(0);
-  const [weeklyReport, setWeeklyReport] = useState(null);
   const [showViewModal, setShowViewModal] = useState(false);
   const [selectedForm, setSelectedForm] = useState(null);
   const [editingResults, setEditingResults] = useState('');
   const [savingResults, setSavingResults] = useState(false);
-  const [editingFormId, setEditingFormId] = useState(null); // Track if editing a draft
+  const [editingFormId, setEditingFormId] = useState(null);
+  
+  // New flexible report state
+  const [reportPeriod, setReportPeriod] = useState('weekly');
+  const [selectedWeekStart, setSelectedWeekStart] = useState(() => {
+    // Default to current week's Monday
+    const today = new Date();
+    const day = today.getDay();
+    const diff = today.getDate() - day + (day === 0 ? -6 : 1);
+    return new Date(today.setDate(diff)).toISOString().split('T')[0];
+  });
+  const [selectedMonth, setSelectedMonth] = useState(() => {
+    const today = new Date();
+    return `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}`;
+  });
+  const [reportData, setReportData] = useState(null);
+  const [reportLoading, setReportLoading] = useState(false);
+  
+  // Check if user can see reports (managers only)
+  const canViewReports = user?.role && ['district_manager', 'regional_manager', 'state_manager', 'super_admin'].includes(user.role);
   
   const [formData, setFormData] = useState({
     client_name: '',
@@ -48,10 +65,10 @@ const SuitabilityForm = ({ user }) => {
   }, []);
 
   useEffect(() => {
-    if (activeTab === 'weekly') {
-      fetchWeeklyReport();
+    if (activeTab === 'reports' && canViewReports) {
+      fetchReport();
     }
-  }, [activeTab, weekOffset]);
+  }, [activeTab, reportPeriod, selectedWeekStart, selectedMonth]);
 
   const fetchConfig = async () => {
     try {
