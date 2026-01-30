@@ -7244,26 +7244,54 @@ async def get_npa_agents(current_user: dict = Depends(get_current_user)):
 
 @api_router.post("/npa-tracker")
 async def add_npa_agent(data: dict, current_user: dict = Depends(get_current_user)):
-    """Add a new agent to NPA tracking"""
+    """Add an existing system user to NPA tracking (no manual entry)"""
     if current_user['role'] not in ['super_admin', 'state_manager', 'regional_manager', 'district_manager']:
         raise HTTPException(status_code=403, detail="Only managers can add NPA agents")
     
+    # REQUIRE user_id - must be a system user
+    user_id = data.get('user_id')
+    if not user_id:
+        raise HTTPException(status_code=400, detail="Must select a user from the system. Manual entry is not allowed.")
+    
+    # Verify user exists in the system
+    user = await db.users.find_one({"id": user_id}, {"_id": 0})
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found in the system")
+    
+    # Check if already being tracked
+    existing = await db.npa_agents.find_one({"user_id": user_id})
+    if existing:
+        raise HTTPException(status_code=400, detail=f"{user.get('name')} is already being tracked in NPA")
+    
+    # Get user's team_id
+    team_id = user.get('team_id') or current_user.get('team_id')
+    
+    # Calculate current premium from activities
+    act_query = {"user_id": user_id, "premium": {"$gt": 0}, "team_id": team_id}
+    activities = await db.activities.find(act_query, {"_id": 0, "premium": 1, "date": 1}).to_list(10000)
+    total_premium = sum(a.get('premium', 0) for a in activities)
+    
+    # Find first production date
+    first_production = min(activities, key=lambda x: x.get('date', '9999-99-99')) if activities else None
+    start_date = first_production.get('date', '') if first_production else data.get('start_date', datetime.now(timezone.utc).strftime('%Y-%m-%d'))
+    
     npa_agent = {
         "id": str(uuid.uuid4()),
-        "team_id": current_user.get('team_id'),  # Multi-tenancy
-        "user_id": data.get('user_id', ''),  # Link to team member if selected from list
-        "name": data.get('name', ''),
-        "phone": data.get('phone', ''),
-        "email": data.get('email', ''),
-        "start_date": data.get('start_date', datetime.now(timezone.utc).strftime('%Y-%m-%d')),
+        "team_id": team_id,
+        "user_id": user_id,
+        "name": user.get('name', data.get('name', '')),
+        "phone": user.get('phone', data.get('phone', '')),
+        "email": user.get('email', data.get('email', '')),
+        "start_date": start_date,
         "upline_dm": data.get('upline_dm', ''),
         "upline_rm": data.get('upline_rm', ''),
-        "total_premium": float(data.get('total_premium', 0)),
+        "total_premium": total_premium,  # Calculated from activities
         "notes": data.get('notes', ''),
         "added_by": current_user['id'],
         "added_by_name": current_user.get('name', ''),
         "created_at": datetime.now(timezone.utc).isoformat(),
-        "achievement_date": None
+        "achievement_date": None,
+        "auto_added": False
     }
     
     # Check if they've achieved NPA status
