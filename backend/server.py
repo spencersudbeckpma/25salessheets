@@ -8478,12 +8478,21 @@ async def get_suitability_forms(
 
 @api_router.post("/suitability-forms")
 async def create_suitability_form(form_data: SuitabilityFormCreate, current_user: dict = Depends(get_current_user)):
-    """Create a new suitability form"""
+    """Create a new suitability form (draft or submitted)"""
     await check_feature_access(current_user, "suitability")
+    
+    status = form_data.status or "submitted"
+    
+    # Only validate required fields if submitting (not draft)
+    if status == "submitted":
+        if not form_data.client_name or not form_data.annual_income or not form_data.monthly_savings or not form_data.liquid_net_worth:
+            raise HTTPException(status_code=400, detail="Required fields missing for submission: client_name, annual_income, monthly_savings, liquid_net_worth")
+    
     form_dict = {
         "id": str(uuid.uuid4()),
         "team_id": current_user.get('team_id'),  # Multi-tenancy
         **form_data.dict(),
+        "status": status,
         "submitted_by": current_user['id'],
         "submitted_by_name": current_user['name'],
         "submitted_by_email": current_user['email'],
@@ -8493,7 +8502,7 @@ async def create_suitability_form(form_data: SuitabilityFormCreate, current_user
     
     await db.suitability_forms.insert_one(form_dict)
     form_dict.pop('_id', None)
-    return {"message": "Suitability form submitted successfully", "form": form_dict}
+    return {"message": f"Suitability form {'saved as draft' if status == 'draft' else 'submitted'} successfully", "form": form_dict}
 
 @api_router.put("/suitability-forms/{form_id}")
 async def update_suitability_form(form_id: str, form_data: dict, current_user: dict = Depends(get_current_user)):
