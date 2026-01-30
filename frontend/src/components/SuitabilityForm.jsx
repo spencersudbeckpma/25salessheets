@@ -706,13 +706,17 @@ const SuitabilityForm = ({ user }) => {
                   {forms.map(form => (
                     <div 
                       key={form.id} 
-                      className="bg-white border rounded-lg p-4 hover:shadow-md transition-shadow"
+                      className={`bg-white border rounded-lg p-4 hover:shadow-md transition-shadow ${form.status === 'draft' ? 'border-amber-300 bg-amber-50' : ''}`}
                     >
                       <div className="flex justify-between items-start">
                         <div className="flex-1">
-                          <div className="flex items-center gap-2">
-                            <h4 className="font-medium text-gray-900">{form.client_name}</h4>
-                            {form.sale_made ? (
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <h4 className="font-medium text-gray-900">{form.client_name || 'Unnamed Client'}</h4>
+                            {form.status === 'draft' ? (
+                              <span className="px-2 py-0.5 bg-amber-200 text-amber-800 text-xs rounded-full font-medium flex items-center gap-1">
+                                📝 Draft
+                              </span>
+                            ) : form.sale_made ? (
                               <span className="px-2 py-0.5 bg-green-100 text-green-700 text-xs rounded-full flex items-center gap-1">
                                 <CheckCircle size={12} />
                                 Sale Made
@@ -737,6 +741,15 @@ const SuitabilityForm = ({ user }) => {
                           </p>
                         </div>
                         <div className="flex gap-2">
+                          <Button 
+                            size="sm" 
+                            variant="ghost"
+                            onClick={() => handleEditForm(form)}
+                            className="text-amber-600"
+                            title={form.status === 'draft' ? 'Continue editing draft' : 'Edit form'}
+                          >
+                            ✏️
+                          </Button>
                           <Button 
                             size="sm" 
                             variant="ghost"
