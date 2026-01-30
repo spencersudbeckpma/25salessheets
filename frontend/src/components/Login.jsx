@@ -227,11 +227,18 @@ const Login = ({ setUser, setBranding }) => {
                 type="password"
                 placeholder="••••••••"
                 value={password}
-                onChange={(e) => setPassword(e.target.value)}
+                onChange={(e) => { setPassword(e.target.value); setErrorMessage(''); }}
                 autoComplete="new-password"
                 required
               />
             </div>
+
+            {/* Error Message Display */}
+            {errorMessage && (
+              <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm" data-testid="login-error">
+                <span className="font-medium">⚠️ </span>{errorMessage}
+              </div>
+            )}
 
             <Button
               type="submit"
