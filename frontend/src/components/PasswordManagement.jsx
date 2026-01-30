@@ -283,7 +283,7 @@ const PasswordManagement = ({ user }) => {
       )}
 
       {/* Access Restrictions */}
-      {user.role !== 'state_manager' && activeTab === 'admin-reset' && (
+      {!canAdminReset && activeTab === 'admin-reset' && (
         <Card className="shadow-lg bg-white border-yellow-200">
           <CardContent className="p-6">
             <div className="flex items-center gap-3 text-yellow-700">
