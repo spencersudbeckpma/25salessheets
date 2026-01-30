@@ -168,6 +168,14 @@ const Login = ({ setUser, setBranding }) => {
           </CardDescription>
         </CardHeader>
         <CardContent>
+          {/* Private Browsing Warning */}
+          {storageBlocked && (
+            <div className="mb-4 p-3 bg-amber-50 border border-amber-300 rounded-lg text-amber-800 text-sm" data-testid="storage-blocked-warning">
+              <span className="font-semibold">⚠️ Private Browsing Detected</span>
+              <p className="mt-1">Login requires browser storage. Please disable Private/Incognito mode or enable cookies.</p>
+            </div>
+          )}
+          
           <form onSubmit={handleSubmit} className="space-y-4">
             {!isLogin && (
               <>
