@@ -81,6 +81,14 @@ const Login = ({ setUser, setBranding }) => {
     setLoading(true);
     setErrorMessage('');
 
+    // Check if storage is blocked (Private Browsing)
+    if (storageBlocked) {
+      setErrorMessage('Browser storage is blocked. Please disable Private/Incognito mode or enable cookies.');
+      toast.error('Private Browsing mode detected. Please use normal browsing mode.');
+      setLoading(false);
+      return;
+    }
+
     // Client-side validation
     const trimmedEmail = email.trim().toLowerCase();
     const trimmedPassword = password.trim();
