@@ -4675,40 +4675,21 @@ async def download_period_report_excel(report_type: str, period: str, current_us
                 total_val = sum(d.get(metric_id, 0) or 0 for d in report_json['data'])
                 ws.cell(row=totals_row, column=4 + col_offset).value = total_val
                 ws.cell(row=totals_row, column=4 + col_offset).font = Font(bold=True)
-            ws.cell(row=totals_row, column=7).font = Font(bold=True)
-            ws.cell(row=totals_row, column=8).value = total_testimonials
-            ws.cell(row=totals_row, column=8).font = Font(bold=True)
-            ws.cell(row=totals_row, column=9).value = total_sales
-            ws.cell(row=totals_row, column=9).font = Font(bold=True)
-            ws.cell(row=totals_row, column=10).value = total_new_face
-            ws.cell(row=totals_row, column=10).font = Font(bold=True)
-            ws.cell(row=totals_row, column=11).value = total_premium
-            ws.cell(row=totals_row, column=11).font = Font(bold=True)
     
     elif report_type == "organization":
         # Add headers
-        headers = ["Metric", "Total"]
-        for col_num, header in enumerate(headers, 1):
+        org_headers = ["Metric", "Total"]
+        for col_num, header in enumerate(org_headers, 1):
             cell = ws.cell(row=2, column=col_num)
             cell.value = header
             cell.font = Font(bold=True)
             cell.fill = PatternFill(start_color="D9E1F2", end_color="D9E1F2", fill_type="solid")
             cell.alignment = Alignment(horizontal='center')
         
-        # Add data - includes Fact Finders and Bankers Premium (separate from Total Premium)
-        metrics = [
-            ("Total Members", report_json['total_members']),
-            ("Contacts", report_json['data']['contacts']),
-            ("Appointments", report_json['data']['appointments']),
-            ("Presentations", report_json['data']['presentations']),
-            ("Referrals", report_json['data']['referrals']),
-            ("Testimonials", report_json['data']['testimonials']),
-            ("Sales", report_json['data']['sales']),
-            ("New Face Sold", report_json['data']['new_face_sold']),
-            ("Fact Finders", report_json['data'].get('fact_finders', 0)),
-            ("Bankers Premium", report_json['data'].get('bankers_premium', 0)),
-            ("Total Premium", report_json['data']['premium'])
-        ]
+        # Add data - only enabled metrics from org totals
+        metrics = [("Total Members", report_json['total_members'])]
+        for metric_id in enabled_metrics:
+            metrics.append((get_metric_label(metric_id), report_json['data'].get(metric_id, 0)))
         
         for row_num, (metric, value) in enumerate(metrics, 3):
             ws.cell(row=row_num, column=1).value = metric
@@ -4740,44 +4721,6 @@ async def download_period_report_excel(report_type: str, period: str, current_us
         media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
         headers={"Content-Disposition": f"attachment; filename={filename}"}
     )
-
-@api_router.get("/reports/daily/excel/{report_type}")
-async def download_daily_report_excel(report_type: str, date: str, current_user: dict = Depends(get_current_user), user_id: str = None):
-    """
-    Download daily report as Excel file.
-    report_type: 'individual', 'team', or 'organization'
-    date: ISO format date string (YYYY-MM-DD)
-    user_id: Optional - specific user ID for individual/team reports
-    """
-    from openpyxl import Workbook
-    from openpyxl.styles import Font, PatternFill, Alignment
-    from io import BytesIO
-    from fastapi.responses import StreamingResponse
-    
-    if current_user['role'] not in ['super_admin', 'state_manager', 'regional_manager', 'district_manager']:
-        raise HTTPException(status_code=403, detail="Only Managers (State, Regional, District) can download daily reports")
-    
-    # Get the report data with all parameters
-    report_json = await get_daily_report(report_type, date, current_user, user_id)
-    
-    # Create Excel workbook
-    wb = Workbook()
-    ws = wb.active
-    ws.title = f"Daily {report_type.capitalize()}"
-    
-    # Add title
-    report_date_obj = datetime.fromisoformat(date).date()
-    date_str = report_date_obj.strftime('%B %d, %Y')
-    
-    ws.merge_cells('A1:M1')
-    title_cell = ws['A1']
-    title_cell.value = f"Daily {report_type.capitalize()} Report - {date_str}"
-    title_cell.font = Font(size=16, bold=True, color="FFFFFF")
-    title_cell.alignment = Alignment(horizontal='center')
-    title_cell.fill = PatternFill(start_color="4472C4", end_color="4472C4", fill_type="solid")
-    
-    if report_type == "individual":
-        # Add headers - includes Fact Finders and Bankers Premium (separate from Total Premium)
         headers = ["Name", "Email", "Role", "Contacts", "Appointments", "Presentations", 
                    "Referrals", "Testimonials", "Sales", "New Face Sold", "Fact Finders", "Bankers Premium", "Total Premium"]
         for col_num, header in enumerate(headers, 1):
