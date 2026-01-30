@@ -1,128 +1,124 @@
-<analysis>**original_problem_statement**: The user initially focused on fixing data leaks and UI regressions. The work then shifted to building new features requested by the user who operates primarily from an iPhone and requires UI-based solutions instead of terminal commands.
+<analysis>**original_problem_statement**: The user initially focused on fixing data leaks and UI regressions. The work then shifted to building new features, primarily adding two new metrics ( and ) across the entire application stack. This involved updating backend models, aggregation endpoints, reports (JSON and Excel), and all relevant frontend components. The user also requested fixes for failing tests, bugs related to configuration display, and the implementation of KPI-based filtering for reports. The latest request is to add team-level visibility controls for metrics displayed in the Team View.
 
 **PRODUCT REQUIREMENTS:**
-1.  **P0: Full Data Health Check UI:** Create an Admin UI for  to run data integrity checks, view build/deployment info, and run one-click data migration/backfill operations for records missing a .
-2.  **P0: Fix Login Failures:** Replace generic login error messages with specific, actionable ones (, , etc.). Add server-side logging for failed attempts and a UI for admins to view these logs. Implement private browsing detection.
-3.  **P0: Fix Recruiting Pipeline Regression:** The hierarchical view (breakdown by manager) in the recruiting pipeline was broken for the . This required fixing multiple backend endpoints that didn't handle the  role correctly.
-4.  **P1: Suitability Form Drafts:** Add a Save as Draft feature to the suitability form, allowing users to save incomplete forms and edit them later.
-5.  **P1: NPA Tracker Automation:** Overhaul the New Producing Agent (NPA) tracker to automatically enroll agents when their cumulative premium exceeds ,000, subject to role and account creation date rules. The manual add feature was also refined.
-6.  **P1: Leaderboard Customization:** Implement a feature allowing admins to configure leaderboard metric visibility and order on a per-team basis.
-7.  **P1: Add New Activity Metrics:** Introduce two new metrics,  and , into the Daily Activity logs and all related aggregations (stats, reports, leaderboards). A critical constraint is that  must **never** be added to the main  total.
+1.  **P0: Add New Activity Metrics:** Introduce  and  into the Daily Activity logs and all related aggregations (stats, reports, leaderboards). A critical constraint is that  must **never** be added to the main  total.
+2.  **P0: Fix Backend Tests:** Resolve all failing tests in the test suite to ensure a 100% pass rate before deployment.
+3.  **P0: Fix Metric Configuration:** Ensure that newly added canonical metrics (like ) automatically appear as configurable options in the Admin Panel for existing teams.
+4.  **P1: KPI-Filtered Reports:** Implement functionality for reports to be filtered based on a team's enabled KPI configuration. This was implemented in two phases, with Phase 1 (JSON reports only) being completed.
+5.  **P1: Team View Metric Toggles:** Add a new configuration section in the Admin Panel to allow admins to toggle the visibility of specific metrics within the Team View / Daily Activity section on a per-team basis.
 
 **User's preferred language**: English
 
 **what currently exists?**
 - A full-stack application with a React frontend and a monolithic FastAPI backend ().
-- A Full Data Health Check UI is available in the Admin panel.
-- Login error handling is robust, with an accompanying Recent Login Failures viewer in the Admin panel.
-- The Suitability Form supports saving and editing drafts.
-- The NPA Tracker automatically enrolls eligible agents and allows managers to manually add agents from a system list.
-- The Leaderboard is now customizable on a per-team basis via the Admin panel.
-- The backend implementation for two new metrics ( and ) has been started. The database models and several aggregation endpoints (, ) have been updated.
+- The new metrics  and  are fully integrated into backend data models, aggregation logic, and reports. All relevant frontend components have been updated to display them.
+- The backend test suite () is clean with 19/19 tests passing.
+- Backend logic correctly merges new canonical metrics with existing team configurations, so new metrics appear in the Admin UI for all teams.
+- JSON-based reports ( and ) support a  parameter, which defaults to , allowing reports to respect a team's KPI settings. Excel reports still show all metrics.
+- The backend and frontend have been modified to support a new configuration for Team View / Daily Activity Metrics, but the implementation is not yet tested.
 
 **Last working item**:
-- **Last item agent was working**: Adding two new metrics,  and , to all Daily Activity data and aggregations. The agent was in the process of updating all relevant backend endpoints to include these new fields, ensuring  is always calculated separately from .
+- **Last item agent was working**: Implementing Team View / Daily Activity Metrics configuration. This allows admins to control the visibility of metrics in the  component. The agent implemented the backend changes in  (adding a new canonical metric list, updating , and modifying the  endpoint to return the config) and frontend changes in  (UI for the toggles) and  (logic to conditionally render metrics).
 - **Status**: IN PROGRESS
 - **Agent Testing Done**: N
-- **Which testing method agent to use?**: both. All modified backend aggregation endpoints (, , , reports) need to be tested via . The frontend Daily Activity form needs to be updated and the entire flow from data entry to display on leaderboards and reports must be verified, likely with the .
+- **Which testing method agent to use?**: both.
+    - **Backend**: Use  to test the  endpoint to confirm it returns the new  list.
+    - **Frontend**: Use the  tool to:
+        1.  Verify the new Team View / Daily Activity Metrics section appears in .
+        2.  Login as an agent and navigate to the Team tab to verify that only the enabled metrics are visible in the hierarchy view and stat summaries.
 - **User Testing Done**: N
 
 **All Pending/In progress Issue list**:
-There are no pending bugs; the current focus is on completing a new feature.
+There are no known bugs. The only pending item is the completion of the 
+wtmp begins Fri Jan 30 06:20:09 2026.
 
 **In progress Task List**:
-- **Task 1**: Complete implementation of  and  metrics (Priority: P0)
-  - **Where to resume**:
-    1.  Continue updating backend aggregation logic in . The next endpoint to update is .
-    2.  Update any remaining reports endpoints that aggregate Daily Activity data.
-    3.  Update the frontend Daily Activity input form ( or similar) to add input fields for Bankers Premium and Fact Finders.
-    4.  Verify that all display components (Leaderboard, My Stats, Team Hierarchy, Reports) correctly show the new metrics as separate items.
-  - **What will be achieved with this?**: The application will track two new key performance indicators, providing deeper business insights while maintaining the integrity of existing premium calculations.
+- **Task 1**: Complete and test the Team View / Daily Activity Metrics feature (Priority: P0)
+  - **Where to resume**: The code has been written but not tested. The next step is to verify the backend and frontend changes.
+    1.  Start backend and frontend services.
+    2.  Use  to call  and check for the  key in the response.
+    3.  Use the  tool to verify the new UI in the Admin Panel and the conditional rendering of metrics in the Team View.
+  - **What will be achieved with this?**: Admins will have granular control over which metrics are visible in the Team View, tailoring the experience for each team.
   - **Status**: IN PROGRESS
   - **Should Test frontend/backend/both after fix?**: Both.
   - **Blocked on something**: No.
 
 **Upcoming and Future Tasks**
 - **Upcoming Tasks**:
-    - **P1**: User to perform a consolidated regression test across all application tabs, starting with Team Sudbeck, to identify any other missing or broken functionality.
+    - **P1**: User to perform a consolidated regression test across all application tabs and features.
 - **Future Tasks**:
-    - **P2**: Refactor the monolithic  into a more maintainable, route-based structure. (This task is explicitly paused by the user).
-    - **P2**: Add a Copy leaderboard settings from another team feature to the Admin UI as a quality-of-life improvement.
-    - **P2**: Remove the one-time data migration endpoints from  () as they are no longer needed.
+    - **P2**: Implement Phase 2 of KPI-Filtered Reports: Add dynamic headers and KPI filtering to all Excel exports.
+    - **P2**: Refactor the monolithic  into a more maintainable, route-based structure (currently paused by user).
+    - **P2**: Add a Copy leaderboard settings from another team feature to the Admin UI.
+    - **P2**: Remove the one-time data migration endpoints from  ().
 
 **Completed work in this session**
-- Implemented a Full Data Health Check Admin UI with data integrity checks and one-click backfill buttons.
-- Fixed a major regression in the Recruiting Pipeline's hierarchical view for the  role.
-- Overhauled the login system with specific error messages, server-side logging, an admin log viewer, and private browsing detection.
-- Fixed a bug preventing  from using the password reset feature in the Team Management tab.
-- Added Save as Draft and Edit Draft functionality to the Suitability Form.
-- Automated the NPA (New Producing Agent) tracker to enroll agents based on performance, while refining the manual-add process for managers.
-- Implemented a per-team Leaderboard Customization feature to control metric visibility and order.
-- Fixed a bug where leaderboard customization settings failed to persist after being saved.
-- Corrected a regression in the NPA manual-add feature to ensure managers could add any eligible agent from their team.
+- **New Metrics Implementation**: Fully integrated  and  across the entire application stack, including all backend aggregation endpoints (, , , reports) and frontend components (, , , , ).
+- **Test Suite Fix**: Created and fixed , resolving test collisions by using unique dates and correcting assertions, achieving a 100% pass rate.
+- **Configuration Bug Fix**: Corrected a bug where new canonical metrics wouldn't appear in the Admin Panel for existing teams by implementing a merge strategy in .
+- **Reports Overhaul**:
+    - Updated all JSON and Excel report endpoints to include  and .
+    - Implemented Option 3 for KPI-filtered reports: JSON endpoints now default to filtering by a team's KPI configuration, while Excel exports continue to show all metrics for stability.
+- **Frontend Bug Fix**: Fixed an issue in  where hardcoded table headers prevented the new metrics from being displayed.
 
 **Earlier issues found/mentioned but not fixed**
-- **Issue 1**: The backend codebase in  is a large monolith.
-  - **Debug checklist**: Plan and execute a refactor to split endpoints into a  directory structure.
-  - **Why to solve this issue and what will be achieved with this?**: Refactoring will significantly improve code readability, maintainability, and developer velocity, while reducing the risk of introducing new bugs.
+- **Issue 1**: The backend codebase in  is a large monolith with duplicated code blocks, particularly in the report-generation sections.
+  - **Debug checklist**: Plan and execute a refactor to split endpoints into a  directory structure and deduplicate helper functions.
+  - **Why to solve this issue and what will be achieved with this?**: Refactoring will significantly improve code readability, maintainability, and reduce the risk of introducing new bugs.
   - **Status**: NOT STARTED (explicitly paused by the user).
   - **Is recurring issue?**: Y
 
 **Known issue recurrence from previous fork**
-- **Data Scoping Issues**: The session started by fixing a major  data leak. Subsequent work involved fixing multiple other endpoints where the  role was not handled correctly, leading to broken functionality. This highlights a recurring theme of ensuring strict, correct data scoping for all user roles.
+- **Configuration Drift**: A recurring theme is ensuring forward compatibility for existing data when new features are added. This session addressed it by implementing a merge strategy for team configurations in  so that newly added metrics appear in the Admin UI for all existing teams. This is a variant of the data scoping issues mentioned previously.
 
 **Code Architecture**
 
 
 **Key Technical Concepts**
-- **Configuration-Driven UI**: The Leaderboard component's structure is now determined by a backend configuration object (), allowing for dynamic UIs without code changes.
-- **Event-Driven Backend Logic**: The system now triggers a function () to evaluate an agent's status whenever a related event (logging a new activity) occurs.
-- **Admin-Facing Operational UIs**: A major theme was building UIs for tasks that typically require shell access, such as viewing logs () and running data migrations ().
-- **Strict Data Separation**: The requirement to track  separately from  established a key principle for handling distinct but related metrics during aggregation.
+- **Configuration-Driven UI**: This pattern was extended to the Team View. The UI now dynamically renders metrics based on a per-team backend configuration ().
+- **Forward-Compatible Configuration**: The backend now merges canonical (default) metrics with existing saved team configurations. This ensures that when new metrics are added to the application, they automatically become available for configuration in the Admin Panel for all teams, preventing UI/data drift.
+- **Phased Feature Implementation**: The KPI-filtered reports feature was split into two phases based on user feedback to prioritize stability. Phase 1 (JSON filtering) was completed, while Phase 2 (Excel filtering) was deferred.
 
 **key DB schema**
--  (New Collection): Stores  for failed login attempts.
-- : Added  (values: draft, submitted).
-- : Added  to distinguish between system-added and manually-added agents.
-- : The  object now contains , an array defining metric visibility and order.
-- : Model updated to include . The  field already existed.
+- : The  object can now contain , an array of objects defining metric visibility and order for the Team View. Example: .
 
 **All files of reference**
-- : The central backend file containing all business logic and API endpoints.
-- : The primary component for all new admin-facing features.
-- : The UI for the New Producing Agent tracker.
-- : The UI for the form that now supports drafts.
-- : The UI for the newly customizable leaderboard.
-- : The login form with enhanced error handling.
+- : The central backend file.
+- : The test file for the new metrics.
+- : For admin-facing configuration.
+- : The primary consumer of the new Team View metric configuration.
+- : The reports component that was fixed to display the new metrics.
+- : The form for logging daily activity.
 
 **key api endpoints**
-- **Health/Migration**: , 
-- **Login**: , 
-- **Forms**: ,  (now handle )
-- **NPA/Activities**:  (now triggers NPA check)
-- **Customization**:  (saves leaderboard config),  (returns data + config)
+- : Modified to return  which drives the  UI.
+- : Modified to support  query parameter.
+- : Modified to support  query parameter.
+- : Modified to force  to ensure all columns are always exported.
+- : Returns the complete, merged configuration for a team, now including .
 
 **Critical Info for New Agent**
-- **Data Separation is Non-Negotiable**: The new  metric must **NEVER** be summed with the existing  metric. All aggregation logic must treat them as two distinct values.
-- ** Scoping**: In product-facing views (like Leaderboard, Recruiting), the  role should behave like a , meaning it is strictly scoped to its assigned . Cross-team visibility is only for explicit Admin panel tools.
-- **Backward Compatibility**: When adding new fields like  to the  collection, all aggregation logic must use  to handle old records gracefully.
-- **Refactoring is Paused**: Do not attempt to refactor the monolithic  file unless explicitly instructed by the user.
+- **Team View Configuration**: The agent was in the middle of implementing the Team View / Daily Activity Metrics feature. The code is written but needs to be tested end-to-end.
+- **Report Filtering (Option 3)**: Remember the user's decision. JSON report endpoints respect team KPI configuration by default (), but Excel export endpoints have been intentionally locked to show ALL metrics () to ensure stability. Do not fix the Excel reports to filter by KPI unless the user requests Phase 2.
+- **Data Separation**:  must **NEVER** be summed with the  metric. This rule has been verified across the codebase but must be maintained.
+- **Backward Compatibility**: All aggregation logic uses  to handle old activity records that don't have the new metric fields.
 
 **documents and test reports created in this job**
 - 
-- 
+-  (updated)
+-  (created)
 
 **Last 10 User Messages and any pending HUMAN messages**
-10. **User**: Requested implementation of two new metrics (, ) with a strict rule that  must be tracked separately from total . (Status: IN PROGRESS)
-9. **Agent**: Confirmed understanding of the new metric requirements and outlined the implementation plan. (Status: ADDRESSED)
-8. **User**: Approved the plan for new metrics and added guardrails for backward compatibility. (Status: ADDRESSED)
-7. **User**: Reported that leaderboard customization settings were not saving correctly. (Status: RESOLVED)
-6. **Agent**: Investigated, found a bug in how the backend saved and retrieved the configuration, and fixed it. (Status: COMPLETED)
-5. **User**: Confirmed the fix for the NPA manual-add feature, which now correctly allows managers to add any agent from their team. (Status: COMPLETED)
-4. **Agent**: Re-confirmed the implementation details for the NPA tracker fix. (Status: COMPLETED)
-3. **User**: Reported an issue with the NPA manual-add feature where the agent dropdown was empty. (Status: RESOLVED)
-2. **Agent**: Found the root cause was an endpoint () not handling the  role correctly and fixed it. (Status: COMPLETED)
-1. **User**: Approved the implementation plan for the Leaderboard Customization feature. (Status: COMPLETED)
+10. **User**: Requested to add visibility toggles for metrics in the Team View / Daily Activity section. (Status: IN PROGRESS)
+9.  **User**: Confirmed the fix for the Daily Report JSON endpoint and verified that the frontend was the root cause of the bug. (Status: ADDRESSED)
+8.  **Agent**: Identified that the frontend  had hardcoded table headers, preventing new metrics from showing, and implemented a fix. (Status: COMPLETED)
+7.  **User**: Reported that the Daily JSON reports were not showing  and . (Status: RESOLVED)
+6.  **User**: Approved the Option 3 implementation for KPI-filtered reports and confirmed it was ready for deployment. (Status: ADDRESSED)
+5.  **Agent**: Confirmed completion of Option 3 for KPI-filtered reports, with JSON endpoints respecting KPI settings and Excel exports showing all metrics. (Status: COMPLETED)
+4.  **User**: Requested Option 3: Implement KPI filtering for JSON endpoints ONLY, keeping Excel exports with all metrics for now to ensure stability. (Status: ADDRESSED)
+3.  **Agent**: Identified duplicate code in  while trying to implement dynamic Excel headers and proposed three options to the user for how to proceed. (Status: ADDRESSED)
+2.  **User**: Confirmed that reports must be driven by the same data and aggregations as all other views and requested confirmation. (Status: ADDRESSED)
+1.  **Agent**: Confirmed that all report endpoints are driven by  and use consistent aggregation logic. Identified that Excel reports had hardcoded columns and did not respect team config. (Status: COMPLETED)
 
 **Project Health Check:**
 - **Broken**: None
@@ -133,14 +129,13 @@ There are no pending bugs; the current focus is on completing a new feature.
 - reportlab
 
 **Testing status**
-- **Testing agent used after significant changes**: YES (for the Full Data Health Check feature)
+- **Testing agent used after significant changes**: YES (for the initial new metrics feature)
+- **Troubleshoot agent used after agent stuck in loop**: NO
 - **Test files created**: []
-- **Known regressions**: Multiple regressions were identified by the user and fixed during this session (Recruiting Pipeline, Admin password reset, Leaderboard persistence). The user has a pending action item to perform a full regression sweep.
+- **Known regressions**: None. All identified regressions were fixed.
 
 **Credentials to test flow:**
 - **Super Admin**:  /  (For use in the preview environment only)
 
 **What agent forgot to execute**
-- The agent initially misinterpreted the user's requirement for the NPA manual-add feature, applying a date restriction that was only meant for automatic enrollment. This was later corrected.
-- The agent's first implementation of saving leaderboard settings was buggy and did not persist the changes, requiring a follow-up fix after user feedback.
-- The agent has updated some, but not all, backend aggregation points for the new  and  metrics. The task is incomplete and needs to be resumed.</analysis>
+- The agent initially missed that the frontend component  had hardcoded table headers, causing a bug where the new metrics were not displayed despite the backend sending the correct data. This was later identified and corrected after user feedback.</analysis>
