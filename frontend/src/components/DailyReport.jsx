@@ -520,7 +520,7 @@ const DailyReport = ({ user, embedded = false }) => {
   const renderTeamReport = () => {
     if (!reportData || reportData.report_type !== 'team') return null;
 
-    // Calculate totals for team report
+    // Calculate totals for team report - CRITICAL: bankers_premium is SEPARATE from premium
     const totals = reportData.data.reduce((acc, team) => ({
       contacts: acc.contacts + (parseFloat(team.contacts) || 0),
       appointments: acc.appointments + (parseFloat(team.appointments) || 0),
@@ -529,8 +529,10 @@ const DailyReport = ({ user, embedded = false }) => {
       testimonials: acc.testimonials + (parseFloat(team.testimonials) || 0),
       sales: acc.sales + (parseFloat(team.sales) || 0),
       new_face_sold: acc.new_face_sold + (parseFloat(team.new_face_sold) || 0),
+      fact_finders: acc.fact_finders + (parseFloat(team.fact_finders) || 0),
+      bankers_premium: acc.bankers_premium + (parseFloat(team.bankers_premium) || 0),
       premium: acc.premium + (parseFloat(team.premium) || 0)
-    }), { contacts: 0, appointments: 0, presentations: 0, referrals: 0, testimonials: 0, sales: 0, new_face_sold: 0, premium: 0 });
+    }), { contacts: 0, appointments: 0, presentations: 0, referrals: 0, testimonials: 0, sales: 0, new_face_sold: 0, fact_finders: 0, bankers_premium: 0, premium: 0 });
 
     return (
       <div className="mt-6">
@@ -547,6 +549,8 @@ const DailyReport = ({ user, embedded = false }) => {
                 <th className="px-4 py-3 text-center text-sm font-semibold">Testimonials</th>
                 <th className="px-4 py-3 text-center text-sm font-semibold">Sales</th>
                 <th className="px-4 py-3 text-center text-sm font-semibold">New Face</th>
+                <th className="px-4 py-3 text-center text-sm font-semibold">Fact Finders</th>
+                <th className="px-4 py-3 text-center text-sm font-semibold">Bankers Premium</th>
                 <th className="px-4 py-3 text-center text-sm font-semibold">Premium</th>
               </tr>
             </thead>
@@ -562,6 +566,10 @@ const DailyReport = ({ user, embedded = false }) => {
                   <td className="px-4 py-3 text-sm text-center">{team.testimonials}</td>
                   <td className="px-4 py-3 text-sm text-center">{team.sales}</td>
                   <td className="px-4 py-3 text-sm text-center">{team.new_face_sold}</td>
+                  <td className="px-4 py-3 text-sm text-center">{team.fact_finders || 0}</td>
+                  <td className="px-4 py-3 text-sm text-center font-semibold text-amber-600">
+                    ${typeof team.bankers_premium === 'number' ? team.bankers_premium.toFixed(2) : (team.bankers_premium || 0)}
+                  </td>
                   <td className="px-4 py-3 text-sm text-center font-semibold text-green-600">
                     ${typeof team.premium === 'number' ? team.premium.toFixed(2) : team.premium}
                   </td>
@@ -581,6 +589,8 @@ const DailyReport = ({ user, embedded = false }) => {
                   <td className="px-4 py-3 text-sm text-center font-bold text-amber-900">{totals.testimonials}</td>
                   <td className="px-4 py-3 text-sm text-center font-bold text-amber-900">{totals.sales}</td>
                   <td className="px-4 py-3 text-sm text-center font-bold text-amber-900">{totals.new_face_sold}</td>
+                  <td className="px-4 py-3 text-sm text-center font-bold text-amber-900">{totals.fact_finders}</td>
+                  <td className="px-4 py-3 text-sm text-center font-bold text-amber-700">${totals.bankers_premium.toFixed(2)}</td>
                   <td className="px-4 py-3 text-sm text-center font-bold text-green-700">${totals.premium.toFixed(2)}</td>
                 </tr>
               </tfoot>
