@@ -3863,7 +3863,7 @@ const AdminPanel = ({ user }) => {
                       ))}
                     </div>
                     <p className="text-xs text-slate-400 mt-3 italic">
-                      Note: Daily Activity input screen remains unchanged. This only controls Team View display.
+                      Note: These toggles control Team View ONLY. Daily Activity inputs, Leaderboard, and Reports are configured separately.
                     </p>
                   </div>
 
