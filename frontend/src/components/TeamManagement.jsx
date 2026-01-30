@@ -1225,8 +1225,8 @@ const TeamManagement = ({ user }) => {
             <ChangePasswordSection user={user} />
           </TabsContent>
 
-          {/* Admin Tab - State Manager Only */}
-          {user.role === 'state_manager' && (
+          {/* Admin Tab - State Manager and Super Admin */}
+          {['super_admin', 'state_manager'].includes(user.role) && (
           <TabsContent value="admin" className="space-y-6" data-testid="admin-content">
             <AdminSection user={user} />
           </TabsContent>
