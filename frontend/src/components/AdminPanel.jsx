@@ -102,6 +102,20 @@ const AdminPanel = ({ user }) => {
         { id: 'testimonials', label: 'Testimonials', enabled: true },
         { id: 'new_face_sold', label: 'New Faces Sold', enabled: true }
       ],
+      // Team View / Daily Activity metrics - controls visibility in Team View only
+      // NOTE: Dials is explicitly excluded - we do not track this metric
+      team_activity_metrics: [
+        { id: 'contacts', label: 'Contacts', enabled: true, order: 0 },
+        { id: 'appointments', label: 'Appointments', enabled: true, order: 1 },
+        { id: 'presentations', label: 'Presentations', enabled: true, order: 2 },
+        { id: 'sales', label: 'Sales', enabled: true, order: 3 },
+        { id: 'premium', label: 'Total Premium', enabled: true, order: 4 },
+        { id: 'bankers_premium', label: 'Bankers Premium', enabled: false, order: 5 },
+        { id: 'referrals', label: 'Referrals', enabled: true, order: 6 },
+        { id: 'testimonials', label: 'Testimonials', enabled: true, order: 7 },
+        { id: 'new_face_sold', label: 'New Faces Sold', enabled: true, order: 8 },
+        { id: 'fact_finders', label: 'Fact Finders', enabled: false, order: 9 }
+      ],
       subtabs: {
         new_faces: true,
         sna: true,
