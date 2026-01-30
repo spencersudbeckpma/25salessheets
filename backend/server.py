@@ -4505,13 +4505,18 @@ async def get_period_report(report_type: str, period: str, current_user: dict = 
                 **member_totals
             })
         
+        # Filter data by enabled KPIs
+        filtered_data = [build_report_row(row, enabled_metrics) for row in report_data]
+        
         return {
             "report_type": "team",
             "period": period,
             "period_name": period_name,
             "start_date": start_date.isoformat(),
-            "data": report_data,
-            "selected_user": user_id
+            "data": filtered_data,
+            "selected_user": user_id,
+            "enabled_metrics": enabled_metrics,
+            "filter_by_kpi": filter_by_kpi
         }
     
     elif report_type == "organization":
@@ -4545,13 +4550,18 @@ async def get_period_report(report_type: str, period: str, current_user: dict = 
                 org_totals["bankers_premium"] += activity.get('bankers_premium', 0)
                 org_totals["premium"] += activity.get('premium', 0)
         
+        # Filter org totals by enabled KPIs
+        filtered_totals = {k: v for k, v in org_totals.items() if k in enabled_metrics}
+        
         return {
             "report_type": "organization",
             "period": period,
             "period_name": period_name,
             "start_date": start_date.isoformat(),
             "total_members": len(all_members),
-            "data": org_totals
+            "data": filtered_totals,
+            "enabled_metrics": enabled_metrics,
+            "filter_by_kpi": filter_by_kpi
         }
     
     else:
