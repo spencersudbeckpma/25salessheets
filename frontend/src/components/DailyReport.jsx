@@ -281,7 +281,7 @@ const DailyReport = ({ user, embedded = false }) => {
   const renderIndividualReport = () => {
     if (!reportData || reportData.report_type !== 'individual') return null;
 
-    // Calculate totals
+    // Calculate totals - CRITICAL: bankers_premium is SEPARATE from premium
     const totals = reportData.data.reduce((acc, person) => ({
       contacts: acc.contacts + (parseFloat(person.contacts) || 0),
       appointments: acc.appointments + (parseFloat(person.appointments) || 0),
@@ -290,8 +290,10 @@ const DailyReport = ({ user, embedded = false }) => {
       testimonials: acc.testimonials + (parseFloat(person.testimonials) || 0),
       sales: acc.sales + (parseFloat(person.sales) || 0),
       new_face_sold: acc.new_face_sold + (parseFloat(person.new_face_sold) || 0),
+      fact_finders: acc.fact_finders + (parseFloat(person.fact_finders) || 0),
+      bankers_premium: acc.bankers_premium + (parseFloat(person.bankers_premium) || 0),
       premium: acc.premium + (parseFloat(person.premium) || 0)
-    }), { contacts: 0, appointments: 0, presentations: 0, referrals: 0, testimonials: 0, sales: 0, new_face_sold: 0, premium: 0 });
+    }), { contacts: 0, appointments: 0, presentations: 0, referrals: 0, testimonials: 0, sales: 0, new_face_sold: 0, fact_finders: 0, bankers_premium: 0, premium: 0 });
 
     return (
       <div className="mt-6">
