@@ -157,14 +157,21 @@ async def get_team_view_settings(team: dict) -> dict:
     team_settings = team.get('team_settings', {})
     views = team_settings.get('views', {})
     
+    # Also check view_settings directly on team (for backward compatibility)
+    direct_view_settings = team.get('view_settings', {})
+    
     # Merge KPI cards (preserve order from team config if exists)
-    kpi_cards = views.get('kpi_cards', DEFAULT_TEAM_VIEW_SETTINGS['kpi_cards'])
+    kpi_cards = views.get('kpi_cards') or direct_view_settings.get('kpi_cards') or DEFAULT_TEAM_VIEW_SETTINGS['kpi_cards']
+    
+    # Merge leaderboard metrics (preserve order from team config if exists)
+    leaderboard_metrics = views.get('leaderboard_metrics') or direct_view_settings.get('leaderboard_metrics') or DEFAULT_TEAM_VIEW_SETTINGS['leaderboard_metrics']
     
     # Merge subtabs
-    subtabs = {**DEFAULT_TEAM_VIEW_SETTINGS['subtabs'], **views.get('subtabs', {})}
+    subtabs = {**DEFAULT_TEAM_VIEW_SETTINGS['subtabs'], **views.get('subtabs', {}), **direct_view_settings.get('subtabs', {})}
     
     return {
         "kpi_cards": kpi_cards,
+        "leaderboard_metrics": leaderboard_metrics,
         "subtabs": subtabs
     }
 
