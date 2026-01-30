@@ -3811,15 +3811,15 @@ const AdminPanel = ({ user }) => {
                     </p>
                   </div>
 
-                  {/* Team View / Daily Activity Metrics Section */}
+                  {/* Team View / Daily Activity Visibility Section */}
                   <div className="border-t pt-6">
                     <h4 className="font-medium text-slate-900 mb-3 flex items-center gap-2">
                       <Users className="w-4 h-4" />
-                      Team View / Daily Activity Metrics
+                      Team View / Daily Activity Visibility
                     </h4>
                     <p className="text-xs text-slate-500 mb-3">
-                      Control which metrics appear in the Team View section. This affects visibility only — 
-                      data is still collected and aggregated for all metrics. Bankers Premium is tracked separately from Total Premium.
+                      Control which metrics are <strong>visible</strong> in the Team View hierarchy. This does NOT affect Daily Activity inputs, 
+                      stored data, aggregation math, or reports. Each team can show different metrics based on their coaching style.
                     </p>
                     <div className="space-y-2">
                       {(customizationForm.view_settings?.team_activity_metrics || []).map((metric, index) => (
