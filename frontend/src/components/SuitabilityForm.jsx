@@ -854,62 +854,96 @@ const SuitabilityForm = ({ user }) => {
             </div>
           </TabsContent>
 
-          {/* Weekly Report Tab */}
-          <TabsContent value="weekly">
+          {/* Reports Tab (Managers Only) */}
+          {canViewReports && (
+          <TabsContent value="reports">
             <div className="space-y-6">
-              {/* Week Navigation */}
-              <div className="flex items-center justify-between bg-gray-100 rounded-lg p-3">
-                <Button
-                  variant="ghost"
-                  onClick={() => setWeekOffset(prev => prev + 1)}
-                  className="flex items-center gap-1"
-                >
-                  <ChevronLeft size={18} />
-                  Previous
-                </Button>
-                <div className="text-center">
-                  <p className="font-semibold text-gray-800">
-                    {weeklyReport ? `${weeklyReport.week_start} to ${weeklyReport.week_end}` : 'Loading...'}
-                  </p>
-                  <p className="text-sm text-gray-500">
-                    {weekOffset === 0 ? 'This Week' : weekOffset === 1 ? 'Last Week' : `${weekOffset} weeks ago`}
-                  </p>
+              {/* Period Selection */}
+              <div className="bg-gray-50 rounded-lg p-4 space-y-4">
+                <div className="flex flex-wrap items-center gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Report Period</label>
+                    <select
+                      value={reportPeriod}
+                      onChange={(e) => setReportPeriod(e.target.value)}
+                      className="border rounded-md px-3 py-2 text-sm bg-white"
+                      data-testid="report-period-select"
+                    >
+                      <option value="weekly">Weekly</option>
+                      <option value="monthly">Monthly</option>
+                      <option value="all-time">All Time</option>
+                    </select>
+                  </div>
+                  
+                  {reportPeriod === 'weekly' && (
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Week Starting</label>
+                      <input
+                        type="date"
+                        value={selectedWeekStart}
+                        onChange={(e) => setSelectedWeekStart(e.target.value)}
+                        className="border rounded-md px-3 py-2 text-sm"
+                        data-testid="week-start-picker"
+                      />
+                    </div>
+                  )}
+                  
+                  {reportPeriod === 'monthly' && (
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Month</label>
+                      <input
+                        type="month"
+                        value={selectedMonth}
+                        onChange={(e) => setSelectedMonth(e.target.value)}
+                        className="border rounded-md px-3 py-2 text-sm"
+                        data-testid="month-picker"
+                      />
+                    </div>
+                  )}
                 </div>
-                <Button
-                  variant="ghost"
-                  onClick={() => setWeekOffset(prev => Math.max(0, prev - 1))}
-                  disabled={weekOffset === 0}
-                  className="flex items-center gap-1"
-                >
-                  Next
-                  <ChevronRight size={18} />
-                </Button>
+                
+                <div className="text-sm text-gray-600">
+                  {reportData && (
+                    <span className="font-medium">{reportData.period_label}</span>
+                  )}
+                  {reportData?.start_date && reportData?.end_date && (
+                    <span className="ml-2">({reportData.start_date} to {reportData.end_date})</span>
+                  )}
+                </div>
               </div>
 
+              {/* Loading State */}
+              {reportLoading && (
+                <div className="text-center py-8 text-gray-500">
+                  <div className="animate-spin h-8 w-8 border-4 border-emerald-500 border-t-transparent rounded-full mx-auto mb-2"></div>
+                  <p>Loading report...</p>
+                </div>
+              )}
+
               {/* Stats Cards */}
-              {weeklyReport && (
+              {!reportLoading && reportData && (
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   <div className="bg-blue-50 rounded-lg p-4 text-center">
-                    <p className="text-3xl font-bold text-blue-700">{weeklyReport.total_forms}</p>
+                    <p className="text-3xl font-bold text-blue-700">{reportData.total_forms}</p>
                     <p className="text-sm text-blue-600">Total Forms</p>
                   </div>
                   <div className="bg-green-50 rounded-lg p-4 text-center">
-                    <p className="text-3xl font-bold text-green-700">{weeklyReport.sales_made}</p>
+                    <p className="text-3xl font-bold text-green-700">{reportData.sales_made}</p>
                     <p className="text-sm text-green-600">Sales Made</p>
                   </div>
                   <div className="bg-amber-50 rounded-lg p-4 text-center">
-                    <p className="text-3xl font-bold text-amber-700">{weeklyReport.conversion_rate}%</p>
+                    <p className="text-3xl font-bold text-amber-700">{reportData.conversion_rate}%</p>
                     <p className="text-sm text-amber-600">Conversion Rate</p>
                   </div>
                 </div>
               )}
 
               {/* By Agent Breakdown */}
-              {weeklyReport && Object.keys(weeklyReport.by_agent).length > 0 && (
+              {!reportLoading && reportData && Object.keys(reportData.by_agent).length > 0 && (
                 <div className="bg-white border rounded-lg p-4">
                   <h4 className="font-semibold mb-3">By Agent</h4>
                   <div className="space-y-2">
-                    {Object.entries(weeklyReport.by_agent).map(([agent, stats]) => (
+                    {Object.entries(reportData.by_agent).map(([agent, stats]) => (
                       <div key={agent} className="flex justify-between items-center py-2 border-b last:border-0">
                         <span className="font-medium">{agent}</span>
                         <div className="flex gap-4 text-sm">
@@ -922,75 +956,76 @@ const SuitabilityForm = ({ user }) => {
                 </div>
               )}
 
-              {/* Export Buttons */}
-              {weeklyReport && weeklyReport.total_forms > 0 && (
+              {/* Export Button */}
+              {!reportLoading && reportData && reportData.total_forms > 0 && (
                 <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-lg p-4">
                   <h4 className="font-semibold text-blue-900 mb-3 flex items-center gap-2">
                     <Download size={18} />
-                    Export Options
+                    Export Report
                   </h4>
-                  <div className="flex flex-col sm:flex-row gap-3">
-                    <Button 
-                      onClick={handleFridayReportExport} 
-                      className="flex-1 bg-green-600 hover:bg-green-700 text-white flex items-center justify-center gap-2 py-3"
-                    >
-                      <FileText size={18} />
-                      📊 Friday Report (Excel)
-                    </Button>
-                    <Button 
-                      onClick={handleExport} 
-                      variant="outline"
-                      className="flex-1 border-blue-300 text-blue-700 hover:bg-blue-50 flex items-center justify-center gap-2 py-3"
-                    >
-                      <Download size={18} />
-                      Simple Export (CSV)
-                    </Button>
-                  </div>
-                  <p className="text-xs text-blue-600 mt-2">
-                    Friday Report: Professional Excel format with formatting, colors, and organized by agent
+                  <Button 
+                    onClick={handleExportReport} 
+                    className="bg-emerald-600 hover:bg-emerald-700 text-white flex items-center gap-2 py-3"
+                    data-testid="export-report-btn"
+                  >
+                    <FileText size={18} />
+                    Download Excel Report
+                  </Button>
+                  <p className="text-xs text-gray-500 mt-2">
+                    Export includes all forms for {reportData.period_label} with agent breakdown
                   </p>
                 </div>
               )}
 
               {/* Forms List */}
-              {weeklyReport && weeklyReport.forms.length > 0 && (
+              {!reportLoading && reportData && reportData.forms.length > 0 && (
                 <div className="space-y-3">
-                  <h4 className="font-semibold">Forms This Week</h4>
-                  {weeklyReport.forms.map(form => (
-                    <div 
-                      key={form.id} 
-                      className="bg-white border rounded-lg p-4 hover:shadow-md transition-shadow cursor-pointer"
-                      onClick={() => viewForm(form)}
-                    >
-                      <div className="flex justify-between items-start">
-                        <div>
-                          <div className="flex items-center gap-2">
-                            <h4 className="font-medium">{form.client_name}</h4>
-                            {form.sale_made && (
-                              <span className="px-2 py-0.5 bg-green-100 text-green-700 text-xs rounded-full">
-                                Sale
-                              </span>
-                            )}
+                  <h4 className="font-semibold">Forms ({reportData.forms.length})</h4>
+                  <div className="max-h-96 overflow-y-auto space-y-2">
+                    {reportData.forms.map(form => (
+                      <div 
+                        key={form.id} 
+                        className="bg-white border rounded-lg p-4 hover:shadow-md transition-shadow cursor-pointer"
+                        onClick={() => viewForm(form)}
+                      >
+                        <div className="flex justify-between items-start">
+                          <div>
+                            <div className="flex items-center gap-2">
+                              <h4 className="font-medium">{form.client_name}</h4>
+                              {form.sale_made && (
+                                <span className="px-2 py-0.5 bg-green-100 text-green-700 text-xs rounded-full">
+                                  Sale
+                                </span>
+                              )}
+                            </div>
+                            <p className="text-sm text-gray-500">
+                              {form.presentation_date} • {form.submitted_by_name}
+                            </p>
                           </div>
-                          <p className="text-sm text-gray-500">
-                            {form.presentation_date} • {form.submitted_by_name}
-                          </p>
+                          <Eye size={18} className="text-gray-400" />
                         </div>
-                        <Eye size={18} className="text-gray-400" />
                       </div>
-                    </div>
-                  ))}
+                    ))}
+                  </div>
                 </div>
               )}
 
-              {weeklyReport && weeklyReport.forms.length === 0 && (
+              {!reportLoading && reportData && reportData.forms.length === 0 && (
                 <div className="text-center py-12 text-gray-500">
                   <Calendar size={48} className="mx-auto mb-4 opacity-50" />
-                  <p>No forms submitted this week</p>
+                  <p>No forms found for {reportData.period_label}</p>
+                </div>
+              )}
+              
+              {!reportLoading && !reportData && (
+                <div className="text-center py-12 text-gray-500">
+                  <Calendar size={48} className="mx-auto mb-4 opacity-50" />
+                  <p>Select a period to view the report</p>
                 </div>
               )}
             </div>
           </TabsContent>
+          )}
         </Tabs>
       </CardContent>
 
