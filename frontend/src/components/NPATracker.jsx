@@ -112,7 +112,6 @@ const NPATracker = ({ user }) => {
       user_id: ''
     });
     setSelectedMemberId('');
-    setAddMode('select');
   };
 
   const handleAddAgent = async () => {
