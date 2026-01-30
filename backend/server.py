@@ -5712,7 +5712,18 @@ async def get_team_hierarchy(period: str, current_user: dict = Depends(get_curre
         }
     
     hierarchy = await build_hierarchy(current_user['id'])
-    return hierarchy
+    
+    # Get team's activity metrics config for frontend filtering
+    team = await db.teams.find_one({"id": team_id}, {"_id": 0}) if team_id else None
+    view_settings = await get_team_view_settings(team)
+    team_activity_metrics = view_settings.get('team_activity_metrics', DEFAULT_TEAM_ACTIVITY_CONFIG)
+    
+    # Return hierarchy with metrics config
+    return {
+        **hierarchy,
+        "team_activity_config": team_activity_metrics,
+        "enabled_activity_metrics": [m['id'] for m in team_activity_metrics if m.get('enabled', True)]
+    }
 
 @api_router.get("/users/team-members")
 async def get_all_team_members_alt(current_user: dict = Depends(get_current_user)):
