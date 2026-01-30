@@ -94,18 +94,59 @@ const SuitabilityForm = ({ user }) => {
     }
   };
 
-  const fetchWeeklyReport = async () => {
-    setLoading(true);
+  const fetchReport = async () => {
+    setReportLoading(true);
     try {
       const token = localStorage.getItem('token');
-      const response = await axios.get(`${API}/api/suitability-forms/weekly-report?week_offset=${weekOffset}`, {
+      let url = `${API}/api/suitability-forms/report?period=${reportPeriod}`;
+      
+      if (reportPeriod === 'weekly' && selectedWeekStart) {
+        url += `&week_start_date=${selectedWeekStart}`;
+      } else if (reportPeriod === 'monthly' && selectedMonth) {
+        url += `&month=${selectedMonth}`;
+      }
+      
+      const response = await axios.get(url, {
         headers: { Authorization: `Bearer ${token}` }
       });
-      setWeeklyReport(response.data);
+      setReportData(response.data);
     } catch (error) {
-      console.error('Failed to fetch weekly report');
+      console.error('Failed to fetch report');
+      setReportData(null);
     } finally {
-      setLoading(false);
+      setReportLoading(false);
+    }
+  };
+
+  const handleExportReport = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      let url = `${API}/api/suitability-forms/report/excel?period=${reportPeriod}`;
+      
+      if (reportPeriod === 'weekly' && selectedWeekStart) {
+        url += `&week_start_date=${selectedWeekStart}`;
+      } else if (reportPeriod === 'monthly' && selectedMonth) {
+        url += `&month=${selectedMonth}`;
+      }
+      
+      const response = await axios.get(url, {
+        headers: { Authorization: `Bearer ${token}` },
+        responseType: 'blob'
+      });
+      
+      const blob = new Blob([response.data], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+      const downloadUrl = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = downloadUrl;
+      a.download = `Suitability_Report_${reportPeriod}_${reportData?.period_label || 'export'}.xlsx`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      window.URL.revokeObjectURL(downloadUrl);
+      
+      toast.success('Report downloaded!');
+    } catch (error) {
+      toast.error('No data found for this period');
     }
   };
 
