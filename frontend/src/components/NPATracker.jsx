@@ -23,7 +23,6 @@ const NPATracker = ({ user }) => {
   const [showEditModal, setShowEditModal] = useState(false);
   const [editingAgent, setEditingAgent] = useState(null);
   const [selectedMemberId, setSelectedMemberId] = useState('');
-  const [addMode, setAddMode] = useState('select'); // 'select' or 'manual'
   const [formData, setFormData] = useState({
     name: '',
     phone: '',
