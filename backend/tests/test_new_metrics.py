@@ -61,11 +61,11 @@ class TestActivityModelFields:
     
     def test_create_activity_with_fact_finders(self, auth_headers):
         """Test creating activity with fact_finders field"""
-        today = datetime.now().strftime('%Y-%m-%d')
+        test_date = get_unique_test_date(days_offset=1)
         
         # Create activity with fact_finders
         activity_data = {
-            "date": today,
+            "date": test_date,
             "contacts": 5,
             "appointments": 3,
             "presentations": 2,
@@ -79,19 +79,19 @@ class TestActivityModelFields:
             "premium": 1000.00  # Total Premium - standalone
         }
         
-        response = requests.post(f"{BASE_URL}/api/activities", json=activity_data, headers=auth_headers)
+        response = requests.put(f"{BASE_URL}/api/activities/{test_date}", json=activity_data, headers=auth_headers)
         assert response.status_code in [200, 201], f"Failed to create activity: {response.text}"
         
         data = response.json()
         assert "fact_finders" in data or "activity" in data, "fact_finders not in response"
-        print(f"Activity created successfully with fact_finders")
+        print(f"Activity created successfully with fact_finders for date {test_date}")
     
     def test_create_activity_with_bankers_premium(self, auth_headers):
         """Test creating activity with bankers_premium field"""
-        today = datetime.now().strftime('%Y-%m-%d')
+        test_date = get_unique_test_date(days_offset=2)
         
         activity_data = {
-            "date": today,
+            "date": test_date,
             "contacts": 3,
             "appointments": 2,
             "presentations": 1,
@@ -105,9 +105,9 @@ class TestActivityModelFields:
             "premium": 1500.00  # Total Premium - standalone
         }
         
-        response = requests.post(f"{BASE_URL}/api/activities", json=activity_data, headers=auth_headers)
+        response = requests.put(f"{BASE_URL}/api/activities/{test_date}", json=activity_data, headers=auth_headers)
         assert response.status_code in [200, 201], f"Failed to create activity: {response.text}"
-        print(f"Activity created successfully with bankers_premium")
+        print(f"Activity created successfully with bankers_premium for date {test_date}")
 
 
 class TestStatsEndpoint:
