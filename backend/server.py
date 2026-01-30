@@ -8506,7 +8506,7 @@ async def create_suitability_form(form_data: SuitabilityFormCreate, current_user
 
 @api_router.put("/suitability-forms/{form_id}")
 async def update_suitability_form(form_id: str, form_data: dict, current_user: dict = Depends(get_current_user)):
-    """Update a suitability form"""
+    """Update a suitability form (edit draft or submitted form)"""
     await check_feature_access(current_user, "suitability")
     existing = await db.suitability_forms.find_one({"id": form_id})
     if not existing:
@@ -8515,6 +8515,17 @@ async def update_suitability_form(form_id: str, form_data: dict, current_user: d
     # Only allow owner or managers to update
     if existing['submitted_by'] != current_user['id'] and current_user['role'] not in ['super_admin', 'state_manager', 'regional_manager', 'district_manager']:
         raise HTTPException(status_code=403, detail="Not authorized to update this form")
+    
+    # If changing to submitted status, validate required fields
+    new_status = form_data.get('status', existing.get('status', 'submitted'))
+    if new_status == "submitted":
+        client_name = form_data.get('client_name', existing.get('client_name', ''))
+        annual_income = form_data.get('annual_income', existing.get('annual_income', ''))
+        monthly_savings = form_data.get('monthly_savings', existing.get('monthly_savings', ''))
+        liquid_net_worth = form_data.get('liquid_net_worth', existing.get('liquid_net_worth', ''))
+        
+        if not client_name or not annual_income or not monthly_savings or not liquid_net_worth:
+            raise HTTPException(status_code=400, detail="Required fields missing for submission: client_name, annual_income, monthly_savings, liquid_net_worth")
     
     form_data['updated_at'] = datetime.now(timezone.utc).isoformat()
     await db.suitability_forms.update_one({"id": form_id}, {"$set": form_data})
