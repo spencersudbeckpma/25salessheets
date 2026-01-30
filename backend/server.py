@@ -7081,15 +7081,37 @@ async def include_in_sna_tracking(user_id: str, current_user: dict = Depends(get
 # Agents are automatically added when they exceed $1,000 cumulative premium
 
 NPA_GOAL = 1000
+NPA_ROLLOUT_DATE = "2026-01-30"  # Only auto-add users created on or after this date
 
 async def check_and_auto_add_to_npa(user_id: str, team_id: str):
     """
     Check if a user has exceeded NPA_GOAL in cumulative premium.
     If yes and not already tracked, automatically add them to NPA tracker.
     Called in real-time when activities are created/updated.
+    
+    RULES:
+    - Only 'agent' role users are auto-added (not managers)
+    - Only users created on or after NPA_ROLLOUT_DATE are eligible
     """
     if not user_id or not team_id:
         return None
+    
+    # Get user details first to check role and creation date
+    user = await db.users.find_one({"id": user_id}, {"_id": 0})
+    if not user:
+        return None
+    
+    # RULE 1: Only auto-add agents, not managers
+    if user.get('role') != 'agent':
+        return None
+    
+    # RULE 2: Only auto-add users created on or after rollout date
+    user_created_at = user.get('created_at', '')
+    if user_created_at:
+        # Handle both ISO format and date-only format
+        created_date = user_created_at[:10] if isinstance(user_created_at, str) else ''
+        if created_date < NPA_ROLLOUT_DATE:
+            return None
     
     # Check if already being tracked
     existing_npa = await db.npa_agents.find_one({"user_id": user_id, "team_id": team_id})
@@ -7104,11 +7126,6 @@ async def check_and_auto_add_to_npa(user_id: str, team_id: str):
     
     # Check if exceeds NPA goal
     if total_premium >= NPA_GOAL:
-        # Get user details
-        user = await db.users.find_one({"id": user_id}, {"_id": 0})
-        if not user:
-            return None
-        
         # Find their manager for upline info
         manager = None
         rm_name = ""
@@ -7152,7 +7169,7 @@ async def check_and_auto_add_to_npa(user_id: str, team_id: str):
         }
         
         await db.npa_agents.insert_one(npa_agent)
-        logging.info(f"[NPA_AUTO_ADD] User {user.get('name')} ({user_id}) auto-added to NPA tracker with ${total_premium:.2f} premium")
+        logging.info(f"[NPA_AUTO_ADD] Agent {user.get('name')} ({user_id}) auto-added to NPA tracker with ${total_premium:.2f} premium")
         
         return npa_agent
     
