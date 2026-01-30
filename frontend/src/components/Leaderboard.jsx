@@ -8,6 +8,20 @@ import { Trophy } from 'lucide-react';
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
 
+// Static mapping of metric IDs to display properties
+// This ensures consistent icons/colors even if backend config changes
+const METRIC_DISPLAY = {
+  premium: { icon: '💵', color: 'border-green-500', format: 'currency' },
+  presentations: { icon: '📊', color: 'border-purple-500', format: 'number' },
+  sales: { icon: '💰', color: 'border-emerald-500', format: 'number' },
+  apps: { icon: '📝', color: 'border-teal-500', format: 'number' },
+  contacts: { icon: '📞', color: 'border-cyan-500', format: 'number' },
+  appointments: { icon: '📅', color: 'border-indigo-500', format: 'number' },
+  referrals: { icon: '🤝', color: 'border-blue-500', format: 'number' },
+  testimonials: { icon: '⭐', color: 'border-yellow-500', format: 'number' },
+  new_face_sold: { icon: '🎯', color: 'border-red-500', format: 'number' },
+};
+
 const Leaderboard = ({ user }) => {
   const [period, setPeriod] = useState('weekly');
   const [leaderboard, setLeaderboard] = useState(null);
@@ -42,13 +56,38 @@ const Leaderboard = ({ user }) => {
     return <span className="text-gray-600 font-bold text-lg">#{rank + 1}</span>;
   };
 
-  const categories = [
-    { key: 'presentations', label: 'Presentations', icon: '📊', color: 'border-purple-500' },
-    { key: 'referrals', label: 'Referrals', icon: '🤝', color: 'border-blue-500' },
-    { key: 'testimonials', label: 'Testimonials', icon: '⭐', color: 'border-yellow-500' },
-    { key: 'new_face_sold', label: 'New Face Sold', icon: '🎯', color: 'border-red-500' },
-    { key: 'premium', label: 'Total Premium', icon: '💵', color: 'border-green-500' }
-  ];
+  // Get enabled metrics in configured order from backend response
+  const getEnabledMetrics = () => {
+    if (!leaderboard?.config) {
+      // Fallback to original 5 metrics if no config present (backward compatibility)
+      return [
+        { id: 'presentations', label: 'Presentations' },
+        { id: 'referrals', label: 'Referrals' },
+        { id: 'testimonials', label: 'Testimonials' },
+        { id: 'new_face_sold', label: 'New Face Sold' },
+        { id: 'premium', label: 'Total Premium' }
+      ];
+    }
+    
+    // Filter to enabled metrics and preserve configured order
+    return leaderboard.config
+      .filter(m => m.enabled)
+      .map(m => ({
+        id: m.id,
+        label: m.label,
+        ...METRIC_DISPLAY[m.id]
+      }));
+  };
+
+  const formatValue = (value, metricId) => {
+    const display = METRIC_DISPLAY[metricId];
+    if (display?.format === 'currency') {
+      return `$${(value || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+    }
+    return value || 0;
+  };
+
+  const enabledMetrics = leaderboard ? getEnabledMetrics() : [];
 
   return (
     <Card className="shadow-lg bg-white" data-testid="leaderboard-card">
