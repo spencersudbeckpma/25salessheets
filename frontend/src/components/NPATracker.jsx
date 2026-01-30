@@ -239,58 +239,16 @@ const NPATracker = ({ user }) => {
         </div>
         
         <div className="p-6 space-y-4">
-          {/* Mode Toggle - only for Add modal */}
+          {/* Info Banner */}
           {!isEdit && (
-            <div className="flex bg-gray-100 rounded-lg p-1 mb-4">
-              <button
-                type="button"
-                onClick={() => {
-                  setAddMode('select');
-                  setSelectedMemberId('');
-                  setFormData(prev => ({
-                    ...prev,
-                    name: '',
-                    phone: '',
-                    email: '',
-                    user_id: ''
-                  }));
-                }}
-                className={`flex-1 px-3 py-2 rounded-md text-sm font-medium transition-colors flex items-center justify-center gap-2 ${
-                  addMode === 'select' 
-                    ? 'bg-white shadow text-amber-700' 
-                    : 'text-gray-600 hover:text-gray-900'
-                }`}
-              >
-                <Users size={16} />
-                Select Team Member
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  setAddMode('manual');
-                  setSelectedMemberId('');
-                  setFormData(prev => ({
-                    ...prev,
-                    name: '',
-                    phone: '',
-                    email: '',
-                    user_id: ''
-                  }));
-                }}
-                className={`flex-1 px-3 py-2 rounded-md text-sm font-medium transition-colors flex items-center justify-center gap-2 ${
-                  addMode === 'manual' 
-                    ? 'bg-white shadow text-amber-700' 
-                    : 'text-gray-600 hover:text-gray-900'
-                }`}
-              >
-                <UserPlus size={16} />
-                Manual Entry
-              </button>
+            <div className="p-3 bg-blue-50 rounded-lg text-sm text-blue-800 border border-blue-200">
+              <p className="font-medium">ℹ️ Select a team member from the system</p>
+              <p className="mt-1">Only users in the system can be tracked. Premium is calculated automatically from their logged activities.</p>
             </div>
           )}
 
-          {/* Team Member Selection */}
-          {!isEdit && addMode === 'select' && (
+          {/* Team Member Selection - Only for Add modal */}
+          {!isEdit && (
             <div>
               <label className="block text-sm font-medium mb-2">Select Team Member *</label>
               <select
@@ -307,30 +265,31 @@ const NPATracker = ({ user }) => {
               </select>
               {availableMembers.length === 0 && (
                 <p className="text-sm text-amber-600 mt-2">
-                  All team members are already being tracked. Use "Manual Entry" to add external agents.
+                  All team members are already being tracked or have exceeded NPA goal automatically.
                 </p>
               )}
             </div>
           )}
 
-          {/* Manual Entry or Edit Mode Fields */}
-          {(addMode === 'manual' || isEdit) && (
+          {/* Show selected member info */}
+          {!isEdit && selectedMemberId && (
+            <div className="p-3 bg-green-50 rounded-lg border border-green-200">
+              <p className="font-medium text-green-800">{formData.name}</p>
+              <p className="text-sm text-green-600">{formData.email}</p>
+            </div>
+          )}
+
+          {/* Edit Mode - Show Agent Name */}
+          {isEdit && (
             <div>
-              <label className="block text-sm font-medium mb-1">Agent Name *</label>
+              <label className="block text-sm font-medium mb-1">Agent Name</label>
               <Input
                 name="name"
                 value={formData.name}
                 onChange={handleInputChange}
                 placeholder="Full name"
+                disabled
               />
-            </div>
-          )}
-
-          {/* Show selected member info */}
-          {!isEdit && addMode === 'select' && selectedMemberId && (
-            <div className="p-3 bg-green-50 rounded-lg border border-green-200">
-              <p className="font-medium text-green-800">{formData.name}</p>
-              <p className="text-sm text-green-600">{formData.email}</p>
             </div>
           )}
 
