@@ -158,6 +158,29 @@ const SuitabilityForm = ({ user }) => {
       regional_assigned: '',
       notes: ''
     });
+    setEditingFormId(null);
+  };
+
+  // Load a draft or form for editing
+  const handleEditForm = (form) => {
+    setFormData({
+      client_name: form.client_name || '',
+      client_phone: form.client_phone || '',
+      client_address: form.client_address || '',
+      annual_income: form.annual_income || '',
+      monthly_savings: form.monthly_savings || '',
+      liquid_net_worth: form.liquid_net_worth || '',
+      sale_made: form.sale_made || false,
+      agents: form.agents?.length > 0 ? form.agents : [''],
+      presentation_date: form.presentation_date || new Date().toISOString().split('T')[0],
+      presentation_location: form.presentation_location || '',
+      life_licensed: form.life_licensed !== false,
+      regional_assigned: form.regional_assigned || '',
+      notes: form.notes || ''
+    });
+    setEditingFormId(form.id);
+    setActiveTab('new');
+    toast.info(`Editing ${form.status === 'draft' ? 'draft' : 'form'}: ${form.client_name || 'Unnamed'}`);
   };
 
   const handleDeleteForm = async (formId) => {
