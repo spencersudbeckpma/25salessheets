@@ -376,6 +376,45 @@ const AdminPanel = ({ user }) => {
     }));
   };
 
+  // Toggle leaderboard metric visibility
+  const toggleLeaderboardMetric = (metricId) => {
+    setCustomizationForm(prev => ({
+      ...prev,
+      view_settings: {
+        ...prev.view_settings,
+        leaderboard_metrics: (prev.view_settings.leaderboard_metrics || []).map(metric =>
+          metric.id === metricId ? { ...metric, enabled: !metric.enabled } : metric
+        )
+      }
+    }));
+  };
+
+  // Move leaderboard metric up in order
+  const moveLeaderboardMetricUp = (index) => {
+    if (index === 0) return;
+    setCustomizationForm(prev => {
+      const metrics = [...(prev.view_settings.leaderboard_metrics || [])];
+      [metrics[index - 1], metrics[index]] = [metrics[index], metrics[index - 1]];
+      return {
+        ...prev,
+        view_settings: { ...prev.view_settings, leaderboard_metrics: metrics }
+      };
+    });
+  };
+
+  // Move leaderboard metric down in order
+  const moveLeaderboardMetricDown = (index) => {
+    setCustomizationForm(prev => {
+      const metrics = [...(prev.view_settings.leaderboard_metrics || [])];
+      if (index >= metrics.length - 1) return prev;
+      [metrics[index], metrics[index + 1]] = [metrics[index + 1], metrics[index]];
+      return {
+        ...prev,
+        view_settings: { ...prev.view_settings, leaderboard_metrics: metrics }
+      };
+    });
+  };
+
   // Download State Manager Pack (roster PDF + guide)
   const handleDownloadSmPack = async (teamId, teamName) => {
     try {
