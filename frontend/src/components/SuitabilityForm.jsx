@@ -650,7 +650,17 @@ const SuitabilityForm = ({ user }) => {
                   onClick={resetForm}
                   className="flex-1"
                 >
-                  Clear Form
+                  {editingFormId ? 'Cancel Edit' : 'Clear Form'}
+                </Button>
+                <Button
+                  type="button"
+                  disabled={loading}
+                  onClick={(e) => handleSubmit(e, true)}
+                  variant="outline"
+                  className="flex-1 border-amber-500 text-amber-700 hover:bg-amber-50"
+                  data-testid="save-draft-btn"
+                >
+                  {loading ? 'Saving...' : (editingFormId ? 'Update Draft' : 'Save as Draft')}
                 </Button>
                 <Button
                   type="submit"
@@ -658,7 +668,7 @@ const SuitabilityForm = ({ user }) => {
                   className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white"
                   data-testid="submit-form-btn"
                 >
-                  {loading ? 'Submitting...' : 'Submit Suitability Form'}
+                  {loading ? 'Submitting...' : (editingFormId ? 'Submit Form' : 'Submit Suitability Form')}
                 </Button>
               </div>
             </form>
@@ -668,7 +678,9 @@ const SuitabilityForm = ({ user }) => {
           <TabsContent value="my-forms">
             <div className="space-y-4">
               <div className="flex justify-between items-center">
-                <h3 className="font-semibold text-gray-800">My Submitted Forms ({forms.length})</h3>
+                <h3 className="font-semibold text-gray-800">
+                  My Forms ({forms.filter(f => f.status !== 'draft').length} submitted, {forms.filter(f => f.status === 'draft').length} drafts)
+                </h3>
                 {forms.length > 0 && (
                   <Button variant="outline" onClick={handleExport} className="flex items-center gap-2">
                     <Download size={16} />
