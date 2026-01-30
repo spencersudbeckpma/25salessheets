@@ -4111,7 +4111,7 @@ async def get_available_managers(current_user: dict = Depends(get_current_user))
     return {"managers": manager_list}
 
 @api_router.get("/reports/daily/{report_type}")
-async def get_daily_report(report_type: str, date: str, current_user: dict = Depends(get_current_user), user_id: str = None):
+async def get_daily_report(report_type: str, date: str, current_user: dict = Depends(get_current_user), user_id: str = None, filter_by_kpi: bool = True):
     """
     Get daily report for a specific date.
     report_type: 'individual', 'team', or 'organization'
