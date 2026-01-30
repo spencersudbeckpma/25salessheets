@@ -212,7 +212,7 @@ const Login = ({ setUser, setBranding }) => {
                 type="text"
                 placeholder="email@example.com or username"
                 value={email}
-                onChange={(e) => setEmail(e.target.value)}
+                onChange={(e) => { setEmail(e.target.value); setErrorMessage(''); }}
                 disabled={inviteData !== null}
                 autoComplete="off"
                 required
