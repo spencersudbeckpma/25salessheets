@@ -666,6 +666,9 @@ const NPATracker = ({ user }) => {
                             <span className="flex items-center gap-1 text-green-600">
                               <Trophy size={18} className="text-amber-500" />
                               <span className="font-medium">NPA</span>
+                              {agent.auto_added && (
+                                <span className="px-1.5 py-0.5 bg-blue-100 text-blue-700 text-xs rounded ml-1">Auto</span>
+                              )}
                             </span>
                           </td>
                           <td className="px-4 py-3">
