@@ -4866,8 +4866,12 @@ async def download_daily_report_excel(report_type: str, date: str, current_user:
             ws.cell(row=totals_row, column=9).font = Font(bold=True)
             ws.cell(row=totals_row, column=10).value = total_new_face
             ws.cell(row=totals_row, column=10).font = Font(bold=True)
-            ws.cell(row=totals_row, column=11).value = total_premium
+            ws.cell(row=totals_row, column=11).value = total_fact_finders
             ws.cell(row=totals_row, column=11).font = Font(bold=True)
+            ws.cell(row=totals_row, column=12).value = total_bankers_premium
+            ws.cell(row=totals_row, column=12).font = Font(bold=True)
+            ws.cell(row=totals_row, column=13).value = total_premium
+            ws.cell(row=totals_row, column=13).font = Font(bold=True)
     
     elif report_type == "organization":
         # Add headers
