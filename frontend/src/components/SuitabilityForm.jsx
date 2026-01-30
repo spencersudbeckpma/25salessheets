@@ -6,7 +6,7 @@ import { Input } from './ui/input';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs';
 import { toast } from 'sonner';
 import { 
-  FileText, Plus, Download, Calendar, ChevronLeft, ChevronRight,
+  FileText, Plus, Download, Calendar,
   User, Phone, MapPin, DollarSign, PiggyBank, Briefcase, CheckCircle,
   XCircle, Users, ClipboardList, Trash2, Eye, X
 } from 'lucide-react';
