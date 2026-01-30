@@ -153,7 +153,7 @@ DEFAULT_TEAM_VIEW_SETTINGS = {
 }
 
 async def get_team_view_settings(team: dict) -> dict:
-    """Get team view settings with defaults merged"""
+    """Get team view settings with defaults merged, including any NEW canonical metrics"""
     if not team:
         return DEFAULT_TEAM_VIEW_SETTINGS.copy()
     
@@ -163,11 +163,37 @@ async def get_team_view_settings(team: dict) -> dict:
     # Also check view_settings directly on team (for backward compatibility)
     direct_view_settings = team.get('view_settings', {})
     
-    # Merge KPI cards (preserve order from team config if exists)
-    kpi_cards = views.get('kpi_cards') or direct_view_settings.get('kpi_cards') or DEFAULT_TEAM_VIEW_SETTINGS['kpi_cards']
+    # Get saved KPI cards or use defaults
+    saved_kpi_cards = views.get('kpi_cards') or direct_view_settings.get('kpi_cards')
+    if saved_kpi_cards:
+        # Merge any NEW default KPI cards that aren't in saved config
+        saved_ids = {c['id'] for c in saved_kpi_cards}
+        for default_card in DEFAULT_TEAM_VIEW_SETTINGS['kpi_cards']:
+            if default_card['id'] not in saved_ids:
+                # Add new metrics at the end, disabled by default
+                saved_kpi_cards.append({**default_card, 'enabled': False})
+        kpi_cards = saved_kpi_cards
+    else:
+        kpi_cards = DEFAULT_TEAM_VIEW_SETTINGS['kpi_cards']
     
-    # Merge leaderboard metrics (preserve order from team config if exists)
-    leaderboard_metrics = views.get('leaderboard_metrics') or direct_view_settings.get('leaderboard_metrics') or DEFAULT_TEAM_VIEW_SETTINGS['leaderboard_metrics']
+    # Get saved leaderboard metrics or use defaults
+    saved_leaderboard = views.get('leaderboard_metrics') or direct_view_settings.get('leaderboard_metrics')
+    if saved_leaderboard:
+        # Merge any NEW canonical metrics that aren't in saved config
+        saved_ids = {m['id'] for m in saved_leaderboard}
+        max_order = max((m.get('order', 0) for m in saved_leaderboard), default=0)
+        for i, canonical in enumerate(CANONICAL_LEADERBOARD_METRICS):
+            if canonical['id'] not in saved_ids:
+                # Add new metrics at the end, disabled by default
+                saved_leaderboard.append({
+                    'id': canonical['id'],
+                    'label': canonical['label'],
+                    'enabled': False,  # Disabled by default - admin enables
+                    'order': max_order + i + 1
+                })
+        leaderboard_metrics = saved_leaderboard
+    else:
+        leaderboard_metrics = DEFAULT_TEAM_VIEW_SETTINGS['leaderboard_metrics']
     
     # Merge subtabs
     subtabs = {**DEFAULT_TEAM_VIEW_SETTINGS['subtabs'], **views.get('subtabs', {}), **direct_view_settings.get('subtabs', {})}
