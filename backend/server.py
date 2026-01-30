@@ -4654,7 +4654,7 @@ async def download_period_report_excel(report_type: str, period: str, current_us
             cell.fill = PatternFill(start_color="D9E1F2", end_color="D9E1F2", fill_type="solid")
             cell.alignment = Alignment(horizontal='center')
         
-        # Add data
+        # Add data - includes Fact Finders and Bankers Premium (separate from Total Premium)
         metrics = [
             ("Total Members", report_json['total_members']),
             ("Contacts", report_json['data']['contacts']),
@@ -4664,6 +4664,8 @@ async def download_period_report_excel(report_type: str, period: str, current_us
             ("Testimonials", report_json['data']['testimonials']),
             ("Sales", report_json['data']['sales']),
             ("New Face Sold", report_json['data']['new_face_sold']),
+            ("Fact Finders", report_json['data'].get('fact_finders', 0)),
+            ("Bankers Premium", report_json['data'].get('bankers_premium', 0)),
             ("Total Premium", report_json['data']['premium'])
         ]
         
@@ -4861,7 +4863,7 @@ async def download_daily_report_excel(report_type: str, date: str, current_user:
             cell.fill = PatternFill(start_color="D9E1F2", end_color="D9E1F2", fill_type="solid")
             cell.alignment = Alignment(horizontal='center')
         
-        # Add data
+        # Add data - includes Fact Finders and Bankers Premium (separate from Total Premium)
         metrics = [
             ("Total Members", report_json['total_members']),
             ("Contacts", report_json['data']['contacts']),
@@ -4871,6 +4873,8 @@ async def download_daily_report_excel(report_type: str, date: str, current_user:
             ("Testimonials", report_json['data']['testimonials']),
             ("Sales", report_json['data']['sales']),
             ("New Face Sold", report_json['data']['new_face_sold']),
+            ("Fact Finders", report_json['data'].get('fact_finders', 0)),
+            ("Bankers Premium", report_json['data'].get('bankers_premium', 0)),
             ("Total Premium", report_json['data']['premium'])
         ]
         
