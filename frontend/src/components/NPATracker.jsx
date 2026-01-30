@@ -423,7 +423,7 @@ const NPATracker = ({ user }) => {
             NPA Tracker - First Production
           </h3>
           <p className="text-sm text-gray-500">
-            Track agents toward ${goal.toLocaleString()} premium to become NPA
+            Agents are auto-added when cumulative premium exceeds ${goal.toLocaleString()}
           </p>
         </div>
         <Button
