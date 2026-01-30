@@ -3699,6 +3699,8 @@ async def generate_excel_report(period: str, current_user: dict = Depends(get_cu
             "testimonials": int(sum(a.get('testimonials', 0) for a in activities)),
             "sales": int(sum(a.get('sales', 0) for a in activities)),
             "new_face_sold": float(sum(a.get('new_face_sold', 0) for a in activities)),
+            "fact_finders": int(sum(a.get('fact_finders', 0) or 0 for a in activities)),
+            "bankers_premium": float(sum(float(a.get('bankers_premium', 0) or 0) for a in activities)),
             "premium": float(sum(a.get('premium', 0) for a in activities))
         }
         report_data.append(totals)
@@ -4090,6 +4092,8 @@ async def get_daily_report(report_type: str, date: str, current_user: dict = Dep
                 "testimonials": activity.get('testimonials', 0) if activity else 0,
                 "sales": activity.get('sales', 0) if activity else 0,
                 "new_face_sold": activity.get('new_face_sold', 0) if activity else 0,
+                "fact_finders": activity.get('fact_finders', 0) if activity else 0,
+                "bankers_premium": float(activity.get('bankers_premium', 0) or 0) if activity else 0,
                 "premium": activity.get('premium', 0) if activity else 0
             })
         
@@ -4139,6 +4143,8 @@ async def get_daily_report(report_type: str, date: str, current_user: dict = Dep
                 "testimonials": activity.get('testimonials', 0) if activity else 0,
                 "sales": activity.get('sales', 0) if activity else 0,
                 "new_face_sold": activity.get('new_face_sold', 0) if activity else 0,
+                "fact_finders": activity.get('fact_finders', 0) if activity else 0,
+                "bankers_premium": float(activity.get('bankers_premium', 0) or 0) if activity else 0,
                 "premium": activity.get('premium', 0) if activity else 0
             }
             
