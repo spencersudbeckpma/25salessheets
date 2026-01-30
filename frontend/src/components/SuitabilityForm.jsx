@@ -92,13 +92,21 @@ const SuitabilityForm = ({ user }) => {
     }
   };
 
-  const handleSubmit = async (e) => {
+  const handleSubmit = async (e, isDraft = false) => {
     e.preventDefault();
     
-    // Validation
-    if (!formData.client_name || !formData.annual_income || !formData.monthly_savings || !formData.liquid_net_worth) {
-      toast.error('Please fill in all required fields');
-      return;
+    // Only validate required fields if submitting (not saving draft)
+    if (!isDraft) {
+      if (!formData.client_name || !formData.annual_income || !formData.monthly_savings || !formData.liquid_net_worth) {
+        toast.error('Please fill in all required fields (Client Name, Annual Income, Monthly Savings, Liquid Net Worth)');
+        return;
+      }
+    } else {
+      // For drafts, at least require client name or some identifier
+      if (!formData.client_name && !formData.client_phone) {
+        toast.error('Please enter at least a client name or phone number to save as draft');
+        return;
+      }
     }
 
     setLoading(true);
@@ -106,19 +114,29 @@ const SuitabilityForm = ({ user }) => {
       const token = localStorage.getItem('token');
       const submitData = {
         ...formData,
-        agents: formData.agents.filter(a => a.trim() !== '')
+        agents: formData.agents.filter(a => a.trim() !== ''),
+        status: isDraft ? 'draft' : 'submitted'
       };
       
-      await axios.post(`${API}/api/suitability-forms`, submitData, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
+      if (editingFormId) {
+        // Update existing form
+        await axios.put(`${API}/api/suitability-forms/${editingFormId}`, submitData, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        toast.success(isDraft ? 'Draft updated!' : 'Form submitted successfully!');
+      } else {
+        // Create new form
+        await axios.post(`${API}/api/suitability-forms`, submitData, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        toast.success(isDraft ? 'Draft saved!' : 'Suitability form submitted successfully!');
+      }
       
-      toast.success('Suitability form submitted successfully!');
       resetForm();
       fetchForms();
       setActiveTab('my-forms');
     } catch (error) {
-      toast.error('Failed to submit form');
+      toast.error(error.response?.data?.detail || (isDraft ? 'Failed to save draft' : 'Failed to submit form'));
     } finally {
       setLoading(false);
     }
