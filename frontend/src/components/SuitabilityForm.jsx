@@ -260,11 +260,7 @@ const SuitabilityForm = ({ user }) => {
   const handleExport = async () => {
     try {
       const token = localStorage.getItem('token');
-      let url = `${API}/api/suitability-forms/export?format=csv`;
-      
-      if (weeklyReport) {
-        url += `&start_date=${weeklyReport.week_start}&end_date=${weeklyReport.week_end}`;
-      }
+      const url = `${API}/api/suitability-forms/export?format=csv`;
       
       const response = await axios.get(url, {
         headers: { Authorization: `Bearer ${token}` },
@@ -275,7 +271,7 @@ const SuitabilityForm = ({ user }) => {
       const downloadUrl = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = downloadUrl;
-      a.download = `suitability_forms_${weeklyReport?.week_start || 'all'}.csv`;
+      a.download = `my_suitability_forms.csv`;
       document.body.appendChild(a);
       a.click();
       a.remove();
@@ -284,32 +280,6 @@ const SuitabilityForm = ({ user }) => {
       toast.success('Export downloaded!');
     } catch (error) {
       toast.error('Failed to export');
-    }
-  };
-
-  const handleFridayReportExport = async () => {
-    try {
-      const token = localStorage.getItem('token');
-      const url = `${API}/api/suitability-forms/friday-report?week_offset=${weekOffset}`;
-      
-      const response = await axios.get(url, {
-        headers: { Authorization: `Bearer ${token}` },
-        responseType: 'blob'
-      });
-      
-      const blob = new Blob([response.data], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
-      const downloadUrl = window.URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = downloadUrl;
-      a.download = `Friday_Report_${weeklyReport?.week_start || 'week'}.xlsx`;
-      document.body.appendChild(a);
-      a.click();
-      a.remove();
-      window.URL.revokeObjectURL(downloadUrl);
-      
-      toast.success('Friday Report downloaded!');
-    } catch (error) {
-      toast.error('No forms found for this week');
     }
   };
 
