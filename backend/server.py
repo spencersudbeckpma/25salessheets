@@ -4117,12 +4117,18 @@ async def get_daily_report(report_type: str, date: str, current_user: dict = Dep
     report_type: 'individual', 'team', or 'organization'
     date: ISO format date string (YYYY-MM-DD)
     user_id: Optional - specific user ID for individual reports (defaults to all team members)
+    filter_by_kpi: If True (default), only show metrics enabled in team's KPI config. Set to False to show all metrics.
     Returns JSON data for on-screen viewing
     """
     if current_user['role'] not in ['super_admin', 'state_manager', 'regional_manager', 'district_manager']:
         raise HTTPException(status_code=403, detail="Only Managers (State, Regional, District) can access daily reports")
     
     team_id = current_user.get('team_id')
+    
+    # Get team's KPI config for filtering
+    team = await db.teams.find_one({"id": team_id}, {"_id": 0}) if team_id else None
+    view_settings = await get_team_view_settings(team)
+    enabled_metrics = get_enabled_report_metrics(view_settings, include_all=not filter_by_kpi)
     
     # Validate date format - keep it simple like other endpoints
     try:
