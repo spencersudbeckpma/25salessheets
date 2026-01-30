@@ -4568,7 +4568,7 @@ async def get_period_report(report_type: str, period: str, current_user: dict = 
         raise HTTPException(status_code=400, detail="Invalid report type. Use 'individual', 'team', or 'organization'")
 
 @api_router.get("/reports/period/excel/{report_type}")
-async def download_period_report_excel(report_type: str, period: str, current_user: dict = Depends(get_current_user), user_id: str = None, month: str = None, quarter: str = None, year: str = None):
+async def download_period_report_excel(report_type: str, period: str, current_user: dict = Depends(get_current_user), user_id: str = None, month: str = None, quarter: str = None, year: str = None, filter_by_kpi: bool = True):
     """
     Download period report (monthly, quarterly, yearly) as Excel file.
     report_type: 'individual', 'team', or 'organization'
@@ -4577,6 +4577,7 @@ async def download_period_report_excel(report_type: str, period: str, current_us
     month: Optional - specific month for monthly reports in YYYY-MM format
     quarter: Optional - specific quarter for quarterly reports in YYYY-Q1 format
     year: Optional - specific year for yearly reports in YYYY format
+    filter_by_kpi: If True (default), only include metrics enabled in team's KPI config
     """
     from openpyxl import Workbook
     from openpyxl.styles import Font, PatternFill, Alignment
@@ -4586,18 +4587,31 @@ async def download_period_report_excel(report_type: str, period: str, current_us
     if current_user['role'] not in ['super_admin', 'state_manager', 'regional_manager', 'district_manager']:
         raise HTTPException(status_code=403, detail="Only Managers (State, Regional, District) can download period reports")
     
-    # Get the report data with all parameters
-    report_json = await get_period_report(report_type, period, current_user, user_id, month, quarter, year)
+    # Get the report data with KPI filtering
+    report_json = await get_period_report(report_type, period, current_user, user_id, month, quarter, year, None, None, filter_by_kpi)
+    
+    # Get enabled metrics for dynamic column generation
+    enabled_metrics = report_json.get('enabled_metrics', [])
     
     # Create Excel workbook
     wb = Workbook()
     ws = wb.active
     ws.title = f"{period.capitalize()} {report_type.capitalize()}"
     
-    # Add title - include 2 new columns for new metrics (13 total columns now)
-    period_name = report_json.get('period_name', f'{period.capitalize()} Report')
+    # Calculate total columns dynamically
+    if report_type in ["individual", "team"]:
+        # Identity columns + enabled metrics
+        identity_cols = ["Name", "Email", "Role"] if report_type == "individual" else ["Team Name", "Manager", "Role"]
+        metric_headers = [get_metric_label(m) for m in enabled_metrics]
+        headers = identity_cols + metric_headers
+        total_cols = len(headers)
+    else:
+        total_cols = 2  # Organization report is Metric | Value format
     
-    ws.merge_cells('A1:M1')
+    # Add title with dynamic column span
+    end_col_letter = chr(ord('A') + total_cols - 1) if total_cols <= 26 else 'Z'
+    ws.merge_cells(f'A1:{end_col_letter}1')
+    period_name = report_json.get('period_name', f'{period.capitalize()} Report')
     title_cell = ws['A1']
     title_cell.value = f"{period.capitalize()} {report_type.capitalize()} Report - {period_name}"
     title_cell.font = Font(size=16, bold=True, color="FFFFFF")
@@ -4605,9 +4619,7 @@ async def download_period_report_excel(report_type: str, period: str, current_us
     title_cell.fill = PatternFill(start_color="4472C4", end_color="4472C4", fill_type="solid")
     
     if report_type == "individual":
-        # Add headers - includes Fact Finders and Bankers Premium (separate from Total Premium)
-        headers = ["Name", "Email", "Role", "Contacts", "Appointments", "Presentations", 
-                   "Referrals", "Testimonials", "Sales", "New Face Sold", "Fact Finders", "Bankers Premium", "Total Premium"]
+        # Add headers dynamically based on enabled metrics
         for col_num, header in enumerate(headers, 1):
             cell = ws.cell(row=2, column=col_num)
             cell.value = header
@@ -4615,9 +4627,25 @@ async def download_period_report_excel(report_type: str, period: str, current_us
             cell.fill = PatternFill(start_color="D9E1F2", end_color="D9E1F2", fill_type="solid")
             cell.alignment = Alignment(horizontal='center')
         
-        # Add data - CRITICAL: premium and bankers_premium are separate columns
+        # Add data - only enabled metrics
         for row_num, data in enumerate(report_json['data'], 3):
-            ws.cell(row=row_num, column=1).value = data['name']
+            ws.cell(row=row_num, column=1).value = data.get('name', '')
+            ws.cell(row=row_num, column=2).value = data.get('email', '')
+            ws.cell(row=row_num, column=3).value = data.get('role', '')
+            for col_offset, metric_id in enumerate(enabled_metrics):
+                ws.cell(row=row_num, column=4 + col_offset).value = data.get(metric_id, 0)
+        
+        # Add totals row
+        if report_json['data']:
+            totals_row = len(report_json['data']) + 4
+            ws.cell(row=totals_row, column=1).value = "TOTALS"
+            ws.cell(row=totals_row, column=1).font = Font(bold=True)
+            ws.cell(row=totals_row, column=1).fill = PatternFill(start_color="FFE6E6", end_color="FFE6E6", fill_type="solid")
+            
+            for col_offset, metric_id in enumerate(enabled_metrics):
+                total_val = sum(d.get(metric_id, 0) or 0 for d in report_json['data'])
+                ws.cell(row=totals_row, column=4 + col_offset).value = total_val
+                ws.cell(row=totals_row, column=4 + col_offset).font = Font(bold=True)
             ws.cell(row=row_num, column=2).value = data['email']
             ws.cell(row=row_num, column=3).value = data['role']
             ws.cell(row=row_num, column=4).value = data['contacts']
