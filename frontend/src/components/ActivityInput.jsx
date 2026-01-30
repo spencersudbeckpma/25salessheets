@@ -30,6 +30,7 @@ const ActivityInput = ({ user }) => {
     apps: 0,
     sales: 0,
     new_face_sold: 0,
+    fact_finders: 0,
     bankers_premium: 0,
     premium: 0
   });
@@ -76,6 +77,7 @@ const ActivityInput = ({ user }) => {
           apps: dayActivity.apps || 0,
           sales: dayActivity.sales,
           new_face_sold: dayActivity.new_face_sold,
+          fact_finders: dayActivity.fact_finders || 0,
           bankers_premium: dayActivity.bankers_premium || 0,
           premium: dayActivity.premium
         });
@@ -89,6 +91,7 @@ const ActivityInput = ({ user }) => {
           apps: 0,
           sales: 0,
           new_face_sold: 0,
+          fact_finders: 0,
           bankers_premium: 0,
           premium: 0
         });
@@ -113,6 +116,7 @@ const ActivityInput = ({ user }) => {
         apps: parseInt(activity.apps) || 0,
         sales: parseInt(activity.sales) || 0,
         new_face_sold: parseFloat(activity.new_face_sold) || 0,
+        fact_finders: parseInt(activity.fact_finders) || 0,
         bankers_premium: parseFloat(activity.bankers_premium) || 0,
         premium: parseFloat(activity.premium) || 0
       };
@@ -193,6 +197,7 @@ const ActivityInput = ({ user }) => {
     { key: 'apps', label: 'Apps', icon: '📱' },
     { key: 'sales', label: 'Sales', icon: '💰' },
     { key: 'new_face_sold', label: 'New Face Sold', icon: '🎯' },
+    { key: 'fact_finders', label: 'Fact Finders', icon: '📋' },
     { key: 'bankers_premium', label: 'Bankers Premium ($)', icon: '🏦' },
     { key: 'premium', label: 'Total Premium ($)', icon: '💵' }
   ];
