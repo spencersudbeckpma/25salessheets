@@ -543,7 +543,12 @@ const NPATracker = ({ user }) => {
                       {activeAgents.map((agent, idx) => (
                         <tr key={agent.id} className={idx % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
                           <td className="px-4 py-3">
-                            <div className="font-medium text-gray-900">{agent.name}</div>
+                            <div className="font-medium text-gray-900 flex items-center gap-2">
+                              {agent.name}
+                              {agent.auto_added && (
+                                <span className="px-1.5 py-0.5 bg-blue-100 text-blue-700 text-xs rounded">Auto</span>
+                              )}
+                            </div>
                             <div className="text-xs text-gray-500">{agent.phone || agent.email || '-'}</div>
                           </td>
                           <td className="px-4 py-3">
