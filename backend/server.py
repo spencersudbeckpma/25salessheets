@@ -4646,63 +4646,9 @@ async def download_period_report_excel(report_type: str, period: str, current_us
                 total_val = sum(d.get(metric_id, 0) or 0 for d in report_json['data'])
                 ws.cell(row=totals_row, column=4 + col_offset).value = total_val
                 ws.cell(row=totals_row, column=4 + col_offset).font = Font(bold=True)
-            ws.cell(row=row_num, column=2).value = data['email']
-            ws.cell(row=row_num, column=3).value = data['role']
-            ws.cell(row=row_num, column=4).value = data['contacts']
-            ws.cell(row=row_num, column=5).value = data['appointments']
-            ws.cell(row=row_num, column=6).value = data['presentations']
-            ws.cell(row=row_num, column=7).value = data['referrals']
-            ws.cell(row=row_num, column=8).value = data['testimonials']
-            ws.cell(row=row_num, column=9).value = data['sales']
-            ws.cell(row=row_num, column=10).value = data['new_face_sold']
-            ws.cell(row=row_num, column=11).value = data.get('fact_finders', 0)
-            ws.cell(row=row_num, column=12).value = data.get('bankers_premium', 0)
-            ws.cell(row=row_num, column=13).value = data['premium']
-        
-        # Add totals row for individual reports
-        if report_json['data']:
-            totals_row = len(report_json['data']) + 4  # +3 for headers, +1 for spacing
-            ws.cell(row=totals_row, column=1).value = "TOTALS"
-            ws.cell(row=totals_row, column=1).font = Font(bold=True)
-            ws.cell(row=totals_row, column=1).fill = PatternFill(start_color="FFE6E6", end_color="FFE6E6", fill_type="solid")
-            
-            # Calculate totals - CRITICAL: premium and bankers_premium are SEPARATE
-            total_contacts = sum(data['contacts'] for data in report_json['data'])
-            total_appointments = sum(data['appointments'] for data in report_json['data'])
-            total_presentations = sum(data['presentations'] for data in report_json['data'])
-            total_referrals = sum(data['referrals'] for data in report_json['data'])
-            total_testimonials = sum(data['testimonials'] for data in report_json['data'])
-            total_sales = sum(data['sales'] for data in report_json['data'])
-            total_new_face = sum(data['new_face_sold'] for data in report_json['data'])
-            total_fact_finders = sum(data.get('fact_finders', 0) for data in report_json['data'])
-            total_bankers_premium = sum(data.get('bankers_premium', 0) for data in report_json['data'])
-            total_premium = sum(data['premium'] for data in report_json['data'])
-            
-            ws.cell(row=totals_row, column=4).value = total_contacts
-            ws.cell(row=totals_row, column=4).font = Font(bold=True)
-            ws.cell(row=totals_row, column=5).value = total_appointments
-            ws.cell(row=totals_row, column=5).font = Font(bold=True)
-            ws.cell(row=totals_row, column=6).value = total_presentations
-            ws.cell(row=totals_row, column=6).font = Font(bold=True)
-            ws.cell(row=totals_row, column=7).value = total_referrals
-            ws.cell(row=totals_row, column=7).font = Font(bold=True)
-            ws.cell(row=totals_row, column=8).value = total_testimonials
-            ws.cell(row=totals_row, column=8).font = Font(bold=True)
-            ws.cell(row=totals_row, column=9).value = total_sales
-            ws.cell(row=totals_row, column=9).font = Font(bold=True)
-            ws.cell(row=totals_row, column=10).value = total_new_face
-            ws.cell(row=totals_row, column=10).font = Font(bold=True)
-            ws.cell(row=totals_row, column=11).value = total_fact_finders
-            ws.cell(row=totals_row, column=11).font = Font(bold=True)
-            ws.cell(row=totals_row, column=12).value = total_bankers_premium
-            ws.cell(row=totals_row, column=12).font = Font(bold=True)
-            ws.cell(row=totals_row, column=13).value = total_premium
-            ws.cell(row=totals_row, column=13).font = Font(bold=True)
     
     elif report_type == "team":
-        # Add headers
-        headers = ["Team Name", "Manager", "Role", "Contacts", "Appointments", "Presentations", 
-                   "Referrals", "Testimonials", "Sales", "New Face Sold", "Total Premium"]
+        # Add headers dynamically based on enabled metrics
         for col_num, header in enumerate(headers, 1):
             cell = ws.cell(row=2, column=col_num)
             cell.value = header
@@ -4710,44 +4656,25 @@ async def download_period_report_excel(report_type: str, period: str, current_us
             cell.fill = PatternFill(start_color="D9E1F2", end_color="D9E1F2", fill_type="solid")
             cell.alignment = Alignment(horizontal='center')
         
-        # Add data
+        # Add data - only enabled metrics
         for row_num, data in enumerate(report_json['data'], 3):
-            ws.cell(row=row_num, column=1).value = data['team_name']
-            ws.cell(row=row_num, column=2).value = data['manager']
-            ws.cell(row=row_num, column=3).value = data['role']
-            ws.cell(row=row_num, column=4).value = data['contacts']
-            ws.cell(row=row_num, column=5).value = data['appointments']
-            ws.cell(row=row_num, column=6).value = data['presentations']
-            ws.cell(row=row_num, column=7).value = data['referrals']
-            ws.cell(row=row_num, column=8).value = data['testimonials']
-            ws.cell(row=row_num, column=9).value = data['sales']
-            ws.cell(row=row_num, column=10).value = data['new_face_sold']
-            ws.cell(row=row_num, column=11).value = data['premium']
+            ws.cell(row=row_num, column=1).value = data.get('team_name', '')
+            ws.cell(row=row_num, column=2).value = data.get('manager', '')
+            ws.cell(row=row_num, column=3).value = data.get('role', '')
+            for col_offset, metric_id in enumerate(enabled_metrics):
+                ws.cell(row=row_num, column=4 + col_offset).value = data.get(metric_id, 0)
         
-        # Add totals row for team reports
+        # Add totals row
         if report_json['data']:
-            totals_row = len(report_json['data']) + 4  # +3 for headers, +1 for spacing
+            totals_row = len(report_json['data']) + 4
             ws.cell(row=totals_row, column=1).value = "TOTALS"
             ws.cell(row=totals_row, column=1).font = Font(bold=True)
             ws.cell(row=totals_row, column=1).fill = PatternFill(start_color="FFE6E6", end_color="FFE6E6", fill_type="solid")
             
-            # Calculate totals
-            total_contacts = sum(data['contacts'] for data in report_json['data'])
-            total_appointments = sum(data['appointments'] for data in report_json['data'])
-            total_presentations = sum(data['presentations'] for data in report_json['data'])
-            total_referrals = sum(data['referrals'] for data in report_json['data'])
-            total_testimonials = sum(data['testimonials'] for data in report_json['data'])
-            total_sales = sum(data['sales'] for data in report_json['data'])
-            total_new_face = sum(data['new_face_sold'] for data in report_json['data'])
-            total_premium = sum(data['premium'] for data in report_json['data'])
-            
-            ws.cell(row=totals_row, column=4).value = total_contacts
-            ws.cell(row=totals_row, column=4).font = Font(bold=True)
-            ws.cell(row=totals_row, column=5).value = total_appointments
-            ws.cell(row=totals_row, column=5).font = Font(bold=True)
-            ws.cell(row=totals_row, column=6).value = total_presentations
-            ws.cell(row=totals_row, column=6).font = Font(bold=True)
-            ws.cell(row=totals_row, column=7).value = total_referrals
+            for col_offset, metric_id in enumerate(enabled_metrics):
+                total_val = sum(d.get(metric_id, 0) or 0 for d in report_json['data'])
+                ws.cell(row=totals_row, column=4 + col_offset).value = total_val
+                ws.cell(row=totals_row, column=4 + col_offset).font = Font(bold=True)
             ws.cell(row=totals_row, column=7).font = Font(bold=True)
             ws.cell(row=totals_row, column=8).value = total_testimonials
             ws.cell(row=totals_row, column=8).font = Font(bold=True)
