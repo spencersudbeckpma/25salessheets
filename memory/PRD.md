@@ -261,6 +261,11 @@ Team-based activity tracking and performance management application for insuranc
   - New metrics tracked across all Daily Activity flows
   - bankers_premium kept separate from premium (never combined)
   - Available in stats, leaderboard, hierarchy, reports
+- [x] Team View Metric Toggles (COMPLETED 2025-01-30):
+  - Admins can control which metrics appear in Team View via Admin → Customize → Views
+  - 10 configurable metrics with enable/disable and reorder functionality
+  - bankers_premium and fact_finders disabled by default
+  - Backend returns enabled_activity_metrics in /api/team/hierarchy/{period}
 
 ### P1 - High Priority (PAUSED)
 - [ ] Refactor monolithic `server.py` into route-based structure (backend/routes/) - **PAUSED: App in active rollout**
