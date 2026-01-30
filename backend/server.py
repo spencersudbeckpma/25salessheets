@@ -229,12 +229,32 @@ async def get_team_view_settings(team: dict) -> dict:
     else:
         leaderboard_metrics = DEFAULT_TEAM_VIEW_SETTINGS['leaderboard_metrics']
     
+    # Get saved team activity metrics or use defaults
+    saved_team_activity = views.get('team_activity_metrics') or direct_view_settings.get('team_activity_metrics')
+    if saved_team_activity:
+        # Merge any NEW canonical metrics that aren't in saved config
+        saved_ids = {m['id'] for m in saved_team_activity}
+        max_order = max((m.get('order', 0) for m in saved_team_activity), default=0)
+        for i, canonical in enumerate(CANONICAL_TEAM_ACTIVITY_METRICS):
+            if canonical['id'] not in saved_ids:
+                # Add new metrics at the end, disabled by default
+                saved_team_activity.append({
+                    'id': canonical['id'],
+                    'label': canonical['label'],
+                    'enabled': False,  # Disabled by default - admin enables
+                    'order': max_order + i + 1
+                })
+        team_activity_metrics = saved_team_activity
+    else:
+        team_activity_metrics = DEFAULT_TEAM_VIEW_SETTINGS['team_activity_metrics']
+    
     # Merge subtabs
     subtabs = {**DEFAULT_TEAM_VIEW_SETTINGS['subtabs'], **views.get('subtabs', {}), **direct_view_settings.get('subtabs', {})}
     
     return {
         "kpi_cards": kpi_cards,
         "leaderboard_metrics": leaderboard_metrics,
+        "team_activity_metrics": team_activity_metrics,
         "subtabs": subtabs
     }
 
