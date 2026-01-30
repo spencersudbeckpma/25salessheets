@@ -83,6 +83,8 @@ const TeamView = ({ user }) => {
             testimonials: dayActivity?.testimonials || 0,
             sales: dayActivity?.sales || 0,
             new_face_sold: dayActivity?.new_face_sold || 0,
+            fact_finders: dayActivity?.fact_finders || 0,
+            bankers_premium: dayActivity?.bankers_premium || 0,
             premium: dayActivity?.premium || 0
           });
         }
@@ -98,6 +100,8 @@ const TeamView = ({ user }) => {
           testimonials: weekActivities.reduce((sum, a) => sum + a.testimonials, 0),
           sales: weekActivities.reduce((sum, a) => sum + a.sales, 0),
           new_face_sold: weekActivities.reduce((sum, a) => sum + a.new_face_sold, 0),
+          fact_finders: weekActivities.reduce((sum, a) => sum + a.fact_finders, 0),
+          bankers_premium: weekActivities.reduce((sum, a) => sum + a.bankers_premium, 0),
           premium: weekActivities.reduce((sum, a) => sum + a.premium, 0)
         };
         
