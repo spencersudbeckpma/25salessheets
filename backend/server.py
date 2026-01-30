@@ -4218,6 +4218,8 @@ async def get_daily_report(report_type: str, date: str, current_user: dict = Dep
                 org_totals["testimonials"] += activity.get('testimonials', 0)
                 org_totals["sales"] += activity.get('sales', 0)
                 org_totals["new_face_sold"] += activity.get('new_face_sold', 0)
+                org_totals["fact_finders"] += activity.get('fact_finders', 0)
+                org_totals["bankers_premium"] += activity.get('bankers_premium', 0)
                 org_totals["premium"] += activity.get('premium', 0)
         
         return {
