@@ -26,7 +26,7 @@ import sys
 import os
 
 # Configuration
-BACKEND_URL = "https://teamscope-migrator.preview.emergentagent.com/api"
+BACKEND_URL = "https://metrics-mission-1.preview.emergentagent.com/api"
 
 class Colors:
     GREEN = '\033[92m'

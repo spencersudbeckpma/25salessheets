@@ -1,126 +1,146 @@
-<analysis>**original_problem_statement**: The user, a , initiated this session to verify the completion of a major Team Customization feature. However, a series of critical regressions and data security vulnerabilities were discovered and became the primary focus.
+<analysis>**original_problem_statement**: The user initially focused on fixing data leaks and UI regressions. The work then shifted to building new features requested by the user who operates primarily from an iPhone and requires UI-based solutions instead of terminal commands.
 
 **PRODUCT REQUIREMENTS:**
-1.  **P0: Fix Super Admin Data Leak:** The  role was bypassing team-based data scoping on product pages (Leaderboard, Stats), leading to a cross-team data leak. This had to be fixed so that  views are scoped to their assigned team on all product pages, with cross-team access restricted *only* to explicit admin panel screens.
-2.  **P0: Fix Recruiting Tab Regression:** Multiple sub-tabs under Recruiting (Pipeline, Interviews) and Team Management (Reorganize) were broken, not rendering, or showing no data for users. The root causes were identified as inconsistent feature flag configurations and incorrect UI role checks.
-3.  **P0: Fix Reorganization UI Bug:** In the Reorganize tab, saving role or manager changes did not update the UI, leading the user to believe the save failed, even though the backend change was successful.
-4.  **P0: Fix Critical Data Leak from Legacy Fallback:** An attempt to show historical data (created before  existed) introduced a flawed query that leaked data from all teams into the current team's view. This had to be corrected immediately with a strict, non-negotiable data isolation policy.
-5.  **P0: Provide Safe Data Migration Path:** To restore visibility of historical data after implementing strict filtering, the agent needed to create secure, -only migration endpoints to backfill the  on legacy records.
+1.  **P0: Full Data Health Check UI:** Create an Admin UI for  to run data integrity checks, view build/deployment info, and run one-click data migration/backfill operations for records missing a .
+2.  **P0: Fix Login Failures:** Replace generic login error messages with specific, actionable ones (, , etc.). Add server-side logging for failed attempts and a UI for admins to view these logs. Implement private browsing detection.
+3.  **P0: Fix Recruiting Pipeline Regression:** The hierarchical view (breakdown by manager) in the recruiting pipeline was broken for the . This required fixing multiple backend endpoints that didn't handle the  role correctly.
+4.  **P1: Suitability Form Drafts:** Add a Save as Draft feature to the suitability form, allowing users to save incomplete forms and edit them later.
+5.  **P1: NPA Tracker Automation:** Overhaul the New Producing Agent (NPA) tracker to automatically enroll agents when their cumulative premium exceeds ,000, subject to role and account creation date rules. The manual add feature was also refined.
+6.  **P1: Leaderboard Customization:** Implement a feature allowing admins to configure leaderboard metric visibility and order on a per-team basis.
+7.  **P1: Add New Activity Metrics:** Introduce two new metrics,  and , into the Daily Activity logs and all related aggregations (stats, reports, leaderboards). A critical constraint is that  must **never** be added to the main  total.
 
 **User's preferred language**: English
 
 **what currently exists?**
 - A full-stack application with a React frontend and a monolithic FastAPI backend ().
-- All product-facing API endpoints now enforce **strict  filtering**. The flawed legacy fallback logic that caused a data leak has been completely removed. Consequently, any historical data in production that lacks a  is currently invisible.
-- A suite of -only migration endpoints has been created to safely backfill the  on legacy records for , , , and .
-- UI bugs related to  tab visibility and the Reorganization page not refreshing have been fixed.
+- A Full Data Health Check UI is available in the Admin panel.
+- Login error handling is robust, with an accompanying Recent Login Failures viewer in the Admin panel.
+- The Suitability Form supports saving and editing drafts.
+- The NPA Tracker automatically enrolls eligible agents and allows managers to manually add agents from a system list.
+- The Leaderboard is now customizable on a per-team basis via the Admin panel.
+- The backend implementation for two new metrics ( and ) has been started. The database models and several aggregation endpoints (, ) have been updated.
 
 **Last working item**:
-- **Last item agent was working**: Providing the user with instructions and code snippets to execute the newly created data migration endpoints (, etc.) via their browser console after they deploy the latest changes to production.
-- **Status**: USER VERIFICATION PENDING
-- **Agent Testing Done**: Y
-- **Which testing method agent to use?**: Manual testing by user in production. The user will deploy the changes, then use browser console  commands provided by the agent to run the migrations.
+- **Last item agent was working**: Adding two new metrics,  and , to all Daily Activity data and aggregations. The agent was in the process of updating all relevant backend endpoints to include these new fields, ensuring  is always calculated separately from .
+- **Status**: IN PROGRESS
+- **Agent Testing Done**: N
+- **Which testing method agent to use?**: both. All modified backend aggregation endpoints (, , , reports) need to be tested via . The frontend Daily Activity form needs to be updated and the entire flow from data entry to display on leaderboards and reports must be verified, likely with the .
 - **User Testing Done**: N
 
 **All Pending/In progress Issue list**:
-  - **Issue 1**: Legacy data (recruits, interviews, etc.) in the production database lacks a  and is therefore invisible due to the new strict data scoping rules. (Priority: P0)
-
-  **Issues Detail**:
-  - **Issue 1**:
-     - **Attempted fixes**: A previous attempt to fix this with a legacy-aware query () was critically flawed and caused a cross-team data leak. It was reverted.
-     - **Next debug checklist**: The fix is to run the migration endpoints. The user needs to deploy the code, then execute the provided  commands for each migration endpoint.
-     - **Why fix this issue and what will be achieved with the fix?**: This will restore visibility of all historical data for the correct teams without compromising data isolation.
-     - **Status**: NOT STARTED (blocked on user action: deployment and running migrations).
-     - **Is recurring issue?**: N
-     - **Should Test frontend/backend/both after fix?**: Both. The user will need to verify that historical data reappears in the frontend UI after the backend migration is complete.
-     - **Blocked on other issue**: None.
+There are no pending bugs; the current focus is on completing a new feature.
 
 **In progress Task List**:
-  - **Task 1**: Data Migration for Legacy Records (Priority: P0)
-     - **Where to resume**: The user needs to deploy the latest code to production. After deployment, they will use the provided JavaScript  commands to run the migration endpoints one by one.
-     - **What will be achieved with this?**: All historical records in the , , , and  collections will be updated with the correct , making them visible again in the UI.
-     - **Status**: NOT STARTED (Awaiting user action).
-     - **Should Test frontend/backend/both after fix?**: Both.
-     - **Blocked on something**: User deploying the code.
+- **Task 1**: Complete implementation of  and  metrics (Priority: P0)
+  - **Where to resume**:
+    1.  Continue updating backend aggregation logic in . The next endpoint to update is .
+    2.  Update any remaining reports endpoints that aggregate Daily Activity data.
+    3.  Update the frontend Daily Activity input form ( or similar) to add input fields for Bankers Premium and Fact Finders.
+    4.  Verify that all display components (Leaderboard, My Stats, Team Hierarchy, Reports) correctly show the new metrics as separate items.
+  - **What will be achieved with this?**: The application will track two new key performance indicators, providing deeper business insights while maintaining the integrity of existing premium calculations.
+  - **Status**: IN PROGRESS
+  - **Should Test frontend/backend/both after fix?**: Both.
+  - **Blocked on something**: No.
 
 **Upcoming and Future Tasks**
+- **Upcoming Tasks**:
+    - **P1**: User to perform a consolidated regression test across all application tabs, starting with Team Sudbeck, to identify any other missing or broken functionality.
 - **Future Tasks**:
-    - **Code Refactoring (PAUSED)**: Refactor the monolithic  into a route-based structure. The user has explicitly put this work on hold. (P2)
-    - **Cleanup Migration Endpoints (P2)**: Once the production data is fully migrated, the temporary migration endpoints in  can be removed.
-    - **All-Time Leaderboard (P2)**: Add an all-time period option to the leaderboard view.
+    - **P2**: Refactor the monolithic  into a more maintainable, route-based structure. (This task is explicitly paused by the user).
+    - **P2**: Add a Copy leaderboard settings from another team feature to the Admin UI as a quality-of-life improvement.
+    - **P2**: Remove the one-time data migration endpoints from  () as they are no longer needed.
 
 **Completed work in this session**
-- **Fixed Critical Super Admin Data Leak**: Removed logic that allowed  to bypass team scoping on all product pages, ensuring their view is correctly filtered to their assigned team.
-- **Fixed Critical Cross-Team Data Leak Regression**: Identified and removed a flawed legacy data query () that was leaking data between teams. Replaced it with strict  filtering on all relevant endpoints (, , etc.).
-- **Created Safe Data Migration Endpoints**: Implemented a suite of -only endpoints to backfill  on legacy records for , , , and .
-- **Fixed Reorganization UI Bug**: Corrected a React bug in  where the UI would not update after saving role/manager changes by adding a  hook to sync component state with props.
-- **Fixed Missing Team Management Tabs**: Added  to the role-based visibility checks in  to ensure all management sub-tabs (My Team, Reorganize, Archive) are visible.
+- Implemented a Full Data Health Check Admin UI with data integrity checks and one-click backfill buttons.
+- Fixed a major regression in the Recruiting Pipeline's hierarchical view for the  role.
+- Overhauled the login system with specific error messages, server-side logging, an admin log viewer, and private browsing detection.
+- Fixed a bug preventing  from using the password reset feature in the Team Management tab.
+- Added Save as Draft and Edit Draft functionality to the Suitability Form.
+- Automated the NPA (New Producing Agent) tracker to enroll agents based on performance, while refining the manual-add process for managers.
+- Implemented a per-team Leaderboard Customization feature to control metric visibility and order.
+- Fixed a bug where leaderboard customization settings failed to persist after being saved.
+- Corrected a regression in the NPA manual-add feature to ensure managers could add any eligible agent from their team.
 
 **Earlier issues found/mentioned but not fixed**
-   - **Issue 1**: Monolithic  codebase.
-     - **Debug checklist**: The plan is to create a  directory and split the endpoints. This is a technical debt issue.
-     - **Why to solve this issue and what will be achieved with this?**: Refactoring will improve code readability, maintainability, and reduce the risk of regressions.
-     - **Status**: NOT STARTED (explicitly paused by the user).
-     - **Should Test frontend/backend/both after fix**: Both.
-     - **Is recurring issue?**: Y
+- **Issue 1**: The backend codebase in  is a large monolith.
+  - **Debug checklist**: Plan and execute a refactor to split endpoints into a  directory structure.
+  - **Why to solve this issue and what will be achieved with this?**: Refactoring will significantly improve code readability, maintainability, and developer velocity, while reducing the risk of introducing new bugs.
+  - **Status**: NOT STARTED (explicitly paused by the user).
+  - **Is recurring issue?**: Y
 
 **Known issue recurrence from previous fork**
-  - **Data Scoping Issues**: A critical recurrence of this issue manifested in two ways during this session: the initial  bypass and the subsequent data leak from the flawed legacy fix. Both have been resolved with a strict data isolation policy.
+- **Data Scoping Issues**: The session started by fixing a major  data leak. Subsequent work involved fixing multiple other endpoints where the  role was not handled correctly, leading to broken functionality. This highlights a recurring theme of ensuring strict, correct data scoping for all user roles.
 
 **Code Architecture**
 
 
 **Key Technical Concepts**
-- **Strict Data Scoping**: The core principle established is that all product-level queries **MUST** filter by . No fallbacks or bypasses are permitted, to prevent any possibility of cross-team data leaks.
-- **Data Migration Endpoints**: A pattern for creating secure, admin-only, one-time endpoints to backfill data in production without requiring direct database access.
-- **React State vs. Props Synchronization**: Debugged and fixed a common React issue where a component's internal state does not update when its props change, by using a  hook.
+- **Configuration-Driven UI**: The Leaderboard component's structure is now determined by a backend configuration object (), allowing for dynamic UIs without code changes.
+- **Event-Driven Backend Logic**: The system now triggers a function () to evaluate an agent's status whenever a related event (logging a new activity) occurs.
+- **Admin-Facing Operational UIs**: A major theme was building UIs for tasks that typically require shell access, such as viewing logs () and running data migrations ().
+- **Strict Data Separation**: The requirement to track  separately from  established a key principle for handling distinct but related metrics during aggregation.
 
 **key DB schema**
-- No schema changes were made, but the session heavily reinforced the requirement that collections like , , , and  **must** have a  field to be visible in the application.
+-  (New Collection): Stores  for failed login attempts.
+- : Added  (values: draft, submitted).
+- : Added  to distinguish between system-added and manually-added agents.
+- : The  object now contains , an array defining metric visibility and order.
+- : Model updated to include . The  field already existed.
 
 **All files of reference**
-- : Contains all the data scoping fixes and new migration endpoints.
-- : Contains the UI fixes for the Reorganization and tab visibility bugs.
+- : The central backend file containing all business logic and API endpoints.
+- : The primary component for all new admin-facing features.
+- : The UI for the New Producing Agent tracker.
+- : The UI for the form that now supports drafts.
+- : The UI for the newly customizable leaderboard.
+- : The login form with enhanced error handling.
 
 **key api endpoints**
-- 
-- 
-- 
-- 
-- 
+- **Health/Migration**: , 
+- **Login**: , 
+- **Forms**: ,  (now handle )
+- **NPA/Activities**:  (now triggers NPA check)
+- **Customization**:  (saves leaderboard config),  (returns data + config)
 
 **Critical Info for New Agent**
-- **Data Isolation is Paramount**: Do NOT introduce any logic that bypasses strict  filtering. The previous attempt to create a legacy fallback caused a critical data leak. Records without a  are intentionally hidden until migrated.
-- **Migrations Pending User Action**: The user must first deploy the current code to production and then run the migration scripts provided. Historical data will remain invisible until they do so.
-- **Refactoring is Paused**: Do not work on refactoring  or other technical debt unless the user explicitly asks for it.
+- **Data Separation is Non-Negotiable**: The new  metric must **NEVER** be summed with the existing  metric. All aggregation logic must treat them as two distinct values.
+- ** Scoping**: In product-facing views (like Leaderboard, Recruiting), the  role should behave like a , meaning it is strictly scoped to its assigned . Cross-team visibility is only for explicit Admin panel tools.
+- **Backward Compatibility**: When adding new fields like  to the  collection, all aggregation logic must use  to handle old records gracefully.
+- **Refactoring is Paused**: Do not attempt to refactor the monolithic  file unless explicitly instructed by the user.
+
+**documents and test reports created in this job**
+- 
+- 
 
 **Last 10 User Messages and any pending HUMAN messages**
-10. **User**: Confirms the strict filtering and migration strategy is approved and asks how to run the migrations. (Status: ADDRESSED)
-9. **Agent**: Provides JavaScript  commands for the user to run in their browser console post-deployment. (Status: COMPLETED)
-8. **User**: Reports that the migration endpoints are not available in production. (Status: ADDRESSED)
-7. **Agent**: Clarifies that the changes are in preview and the user must deploy them to production first. (Status: COMPLETED)
-6. **User**: Confirms they already deployed (implying the deployment may have failed or is not the latest version). (Status: PENDING VERIFICATION)
-5. **Agent**: Re-iterates that the code needs to be deployed and suggests re-deploying. (Status: COMPLETED)
-4. **User**: Reports a critical P0 regression: pipeline data from another team is leaking into Team Sudbeck's view. (Status: ADDRESSED)
-3. **Agent**: Acknowledges the flaw in the legacy-support logic, removes it, implements strict filtering, and verifies the fix. (Status: COMPLETED)
-2. **User**: Approves the strict fix and requests confirmation of the migration endpoints needed to restore legacy data visibility safely. (Status: ADDRESSED)
-1. **Agent**: Confirms all necessary migration endpoints are in place and provides a summary of the post-deployment steps. (Status: COMPLETED)
+10. **User**: Requested implementation of two new metrics (, ) with a strict rule that  must be tracked separately from total . (Status: IN PROGRESS)
+9. **Agent**: Confirmed understanding of the new metric requirements and outlined the implementation plan. (Status: ADDRESSED)
+8. **User**: Approved the plan for new metrics and added guardrails for backward compatibility. (Status: ADDRESSED)
+7. **User**: Reported that leaderboard customization settings were not saving correctly. (Status: RESOLVED)
+6. **Agent**: Investigated, found a bug in how the backend saved and retrieved the configuration, and fixed it. (Status: COMPLETED)
+5. **User**: Confirmed the fix for the NPA manual-add feature, which now correctly allows managers to add any agent from their team. (Status: COMPLETED)
+4. **Agent**: Re-confirmed the implementation details for the NPA tracker fix. (Status: COMPLETED)
+3. **User**: Reported an issue with the NPA manual-add feature where the agent dropdown was empty. (Status: RESOLVED)
+2. **Agent**: Found the root cause was an endpoint () not handling the  role correctly and fixed it. (Status: COMPLETED)
+1. **User**: Approved the implementation plan for the Leaderboard Customization feature. (Status: COMPLETED)
 
 **Project Health Check:**
-- **Broken**: Visibility of historical data in production is currently broken by design until the user runs the provided migration scripts.
-- **Mocked**: None.
+- **Broken**: None
+- **Mocked**: None
 
 **3rd Party Integrations**
-- **openpyxl**: Used for generating  Excel reports.
-- **reportlab**: Used for generating  files.
+- openpyxl
+- reportlab
 
 **Testing status**
-- **Testing agent used after significant changes**: NO (Agent performed manual testing and verification via ).
+- **Testing agent used after significant changes**: YES (for the Full Data Health Check feature)
 - **Test files created**: []
-- **Known regressions**: None in the current codebase. Previous regressions (data leaks, broken UI) have been fixed.
+- **Known regressions**: Multiple regressions were identified by the user and fixed during this session (Recruiting Pipeline, Admin password reset, Leaderboard persistence). The user has a pending action item to perform a full regression sweep.
 
 **Credentials to test flow:**
-- **Super Admin**:  / 
+- **Super Admin**:  /  (For use in the preview environment only)
 
 **What agent forgot to execute**
-- The agent initially introduced a critically flawed legacy data-handling function () that caused a cross-team data leak. This was a major oversight that prioritized backwards compatibility over data security and had to be immediately corrected at the user's direction.</analysis>
+- The agent initially misinterpreted the user's requirement for the NPA manual-add feature, applying a date restriction that was only meant for automatic enrollment. This was later corrected.
+- The agent's first implementation of saving leaderboard settings was buggy and did not persist the changes, requiring a follow-up fix after user feedback.
+- The agent has updated some, but not all, backend aggregation points for the new  and  metrics. The task is incomplete and needs to be resumed.</analysis>
