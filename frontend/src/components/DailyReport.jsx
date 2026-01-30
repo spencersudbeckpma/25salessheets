@@ -398,7 +398,7 @@ const DailyReport = ({ user, embedded = false }) => {
   const renderHierarchyView = () => {
     if (!hierarchyData) return null;
 
-    // Calculate totals for hierarchy data
+    // Calculate totals for hierarchy data - CRITICAL: bankers_premium is SEPARATE from premium
     const totals = hierarchyData.hierarchy_data.reduce((acc, person) => ({
       contacts: acc.contacts + (parseFloat(person.contacts) || 0),
       appointments: acc.appointments + (parseFloat(person.appointments) || 0),
@@ -407,8 +407,10 @@ const DailyReport = ({ user, embedded = false }) => {
       testimonials: acc.testimonials + (parseFloat(person.testimonials) || 0),
       sales: acc.sales + (parseFloat(person.sales) || 0),
       new_face_sold: acc.new_face_sold + (parseFloat(person.new_face_sold) || 0),
+      fact_finders: acc.fact_finders + (parseFloat(person.fact_finders) || 0),
+      bankers_premium: acc.bankers_premium + (parseFloat(person.bankers_premium) || 0),
       premium: acc.premium + (parseFloat(person.premium) || 0)
-    }), { contacts: 0, appointments: 0, presentations: 0, referrals: 0, testimonials: 0, sales: 0, new_face_sold: 0, premium: 0 });
+    }), { contacts: 0, appointments: 0, presentations: 0, referrals: 0, testimonials: 0, sales: 0, new_face_sold: 0, fact_finders: 0, bankers_premium: 0, premium: 0 });
 
     return (
       <div className="mt-6">
@@ -445,6 +447,8 @@ const DailyReport = ({ user, embedded = false }) => {
                 <th className="px-4 py-3 text-center text-sm font-semibold">Testimonials</th>
                 <th className="px-4 py-3 text-center text-sm font-semibold">Sales</th>
                 <th className="px-4 py-3 text-center text-sm font-semibold">New Face</th>
+                <th className="px-4 py-3 text-center text-sm font-semibold">Fact Finders</th>
+                <th className="px-4 py-3 text-center text-sm font-semibold">Bankers Premium</th>
                 <th className="px-4 py-3 text-center text-sm font-semibold">Premium</th>
               </tr>
             </thead>
@@ -480,6 +484,10 @@ const DailyReport = ({ user, embedded = false }) => {
                   <td className="px-4 py-3 text-sm text-center">{person.testimonials}</td>
                   <td className="px-4 py-3 text-sm text-center">{person.sales}</td>
                   <td className="px-4 py-3 text-sm text-center">{person.new_face_sold}</td>
+                  <td className="px-4 py-3 text-sm text-center">{person.fact_finders || 0}</td>
+                  <td className="px-4 py-3 text-sm text-center font-semibold text-amber-600">
+                    ${typeof person.bankers_premium === 'number' ? person.bankers_premium.toFixed(2) : (person.bankers_premium || 0)}
+                  </td>
                   <td className="px-4 py-3 text-sm text-center font-semibold text-green-600">
                     ${typeof person.premium === 'number' ? person.premium.toFixed(2) : person.premium}
                   </td>
@@ -500,6 +508,8 @@ const DailyReport = ({ user, embedded = false }) => {
                   <td className="px-4 py-3 text-sm text-center font-bold text-amber-900">{totals.testimonials}</td>
                   <td className="px-4 py-3 text-sm text-center font-bold text-amber-900">{totals.sales}</td>
                   <td className="px-4 py-3 text-sm text-center font-bold text-amber-900">{totals.new_face_sold}</td>
+                  <td className="px-4 py-3 text-sm text-center font-bold text-amber-900">{totals.fact_finders}</td>
+                  <td className="px-4 py-3 text-sm text-center font-bold text-amber-700">${totals.bankers_premium.toFixed(2)}</td>
                   <td className="px-4 py-3 text-sm text-center font-bold text-green-700">${totals.premium.toFixed(2)}</td>
                 </tr>
               </tfoot>
