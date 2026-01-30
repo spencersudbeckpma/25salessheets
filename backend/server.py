@@ -4294,7 +4294,7 @@ async def get_daily_report(report_type: str, date: str, current_user: dict = Dep
         raise HTTPException(status_code=400, detail="Invalid report type. Use 'individual', 'team', or 'organization'")
 
 @api_router.get("/reports/period/{report_type}")
-async def get_period_report(report_type: str, period: str, current_user: dict = Depends(get_current_user), user_id: str = None, month: str = None, quarter: str = None, year: str = None, week_start: str = None, week_end: str = None):
+async def get_period_report(report_type: str, period: str, current_user: dict = Depends(get_current_user), user_id: str = None, month: str = None, quarter: str = None, year: str = None, week_start: str = None, week_end: str = None, filter_by_kpi: bool = True):
     """
     Get period report (weekly, monthly, quarterly, yearly) for a specific period.
     report_type: 'individual', 'team', or 'organization'
@@ -4304,12 +4304,18 @@ async def get_period_report(report_type: str, period: str, current_user: dict = 
     quarter: Optional - specific quarter for quarterly reports in YYYY-Q1 format (defaults to current quarter)
     year: Optional - specific year for yearly reports in YYYY format (defaults to current year)
     week_start, week_end: Optional - specific week range in YYYY-MM-DD format (defaults to current week)
+    filter_by_kpi: If True (default), only show metrics enabled in team's KPI config. Set to False to show all metrics.
     Returns JSON data for on-screen viewing
     """
     if current_user['role'] not in ['super_admin', 'state_manager', 'regional_manager', 'district_manager']:
         raise HTTPException(status_code=403, detail="Only Managers (State, Regional, District) can access period reports")
     
     team_id = current_user.get('team_id')
+    
+    # Get team's KPI config for filtering
+    team = await db.teams.find_one({"id": team_id}, {"_id": 0}) if team_id else None
+    view_settings = await get_team_view_settings(team)
+    enabled_metrics = get_enabled_report_metrics(view_settings, include_all=not filter_by_kpi)
     
     # Use Central Time for date calculations
     central_tz = pytz_timezone('America/Chicago')
