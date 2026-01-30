@@ -105,6 +105,26 @@ DEFAULT_TEAM_UI_SETTINGS = {
     "default_leaderboard_period": "weekly"
 }
 
+# Canonical leaderboard metrics - maps 1:1 to Daily Activity fields
+# This is the single source of truth for leaderboard metric keys
+CANONICAL_LEADERBOARD_METRICS = [
+    {"id": "premium", "label": "Premium", "field": "premium", "format": "currency"},
+    {"id": "presentations", "label": "Presentations", "field": "presentations", "format": "number"},
+    {"id": "sales", "label": "Sales", "field": "sales", "format": "number"},
+    {"id": "apps", "label": "Apps", "field": "apps", "format": "number"},
+    {"id": "contacts", "label": "Contacts", "field": "contacts", "format": "number"},
+    {"id": "appointments", "label": "Appointments", "field": "appointments", "format": "number"},
+    {"id": "referrals", "label": "Referrals", "field": "referrals", "format": "number"},
+    {"id": "testimonials", "label": "Testimonials", "field": "testimonials", "format": "number"},
+    {"id": "new_face_sold", "label": "New Faces Sold", "field": "new_face_sold", "format": "number"},
+]
+
+# Default leaderboard config - all metrics enabled in default order
+DEFAULT_LEADERBOARD_CONFIG = [
+    {"id": m["id"], "label": m["label"], "enabled": True, "order": i} 
+    for i, m in enumerate(CANONICAL_LEADERBOARD_METRICS)
+]
+
 # Default team view settings (Phase 2)
 DEFAULT_TEAM_VIEW_SETTINGS = {
     # KPI cards configuration - order determines display order
@@ -119,6 +139,8 @@ DEFAULT_TEAM_VIEW_SETTINGS = {
         {"id": "new_face_sold", "label": "New Face Sold", "enabled": True},
         {"id": "premium", "label": "Total Premium", "enabled": True}
     ],
+    # Leaderboard metrics configuration - order determines display order
+    "leaderboard_metrics": DEFAULT_LEADERBOARD_CONFIG.copy(),
     # Sub-tab visibility (enforced server-side)
     "subtabs": {
         "new_faces": True,
