@@ -4740,9 +4740,9 @@ async def download_daily_report_excel(report_type: str, date: str, current_user:
     title_cell.fill = PatternFill(start_color="4472C4", end_color="4472C4", fill_type="solid")
     
     if report_type == "individual":
-        # Add headers
+        # Add headers - includes Fact Finders and Bankers Premium (separate from Total Premium)
         headers = ["Name", "Email", "Role", "Contacts", "Appointments", "Presentations", 
-                   "Referrals", "Testimonials", "Sales", "New Face Sold", "Total Premium"]
+                   "Referrals", "Testimonials", "Sales", "New Face Sold", "Fact Finders", "Bankers Premium", "Total Premium"]
         for col_num, header in enumerate(headers, 1):
             cell = ws.cell(row=2, column=col_num)
             cell.value = header
@@ -4750,7 +4750,7 @@ async def download_daily_report_excel(report_type: str, date: str, current_user:
             cell.fill = PatternFill(start_color="D9E1F2", end_color="D9E1F2", fill_type="solid")
             cell.alignment = Alignment(horizontal='center')
         
-        # Add data
+        # Add data - CRITICAL: premium and bankers_premium are separate columns
         for row_num, data in enumerate(report_json['data'], 3):
             ws.cell(row=row_num, column=1).value = data['name']
             ws.cell(row=row_num, column=2).value = data['email']
@@ -4762,7 +4762,9 @@ async def download_daily_report_excel(report_type: str, date: str, current_user:
             ws.cell(row=row_num, column=8).value = data['testimonials']
             ws.cell(row=row_num, column=9).value = data['sales']
             ws.cell(row=row_num, column=10).value = data['new_face_sold']
-            ws.cell(row=row_num, column=11).value = data['premium']
+            ws.cell(row=row_num, column=11).value = data.get('fact_finders', 0)
+            ws.cell(row=row_num, column=12).value = data.get('bankers_premium', 0)
+            ws.cell(row=row_num, column=13).value = data['premium']
         
         # Add totals row for individual reports
         if report_json['data']:
@@ -4771,7 +4773,7 @@ async def download_daily_report_excel(report_type: str, date: str, current_user:
             ws.cell(row=totals_row, column=1).font = Font(bold=True)
             ws.cell(row=totals_row, column=1).fill = PatternFill(start_color="FFE6E6", end_color="FFE6E6", fill_type="solid")
             
-            # Calculate totals
+            # Calculate totals - CRITICAL: premium and bankers_premium are SEPARATE
             total_contacts = sum(data['contacts'] for data in report_json['data'])
             total_appointments = sum(data['appointments'] for data in report_json['data'])
             total_presentations = sum(data['presentations'] for data in report_json['data'])
@@ -4779,6 +4781,8 @@ async def download_daily_report_excel(report_type: str, date: str, current_user:
             total_testimonials = sum(data['testimonials'] for data in report_json['data'])
             total_sales = sum(data['sales'] for data in report_json['data'])
             total_new_face = sum(data['new_face_sold'] for data in report_json['data'])
+            total_fact_finders = sum(data.get('fact_finders', 0) for data in report_json['data'])
+            total_bankers_premium = sum(data.get('bankers_premium', 0) for data in report_json['data'])
             total_premium = sum(data['premium'] for data in report_json['data'])
             
             ws.cell(row=totals_row, column=4).value = total_contacts
@@ -4795,8 +4799,12 @@ async def download_daily_report_excel(report_type: str, date: str, current_user:
             ws.cell(row=totals_row, column=9).font = Font(bold=True)
             ws.cell(row=totals_row, column=10).value = total_new_face
             ws.cell(row=totals_row, column=10).font = Font(bold=True)
-            ws.cell(row=totals_row, column=11).value = total_premium
+            ws.cell(row=totals_row, column=11).value = total_fact_finders
             ws.cell(row=totals_row, column=11).font = Font(bold=True)
+            ws.cell(row=totals_row, column=12).value = total_bankers_premium
+            ws.cell(row=totals_row, column=12).font = Font(bold=True)
+            ws.cell(row=totals_row, column=13).value = total_premium
+            ws.cell(row=totals_row, column=13).font = Font(bold=True)
     
     elif report_type == "team":
         # Add headers
