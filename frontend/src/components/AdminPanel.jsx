@@ -440,6 +440,45 @@ const AdminPanel = ({ user }) => {
     });
   };
 
+  // Toggle team activity metric visibility (for Team View / Daily Activity)
+  const toggleTeamActivityMetric = (metricId) => {
+    setCustomizationForm(prev => ({
+      ...prev,
+      view_settings: {
+        ...prev.view_settings,
+        team_activity_metrics: (prev.view_settings.team_activity_metrics || []).map(metric =>
+          metric.id === metricId ? { ...metric, enabled: !metric.enabled } : metric
+        )
+      }
+    }));
+  };
+
+  // Move team activity metric up in order
+  const moveTeamActivityMetricUp = (index) => {
+    if (index === 0) return;
+    setCustomizationForm(prev => {
+      const metrics = [...(prev.view_settings.team_activity_metrics || [])];
+      [metrics[index - 1], metrics[index]] = [metrics[index], metrics[index - 1]];
+      return {
+        ...prev,
+        view_settings: { ...prev.view_settings, team_activity_metrics: metrics }
+      };
+    });
+  };
+
+  // Move team activity metric down in order
+  const moveTeamActivityMetricDown = (index) => {
+    setCustomizationForm(prev => {
+      const metrics = [...(prev.view_settings.team_activity_metrics || [])];
+      if (index >= metrics.length - 1) return prev;
+      [metrics[index], metrics[index + 1]] = [metrics[index + 1], metrics[index]];
+      return {
+        ...prev,
+        view_settings: { ...prev.view_settings, team_activity_metrics: metrics }
+      };
+    });
+  };
+
   // Download State Manager Pack (roster PDF + guide)
   const handleDownloadSmPack = async (teamId, teamName) => {
     try {
