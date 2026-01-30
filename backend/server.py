@@ -4257,11 +4257,16 @@ async def get_daily_report(report_type: str, date: str, current_user: dict = Dep
                 **member_totals
             })
         
+        # Filter data by enabled KPIs
+        filtered_data = [build_report_row(row, enabled_metrics) for row in report_data]
+        
         return {
             "report_type": "team",
             "date": report_date,
-            "data": report_data,
-            "selected_user": user_id
+            "data": filtered_data,
+            "selected_user": user_id,
+            "applied_kpi_filter": filter_by_kpi,
+            "enabled_metrics": enabled_metrics
         }
     
     elif report_type == "organization":
@@ -4294,11 +4299,16 @@ async def get_daily_report(report_type: str, date: str, current_user: dict = Dep
                 org_totals["bankers_premium"] += activity.get('bankers_premium', 0)
                 org_totals["premium"] += activity.get('premium', 0)
         
+        # Filter org totals by enabled KPIs
+        filtered_totals = {k: v for k, v in org_totals.items() if k in enabled_metrics}
+        
         return {
             "report_type": "organization",
             "date": report_date,
             "total_members": len(all_members),
-            "data": org_totals
+            "data": filtered_totals,
+            "applied_kpi_filter": filter_by_kpi,
+            "enabled_metrics": enabled_metrics
         }
     
     else:
