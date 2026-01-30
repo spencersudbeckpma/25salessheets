@@ -4469,6 +4469,8 @@ async def get_period_report(report_type: str, period: str, current_user: dict = 
                 org_totals["testimonials"] += activity.get('testimonials', 0)
                 org_totals["sales"] += activity.get('sales', 0)
                 org_totals["new_face_sold"] += activity.get('new_face_sold', 0)
+                org_totals["fact_finders"] += activity.get('fact_finders', 0)
+                org_totals["bankers_premium"] += activity.get('bankers_premium', 0)
                 org_totals["premium"] += activity.get('premium', 0)
         
         return {
