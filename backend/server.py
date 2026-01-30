@@ -7060,9 +7060,85 @@ async def include_in_sna_tracking(user_id: str, current_user: dict = Depends(get
 # ============================================
 # NPA (New Producing Agent) Tracker Endpoints
 # ============================================
-# Agents are manually added and tracked toward $1,000 premium goal
+# Agents are automatically added when they exceed $1,000 cumulative premium
 
 NPA_GOAL = 1000
+
+async def check_and_auto_add_to_npa(user_id: str, team_id: str):
+    """
+    Check if a user has exceeded NPA_GOAL in cumulative premium.
+    If yes and not already tracked, automatically add them to NPA tracker.
+    Called in real-time when activities are created/updated.
+    """
+    if not user_id or not team_id:
+        return None
+    
+    # Check if already being tracked
+    existing_npa = await db.npa_agents.find_one({"user_id": user_id, "team_id": team_id})
+    if existing_npa:
+        # Already tracked, just update their premium if needed
+        return existing_npa
+    
+    # Calculate cumulative premium from activities
+    act_query = {"user_id": user_id, "premium": {"$gt": 0}, "team_id": team_id}
+    activities = await db.activities.find(act_query, {"_id": 0, "premium": 1, "date": 1}).to_list(10000)
+    total_premium = sum(a.get('premium', 0) for a in activities)
+    
+    # Check if exceeds NPA goal
+    if total_premium >= NPA_GOAL:
+        # Get user details
+        user = await db.users.find_one({"id": user_id}, {"_id": 0})
+        if not user:
+            return None
+        
+        # Find their manager for upline info
+        manager = None
+        rm_name = ""
+        dm_name = ""
+        if user.get('manager_id'):
+            manager = await db.users.find_one({"id": user['manager_id']}, {"_id": 0})
+            if manager:
+                if manager.get('role') == 'district_manager':
+                    dm_name = manager.get('name', '')
+                    # Get the DM's manager for RM
+                    if manager.get('manager_id'):
+                        rm = await db.users.find_one({"id": manager['manager_id']}, {"_id": 0})
+                        if rm and rm.get('role') == 'regional_manager':
+                            rm_name = rm.get('name', '')
+                elif manager.get('role') == 'regional_manager':
+                    rm_name = manager.get('name', '')
+        
+        # Find first production date
+        first_production = min(activities, key=lambda x: x.get('date', '9999-99-99')) if activities else None
+        start_date = first_production.get('date', '') if first_production else datetime.now(timezone.utc).strftime('%Y-%m-%d')
+        
+        # Auto-add to NPA tracker
+        npa_agent = {
+            "id": str(uuid.uuid4()),
+            "user_id": user_id,
+            "team_id": team_id,
+            "name": user.get('name', ''),
+            "email": user.get('email', ''),
+            "phone": user.get('phone', ''),
+            "start_date": start_date,
+            "upline_dm": dm_name,
+            "upline_rm": rm_name,
+            "total_premium": total_premium,
+            "added_by": "system",
+            "added_by_name": "Auto-added",
+            "achievement_date": datetime.now(timezone.utc).strftime('%Y-%m-%d'),
+            "achieved_npa": True,
+            "auto_added": True,
+            "notes": f"Auto-added when cumulative premium reached ${total_premium:.2f}",
+            "created_at": datetime.now(timezone.utc).isoformat()
+        }
+        
+        await db.npa_agents.insert_one(npa_agent)
+        logging.info(f"[NPA_AUTO_ADD] User {user.get('name')} ({user_id}) auto-added to NPA tracker with ${total_premium:.2f} premium")
+        
+        return npa_agent
+    
+    return None
 
 @api_router.get("/npa-tracker")
 async def get_npa_agents(current_user: dict = Depends(get_current_user)):
