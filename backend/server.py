@@ -4568,7 +4568,7 @@ async def get_period_report(report_type: str, period: str, current_user: dict = 
         raise HTTPException(status_code=400, detail="Invalid report type. Use 'individual', 'team', or 'organization'")
 
 @api_router.get("/reports/period/excel/{report_type}")
-async def download_period_report_excel(report_type: str, period: str, current_user: dict = Depends(get_current_user), user_id: str = None, month: str = None, quarter: str = None, year: str = None, filter_by_kpi: bool = True):
+async def download_period_report_excel(report_type: str, period: str, current_user: dict = Depends(get_current_user), user_id: str = None, month: str = None, quarter: str = None, year: str = None):
     """
     Download period report (monthly, quarterly, yearly) as Excel file.
     report_type: 'individual', 'team', or 'organization'
@@ -4577,7 +4577,9 @@ async def download_period_report_excel(report_type: str, period: str, current_us
     month: Optional - specific month for monthly reports in YYYY-MM format
     quarter: Optional - specific quarter for quarterly reports in YYYY-Q1 format
     year: Optional - specific year for yearly reports in YYYY format
-    filter_by_kpi: If True (default), only include metrics enabled in team's KPI config
+    
+    NOTE: Excel exports always include ALL metrics (filter_by_kpi=False) for complete data export.
+    KPI filtering is only applied to in-app JSON views.
     """
     from openpyxl import Workbook
     from openpyxl.styles import Font, PatternFill, Alignment
@@ -4587,8 +4589,8 @@ async def download_period_report_excel(report_type: str, period: str, current_us
     if current_user['role'] not in ['super_admin', 'state_manager', 'regional_manager', 'district_manager']:
         raise HTTPException(status_code=403, detail="Only Managers (State, Regional, District) can download period reports")
     
-    # Get the report data with KPI filtering
-    report_json = await get_period_report(report_type, period, current_user, user_id, month, quarter, year, None, None, filter_by_kpi)
+    # Get the report data - ALWAYS with filter_by_kpi=False for exports (show ALL metrics)
+    report_json = await get_period_report(report_type, period, current_user, user_id, month, quarter, year, None, None, filter_by_kpi=False)
     
     # Get enabled metrics for dynamic column generation
     enabled_metrics = report_json.get('enabled_metrics', [])
