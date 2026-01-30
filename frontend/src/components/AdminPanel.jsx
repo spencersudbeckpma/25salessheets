@@ -3818,8 +3818,8 @@ const AdminPanel = ({ user }) => {
                       Team View / Daily Activity Visibility
                     </h4>
                     <p className="text-xs text-slate-500 mb-3">
-                      Control which metrics are <strong>visible</strong> in the Team View hierarchy. This does NOT affect Daily Activity inputs, 
-                      stored data, aggregation math, or reports. Each team can show different metrics based on their coaching style.
+                      Control which metrics are <strong>visible</strong> in the Team View hierarchy only. 
+                      Does NOT affect Daily Activity inputs, stored data, aggregation, Leaderboard, or Reports.
                     </p>
                     <div className="space-y-2">
                       {(customizationForm.view_settings?.team_activity_metrics || []).map((metric, index) => (
@@ -3863,7 +3863,7 @@ const AdminPanel = ({ user }) => {
                       ))}
                     </div>
                     <p className="text-xs text-slate-400 mt-3 italic">
-                      Note: These toggles control Team View ONLY. Daily Activity inputs, Leaderboard, and Reports are configured separately.
+                      Scope: Team View tab only. Reports use KPI Cards config (above).
                     </p>
                   </div>
 
