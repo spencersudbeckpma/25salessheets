@@ -8421,20 +8421,21 @@ SUITABILITY_FORM_CONFIG = {
 }
 
 class SuitabilityFormCreate(BaseModel):
-    client_name: str
-    client_phone: str
-    client_address: str
-    annual_income: str
-    monthly_savings: str
-    liquid_net_worth: str
-    sale_made: bool
-    agents: List[str]
-    presentation_date: str
-    presentation_location: str
+    client_name: Optional[str] = ""
+    client_phone: Optional[str] = ""
+    client_address: Optional[str] = ""
+    annual_income: Optional[str] = ""
+    monthly_savings: Optional[str] = ""
+    liquid_net_worth: Optional[str] = ""
+    sale_made: bool = False
+    agents: List[str] = []
+    presentation_date: Optional[str] = ""
+    presentation_location: Optional[str] = ""
     life_licensed: bool = True
     regional_assigned: Optional[str] = None
     notes: Optional[str] = ""
     results: Optional[str] = ""
+    status: Optional[str] = "submitted"  # "draft" or "submitted"
 
 @api_router.get("/suitability-forms/config")
 async def get_suitability_form_config(current_user: dict = Depends(get_current_user)):
