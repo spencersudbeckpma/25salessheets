@@ -157,7 +157,7 @@ const StatsView = ({ user }) => {
                 <div key={card.key} className="p-4 rounded-lg bg-gradient-to-br from-white to-gray-50 shadow border-l-4 border-blue-500">
                   <div className="text-2xl mb-2">{card.icon}</div>
                   <div className="text-2xl font-bold text-gray-800" data-testid={`stat-${card.key}-value`}>
-                    {card.key === 'premium' ? `$${stats[card.key].toFixed(2)}` : stats[card.key]}
+                    {(card.key === 'premium' || card.key === 'bankers_premium') ? `$${(stats[card.key] || 0).toFixed(2)}` : stats[card.key] || 0}
                   </div>
                   <div className="text-sm text-gray-600 mt-1" data-testid={`stat-${card.key}-label`}>{card.label}</div>
                 </div>
