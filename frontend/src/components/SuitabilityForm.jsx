@@ -24,6 +24,7 @@ const SuitabilityForm = ({ user }) => {
   const [selectedForm, setSelectedForm] = useState(null);
   const [editingResults, setEditingResults] = useState('');
   const [savingResults, setSavingResults] = useState(false);
+  const [editingFormId, setEditingFormId] = useState(null); // Track if editing a draft
   
   const [formData, setFormData] = useState({
     client_name: '',
