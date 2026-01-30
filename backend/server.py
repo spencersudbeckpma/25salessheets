@@ -4726,7 +4726,7 @@ async def download_daily_report_excel(report_type: str, date: str, current_user:
     report_date_obj = datetime.fromisoformat(date).date()
     date_str = report_date_obj.strftime('%B %d, %Y')
     
-    ws.merge_cells('A1:K1')
+    ws.merge_cells('A1:M1')
     title_cell = ws['A1']
     title_cell.value = f"Daily {report_type.capitalize()} Report - {date_str}"
     title_cell.font = Font(size=16, bold=True, color="FFFFFF")
