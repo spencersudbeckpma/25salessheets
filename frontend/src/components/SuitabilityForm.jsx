@@ -343,7 +343,26 @@ const SuitabilityForm = ({ user }) => {
 
           {/* New Form Tab */}
           <TabsContent value="new">
-            <form onSubmit={handleSubmit} className="space-y-6">
+            <form onSubmit={(e) => handleSubmit(e, false)} className="space-y-6">
+              {/* Editing Banner */}
+              {editingFormId && (
+                <div className="bg-amber-50 border border-amber-300 rounded-lg p-3 flex items-center justify-between">
+                  <div className="flex items-center gap-2 text-amber-800">
+                    <span className="text-lg">✏️</span>
+                    <span className="font-medium">Editing: {formData.client_name || 'Draft'}</span>
+                  </div>
+                  <Button 
+                    type="button" 
+                    variant="ghost" 
+                    size="sm"
+                    onClick={resetForm}
+                    className="text-amber-700 hover:text-amber-900"
+                  >
+                    Cancel Edit
+                  </Button>
+                </div>
+              )}
+              
               {/* Client Information */}
               <div className="bg-gray-50 rounded-lg p-4 space-y-4">
                 <h3 className="font-semibold text-gray-800 flex items-center gap-2">
