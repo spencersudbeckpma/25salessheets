@@ -253,6 +253,14 @@ const TeamView = ({ user }) => {
                         <span className={`ml-2 font-semibold ${activity.dayName === 'Total' ? 'text-emerald-700' : 'text-gray-900'}`}>{activity.sales}</span>
                       </div>
                       <div>
+                        <span className="text-gray-600">Fact Finders</span>
+                        <span className={`ml-2 font-semibold ${activity.dayName === 'Total' ? 'text-emerald-700' : 'text-gray-900'}`}>{activity.fact_finders || 0}</span>
+                      </div>
+                      <div>
+                        <span className="text-gray-600">Bankers Premium</span>
+                        <span className={`ml-2 font-semibold ${activity.dayName === 'Total' ? 'text-emerald-700' : 'text-gray-900'}`}>${typeof activity.bankers_premium === 'number' ? activity.bankers_premium.toFixed(2) : (activity.bankers_premium || 0)}</span>
+                      </div>
+                      <div>
                         <span className="text-gray-600">Premium</span>
                         <span className={`ml-2 font-semibold ${activity.dayName === 'Total' ? 'text-emerald-700' : 'text-gray-900'}`}>${typeof activity.premium === 'number' ? activity.premium.toFixed(2) : activity.premium}</span>
                       </div>
