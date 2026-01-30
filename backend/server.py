@@ -4926,13 +4926,44 @@ async def populate_todays_activities(current_user: dict = Depends(get_current_us
     }
 
 @api_router.post("/auth/login")
-async def login(login_data: UserLogin):
-    # Try to find user by email first, then by username
-    login_identifier = login_data.email.strip()  # Strip whitespace
+async def login(login_data: UserLogin, request: Request):
+    """
+    Login endpoint with explicit error codes for debugging.
+    Error codes:
+    - user_not_found: Email/username doesn't exist
+    - invalid_credentials: Password is wrong
+    - user_archived: Account is archived/disabled
+    - user_missing_team: User has no team assigned
+    - token_creation_failed: JWT token generation failed
+    """
+    # Get device/browser info for logging
+    user_agent = request.headers.get('user-agent', 'unknown')
+    client_ip = request.client.host if request.client else 'unknown'
+    
+    # Normalize inputs: lowercase email, trim whitespace
+    login_identifier = login_data.email.strip().lower()
+    password = login_data.password.strip() if login_data.password else ''
+    
+    logging.info(f"[LOGIN_ATTEMPT] email={login_identifier}, ip={client_ip}, user_agent={user_agent[:100]}")
+    
+    # Validate input
+    if not login_identifier:
+        logging.warning(f"[LOGIN_FAILED] reason=empty_email, ip={client_ip}")
+        raise HTTPException(
+            status_code=400, 
+            detail={"code": "invalid_input", "message": "Email or username is required"}
+        )
+    
+    if not password:
+        logging.warning(f"[LOGIN_FAILED] email={login_identifier}, reason=empty_password, ip={client_ip}")
+        raise HTTPException(
+            status_code=400, 
+            detail={"code": "invalid_input", "message": "Password is required"}
+        )
     
     # Check if it looks like an email (contains @)
     if '@' in login_identifier:
-        # Case-insensitive email lookup
+        # Case-insensitive email lookup (already lowercased)
         user = await db.users.find_one(
             {"email": {"$regex": f"^{login_identifier}$", "$options": "i"}},
             {"_id": 0}
@@ -4944,22 +4975,55 @@ async def login(login_data: UserLogin):
             {"_id": 0}
         )
     
-    logging.info(f"Login attempt for: {login_identifier}, user found: {user is not None}")
-        
     if not user:
-        raise HTTPException(status_code=401, detail="Invalid credentials")
+        logging.warning(f"[LOGIN_FAILED] email={login_identifier}, reason=user_not_found, ip={client_ip}")
+        raise HTTPException(
+            status_code=401, 
+            detail={"code": "user_not_found", "message": "No account found with this email or username"}
+        )
     
-    # Check if user is archived
-    if user.get('status') == 'archived':
-        raise HTTPException(status_code=403, detail="Account is archived. Please contact your administrator.")
+    # Check if user is archived/disabled
+    user_status = user.get('status', 'active')
+    if user_status == 'archived':
+        logging.warning(f"[LOGIN_FAILED] email={login_identifier}, reason=user_archived, user_id={user['id']}, ip={client_ip}")
+        raise HTTPException(
+            status_code=403, 
+            detail={"code": "user_archived", "message": "Account is archived. Please contact your administrator."}
+        )
     
-    password_valid = verify_password(login_data.password, user['password_hash'])
-    logging.info(f"Password valid: {password_valid}")
+    if user_status == 'disabled':
+        logging.warning(f"[LOGIN_FAILED] email={login_identifier}, reason=user_disabled, user_id={user['id']}, ip={client_ip}")
+        raise HTTPException(
+            status_code=403, 
+            detail={"code": "user_disabled", "message": "Account is disabled. Please contact your administrator."}
+        )
+    
+    # Verify password
+    try:
+        password_valid = verify_password(password, user['password_hash'])
+    except Exception as e:
+        logging.error(f"[LOGIN_FAILED] email={login_identifier}, reason=password_verification_error, error={str(e)}, ip={client_ip}")
+        raise HTTPException(
+            status_code=500, 
+            detail={"code": "server_error", "message": "Error verifying credentials. Please try again."}
+        )
     
     if not password_valid:
-        raise HTTPException(status_code=401, detail="Invalid credentials")
+        logging.warning(f"[LOGIN_FAILED] email={login_identifier}, reason=invalid_credentials, user_id={user['id']}, ip={client_ip}")
+        raise HTTPException(
+            status_code=401, 
+            detail={"code": "invalid_credentials", "message": "Incorrect password"}
+        )
     
-    token = create_jwt_token(user['id'], user['email'])
+    # Create JWT token
+    try:
+        token = create_jwt_token(user['id'], user['email'])
+    except Exception as e:
+        logging.error(f"[LOGIN_FAILED] email={login_identifier}, reason=token_creation_failed, error={str(e)}, ip={client_ip}")
+        raise HTTPException(
+            status_code=500, 
+            detail={"code": "token_creation_failed", "message": "Failed to create login session. Please try again."}
+        )
     
     # Get team branding, features, and UI settings
     branding = None
@@ -4981,9 +5045,15 @@ async def login(login_data: UserLogin):
             # Get UI settings
             team_ui = team.get('ui_settings', {})
             ui_settings = {**ui_settings, **team_ui}
+    else:
+        # Log warning for users without team (super_admin may not have team)
+        if user.get('role') != 'super_admin':
+            logging.warning(f"[LOGIN_WARNING] email={login_identifier}, reason=user_missing_team, user_id={user['id']}")
     
     # Get EFFECTIVE features for this user (includes role-based overrides)
     features = await get_effective_features(user, team)
+    
+    logging.info(f"[LOGIN_SUCCESS] email={login_identifier}, user_id={user['id']}, role={user.get('role')}, team_id={user.get('team_id')}, ip={client_ip}")
     
     return {
         "token": token,
