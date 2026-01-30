@@ -5428,6 +5428,10 @@ async def update_activity(date: str, activity_data: ActivityCreate, current_user
             doc['edited_at'] = doc['edited_at'].isoformat()
         await db.activities.insert_one(doc)
     
+    # Check if user should be auto-added to NPA tracker (real-time)
+    if activity_data.premium and activity_data.premium > 0:
+        await check_and_auto_add_to_npa(current_user['id'], current_user.get('team_id'))
+    
     return {"message": "Activity updated"}
 
 @api_router.get("/activities/my")
