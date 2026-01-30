@@ -280,34 +280,66 @@ const TeamView = ({ user }) => {
                       {activity.dayName ? `${activity.dayName} ${activity.dayName !== 'Total' ? '- ' + activity.date : ''}` : activity.date}
                     </div>
                     <div className="flex flex-wrap gap-x-6 gap-y-2 text-sm">
-                      <div>
-                        <span className="text-gray-600">Contacts</span>
-                        <span className={`ml-2 font-semibold ${activity.dayName === 'Total' ? 'text-emerald-700' : 'text-gray-900'}`}>{activity.contacts}</span>
-                      </div>
-                      <div>
-                        <span className="text-gray-600">Presentations</span>
-                        <span className={`ml-2 font-semibold ${activity.dayName === 'Total' ? 'text-emerald-700' : 'text-gray-900'}`}>{activity.presentations}</span>
-                      </div>
-                      <div>
-                        <span className="text-gray-600">Appointments</span>
-                        <span className={`ml-2 font-semibold ${activity.dayName === 'Total' ? 'text-emerald-700' : 'text-gray-900'}`}>{activity.appointments}</span>
-                      </div>
-                      <div>
-                        <span className="text-gray-600">Sales</span>
-                        <span className={`ml-2 font-semibold ${activity.dayName === 'Total' ? 'text-emerald-700' : 'text-gray-900'}`}>{activity.sales}</span>
-                      </div>
-                      <div>
-                        <span className="text-gray-600">Fact Finders</span>
-                        <span className={`ml-2 font-semibold ${activity.dayName === 'Total' ? 'text-emerald-700' : 'text-gray-900'}`}>{activity.fact_finders || 0}</span>
-                      </div>
-                      <div>
-                        <span className="text-gray-600">Bankers Premium</span>
-                        <span className={`ml-2 font-semibold ${activity.dayName === 'Total' ? 'text-emerald-700' : 'text-gray-900'}`}>${typeof activity.bankers_premium === 'number' ? activity.bankers_premium.toFixed(2) : (activity.bankers_premium || 0)}</span>
-                      </div>
-                      <div>
-                        <span className="text-gray-600">Premium</span>
-                        <span className={`ml-2 font-semibold ${activity.dayName === 'Total' ? 'text-emerald-700' : 'text-gray-900'}`}>${typeof activity.premium === 'number' ? activity.premium.toFixed(2) : activity.premium}</span>
-                      </div>
+                      {isMetricEnabled('contacts') && (
+                        <div>
+                          <span className="text-gray-600">Contacts</span>
+                          <span className={`ml-2 font-semibold ${activity.dayName === 'Total' ? 'text-emerald-700' : 'text-gray-900'}`}>{activity.contacts}</span>
+                        </div>
+                      )}
+                      {isMetricEnabled('presentations') && (
+                        <div>
+                          <span className="text-gray-600">Presentations</span>
+                          <span className={`ml-2 font-semibold ${activity.dayName === 'Total' ? 'text-emerald-700' : 'text-gray-900'}`}>{activity.presentations}</span>
+                        </div>
+                      )}
+                      {isMetricEnabled('appointments') && (
+                        <div>
+                          <span className="text-gray-600">Appointments</span>
+                          <span className={`ml-2 font-semibold ${activity.dayName === 'Total' ? 'text-emerald-700' : 'text-gray-900'}`}>{activity.appointments}</span>
+                        </div>
+                      )}
+                      {isMetricEnabled('sales') && (
+                        <div>
+                          <span className="text-gray-600">Sales</span>
+                          <span className={`ml-2 font-semibold ${activity.dayName === 'Total' ? 'text-emerald-700' : 'text-gray-900'}`}>{activity.sales}</span>
+                        </div>
+                      )}
+                      {isMetricEnabled('referrals') && (
+                        <div>
+                          <span className="text-gray-600">Referrals</span>
+                          <span className={`ml-2 font-semibold ${activity.dayName === 'Total' ? 'text-emerald-700' : 'text-gray-900'}`}>{activity.referrals || 0}</span>
+                        </div>
+                      )}
+                      {isMetricEnabled('testimonials') && (
+                        <div>
+                          <span className="text-gray-600">Testimonials</span>
+                          <span className={`ml-2 font-semibold ${activity.dayName === 'Total' ? 'text-emerald-700' : 'text-gray-900'}`}>{activity.testimonials || 0}</span>
+                        </div>
+                      )}
+                      {isMetricEnabled('new_face_sold') && (
+                        <div>
+                          <span className="text-gray-600">New Faces Sold</span>
+                          <span className={`ml-2 font-semibold ${activity.dayName === 'Total' ? 'text-emerald-700' : 'text-gray-900'}`}>{activity.new_face_sold || 0}</span>
+                        </div>
+                      )}
+                      {isMetricEnabled('fact_finders') && (
+                        <div>
+                          <span className="text-gray-600">Fact Finders</span>
+                          <span className={`ml-2 font-semibold ${activity.dayName === 'Total' ? 'text-emerald-700' : 'text-gray-900'}`}>{activity.fact_finders || 0}</span>
+                        </div>
+                      )}
+                      {isMetricEnabled('bankers_premium') && (
+                        <div>
+                          <span className="text-gray-600">Bankers Premium</span>
+                          <span className={`ml-2 font-semibold ${activity.dayName === 'Total' ? 'text-emerald-700' : 'text-gray-900'}`}>${typeof activity.bankers_premium === 'number' ? activity.bankers_premium.toFixed(2) : (activity.bankers_premium || 0)}</span>
+                        </div>
+                      )}
+                      {isMetricEnabled('premium') && (
+                        <div>
+                          <span className="text-gray-600">Premium</span>
+                          <span className={`ml-2 font-semibold ${activity.dayName === 'Total' ? 'text-emerald-700' : 'text-gray-900'}`}>${typeof activity.premium === 'number' ? activity.premium.toFixed(2) : activity.premium}</span>
+                        </div>
+                      )}
                     </div>
                   </div>
                 ))
