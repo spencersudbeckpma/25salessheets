@@ -3811,6 +3811,62 @@ const AdminPanel = ({ user }) => {
                     </p>
                   </div>
 
+                  {/* Team View / Daily Activity Metrics Section */}
+                  <div className="border-t pt-6">
+                    <h4 className="font-medium text-slate-900 mb-3 flex items-center gap-2">
+                      <Users className="w-4 h-4" />
+                      Team View / Daily Activity Metrics
+                    </h4>
+                    <p className="text-xs text-slate-500 mb-3">
+                      Control which metrics appear in the Team View section. This affects visibility only — 
+                      data is still collected and aggregated for all metrics. Bankers Premium is tracked separately from Total Premium.
+                    </p>
+                    <div className="space-y-2">
+                      {(customizationForm.view_settings?.team_activity_metrics || []).map((metric, index) => (
+                        <div 
+                          key={metric.id} 
+                          className={`flex items-center justify-between p-3 rounded-lg border transition-colors ${
+                            metric.enabled ? 'bg-teal-50 border-teal-200' : 'bg-slate-50 border-slate-100'
+                          }`}
+                        >
+                          <div className="flex items-center gap-3">
+                            <div className="flex flex-col gap-1">
+                              <button
+                                onClick={() => moveTeamActivityMetricUp(index)}
+                                disabled={index === 0}
+                                className="p-0.5 text-slate-400 hover:text-slate-600 disabled:opacity-30"
+                              >
+                                <ChevronUp className="w-4 h-4" />
+                              </button>
+                              <button
+                                onClick={() => moveTeamActivityMetricDown(index)}
+                                disabled={index === (customizationForm.view_settings?.team_activity_metrics?.length || 0) - 1}
+                                className="p-0.5 text-slate-400 hover:text-slate-600 disabled:opacity-30"
+                              >
+                                <ChevronDown className="w-4 h-4" />
+                              </button>
+                            </div>
+                            <span className="text-xs text-slate-400 w-6">{index + 1}.</span>
+                            <span className={`text-sm font-medium ${metric.enabled ? 'text-teal-800' : 'text-slate-400'}`}>
+                              {metric.label}
+                              {metric.id === 'bankers_premium' && (
+                                <span className="ml-2 text-xs text-amber-600">(separate from Total Premium)</span>
+                              )}
+                            </span>
+                          </div>
+                          <Switch
+                            checked={metric.enabled}
+                            onCheckedChange={() => toggleTeamActivityMetric(metric.id)}
+                            data-testid={`team-activity-toggle-${metric.id}`}
+                          />
+                        </div>
+                      ))}
+                    </div>
+                    <p className="text-xs text-slate-400 mt-3 italic">
+                      Note: Daily Activity input screen remains unchanged. This only controls Team View display.
+                    </p>
+                  </div>
+
                   {/* Sub-tabs Section */}
                   <div className="border-t pt-6">
                     <h4 className="font-medium text-slate-900 mb-3 flex items-center gap-2">
