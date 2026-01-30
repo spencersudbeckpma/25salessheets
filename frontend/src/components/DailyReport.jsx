@@ -343,6 +343,10 @@ const DailyReport = ({ user, embedded = false }) => {
                     <td className="px-4 py-3 text-sm text-center">{person.testimonials}</td>
                     <td className="px-4 py-3 text-sm text-center">{person.sales}</td>
                     <td className="px-4 py-3 text-sm text-center">{person.new_face_sold}</td>
+                    <td className="px-4 py-3 text-sm text-center">{person.fact_finders || 0}</td>
+                    <td className="px-4 py-3 text-sm text-center font-semibold text-amber-600">
+                      ${typeof person.bankers_premium === 'number' ? person.bankers_premium.toFixed(2) : (person.bankers_premium || 0)}
+                    </td>
                     <td className="px-4 py-3 text-sm text-center font-semibold text-green-600">
                       ${typeof person.premium === 'number' ? person.premium.toFixed(2) : person.premium}
                     </td>
