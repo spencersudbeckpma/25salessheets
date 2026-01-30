@@ -4451,7 +4451,7 @@ async def get_period_report(report_type: str, period: str, current_user: dict = 
         org_totals = {
             "contacts": 0, "appointments": 0, "presentations": 0,
             "referrals": 0, "testimonials": 0, "sales": 0,
-            "new_face_sold": 0, "premium": 0
+            "new_face_sold": 0, "fact_finders": 0, "bankers_premium": 0, "premium": 0
         }
         
         # SCOPED TO TEAM
