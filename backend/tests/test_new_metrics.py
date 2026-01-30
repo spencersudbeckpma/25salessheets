@@ -5,6 +5,7 @@ Tests the critical requirement that bankers_premium is NEVER added to premium
 import pytest
 import requests
 import os
+import uuid
 from datetime import datetime, timedelta
 
 BASE_URL = os.environ.get('REACT_APP_BACKEND_URL', '').rstrip('/')
@@ -12,6 +13,20 @@ BASE_URL = os.environ.get('REACT_APP_BACKEND_URL', '').rstrip('/')
 # Test credentials
 SUPER_ADMIN_EMAIL = "admin@pmagent.net"
 SUPER_ADMIN_PASSWORD = "Bizlink25"
+
+# Generate unique test run ID to avoid date collisions
+TEST_RUN_ID = str(uuid.uuid4())[:8]
+
+
+def get_unique_test_date(days_offset=0):
+    """
+    Generate a unique date for each test to avoid 'activity already exists' conflicts.
+    Uses dates in the past (up to 365 days back) based on test run ID hash.
+    """
+    # Use hash of test run ID to get a consistent but unique base offset
+    base_offset = hash(TEST_RUN_ID) % 300 + 30  # 30-330 days in the past
+    target_date = datetime.now() - timedelta(days=base_offset + days_offset)
+    return target_date.strftime('%Y-%m-%d')
 
 
 @pytest.fixture(scope="module")
