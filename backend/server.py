@@ -5706,15 +5706,19 @@ async def get_team_hierarchy(period: str, current_user: dict = Depends(get_curre
         act_query = {"user_id": user_id, "date": {"$gte": start_date.isoformat()}}
         activities = await db.activities.find(act_query, {"_id": 0}).to_list(1000)
         
+        # CRITICAL: premium and bankers_premium are SEPARATE - never combined
+        # Using .get() with default 0 for backward compatibility with records missing new fields
         own_stats = {
-            "contacts": sum(a['contacts'] for a in activities),
-            "appointments": sum(a['appointments'] for a in activities),
-            "presentations": sum(a['presentations'] for a in activities),
-            "referrals": sum(a['referrals'] for a in activities),
-            "testimonials": sum(a['testimonials'] for a in activities),
-            "sales": sum(a['sales'] for a in activities),
-            "new_face_sold": sum(a['new_face_sold'] for a in activities),
-            "premium": sum(a['premium'] for a in activities)
+            "contacts": sum(a.get('contacts', 0) or 0 for a in activities),
+            "appointments": sum(a.get('appointments', 0) or 0 for a in activities),
+            "presentations": sum(a.get('presentations', 0) or 0 for a in activities),
+            "referrals": sum(a.get('referrals', 0) or 0 for a in activities),
+            "testimonials": sum(a.get('testimonials', 0) or 0 for a in activities),
+            "sales": sum(a.get('sales', 0) or 0 for a in activities),
+            "new_face_sold": sum(a.get('new_face_sold', 0) or 0 for a in activities),
+            "fact_finders": sum(a.get('fact_finders', 0) or 0 for a in activities),
+            "bankers_premium": sum(float(a.get('bankers_premium', 0) or 0) for a in activities),
+            "premium": sum(float(a.get('premium', 0) or 0) for a in activities)  # Total Premium - does NOT include bankers_premium
         }
         
         # Get subordinates and build their hierarchies (exclude archived users, scoped to team)
@@ -5725,6 +5729,7 @@ async def get_team_hierarchy(period: str, current_user: dict = Depends(get_curre
         children = []
         
         # Initialize rolled up stats with own stats
+        # CRITICAL: premium and bankers_premium are SEPARATE - never combined
         rolled_up_stats = {
             "contacts": own_stats["contacts"],
             "appointments": own_stats["appointments"],
@@ -5733,6 +5738,8 @@ async def get_team_hierarchy(period: str, current_user: dict = Depends(get_curre
             "testimonials": own_stats["testimonials"],
             "sales": own_stats["sales"],
             "new_face_sold": own_stats["new_face_sold"],
+            "fact_finders": own_stats["fact_finders"],
+            "bankers_premium": own_stats["bankers_premium"],
             "premium": own_stats["premium"]
         }
         
@@ -5742,6 +5749,7 @@ async def get_team_hierarchy(period: str, current_user: dict = Depends(get_curre
             if child_hierarchy:
                 children.append(child_hierarchy)
                 # Add child's rolled up stats to parent's rolled up stats
+                # CRITICAL: premium and bankers_premium are SEPARATE - never combined
                 rolled_up_stats["contacts"] += child_hierarchy["stats"]["contacts"]
                 rolled_up_stats["appointments"] += child_hierarchy["stats"]["appointments"]
                 rolled_up_stats["presentations"] += child_hierarchy["stats"]["presentations"]
@@ -5749,6 +5757,8 @@ async def get_team_hierarchy(period: str, current_user: dict = Depends(get_curre
                 rolled_up_stats["testimonials"] += child_hierarchy["stats"]["testimonials"]
                 rolled_up_stats["sales"] += child_hierarchy["stats"]["sales"]
                 rolled_up_stats["new_face_sold"] += child_hierarchy["stats"]["new_face_sold"]
+                rolled_up_stats["fact_finders"] += child_hierarchy["stats"]["fact_finders"]
+                rolled_up_stats["bankers_premium"] += child_hierarchy["stats"]["bankers_premium"]
                 rolled_up_stats["premium"] += child_hierarchy["stats"]["premium"]
         
         return {
