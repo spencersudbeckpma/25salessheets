@@ -16,9 +16,12 @@ const PasswordManagement = ({ user }) => {
   const [loading, setLoading] = useState(false);
   const [activeTab, setActiveTab] = useState('admin-reset');
 
-  // Fetch available users for reset (only for state managers)
+  // Check if user can do admin reset (state_manager or super_admin)
+  const canAdminReset = user.role === 'state_manager' || user.role === 'super_admin';
+
+  // Fetch available users for reset (for state managers and super_admin)
   useEffect(() => {
-    if (user.role === 'state_manager') {
+    if (canAdminReset) {
       fetchAvailableUsers();
     }
   }, [user.role]);
