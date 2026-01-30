@@ -238,8 +238,8 @@ const NPATracker = ({ user }) => {
           {/* Info Banner */}
           {!isEdit && (
             <div className="p-3 bg-blue-50 rounded-lg text-sm text-blue-800 border border-blue-200">
-              <p className="font-medium">ℹ️ Select a team member from the system</p>
-              <p className="mt-1">Only users in the system can be tracked. Premium is calculated automatically from their logged activities.</p>
+              <p className="font-medium">ℹ️ Select an agent from the system</p>
+              <p className="mt-1">Only <strong>agents</strong> can be tracked (not managers). Premium is calculated automatically from their logged activities.</p>
             </div>
           )}
 
