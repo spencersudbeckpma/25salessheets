@@ -206,6 +206,67 @@ async def get_team_view_settings(team: dict) -> dict:
         "subtabs": subtabs
     }
 
+def get_enabled_report_metrics(view_settings: dict, include_all: bool = False) -> list:
+    """
+    Get list of enabled KPI metric IDs for reports based on team config.
+    
+    Args:
+        view_settings: Team's view settings from get_team_view_settings()
+        include_all: If True, return all metrics regardless of enabled status (for super_admin override)
+    
+    Returns:
+        List of metric IDs in configured order, respecting enabled status
+    """
+    kpi_cards = view_settings.get('kpi_cards', DEFAULT_TEAM_VIEW_SETTINGS['kpi_cards'])
+    
+    if include_all:
+        # Return all metrics in order
+        return [card['id'] for card in kpi_cards]
+    
+    # Return only enabled metrics in order
+    return [card['id'] for card in kpi_cards if card.get('enabled', True)]
+
+def build_report_row(data: dict, enabled_metrics: list) -> dict:
+    """
+    Build a report data row containing only enabled metrics.
+    
+    Args:
+        data: Full data dictionary with all metric values
+        enabled_metrics: List of metric IDs to include
+    
+    Returns:
+        Filtered dictionary with only enabled metrics
+    """
+    # Always include identity fields
+    result = {}
+    for key in ['name', 'email', 'role', 'team_name', 'manager']:
+        if key in data:
+            result[key] = data[key]
+    
+    # Include only enabled metrics
+    for metric_id in enabled_metrics:
+        if metric_id in data:
+            result[metric_id] = data[metric_id]
+    
+    return result
+
+def get_metric_label(metric_id: str) -> str:
+    """Get display label for a metric ID."""
+    labels = {
+        'contacts': 'Contacts',
+        'appointments': 'Appointments',
+        'presentations': 'Presentations',
+        'referrals': 'Referrals',
+        'testimonials': 'Testimonials',
+        'sales': 'Sales',
+        'new_face_sold': 'New Face Sold',
+        'fact_finders': 'Fact Finders',
+        'bankers_premium': 'Bankers Premium',
+        'premium': 'Total Premium',
+        'apps': 'Apps'
+    }
+    return labels.get(metric_id, metric_id.replace('_', ' ').title())
+
 async def check_subtab_access(current_user: dict, subtab_name: str):
     """
     Check if user's team has access to a specific sub-tab.
