@@ -2111,6 +2111,200 @@ const AdminPanel = ({ user }) => {
             </div>
           </div>
 
+          {/* ==================== SUITABILITY DIAGNOSTIC ==================== */}
+          <Card className="bg-gradient-to-r from-amber-50 to-orange-50 border-amber-300 shadow-lg">
+            <CardHeader className="pb-3">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                <div>
+                  <CardTitle className="flex items-center gap-2 text-amber-800 text-xl">
+                    <FileText className="w-6 h-6" />
+                    Suitability Diagnostic
+                  </CardTitle>
+                  <CardDescription className="text-amber-700">
+                    READ-ONLY diagnostic to identify missing/orphaned Suitability forms. Safe to run in production.
+                  </CardDescription>
+                </div>
+                <Button
+                  onClick={runSuitabilityDiagnostic}
+                  disabled={suitabilityDiagnosticLoading}
+                  className="bg-amber-600 hover:bg-amber-700 text-white px-6 py-3 text-base"
+                  data-testid="run-suitability-diagnostic-btn"
+                >
+                  {suitabilityDiagnosticLoading ? <RefreshCw className="w-5 h-5 mr-2 animate-spin" /> : <Search className="w-5 h-5 mr-2" />}
+                  Run Diagnostic
+                </Button>
+              </div>
+            </CardHeader>
+          </Card>
+
+          {/* Suitability Diagnostic Results */}
+          {suitabilityDiagnostic && (
+            <Card className="border-amber-200" data-testid="suitability-diagnostic-results">
+              <CardHeader className="pb-2 border-b">
+                <div className="flex items-center justify-between">
+                  <CardTitle className="text-lg text-amber-800">Suitability Diagnostic Results</CardTitle>
+                  <span className="text-xs text-amber-600 bg-amber-100 px-2 py-1 rounded">READ-ONLY</span>
+                </div>
+              </CardHeader>
+              <CardContent className="pt-4 space-y-6">
+                {/* Summary Cards */}
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                  <div className="bg-blue-50 p-4 rounded-lg text-center">
+                    <div className="text-2xl font-bold text-blue-800">{suitabilityDiagnostic.summary?.total_forms_in_database || 0}</div>
+                    <div className="text-sm text-blue-600">Total Forms in DB</div>
+                  </div>
+                  <div className="bg-green-50 p-4 rounded-lg text-center">
+                    <div className="text-2xl font-bold text-green-800">{suitabilityDiagnostic.summary?.visible_to_current_user || 0}</div>
+                    <div className="text-sm text-green-600">Visible to You</div>
+                  </div>
+                  <div className="bg-yellow-50 p-4 rounded-lg text-center">
+                    <div className="text-2xl font-bold text-yellow-800">{suitabilityDiagnostic.summary?.hidden_due_to_team_filter || 0}</div>
+                    <div className="text-sm text-yellow-600">Hidden (Other Teams)</div>
+                  </div>
+                  <div className={`p-4 rounded-lg text-center ${suitabilityDiagnostic.summary?.orphaned_forms > 0 ? 'bg-red-50' : 'bg-slate-50'}`}>
+                    <div className={`text-2xl font-bold ${suitabilityDiagnostic.summary?.orphaned_forms > 0 ? 'text-red-800' : 'text-slate-800'}`}>
+                      {suitabilityDiagnostic.summary?.orphaned_forms || 0}
+                    </div>
+                    <div className={`text-sm ${suitabilityDiagnostic.summary?.orphaned_forms > 0 ? 'text-red-600' : 'text-slate-600'}`}>
+                      Orphaned Forms
+                    </div>
+                  </div>
+                </div>
+
+                {/* Your Team Info */}
+                <div className="bg-slate-100 rounded-lg p-3">
+                  <div className="text-sm">
+                    <span className="font-medium text-slate-600">Your Team:</span>{' '}
+                    <span className="font-mono bg-white px-2 py-0.5 rounded">
+                      {suitabilityDiagnostic.current_user_team_name || 'Not assigned'}
+                    </span>
+                  </div>
+                </div>
+
+                {/* Forms by Team */}
+                {suitabilityDiagnostic.forms_by_team && Object.keys(suitabilityDiagnostic.forms_by_team).length > 0 && (
+                  <div className="bg-white border rounded-lg p-4">
+                    <h4 className="font-semibold text-slate-800 mb-3">Forms by Team</h4>
+                    <div className="space-y-2">
+                      {Object.entries(suitabilityDiagnostic.forms_by_team).map(([teamId, data]) => (
+                        <div key={teamId} className={`flex justify-between items-center p-2 rounded ${data.status === 'ORPHAN' ? 'bg-red-50 border border-red-200' : 'bg-slate-50'}`}>
+                          <div>
+                            <span className="font-medium">{data.team_name || teamId}</span>
+                            {data.status === 'ORPHAN' && (
+                              <span className="ml-2 text-xs bg-red-200 text-red-800 px-2 py-0.5 rounded">ORPHAN</span>
+                            )}
+                          </div>
+                          <span className="font-bold">{data.count} forms</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Forms by Submitter */}
+                {suitabilityDiagnostic.forms_by_submitter && suitabilityDiagnostic.forms_by_submitter.length > 0 && (
+                  <div className="bg-white border rounded-lg p-4">
+                    <h4 className="font-semibold text-slate-800 mb-3">Forms by Submitter</h4>
+                    <div className="space-y-2">
+                      {suitabilityDiagnostic.forms_by_submitter.map((submitter, idx) => (
+                        <div key={idx} className={`flex justify-between items-center p-2 rounded ${submitter.submitted_by_name?.toLowerCase().includes('ahlers') ? 'bg-amber-100 border border-amber-300' : 'bg-slate-50'}`}>
+                          <div className="flex items-center gap-2">
+                            <User className="w-4 h-4 text-slate-500" />
+                            <span className="font-medium">{submitter.submitted_by_name}</span>
+                            {submitter.submitted_by_name?.toLowerCase().includes('ahlers') && (
+                              <span className="text-xs bg-amber-200 text-amber-800 px-2 py-0.5 rounded">HIGHLIGHT</span>
+                            )}
+                          </div>
+                          <span className="font-bold">{submitter.count} forms</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Steve Ahlers User Check */}
+                {suitabilityDiagnostic.ahlers_users && suitabilityDiagnostic.ahlers_users.length > 0 && (
+                  <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
+                    <h4 className="font-semibold text-amber-800 mb-3">Users Matching "Ahlers"</h4>
+                    <div className="space-y-2">
+                      {suitabilityDiagnostic.ahlers_users.map((user, idx) => (
+                        <div key={idx} className="bg-white p-3 rounded border border-amber-200">
+                          <div className="font-medium">{user.name}</div>
+                          <div className="text-sm text-slate-600">{user.email}</div>
+                          <div className="text-xs text-slate-500 mt-1">
+                            ID: <span className="font-mono">{user.id?.substring(0, 12)}...</span> | 
+                            Team: <span className="font-mono">{user.team_id?.substring(0, 12)}...</span>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Orphaned Forms Detail */}
+                {suitabilityDiagnostic.orphaned_forms && suitabilityDiagnostic.orphaned_forms.length > 0 && (
+                  <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+                    <h4 className="font-semibold text-red-800 mb-3 flex items-center gap-2">
+                      <AlertTriangle className="w-5 h-5" />
+                      Orphaned Forms ({suitabilityDiagnostic.orphaned_forms.length})
+                    </h4>
+                    <p className="text-sm text-red-700 mb-3">
+                      These forms have missing or invalid team_id and won't appear in team-scoped reports.
+                    </p>
+                    <div className="space-y-2 max-h-60 overflow-y-auto">
+                      {suitabilityDiagnostic.orphaned_forms.map((form, idx) => (
+                        <div key={idx} className="bg-white p-3 rounded border border-red-200">
+                          <div className="flex justify-between items-start">
+                            <div>
+                              <div className="font-medium">{form.client_name}</div>
+                              <div className="text-sm text-slate-600">by {form.submitted_by_name}</div>
+                            </div>
+                            <span className={`text-xs px-2 py-0.5 rounded ${form.team_status === 'MISSING' ? 'bg-gray-200 text-gray-700' : 'bg-red-200 text-red-700'}`}>
+                              {form.team_status}
+                            </span>
+                          </div>
+                          <div className="text-xs text-slate-500 mt-1">
+                            Date: {form.presentation_date} | team_id: {form.team_id || 'NULL'}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* All Forms Detail (Collapsible) */}
+                <details className="bg-white border rounded-lg">
+                  <summary className="p-4 cursor-pointer font-semibold text-slate-800 hover:bg-slate-50">
+                    All Forms Detail ({suitabilityDiagnostic.all_forms?.length || 0} forms)
+                  </summary>
+                  <div className="p-4 pt-0 space-y-2 max-h-96 overflow-y-auto">
+                    {suitabilityDiagnostic.all_forms?.map((form, idx) => (
+                      <div key={idx} className={`p-3 rounded border ${!form.visible_to_current_user ? 'bg-gray-50 border-gray-300' : form.team_status !== 'VALID' ? 'bg-red-50 border-red-200' : 'bg-white border-slate-200'}`}>
+                        <div className="flex justify-between items-start">
+                          <div>
+                            <div className="font-medium">{form.client_name}</div>
+                            <div className="text-sm text-slate-600">by {form.submitted_by_name}</div>
+                          </div>
+                          <div className="flex gap-1">
+                            {!form.visible_to_current_user && (
+                              <span className="text-xs bg-gray-200 text-gray-700 px-2 py-0.5 rounded">HIDDEN</span>
+                            )}
+                            <span className={`text-xs px-2 py-0.5 rounded ${form.team_status === 'VALID' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
+                              {form.team_status}
+                            </span>
+                          </div>
+                        </div>
+                        <div className="text-xs text-slate-500 mt-1">
+                          Date: {form.presentation_date} | Team: {form.team_name || form.team_id || 'NULL'}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </details>
+              </CardContent>
+            </Card>
+          )}
+
           {/* Header */}
           <Card className="bg-purple-50 border-purple-200">
             <CardHeader>
