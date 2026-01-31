@@ -9524,11 +9524,14 @@ async def export_suitability_report_excel(
     current_user: dict = Depends(get_current_user),
     period: str = "weekly",
     week_start_date: Optional[str] = None,
-    month: Optional[str] = None
+    month: Optional[str] = None,
+    custom_start: Optional[str] = None,
+    custom_end: Optional[str] = None
 ):
     """
     Export suitability report as Excel file in Friday Report format.
-    Includes: Weekly Summary, Agent Summary, Per-Agent Detail Sections.
+    Includes: Summary, Agent Summary, Per-Agent Detail Sections.
+    Supports: weekly, monthly, all-time, and custom date ranges.
     """
     await check_feature_access(current_user, "suitability")
     from openpyxl import Workbook
@@ -9551,6 +9554,7 @@ async def export_suitability_report_excel(
     start_date = None
     end_date = None
     report_title = "SUITABILITY REPORT"
+    filename_prefix = "Suitability_Report"
     
     if period == "weekly":
         if week_start_date:
@@ -9567,6 +9571,7 @@ async def export_suitability_report_excel(
         end_date = end_of_week.isoformat()
         period_label = f"Week of {start_of_week.strftime('%b %d, %Y')}"
         report_title = "FRIDAY SUITABILITY REPORT"
+        filename_prefix = "Friday_Report"
         query["presentation_date"] = {"$gte": start_date, "$lte": end_date}
         
     elif period == "monthly":
@@ -9587,11 +9592,47 @@ async def export_suitability_report_excel(
         end_date = f"{year}-{month_num:02d}-{last_day:02d}"
         period_label = f"{calendar.month_name[month_num]} {year}"
         report_title = "MONTHLY SUITABILITY REPORT"
+        filename_prefix = "Monthly_Report"
+        query["presentation_date"] = {"$gte": start_date, "$lte": end_date}
+    
+    elif period == "custom":
+        # Custom date range - allows batching multiple weeks
+        if not custom_start or not custom_end:
+            raise HTTPException(status_code=400, detail="custom_start and custom_end required for custom period")
+        
+        try:
+            start_dt = datetime.strptime(custom_start, "%Y-%m-%d").date()
+            end_dt = datetime.strptime(custom_end, "%Y-%m-%d").date()
+        except ValueError:
+            raise HTTPException(status_code=400, detail="Invalid date format. Use YYYY-MM-DD")
+        
+        if end_dt < start_dt:
+            raise HTTPException(status_code=400, detail="custom_end must be after custom_start")
+        
+        start_date = start_dt.isoformat()
+        end_date = end_dt.isoformat()
+        
+        # Calculate how many weeks this spans
+        days_span = (end_dt - start_dt).days + 1
+        weeks_span = (days_span + 6) // 7
+        
+        if weeks_span == 1:
+            period_label = f"Week of {start_dt.strftime('%b %d, %Y')}"
+            report_title = "WEEKLY SUITABILITY REPORT"
+        elif weeks_span == 2:
+            period_label = f"2 Weeks: {start_dt.strftime('%b %d')} - {end_dt.strftime('%b %d, %Y')}"
+            report_title = "BI-WEEKLY SUITABILITY REPORT"
+        else:
+            period_label = f"{weeks_span} Weeks: {start_dt.strftime('%b %d')} - {end_dt.strftime('%b %d, %Y')}"
+            report_title = f"{weeks_span}-WEEK SUITABILITY REPORT"
+        
+        filename_prefix = f"Custom_Report_{weeks_span}wk"
         query["presentation_date"] = {"$gte": start_date, "$lte": end_date}
         
     elif period == "all-time":
         period_label = "All Time"
         report_title = "ALL-TIME SUITABILITY REPORT"
+        filename_prefix = "AllTime_Report"
     else:
         raise HTTPException(status_code=400, detail="Invalid period")
     
