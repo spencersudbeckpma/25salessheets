@@ -4932,6 +4932,111 @@ async def suitability_diagnostic(current_user: dict = Depends(get_current_user))
         "valid_teams": all_teams
     }
 
+@api_router.post("/admin/fix-orphaned-suitability")
+async def fix_orphaned_suitability(current_user: dict = Depends(get_current_user)):
+    """
+    Fix orphaned Suitability forms by assigning them to the submitter's current team.
+    
+    - Finds all forms with NULL/missing team_id
+    - Looks up submitter's current team_id from users collection
+    - Updates form's team_id to match (preserves all other data)
+    
+    Accessible to super_admin and state_manager only.
+    """
+    if current_user['role'] not in ['super_admin', 'state_manager']:
+        raise HTTPException(status_code=403, detail="Admin access required")
+    
+    # Get all valid teams
+    all_teams = await db.teams.find({}, {"_id": 0, "id": 1}).to_list(100)
+    valid_team_ids = [t['id'] for t in all_teams]
+    
+    # Find orphaned forms
+    orphan_query = {
+        "$or": [
+            {"team_id": {"$exists": False}},
+            {"team_id": None},
+            {"team_id": ""},
+            {"team_id": {"$nin": valid_team_ids}}
+        ]
+    }
+    
+    orphaned_forms = await db.suitability_forms.find(orphan_query).to_list(1000)
+    
+    results = {
+        "total_orphaned_found": len(orphaned_forms),
+        "fixed": 0,
+        "skipped_no_submitter": 0,
+        "skipped_submitter_not_found": 0,
+        "skipped_submitter_no_team": 0,
+        "fixed_forms": [],
+        "skipped_forms": []
+    }
+    
+    for form in orphaned_forms:
+        form_id = form.get('id')
+        submitted_by = form.get('submitted_by')
+        submitted_by_name = form.get('submitted_by_name')
+        client_name = form.get('client_name', 'Unknown')
+        
+        if not submitted_by:
+            results["skipped_no_submitter"] += 1
+            results["skipped_forms"].append({
+                "form_id": form_id,
+                "client_name": client_name,
+                "reason": "No submitted_by field"
+            })
+            continue
+        
+        # Look up submitter
+        user = await db.users.find_one({"id": submitted_by}, {"_id": 0, "id": 1, "team_id": 1, "name": 1})
+        
+        # Fallback: try by name
+        if not user and submitted_by_name:
+            user = await db.users.find_one({"name": submitted_by_name}, {"_id": 0, "id": 1, "team_id": 1, "name": 1})
+        
+        if not user:
+            results["skipped_submitter_not_found"] += 1
+            results["skipped_forms"].append({
+                "form_id": form_id,
+                "client_name": client_name,
+                "submitted_by": submitted_by,
+                "reason": "Submitter user not found"
+            })
+            continue
+        
+        user_team_id = user.get('team_id')
+        if not user_team_id or user_team_id not in valid_team_ids:
+            results["skipped_submitter_no_team"] += 1
+            results["skipped_forms"].append({
+                "form_id": form_id,
+                "client_name": client_name,
+                "submitted_by_name": user.get('name'),
+                "reason": "Submitter has no valid team_id"
+            })
+            continue
+        
+        # Fix the form
+        old_team_id = form.get('team_id')
+        await db.suitability_forms.update_one(
+            {"id": form_id},
+            {"$set": {"team_id": user_team_id}}
+        )
+        
+        results["fixed"] += 1
+        results["fixed_forms"].append({
+            "form_id": form_id,
+            "client_name": client_name,
+            "submitted_by_name": submitted_by_name or user.get('name'),
+            "old_team_id": old_team_id,
+            "new_team_id": user_team_id
+        })
+    
+    return {
+        "success": True,
+        "message": f"Fixed {results['fixed']} orphaned suitability forms",
+        "results": results
+    }
+
 @api_router.get("/admin/diagnostic")
 async def diagnostic(current_user: dict = Depends(get_current_user)):
     """Diagnostic endpoint to check database state"""
