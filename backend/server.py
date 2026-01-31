@@ -9362,14 +9362,18 @@ async def get_suitability_report(
     current_user: dict = Depends(get_current_user),
     period: str = "weekly",
     week_start_date: Optional[str] = None,
-    month: Optional[str] = None
+    month: Optional[str] = None,
+    custom_start: Optional[str] = None,
+    custom_end: Optional[str] = None
 ):
     """
-    Flexible suitability report endpoint supporting Weekly, Monthly, and All-Time periods.
+    Flexible suitability report endpoint supporting Weekly, Monthly, All-Time, and Custom periods.
     
-    - period: 'weekly', 'monthly', or 'all-time'
+    - period: 'weekly', 'monthly', 'all-time', or 'custom'
     - week_start_date: YYYY-MM-DD for selecting a specific week (defaults to current week)
     - month: YYYY-MM for selecting a specific month (defaults to current month)
+    - custom_start: YYYY-MM-DD start date for custom range
+    - custom_end: YYYY-MM-DD end date for custom range
     
     Access control:
     - Agent: own forms only
@@ -9435,11 +9439,41 @@ async def get_suitability_report(
         
         query["presentation_date"] = {"$gte": start_date, "$lte": end_date}
         
+    elif period == "custom":
+        # Custom date range for batching multiple weeks
+        if not custom_start or not custom_end:
+            raise HTTPException(status_code=400, detail="custom_start and custom_end required for custom period")
+        
+        try:
+            start_dt = datetime.strptime(custom_start, "%Y-%m-%d").date()
+            end_dt = datetime.strptime(custom_end, "%Y-%m-%d").date()
+        except ValueError:
+            raise HTTPException(status_code=400, detail="Invalid date format. Use YYYY-MM-DD")
+        
+        if end_dt < start_dt:
+            raise HTTPException(status_code=400, detail="custom_end must be after custom_start")
+        
+        start_date = start_dt.isoformat()
+        end_date = end_dt.isoformat()
+        
+        # Calculate how many weeks this spans
+        days_span = (end_dt - start_dt).days + 1
+        weeks_span = (days_span + 6) // 7
+        
+        if weeks_span == 1:
+            period_label = f"Week of {start_dt.strftime('%b %d, %Y')}"
+        elif weeks_span == 2:
+            period_label = f"2 Weeks: {start_dt.strftime('%b %d')} - {end_dt.strftime('%b %d, %Y')}"
+        else:
+            period_label = f"{weeks_span} Weeks: {start_dt.strftime('%b %d')} - {end_dt.strftime('%b %d, %Y')}"
+        
+        query["presentation_date"] = {"$gte": start_date, "$lte": end_date}
+        
     elif period == "all-time":
         period_label = "All Time"
         # No date filter - returns all records
     else:
-        raise HTTPException(status_code=400, detail="Invalid period. Use 'weekly', 'monthly', or 'all-time'")
+        raise HTTPException(status_code=400, detail="Invalid period. Use 'weekly', 'monthly', 'all-time', or 'custom'")
     
     # Access control based on role
     if role == 'agent':
