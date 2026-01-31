@@ -84,7 +84,7 @@ const SuitabilityForm = ({ user }) => {
     if (activeTab === 'reports' && canViewReports) {
       fetchReport();
     }
-  }, [activeTab, reportPeriod, selectedWeekStart, selectedMonth]);
+  }, [activeTab, reportPeriod, selectedWeekStart, selectedMonth, customStartDate, customEndDate]);
 
   const fetchConfig = async () => {
     try {
@@ -120,6 +120,8 @@ const SuitabilityForm = ({ user }) => {
         url += `&week_start_date=${selectedWeekStart}`;
       } else if (reportPeriod === 'monthly' && selectedMonth) {
         url += `&month=${selectedMonth}`;
+      } else if (reportPeriod === 'custom' && customStartDate && customEndDate) {
+        url += `&custom_start=${customStartDate}&custom_end=${customEndDate}`;
       }
       
       const response = await axios.get(url, {
