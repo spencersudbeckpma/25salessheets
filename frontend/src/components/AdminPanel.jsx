@@ -893,6 +893,37 @@ const AdminPanel = ({ user }) => {
     }
   };
 
+  const fixOrphanedSuitability = async () => {
+    if (!suitabilityDiagnostic || suitabilityDiagnostic.summary?.orphaned_forms === 0) {
+      toast.info('No orphaned forms to fix');
+      return;
+    }
+    
+    if (!window.confirm(
+      `This will fix ${suitabilityDiagnostic.summary.orphaned_forms} orphaned Suitability forms.\n\n` +
+      '✅ Each form will be assigned to the submitter\'s current team\n' +
+      '✅ Original form data (client info, dates, answers) is preserved\n' +
+      '✅ Only team_id field is updated\n\n' +
+      'Continue?'
+    )) {
+      return;
+    }
+    
+    setSuitabilityDiagnosticLoading(true);
+    
+    try {
+      const res = await axios.post(`${API}/api/admin/fix-orphaned-suitability`, {}, { headers });
+      toast.success(res.data.message);
+      
+      // Re-run diagnostic to show updated state
+      await runSuitabilityDiagnostic();
+    } catch (error) {
+      toast.error(error.response?.data?.detail || 'Failed to fix orphaned forms');
+    } finally {
+      setSuitabilityDiagnosticLoading(false);
+    }
+  };
+
   // Full Data Health Check functions
   const runFullHealthCheck = async () => {
     setFullHealthLoading(true);
