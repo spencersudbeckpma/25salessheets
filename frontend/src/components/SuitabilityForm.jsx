@@ -37,6 +37,22 @@ const SuitabilityForm = ({ user }) => {
     const today = new Date();
     return `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}`;
   });
+  // Custom date range state
+  const [customStartDate, setCustomStartDate] = useState(() => {
+    // Default to 2 weeks ago
+    const today = new Date();
+    const twoWeeksAgo = new Date(today.getTime() - 14 * 24 * 60 * 60 * 1000);
+    const day = twoWeeksAgo.getDay();
+    const diff = twoWeeksAgo.getDate() - day + (day === 0 ? -6 : 1);
+    return new Date(twoWeeksAgo.setDate(diff)).toISOString().split('T')[0];
+  });
+  const [customEndDate, setCustomEndDate] = useState(() => {
+    // Default to this Sunday
+    const today = new Date();
+    const day = today.getDay();
+    const diff = today.getDate() - day + (day === 0 ? 0 : 7);
+    return new Date(today.setDate(diff)).toISOString().split('T')[0];
+  });
   const [reportData, setReportData] = useState(null);
   const [reportLoading, setReportLoading] = useState(false);
   
