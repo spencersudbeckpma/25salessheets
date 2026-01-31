@@ -191,6 +191,10 @@ const AdminPanel = ({ user }) => {
   const [loginFailures, setLoginFailures] = useState(null);
   const [loginFailuresLoading, setLoginFailuresLoading] = useState(false);
 
+  // Suitability Diagnostic states
+  const [suitabilityDiagnostic, setSuitabilityDiagnostic] = useState(null);
+  const [suitabilityDiagnosticLoading, setSuitabilityDiagnosticLoading] = useState(false);
+
   const token = localStorage.getItem('token');
   const headers = { Authorization: `Bearer ${token}` };
 
