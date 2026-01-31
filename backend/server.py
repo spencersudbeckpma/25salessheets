@@ -9493,12 +9493,13 @@ async def export_suitability_report_excel(
     month: Optional[str] = None
 ):
     """
-    Export suitability report as Excel file for any period.
-    Same access control as /suitability-forms/report endpoint.
+    Export suitability report as Excel file in Friday Report format.
+    Includes: Weekly Summary, Agent Summary, Per-Agent Detail Sections.
     """
     await check_feature_access(current_user, "suitability")
     from openpyxl import Workbook
     from openpyxl.styles import Font, PatternFill, Border, Side, Alignment
+    from openpyxl.utils import get_column_letter
     import io
     
     team_id = current_user.get('team_id')
@@ -9515,6 +9516,7 @@ async def export_suitability_report_excel(
     period_label = ""
     start_date = None
     end_date = None
+    report_title = "SUITABILITY REPORT"
     
     if period == "weekly":
         if week_start_date:
@@ -9530,6 +9532,7 @@ async def export_suitability_report_excel(
         start_date = start_of_week.isoformat()
         end_date = end_of_week.isoformat()
         period_label = f"Week of {start_of_week.strftime('%b %d, %Y')}"
+        report_title = "FRIDAY SUITABILITY REPORT"
         query["presentation_date"] = {"$gte": start_date, "$lte": end_date}
         
     elif period == "monthly":
@@ -9549,10 +9552,12 @@ async def export_suitability_report_excel(
         start_date = f"{year}-{month_num:02d}-01"
         end_date = f"{year}-{month_num:02d}-{last_day:02d}"
         period_label = f"{calendar.month_name[month_num]} {year}"
+        report_title = "MONTHLY SUITABILITY REPORT"
         query["presentation_date"] = {"$gte": start_date, "$lte": end_date}
         
     elif period == "all-time":
         period_label = "All Time"
+        report_title = "ALL-TIME SUITABILITY REPORT"
     else:
         raise HTTPException(status_code=400, detail="Invalid period")
     
@@ -9575,7 +9580,15 @@ async def export_suitability_report_excel(
     savings_labels = {r['value']: r['label'] for r in SUITABILITY_FORM_CONFIG['savings_ranges']}
     net_worth_labels = {r['value']: r['label'] for r in SUITABILITY_FORM_CONFIG['net_worth_ranges']}
     
-    # Create Excel
+    # Group forms by agent
+    by_agent = {}
+    for form in forms:
+        agent_name = form.get('submitted_by_name', 'Unknown')
+        if agent_name not in by_agent:
+            by_agent[agent_name] = []
+        by_agent[agent_name].append(form)
+    
+    # Create Excel workbook
     wb = Workbook()
     ws = wb.active
     ws.title = "Suitability Report"
@@ -9583,71 +9596,199 @@ async def export_suitability_report_excel(
     # Styles
     title_font = Font(name='Arial', size=16, bold=True, color='FFFFFF')
     title_fill = PatternFill(start_color='1F4E79', end_color='1F4E79', fill_type='solid')
-    header_font = Font(name='Arial', size=10, bold=True, color='FFFFFF')
+    
+    header_font = Font(name='Arial', size=11, bold=True, color='FFFFFF')
     header_fill = PatternFill(start_color='2E75B6', end_color='2E75B6', fill_type='solid')
+    
+    subheader_font = Font(name='Arial', size=11, bold=True)
+    subheader_fill = PatternFill(start_color='BDD7EE', end_color='BDD7EE', fill_type='solid')
+    
+    agent_header_font = Font(name='Arial', size=12, bold=True, color='FFFFFF')
+    agent_header_fill = PatternFill(start_color='548235', end_color='548235', fill_type='solid')
+    
+    data_font = Font(name='Arial', size=10)
+    summary_label_font = Font(name='Arial', size=11, bold=True)
+    summary_value_font = Font(name='Arial', size=11)
+    
     thin_border = Border(
         left=Side(style='thin'), right=Side(style='thin'),
         top=Side(style='thin'), bottom=Side(style='thin')
     )
     
-    # Title
-    ws.merge_cells('A1:J1')
-    cell = ws.cell(row=1, column=1, value=f"SUITABILITY REPORT - {period_label.upper()}")
+    # Set column widths
+    column_widths = [18, 14, 25, 16, 14, 16, 10, 20, 12, 15, 12, 12, 30, 30]
+    for i, width in enumerate(column_widths, 1):
+        ws.column_dimensions[get_column_letter(i)].width = width
+    
+    row = 1
+    
+    # ========== TITLE SECTION ==========
+    ws.merge_cells(f'A{row}:N{row}')
+    cell = ws.cell(row=row, column=1, value=report_title)
     cell.font = title_font
     cell.fill = title_fill
+    cell.alignment = Alignment(horizontal='center', vertical='center')
+    ws.row_dimensions[row].height = 30
+    row += 1
+    
+    # Date range
+    date_text = f"Period: {start_date} to {end_date}" if start_date and end_date else f"Period: {period_label}"
+    ws.merge_cells(f'A{row}:N{row}')
+    cell = ws.cell(row=row, column=1, value=date_text)
+    cell.font = Font(name='Arial', size=12, bold=True)
     cell.alignment = Alignment(horizontal='center')
-    ws.row_dimensions[1].height = 30
+    row += 1
     
-    # Date range row
-    if start_date and end_date:
-        ws.merge_cells('A2:J2')
-        ws.cell(row=2, column=1, value=f"Period: {start_date} to {end_date}").font = Font(italic=True)
+    # Generated timestamp
+    ws.merge_cells(f'A{row}:N{row}')
+    cell = ws.cell(row=row, column=1, value=f"Generated: {datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M')} UTC")
+    cell.font = Font(name='Arial', size=10, italic=True)
+    cell.alignment = Alignment(horizontal='center')
+    row += 2
     
-    # Headers
-    headers = ['Agent', 'Date', 'Client Name', 'Phone', 'Location', 'Annual Income', 
-               'Monthly Savings', 'Net Worth', 'Sale Made', 'Notes']
-    row = 4
-    for col, header in enumerate(headers, 1):
-        cell = ws.cell(row=row, column=col, value=header)
-        cell.font = header_font
-        cell.fill = header_fill
-        cell.border = thin_border
-        cell.alignment = Alignment(horizontal='center')
+    # ========== WEEKLY SUMMARY SECTION ==========
+    total_forms = len(forms)
+    total_sales = sum(1 for f in forms if f.get('sale_made'))
+    conversion_rate = round((total_sales / total_forms * 100), 1) if total_forms > 0 else 0
     
-    # Data rows
-    row = 5
-    for form in forms:
-        ws.cell(row=row, column=1, value=form.get('submitted_by_name', '')).border = thin_border
-        ws.cell(row=row, column=2, value=form.get('presentation_date', '')).border = thin_border
-        ws.cell(row=row, column=3, value=form.get('client_name', '')).border = thin_border
-        ws.cell(row=row, column=4, value=form.get('client_phone', '')).border = thin_border
-        ws.cell(row=row, column=5, value=form.get('presentation_location', '')).border = thin_border
-        ws.cell(row=row, column=6, value=income_labels.get(form.get('annual_income'), form.get('annual_income', ''))).border = thin_border
-        ws.cell(row=row, column=7, value=savings_labels.get(form.get('monthly_savings'), form.get('monthly_savings', ''))).border = thin_border
-        ws.cell(row=row, column=8, value=net_worth_labels.get(form.get('liquid_net_worth'), form.get('liquid_net_worth', ''))).border = thin_border
-        ws.cell(row=row, column=9, value='Yes' if form.get('sale_made') else 'No').border = thin_border
-        ws.cell(row=row, column=10, value=form.get('notes', '')).border = thin_border
+    ws.merge_cells(f'A{row}:D{row}')
+    cell = ws.cell(row=row, column=1, value="WEEKLY SUMMARY")
+    cell.font = header_font
+    cell.fill = header_fill
+    cell.alignment = Alignment(horizontal='center')
+    for col in range(1, 5):
+        ws.cell(row=row, column=col).border = thin_border
+        ws.cell(row=row, column=col).fill = header_fill
+    row += 1
+    
+    summary_data = [
+        ("Total Forms", total_forms),
+        ("Total Sales Made", total_sales),
+        ("Conversion Rate", f"{conversion_rate}%"),
+        ("Number of Agents", len(by_agent))
+    ]
+    
+    for label, value in summary_data:
+        ws.cell(row=row, column=1, value=label).font = summary_label_font
+        ws.cell(row=row, column=1).border = thin_border
+        ws.cell(row=row, column=2, value=value).font = summary_value_font
+        ws.cell(row=row, column=2).border = thin_border
         row += 1
     
-    # Summary row
     row += 1
-    total_forms = len(forms)
-    sales_made = sum(1 for f in forms if f.get('sale_made'))
-    ws.cell(row=row, column=1, value="TOTAL:").font = Font(bold=True)
-    ws.cell(row=row, column=2, value=f"{total_forms} forms")
-    ws.cell(row=row, column=9, value=f"{sales_made} sales ({round(sales_made/total_forms*100, 1) if total_forms else 0}%)")
     
-    # Column widths
-    widths = [20, 12, 25, 15, 20, 18, 18, 18, 10, 30]
-    for i, width in enumerate(widths, 1):
-        ws.column_dimensions[chr(64 + i)].width = width
+    # ========== AGENT SUMMARY SECTION ==========
+    ws.merge_cells(f'A{row}:D{row}')
+    cell = ws.cell(row=row, column=1, value="AGENT SUMMARY")
+    cell.font = header_font
+    cell.fill = header_fill
+    cell.alignment = Alignment(horizontal='center')
+    for col in range(1, 5):
+        ws.cell(row=row, column=col).border = thin_border
+        ws.cell(row=row, column=col).fill = header_fill
+    row += 1
+    
+    # Agent summary headers
+    agent_summary_headers = ["Agent Name", "Forms", "Sales", "Conv. Rate"]
+    for col, header in enumerate(agent_summary_headers, 1):
+        cell = ws.cell(row=row, column=col, value=header)
+        cell.font = subheader_font
+        cell.fill = subheader_fill
+        cell.border = thin_border
+        cell.alignment = Alignment(horizontal='center')
+    row += 1
+    
+    # Agent summary data
+    for agent_name in sorted(by_agent.keys()):
+        agent_forms = by_agent[agent_name]
+        agent_sales = sum(1 for f in agent_forms if f.get('sale_made'))
+        agent_conv = round((agent_sales / len(agent_forms) * 100), 1) if agent_forms else 0
+        
+        ws.cell(row=row, column=1, value=agent_name).border = thin_border
+        ws.cell(row=row, column=2, value=len(agent_forms)).border = thin_border
+        ws.cell(row=row, column=3, value=agent_sales).border = thin_border
+        ws.cell(row=row, column=4, value=f"{agent_conv}%").border = thin_border
+        row += 1
+    
+    row += 2
+    
+    # ========== DETAIL SECTION (Per Agent) ==========
+    detail_headers = ['Client Name', 'Phone', 'Address', 'Annual Income', 'Savings', 
+                      'Net Worth', 'Sale', 'Agents Present', 'Date', 'Location', 
+                      'Life Licensed', 'Regional', 'Notes', 'Results']
+    
+    for agent_name in sorted(by_agent.keys()):
+        agent_forms = by_agent[agent_name]
+        agent_sales = sum(1 for f in agent_forms if f.get('sale_made'))
+        
+        # Agent Header (Green)
+        ws.merge_cells(f'A{row}:N{row}')
+        cell = ws.cell(row=row, column=1, value=f"{agent_name} ({len(agent_forms)} forms, {agent_sales} sales)")
+        cell.font = agent_header_font
+        cell.fill = agent_header_fill
+        cell.alignment = Alignment(horizontal='left', vertical='center')
+        ws.row_dimensions[row].height = 22
+        for col in range(1, 15):
+            ws.cell(row=row, column=col).fill = agent_header_fill
+        row += 1
+        
+        # Column Headers
+        for col, header in enumerate(detail_headers, 1):
+            cell = ws.cell(row=row, column=col, value=header)
+            cell.font = subheader_font
+            cell.fill = subheader_fill
+            cell.border = thin_border
+            cell.alignment = Alignment(horizontal='center', wrap_text=True)
+        ws.row_dimensions[row].height = 20
+        row += 1
+        
+        # Data rows
+        for form in agent_forms:
+            data = [
+                form.get('client_name', '') or '',
+                form.get('client_phone', '') or '',
+                form.get('client_address', '') or '',
+                income_labels.get(form.get('annual_income', ''), form.get('annual_income', '')),
+                savings_labels.get(form.get('monthly_savings', ''), form.get('monthly_savings', '')),
+                net_worth_labels.get(form.get('liquid_net_worth', ''), form.get('liquid_net_worth', '')),
+                "Yes" if form.get('sale_made') else "No",
+                "; ".join(form.get('agents', [])) if form.get('agents') else '',
+                form.get('presentation_date', '') or '',
+                form.get('presentation_location', '') or '',
+                "Yes" if form.get('life_licensed', True) else "No",
+                form.get('regional_assigned', '') or '',
+                (form.get('notes', '') or '').replace('\n', ' ').replace('\r', ' '),
+                (form.get('results', '') or '').replace('\n', ' ').replace('\r', ' ')
+            ]
+            
+            for col, value in enumerate(data, 1):
+                cell = ws.cell(row=row, column=col, value=value)
+                cell.font = data_font
+                cell.border = thin_border
+                cell.alignment = Alignment(vertical='top', wrap_text=True)
+                
+                # Color sale column
+                if col == 7:
+                    if value == "Yes":
+                        cell.fill = PatternFill(start_color='C6EFCE', end_color='C6EFCE', fill_type='solid')
+                    else:
+                        cell.fill = PatternFill(start_color='FFC7CE', end_color='FFC7CE', fill_type='solid')
+            row += 1
+        
+        row += 1  # Blank row between agents
     
     # Save to buffer
     buffer = io.BytesIO()
     wb.save(buffer)
     buffer.seek(0)
     
-    filename = f"Suitability_Report_{period}_{start_date or 'all'}_{end_date or 'time'}.xlsx"
+    # Filename based on period
+    if period == "weekly":
+        filename = f"Friday_Report_{start_date}_to_{end_date}.xlsx"
+    elif period == "monthly":
+        filename = f"Monthly_Report_{start_date}_to_{end_date}.xlsx"
+    else:
+        filename = f"AllTime_Suitability_Report.xlsx"
     
     return Response(
         content=buffer.getvalue(),
