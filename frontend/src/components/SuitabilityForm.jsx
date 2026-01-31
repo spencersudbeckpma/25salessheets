@@ -863,6 +863,7 @@ const SuitabilityForm = ({ user }) => {
                     >
                       <option value="weekly">Weekly</option>
                       <option value="monthly">Monthly</option>
+                      <option value="custom">Custom Range</option>
                       <option value="all-time">All Time</option>
                     </select>
                   </div>
