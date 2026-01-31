@@ -893,6 +893,31 @@ const SuitabilityForm = ({ user }) => {
                       />
                     </div>
                   )}
+                  
+                  {reportPeriod === 'custom' && (
+                    <>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Start Date</label>
+                        <input
+                          type="date"
+                          value={customStartDate}
+                          onChange={(e) => setCustomStartDate(e.target.value)}
+                          className="border rounded-md px-3 py-2 text-sm"
+                          data-testid="custom-start-picker"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">End Date</label>
+                        <input
+                          type="date"
+                          value={customEndDate}
+                          onChange={(e) => setCustomEndDate(e.target.value)}
+                          className="border rounded-md px-3 py-2 text-sm"
+                          data-testid="custom-end-picker"
+                        />
+                      </div>
+                    </>
+                  )}
                 </div>
                 
                 <div className="text-sm text-gray-600">
