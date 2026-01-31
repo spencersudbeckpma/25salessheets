@@ -9858,12 +9858,10 @@ async def export_suitability_report_excel(
     buffer.seek(0)
     
     # Filename based on period
-    if period == "weekly":
-        filename = f"Friday_Report_{start_date}_to_{end_date}.xlsx"
-    elif period == "monthly":
-        filename = f"Monthly_Report_{start_date}_to_{end_date}.xlsx"
+    if start_date and end_date:
+        filename = f"{filename_prefix}_{start_date}_to_{end_date}.xlsx"
     else:
-        filename = f"AllTime_Suitability_Report.xlsx"
+        filename = f"{filename_prefix}.xlsx"
     
     return Response(
         content=buffer.getvalue(),
