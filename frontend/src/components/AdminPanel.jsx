@@ -2282,7 +2282,7 @@ const AdminPanel = ({ user }) => {
                     <p className="text-sm text-red-700 mb-3">
                       These forms have missing or invalid team_id and won't appear in team-scoped reports.
                     </p>
-                    <div className="space-y-2 max-h-60 overflow-y-auto">
+                    <div className="space-y-2 max-h-60 overflow-y-auto mb-4">
                       {suitabilityDiagnostic.orphaned_forms.map((form, idx) => (
                         <div key={idx} className="bg-white p-3 rounded border border-red-200">
                           <div className="flex justify-between items-start">
@@ -2300,6 +2300,23 @@ const AdminPanel = ({ user }) => {
                         </div>
                       ))}
                     </div>
+                    {/* Fix Button */}
+                    <Button
+                      onClick={fixOrphanedSuitability}
+                      disabled={suitabilityDiagnosticLoading}
+                      className="bg-red-600 hover:bg-red-700 text-white w-full"
+                      data-testid="fix-orphaned-suitability-btn"
+                    >
+                      {suitabilityDiagnosticLoading ? (
+                        <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
+                      ) : (
+                        <Wrench className="w-4 h-4 mr-2" />
+                      )}
+                      Fix {suitabilityDiagnostic.orphaned_forms.length} Orphaned Forms
+                    </Button>
+                    <p className="text-xs text-red-600 mt-2 text-center">
+                      This will assign each form to the submitter's current team
+                    </p>
                   </div>
                 )}
 
