@@ -4796,6 +4796,142 @@ async def download_period_report_excel(report_type: str, period: str, current_us
         media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
         headers={"Content-Disposition": f"attachment; filename={filename}"}
     )
+
+@api_router.get("/admin/diagnostics/suitability")
+async def suitability_diagnostic(current_user: dict = Depends(get_current_user)):
+    """
+    READ-ONLY Suitability Diagnostic - identifies missing/orphaned forms.
+    Accessible to super_admin and state_manager only.
+    NO DATA MUTATION - safe to run in production.
+    """
+    if current_user['role'] not in ['super_admin', 'state_manager']:
+        raise HTTPException(status_code=403, detail="Admin access required")
+    
+    team_id = current_user.get('team_id')
+    
+    # 1) Get all valid teams
+    all_teams = await db.teams.find({}, {"_id": 0, "id": 1, "name": 1}).to_list(100)
+    valid_team_ids = [t['id'] for t in all_teams]
+    team_names = {t['id']: t['name'] for t in all_teams}
+    
+    # 2) Total forms count
+    total_forms = await db.suitability_forms.count_documents({})
+    
+    # 3) Forms by team_id status
+    forms_by_team = {}
+    pipeline = [
+        {"$group": {"_id": "$team_id", "count": {"$sum": 1}}},
+        {"$sort": {"count": -1}}
+    ]
+    async for group in db.suitability_forms.aggregate(pipeline):
+        tid = group['_id']
+        count = group['count']
+        if tid is None or tid == "":
+            forms_by_team["NULL/MISSING"] = {"count": count, "status": "ORPHAN", "team_name": None}
+        elif tid in valid_team_ids:
+            forms_by_team[tid] = {"count": count, "status": "VALID", "team_name": team_names.get(tid)}
+        else:
+            forms_by_team[tid] = {"count": count, "status": "ORPHAN", "team_name": None}
+    
+    # 4) Count orphaned forms
+    orphan_query = {
+        "$or": [
+            {"team_id": {"$exists": False}},
+            {"team_id": None},
+            {"team_id": ""},
+            {"team_id": {"$nin": valid_team_ids}}
+        ]
+    }
+    orphan_count = await db.suitability_forms.count_documents(orphan_query)
+    
+    # 5) Forms by submitted_by_name
+    forms_by_submitter = []
+    pipeline_submitter = [
+        {"$group": {
+            "_id": {"submitted_by": "$submitted_by", "submitted_by_name": "$submitted_by_name"},
+            "count": {"$sum": 1}
+        }},
+        {"$sort": {"count": -1}}
+    ]
+    async for group in db.suitability_forms.aggregate(pipeline_submitter):
+        forms_by_submitter.append({
+            "submitted_by": group['_id'].get('submitted_by'),
+            "submitted_by_name": group['_id'].get('submitted_by_name') or "Unknown",
+            "count": group['count']
+        })
+    
+    # 6) Get all forms with details (for the current team or all if super_admin)
+    all_forms = []
+    forms_cursor = db.suitability_forms.find(
+        {},
+        {"_id": 0, "id": 1, "client_name": 1, "team_id": 1, "submitted_by": 1, 
+         "submitted_by_name": 1, "presentation_date": 1, "status": 1, "created_at": 1}
+    ).sort("created_at", -1)
+    
+    async for form in forms_cursor:
+        tid = form.get('team_id')
+        if tid is None or tid == "":
+            team_status = "MISSING"
+            team_name = None
+        elif tid in valid_team_ids:
+            team_status = "VALID"
+            team_name = team_names.get(tid)
+        else:
+            team_status = "ORPHAN"
+            team_name = None
+        
+        # Check if this form would be visible to the current user
+        visible_to_current_user = (tid == team_id) if team_id else True
+        
+        all_forms.append({
+            "id": form.get('id'),
+            "client_name": form.get('client_name') or "(no name)",
+            "submitted_by_name": form.get('submitted_by_name') or "Unknown",
+            "submitted_by_id": form.get('submitted_by'),
+            "team_id": tid,
+            "team_name": team_name,
+            "team_status": team_status,
+            "presentation_date": form.get('presentation_date') or "(no date)",
+            "status": form.get('status', 'submitted'),
+            "created_at": form.get('created_at'),
+            "visible_to_current_user": visible_to_current_user
+        })
+    
+    # 7) Find users named "Ahlers" for Steve Ahlers check
+    ahlers_users = []
+    async for user in db.users.find(
+        {"$or": [{"name": {"$regex": "ahlers", "$options": "i"}}, {"email": {"$regex": "ahlers", "$options": "i"}}]},
+        {"_id": 0, "id": 1, "name": 1, "email": 1, "team_id": 1}
+    ):
+        ahlers_users.append(user)
+    
+    # 8) Count forms that would be visible vs hidden for current team
+    visible_count = sum(1 for f in all_forms if f['visible_to_current_user'])
+    hidden_count = sum(1 for f in all_forms if not f['visible_to_current_user'])
+    
+    # 9) Orphaned forms details
+    orphaned_forms = [f for f in all_forms if f['team_status'] in ['ORPHAN', 'MISSING']]
+    
+    return {
+        "diagnostic_type": "Suitability Forms",
+        "read_only": True,
+        "current_user_team_id": team_id,
+        "current_user_team_name": team_names.get(team_id) if team_id else None,
+        "summary": {
+            "total_forms_in_database": total_forms,
+            "visible_to_current_user": visible_count,
+            "hidden_due_to_team_filter": hidden_count,
+            "orphaned_forms": orphan_count,
+            "valid_teams_count": len(valid_team_ids)
+        },
+        "forms_by_team": forms_by_team,
+        "forms_by_submitter": forms_by_submitter,
+        "ahlers_users": ahlers_users,
+        "orphaned_forms": orphaned_forms,
+        "all_forms": all_forms,
+        "valid_teams": all_teams
+    }
+
 @api_router.get("/admin/diagnostic")
 async def diagnostic(current_user: dict = Depends(get_current_user)):
     """Diagnostic endpoint to check database state"""
