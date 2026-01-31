@@ -867,6 +867,32 @@ const AdminPanel = ({ user }) => {
     }
   };
 
+  // Suitability Diagnostic Function (READ-ONLY)
+  const runSuitabilityDiagnostic = async () => {
+    setSuitabilityDiagnosticLoading(true);
+    setSuitabilityDiagnostic(null);
+    
+    try {
+      const res = await axios.get(`${API}/api/admin/diagnostics/suitability`, { headers });
+      setSuitabilityDiagnostic(res.data);
+      
+      const orphaned = res.data.summary?.orphaned_forms || 0;
+      const hidden = res.data.summary?.hidden_due_to_team_filter || 0;
+      
+      if (orphaned > 0) {
+        toast.warning(`Found ${orphaned} orphaned suitability forms`);
+      } else if (hidden > 0) {
+        toast.info(`${hidden} forms hidden due to team filter`);
+      } else {
+        toast.success('All suitability forms have valid team assignments');
+      }
+    } catch (error) {
+      toast.error(error.response?.data?.detail || 'Failed to run suitability diagnostic');
+    } finally {
+      setSuitabilityDiagnosticLoading(false);
+    }
+  };
+
   // Full Data Health Check functions
   const runFullHealthCheck = async () => {
     setFullHealthLoading(true);
