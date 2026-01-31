@@ -145,6 +145,8 @@ const SuitabilityForm = ({ user }) => {
         url += `&week_start_date=${selectedWeekStart}`;
       } else if (reportPeriod === 'monthly' && selectedMonth) {
         url += `&month=${selectedMonth}`;
+      } else if (reportPeriod === 'custom' && customStartDate && customEndDate) {
+        url += `&custom_start=${customStartDate}&custom_end=${customEndDate}`;
       }
       
       const response = await axios.get(url, {
@@ -156,7 +158,9 @@ const SuitabilityForm = ({ user }) => {
       const downloadUrl = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = downloadUrl;
-      a.download = `Suitability_Report_${reportPeriod}_${reportData?.period_label || 'export'}.xlsx`;
+      // Use period_label for cleaner filename
+      const safeLabel = (reportData?.period_label || reportPeriod).replace(/[^a-zA-Z0-9 ]/g, '').replace(/ /g, '_');
+      a.download = `Suitability_Report_${safeLabel}.xlsx`;
       document.body.appendChild(a);
       a.click();
       a.remove();
