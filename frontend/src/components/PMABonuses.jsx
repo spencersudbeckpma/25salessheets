@@ -229,7 +229,7 @@ const PMABonuses = ({ user }) => {
                       <Download size={16} />
                       <span className="hidden sm:inline">Download</span>
                     </Button>
-                    {user.role === 'state_manager' && (
+                    {(user.role === 'state_manager' || user.role === 'super_admin') && (
                       <Button
                         size="sm"
                         variant="destructive"
