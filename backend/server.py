@@ -7667,10 +7667,10 @@ async def upload_pma_bonus(
     file: UploadFile = File(...),
     current_user: dict = Depends(get_current_user)
 ):
-    """Upload a PMA bonus PDF (State Manager only)"""
+    """Upload a PMA bonus PDF (State Manager and Super Admin only)"""
     await check_feature_access(current_user, "pma_bonuses")
-    if current_user['role'] != 'state_manager':
-        raise HTTPException(status_code=403, detail="Only State Managers can upload bonus PDFs")
+    if current_user['role'] not in ['state_manager', 'super_admin']:
+        raise HTTPException(status_code=403, detail="Only State Managers and Super Admins can upload bonus PDFs")
     
     # Validate file type
     if not file.filename.lower().endswith('.pdf'):
@@ -7725,10 +7725,10 @@ async def download_pma_bonus(bonus_id: str, current_user: dict = Depends(get_cur
 
 @api_router.delete("/pma-bonuses/{bonus_id}")
 async def delete_pma_bonus(bonus_id: str, current_user: dict = Depends(get_current_user)):
-    """Delete a PMA bonus PDF (State Manager only)"""
+    """Delete a PMA bonus PDF (State Manager and Super Admin only)"""
     await check_feature_access(current_user, "pma_bonuses")
-    if current_user['role'] != 'state_manager':
-        raise HTTPException(status_code=403, detail="Only State Managers can delete bonus PDFs")
+    if current_user['role'] not in ['state_manager', 'super_admin']:
+        raise HTTPException(status_code=403, detail="Only State Managers and Super Admins can delete bonus PDFs")
     
     result = await db.pma_bonuses.delete_one({"id": bonus_id})
     if result.deleted_count == 0:
