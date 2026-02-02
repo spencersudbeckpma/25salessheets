@@ -147,8 +147,8 @@ const PMABonuses = ({ user }) => {
         </p>
       </CardHeader>
       <CardContent className="pt-2 space-y-6">
-        {/* Upload Section - State Manager Only */}
-        {user.role === 'state_manager' && (
+        {/* Upload Section - State Manager and Super Admin Only */}
+        {(user.role === 'state_manager' || user.role === 'super_admin') && (
           <div className="bg-blue-50 p-6 rounded-lg border border-blue-200">
             <h3 className="font-semibold text-lg mb-3 flex items-center gap-2">
               <Upload size={20} />
