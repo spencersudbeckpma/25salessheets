@@ -183,8 +183,17 @@ DEFAULT_TEAM_VIEW_SETTINGS = {
         "new_faces": True,
         "sna": True,
         "npa": True
-    }
+    },
+    # Recruiting states - team-scoped state options
+    "recruiting_states": []  # Default empty - each team sets their own states
 }
+
+# Default recruiting states for new teams (can be customized per team)
+DEFAULT_RECRUITING_STATES = [
+    {"code": "MN", "name": "Minnesota"},
+    {"code": "ND", "name": "North Dakota"},
+    {"code": "SD", "name": "South Dakota"}
+]
 
 async def get_team_view_settings(team: dict) -> dict:
     """Get team view settings with defaults merged, including any NEW canonical metrics"""
