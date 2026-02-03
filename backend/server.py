@@ -6780,6 +6780,312 @@ async def delete_recruit(recruit_id: str, current_user: dict = Depends(get_curre
 
 
 # ============================================
+# Recruit File Uploads (Hierarchy-Scoped)
+# ============================================
+
+# File upload directory
+RECRUIT_FILES_DIR = Path("/app/uploads/recruit_files")
+RECRUIT_FILES_DIR.mkdir(parents=True, exist_ok=True)
+
+# Allowed file types for recruit uploads
+ALLOWED_RECRUIT_FILE_TYPES = {
+    'application/pdf': '.pdf',
+    'application/msword': '.doc',
+    'application/vnd.openxmlformats-officedocument.wordprocessingml.document': '.docx',
+    'image/png': '.png',
+    'image/jpeg': '.jpg',
+    'image/jpg': '.jpg'
+}
+MAX_RECRUIT_FILE_SIZE = 15 * 1024 * 1024  # 15MB
+
+
+async def check_recruit_file_access(current_user: dict, recruit: dict, require_write: bool = False) -> bool:
+    """
+    Check if user has access to recruit files based on hierarchy.
+    
+    Access rules:
+    - State Manager / Super Admin: Full access to all recruits in their team
+    - Regional Manager: Access to recruits where they are the RM or their DMs are assigned
+    - District Manager: Access to recruits where they are the DM
+    - Agent: Read-only access if they are the assigned agent (future: when agent field exists)
+    
+    Args:
+        current_user: The current authenticated user
+        recruit: The recruit document
+        require_write: If True, checks for upload/delete permission (excludes agents)
+    
+    Returns:
+        True if access granted, False otherwise
+    """
+    user_role = current_user.get('role')
+    user_id = current_user.get('id')
+    user_team_id = current_user.get('team_id')
+    recruit_team_id = recruit.get('team_id')
+    
+    # CRITICAL: Team isolation - must be same team
+    if user_team_id != recruit_team_id:
+        return False
+    
+    # State Manager and Super Admin: Full access within team
+    if user_role in ['state_manager', 'super_admin']:
+        return True
+    
+    # Regional Manager: Access if they are RM or their DM subordinates are assigned
+    if user_role == 'regional_manager':
+        if recruit.get('rm_id') == user_id:
+            return True
+        # Check if any of their DM subordinates are assigned
+        subordinates = await get_all_subordinates(user_id, user_team_id)
+        if recruit.get('dm_id') in subordinates:
+            return True
+        return False
+    
+    # District Manager: Access only to their own recruits
+    if user_role == 'district_manager':
+        return recruit.get('dm_id') == user_id
+    
+    # Agent: Read-only access if assigned (no write)
+    if user_role == 'agent':
+        if require_write:
+            return False
+        # For now, agents don't have direct assignment field on recruits
+        # Future: check recruit.assigned_agent_id == user_id
+        return False
+    
+    return False
+
+
+@api_router.get("/recruits/{recruit_id}/files")
+async def get_recruit_files(recruit_id: str, current_user: dict = Depends(get_current_user)):
+    """
+    Get all files for a recruit (hierarchy-scoped).
+    
+    Access: SM, RM (for their recruits), DM (for their recruits)
+    """
+    await check_feature_access(current_user, "recruiting")
+    
+    team_id = current_user.get('team_id')
+    if not team_id:
+        raise HTTPException(status_code=403, detail="You must be assigned to a team")
+    
+    # Get recruit and verify it exists in user's team
+    recruit = await db.recruits.find_one({"id": recruit_id, "team_id": team_id}, {"_id": 0})
+    if not recruit:
+        raise HTTPException(status_code=404, detail="Recruit not found or access denied")
+    
+    # Check hierarchy access
+    has_access = await check_recruit_file_access(current_user, recruit, require_write=False)
+    if not has_access:
+        raise HTTPException(status_code=403, detail="You don't have access to this recruit's files")
+    
+    # Get files for this recruit (metadata only, no file content)
+    files = await db.recruit_files.find(
+        {"recruit_id": recruit_id, "team_id": team_id},
+        {"_id": 0, "storage_key": 0}  # Don't expose storage key to frontend
+    ).sort("uploaded_at", -1).to_list(100)
+    
+    return {
+        "recruit_id": recruit_id,
+        "recruit_name": recruit.get('name', ''),
+        "files": files,
+        "total": len(files)
+    }
+
+
+@api_router.post("/recruits/{recruit_id}/files")
+async def upload_recruit_file(
+    recruit_id: str,
+    file: UploadFile = File(...),
+    file_type: str = Form("document"),  # resume, notes, document
+    current_user: dict = Depends(get_current_user)
+):
+    """
+    Upload a file for a recruit (managers only, hierarchy-scoped).
+    
+    Access: State Manager, Regional Manager, District Manager
+    Files stored on disk with metadata in MongoDB.
+    """
+    await check_feature_access(current_user, "recruiting")
+    
+    # Only managers can upload
+    if current_user['role'] not in ['super_admin', 'state_manager', 'regional_manager', 'district_manager']:
+        raise HTTPException(status_code=403, detail="Only managers can upload recruit files")
+    
+    team_id = current_user.get('team_id')
+    if not team_id:
+        raise HTTPException(status_code=403, detail="You must be assigned to a team")
+    
+    # Get recruit and verify access
+    recruit = await db.recruits.find_one({"id": recruit_id, "team_id": team_id}, {"_id": 0})
+    if not recruit:
+        raise HTTPException(status_code=404, detail="Recruit not found or access denied")
+    
+    # Check hierarchy access for upload
+    has_access = await check_recruit_file_access(current_user, recruit, require_write=True)
+    if not has_access:
+        raise HTTPException(status_code=403, detail="You don't have permission to upload files for this recruit")
+    
+    # Validate file type
+    content_type = file.content_type
+    if content_type not in ALLOWED_RECRUIT_FILE_TYPES:
+        allowed = ', '.join(ALLOWED_RECRUIT_FILE_TYPES.values())
+        raise HTTPException(status_code=400, detail=f"File type not allowed. Allowed types: {allowed}")
+    
+    # Read and validate file size
+    file_content = await file.read()
+    if len(file_content) > MAX_RECRUIT_FILE_SIZE:
+        raise HTTPException(status_code=400, detail="File size must be less than 15MB")
+    
+    # Generate storage key and save to disk
+    file_id = str(uuid.uuid4())
+    file_ext = ALLOWED_RECRUIT_FILE_TYPES.get(content_type, '.bin')
+    storage_key = f"{team_id}/{recruit_id}/{file_id}{file_ext}"
+    
+    # Create directory structure
+    file_path = RECRUIT_FILES_DIR / team_id / recruit_id
+    file_path.mkdir(parents=True, exist_ok=True)
+    
+    # Write file to disk
+    full_path = RECRUIT_FILES_DIR / storage_key
+    with open(full_path, 'wb') as f:
+        f.write(file_content)
+    
+    # Store metadata in MongoDB
+    file_doc = {
+        "id": file_id,
+        "recruit_id": recruit_id,
+        "team_id": team_id,
+        "filename": file.filename,
+        "storage_key": storage_key,
+        "file_size": len(file_content),
+        "mime_type": content_type,
+        "file_type": file_type,  # resume, notes, document
+        "uploaded_by": current_user['id'],
+        "uploaded_by_name": current_user['name'],
+        "uploaded_at": datetime.now(timezone.utc).isoformat()
+    }
+    
+    await db.recruit_files.insert_one(file_doc)
+    
+    # Return without storage_key
+    return {
+        "message": "File uploaded successfully",
+        "file": {
+            "id": file_doc['id'],
+            "filename": file_doc['filename'],
+            "file_size": file_doc['file_size'],
+            "file_type": file_doc['file_type'],
+            "uploaded_by_name": file_doc['uploaded_by_name'],
+            "uploaded_at": file_doc['uploaded_at']
+        }
+    }
+
+
+@api_router.get("/recruits/{recruit_id}/files/{file_id}/download")
+async def download_recruit_file(
+    recruit_id: str,
+    file_id: str,
+    current_user: dict = Depends(get_current_user)
+):
+    """
+    Download a recruit file (hierarchy-scoped access).
+    
+    Access: SM, RM (for their recruits), DM (for their recruits)
+    """
+    await check_feature_access(current_user, "recruiting")
+    
+    team_id = current_user.get('team_id')
+    if not team_id:
+        raise HTTPException(status_code=403, detail="You must be assigned to a team")
+    
+    # Get recruit and verify access
+    recruit = await db.recruits.find_one({"id": recruit_id, "team_id": team_id}, {"_id": 0})
+    if not recruit:
+        raise HTTPException(status_code=404, detail="Recruit not found or access denied")
+    
+    # Check hierarchy access
+    has_access = await check_recruit_file_access(current_user, recruit, require_write=False)
+    if not has_access:
+        raise HTTPException(status_code=403, detail="You don't have access to this recruit's files")
+    
+    # Get file metadata
+    file_doc = await db.recruit_files.find_one(
+        {"id": file_id, "recruit_id": recruit_id, "team_id": team_id},
+        {"_id": 0}
+    )
+    if not file_doc:
+        raise HTTPException(status_code=404, detail="File not found")
+    
+    # Read file from disk
+    storage_key = file_doc.get('storage_key')
+    file_path = RECRUIT_FILES_DIR / storage_key
+    
+    if not file_path.exists():
+        raise HTTPException(status_code=404, detail="File not found on storage")
+    
+    with open(file_path, 'rb') as f:
+        file_content = f.read()
+    
+    return Response(
+        content=file_content,
+        media_type=file_doc.get('mime_type', 'application/octet-stream'),
+        headers={
+            "Content-Disposition": f"inline; filename={file_doc['filename']}"
+        }
+    )
+
+
+@api_router.delete("/recruits/{recruit_id}/files/{file_id}")
+async def delete_recruit_file(
+    recruit_id: str,
+    file_id: str,
+    current_user: dict = Depends(get_current_user)
+):
+    """
+    Delete a recruit file (uploader or State Manager only).
+    
+    Access: Original uploader OR State Manager/Super Admin
+    """
+    await check_feature_access(current_user, "recruiting")
+    
+    team_id = current_user.get('team_id')
+    if not team_id:
+        raise HTTPException(status_code=403, detail="You must be assigned to a team")
+    
+    # Get recruit and verify it exists in user's team
+    recruit = await db.recruits.find_one({"id": recruit_id, "team_id": team_id}, {"_id": 0})
+    if not recruit:
+        raise HTTPException(status_code=404, detail="Recruit not found or access denied")
+    
+    # Get file metadata
+    file_doc = await db.recruit_files.find_one(
+        {"id": file_id, "recruit_id": recruit_id, "team_id": team_id},
+        {"_id": 0}
+    )
+    if not file_doc:
+        raise HTTPException(status_code=404, detail="File not found")
+    
+    # Check delete permission: uploader OR State Manager/Super Admin
+    is_uploader = file_doc.get('uploaded_by') == current_user['id']
+    is_admin = current_user['role'] in ['state_manager', 'super_admin']
+    
+    if not (is_uploader or is_admin):
+        raise HTTPException(status_code=403, detail="Only the uploader or State Manager can delete this file")
+    
+    # Delete from disk
+    storage_key = file_doc.get('storage_key')
+    if storage_key:
+        file_path = RECRUIT_FILES_DIR / storage_key
+        if file_path.exists():
+            file_path.unlink()
+    
+    # Delete from database
+    await db.recruit_files.delete_one({"id": file_id})
+    
+    return {"message": "File deleted successfully"}
+
+
+# ============================================
 # Interview Management Endpoints
 # ============================================
 
