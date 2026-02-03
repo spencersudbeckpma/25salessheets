@@ -516,8 +516,8 @@ const PMADocuSphere = ({ user }) => {
                 )}
               </div>
 
-              {/* Upload Button (State Manager only) */}
-              {user.role === 'state_manager' && (
+              {/* Upload Button (State Manager and Super Admin) */}
+              {(user.role === 'state_manager' || user.role === 'super_admin') && (
                 <label>
                   <input
                     type="file"
@@ -537,8 +537,8 @@ const PMADocuSphere = ({ user }) => {
               )}
             </div>
 
-            {/* Drag & Drop Zone (State Manager only) */}
-            {user.role === 'state_manager' && (
+            {/* Drag & Drop Zone (State Manager and Super Admin) */}
+            {(user.role === 'state_manager' || user.role === 'super_admin') && (
               <div
                 className="border-2 border-dashed border-slate-300 rounded-xl p-6 mb-4 text-center hover:border-amber-500 hover:bg-amber-50/50 transition-colors cursor-pointer"
                 onDragOver={(e) => {
