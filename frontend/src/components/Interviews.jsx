@@ -1414,8 +1414,8 @@ const Interviews = ({ user }) => {
                 </div>
               )}
 
-              {/* Recruit Files Section - Only show if added to recruiting */}
-              {selectedInterview.added_to_recruiting && selectedInterview.recruit_id && (
+              {/* Recruit Files Section - Show when recruit_id exists (files persist with recruit) */}
+              {selectedInterview.recruit_id && (
                 <div className="bg-slate-50 border border-slate-200 rounded-lg p-4 mt-4">
                   <div className="flex items-center justify-between mb-3">
                     <h4 className="font-semibold text-slate-900 flex items-center gap-2">
