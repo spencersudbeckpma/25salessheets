@@ -600,7 +600,7 @@ const PMADocuSphere = ({ user }) => {
                 <p className="text-slate-500">
                   {searchTerm ? 'No documents found' : 'No documents in this folder'}
                 </p>
-                {user.role === 'state_manager' && !searchTerm && (
+                {(user.role === 'state_manager' || user.role === 'super_admin') && !searchTerm && (
                   <p className="text-sm text-slate-400 mt-2">Drag & drop PDFs above or click to upload</p>
                 )}
               </div>
@@ -654,7 +654,7 @@ const PMADocuSphere = ({ user }) => {
                       >
                         <Printer size={14} />
                       </Button>
-                      {user.role === 'state_manager' && (
+                      {(user.role === 'state_manager' || user.role === 'super_admin') && (
                         <Button
                           size="sm"
                           variant="ghost"
