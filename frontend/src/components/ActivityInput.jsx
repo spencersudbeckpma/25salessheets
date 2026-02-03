@@ -242,6 +242,28 @@ const ActivityInput = ({ user }) => {
     { key: 'premium', label: 'Total Premium ($)', icon: '💵' }
   ];
 
+  // Filter categories based on enabled metrics from team settings
+  const visibleCategories = enabledMetrics === null 
+    ? [] // Still loading
+    : categories.filter(cat => enabledMetrics.includes(cat.key));
+
+  // Show loading state while fetching settings
+  if (enabledMetrics === null) {
+    return (
+      <Card className="shadow-lg bg-white" data-testid="activity-input-card">
+        <CardHeader className="pb-4">
+          <CardTitle className="flex items-center gap-2 text-xl" data-testid="activity-title">
+            <Calendar className="text-blue-600" size={24} />
+            Daily Activity Input
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="flex items-center justify-center py-8">
+          <div className="text-slate-500">Loading...</div>
+        </CardContent>
+      </Card>
+    );
+  }
+
   return (
     <Card className="shadow-lg bg-white" data-testid="activity-input-card">
       <CardHeader className="pb-4">
@@ -265,7 +287,7 @@ const ActivityInput = ({ user }) => {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
-          {categories.map(cat => (
+          {visibleCategories.map(cat => (
             <div key={cat.key} className="space-y-2">
               <Label htmlFor={cat.key} data-testid={`${cat.key}-label`} className="text-sm font-medium">
                 {cat.icon} {cat.label}
