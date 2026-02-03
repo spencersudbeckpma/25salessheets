@@ -10,6 +10,21 @@ import { Calendar, Save } from 'lucide-react';
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
 
+// Map KPI card IDs to activity input keys
+const KPI_TO_ACTIVITY_MAP = {
+  'contacts': 'contacts',
+  'appointments': 'appointments',
+  'presentations': 'presentations',
+  'referrals': 'referrals',
+  'testimonials': 'testimonials',
+  'apps': 'apps',
+  'sales': 'sales',
+  'new_face_sold': 'new_face_sold',
+  'fact_finders': 'fact_finders',
+  'bankers_premium': 'bankers_premium',
+  'premium': 'premium'
+};
+
 const ActivityInput = ({ user }) => {
   // Get today's date in local timezone
   const getLocalDate = () => {
@@ -42,6 +57,31 @@ const ActivityInput = ({ user }) => {
     county: '',
     policy_amount: ''
   });
+  const [enabledMetrics, setEnabledMetrics] = useState(null); // null = loading, array = loaded
+
+  // Fetch enabled metrics from team settings
+  useEffect(() => {
+    const fetchEnabledMetrics = async () => {
+      try {
+        const token = localStorage.getItem('token');
+        const response = await axios.get(`${API}/team/view-settings`, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        // Get enabled metric IDs from kpi_cards
+        const kpiCards = response.data.kpi_cards || [];
+        const enabled = kpiCards
+          .filter(card => card.enabled !== false) // enabled by default if not explicitly false
+          .map(card => KPI_TO_ACTIVITY_MAP[card.id])
+          .filter(Boolean);
+        setEnabledMetrics(enabled);
+      } catch (error) {
+        console.error('Failed to fetch team view settings:', error);
+        // On error, show all metrics (fallback)
+        setEnabledMetrics(Object.values(KPI_TO_ACTIVITY_MAP));
+      }
+    };
+    fetchEnabledMetrics();
+  }, []);
 
   useEffect(() => {
     fetchActivity();
