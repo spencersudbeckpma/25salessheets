@@ -87,8 +87,11 @@ const AdminPanel = ({ user }) => {
         { id: 'presentations', label: 'Presentations', enabled: true },
         { id: 'referrals', label: 'Referrals', enabled: true },
         { id: 'testimonials', label: 'Testimonials', enabled: true },
+        { id: 'apps', label: 'Apps', enabled: true },
         { id: 'sales', label: 'Sales', enabled: true },
         { id: 'new_face_sold', label: 'New Face Sold', enabled: true },
+        { id: 'fact_finders', label: 'Fact Finders', enabled: true },
+        { id: 'bankers_premium', label: 'Bankers Premium', enabled: true },
         { id: 'premium', label: 'Total Premium', enabled: true }
       ],
       leaderboard_metrics: [
