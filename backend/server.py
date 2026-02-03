@@ -6888,10 +6888,10 @@ async def get_recruit_files(recruit_id: str, current_user: dict = Depends(get_cu
     if not has_access:
         raise HTTPException(status_code=403, detail="You don't have access to this recruit's files")
     
-    # Get files for this recruit (metadata only, no file content)
+    # Get files for this recruit (metadata only, hide internal fields)
     files = await db.recruit_files.find(
         {"recruit_id": recruit_id, "team_id": team_id},
-        {"_id": 0, "storage_key": 0}  # Don't expose storage key to frontend
+        {"_id": 0, "gridfs_id": 0}  # Don't expose storage internals
     ).sort("uploaded_at", -1).to_list(100)
     
     return {
