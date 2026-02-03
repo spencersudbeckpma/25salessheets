@@ -209,6 +209,150 @@ const Interviews = ({ user }) => {
     }
   };
 
+  // ============================================
+  // Recruit File Functions
+  // ============================================
+  
+  const fetchRecruitFiles = async (recruitId) => {
+    if (!recruitId) {
+      setRecruitFiles([]);
+      return;
+    }
+    
+    setLoadingFiles(true);
+    try {
+      const token = localStorage.getItem('token');
+      const response = await axios.get(`${API}/recruits/${recruitId}/files`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      setRecruitFiles(response.data.files || []);
+    } catch (error) {
+      console.error('Failed to fetch recruit files:', error);
+      setRecruitFiles([]);
+    } finally {
+      setLoadingFiles(false);
+    }
+  };
+
+  const handleFileUpload = async (event) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    
+    if (!selectedInterview?.recruit_id) {
+      toast.error('This candidate must be added to recruiting first');
+      return;
+    }
+
+    // Validate file type
+    const allowedTypes = ['application/pdf', 'application/msword', 
+      'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+      'image/png', 'image/jpeg', 'image/jpg'];
+    
+    if (!allowedTypes.includes(file.type)) {
+      toast.error('Only PDF, DOC, DOCX, PNG, and JPG files are allowed');
+      return;
+    }
+
+    // Validate file size (15MB)
+    if (file.size > 15 * 1024 * 1024) {
+      toast.error('File size must be less than 15MB');
+      return;
+    }
+
+    setUploadingFile(true);
+    try {
+      const token = localStorage.getItem('token');
+      const formData = new FormData();
+      formData.append('file', file);
+      formData.append('file_type', 'document');
+
+      await axios.post(
+        `${API}/recruits/${selectedInterview.recruit_id}/files`,
+        formData,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'multipart/form-data'
+          }
+        }
+      );
+
+      toast.success('File uploaded successfully');
+      fetchRecruitFiles(selectedInterview.recruit_id);
+    } catch (error) {
+      toast.error(error.response?.data?.detail || 'Failed to upload file');
+    } finally {
+      setUploadingFile(false);
+      // Reset file input
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
+    }
+  };
+
+  const downloadRecruitFile = async (fileId, filename) => {
+    if (!selectedInterview?.recruit_id) return;
+
+    try {
+      const token = localStorage.getItem('token');
+      const response = await axios.get(
+        `${API}/recruits/${selectedInterview.recruit_id}/files/${fileId}/download`,
+        {
+          headers: { Authorization: `Bearer ${token}` },
+          responseType: 'blob'
+        }
+      );
+
+      // Create download link
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', filename);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(url);
+    } catch (error) {
+      toast.error('Failed to download file');
+    }
+  };
+
+  const deleteRecruitFile = async (fileId) => {
+    if (!selectedInterview?.recruit_id) return;
+
+    if (!window.confirm('Are you sure you want to delete this file?')) {
+      return;
+    }
+
+    try {
+      const token = localStorage.getItem('token');
+      await axios.delete(
+        `${API}/recruits/${selectedInterview.recruit_id}/files/${fileId}`,
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+
+      toast.success('File deleted');
+      fetchRecruitFiles(selectedInterview.recruit_id);
+    } catch (error) {
+      toast.error(error.response?.data?.detail || 'Failed to delete file');
+    }
+  };
+
+  const formatFileSize = (bytes) => {
+    if (bytes < 1024) return bytes + ' B';
+    if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+    return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
+  };
+
+  const canUploadFiles = () => {
+    return ['super_admin', 'state_manager', 'regional_manager', 'district_manager'].includes(user.role);
+  };
+
+  const canDeleteFile = (file) => {
+    // Uploader or State Manager/Super Admin can delete
+    return file.uploaded_by === user.id || ['state_manager', 'super_admin'].includes(user.role);
+  };
+
   const handleSubmit = async (moveForward = true) => {
     if (!formData.candidate_name.trim()) {
       toast.error('Candidate name is required');
