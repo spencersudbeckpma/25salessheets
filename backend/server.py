@@ -329,24 +329,6 @@ def get_metric_label(metric_id: str) -> str:
     return labels.get(metric_id, metric_id.replace('_', ' ').title())
 
 
-@api_router.get("/team/view-settings")
-async def get_team_view_settings_endpoint(current_user: dict = Depends(get_current_user)):
-    """
-    Get team's view settings including KPI card visibility.
-    Used by frontend to determine which metrics to show in Daily Activity Input.
-    """
-    team_id = current_user.get('team_id')
-    if not team_id:
-        raise HTTPException(status_code=403, detail="You must be assigned to a team")
-    
-    team = await db.teams.find_one({"id": team_id}, {"_id": 0})
-    if not team:
-        raise HTTPException(status_code=404, detail="Team not found")
-    
-    view_settings = await get_team_view_settings(team)
-    return view_settings
-
-
 async def check_subtab_access(current_user: dict, subtab_name: str):
     """
     Check if user's team has access to a specific sub-tab.
