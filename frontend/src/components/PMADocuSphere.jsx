@@ -461,8 +461,8 @@ const PMADocuSphere = ({ user }) => {
                 )}
               </div>
 
-              {/* Add Folder Button (State Manager only) */}
-              {user.role === 'state_manager' && (
+              {/* Add Folder Button (State Manager and Super Admin) */}
+              {(user.role === 'state_manager' || user.role === 'super_admin') && (
                 <Button
                   onClick={() => {
                     setNewFolderParent(selectedFolder);
