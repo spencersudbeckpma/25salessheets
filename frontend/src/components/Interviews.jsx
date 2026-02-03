@@ -37,6 +37,12 @@ const Interviews = ({ user }) => {
   const [secondInterviewAnswers, setSecondInterviewAnswers] = useState('');
   const [isSavingAnswers, setIsSavingAnswers] = useState(false);
 
+  // Recruit Files State
+  const [recruitFiles, setRecruitFiles] = useState([]);
+  const [loadingFiles, setLoadingFiles] = useState(false);
+  const [uploadingFile, setUploadingFile] = useState(false);
+  const fileInputRef = useRef(null);
+
   const [formData, setFormData] = useState({
     candidate_name: '',
     candidate_location: '',
