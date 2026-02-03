@@ -680,10 +680,19 @@ const Recruiting = ({ user }) => {
                       className="w-full border rounded-lg p-2 text-sm"
                     >
                       <option value="">Select State</option>
-                      <option value="MN">Minnesota</option>
-                      <option value="ND">North Dakota</option>
-                      <option value="SD">South Dakota</option>
+                      {teamStates.length > 0 ? (
+                        teamStates.map(state => (
+                          <option key={state.code} value={state.code}>{state.name}</option>
+                        ))
+                      ) : (
+                        <option value="" disabled>No states configured for this team</option>
+                      )}
                     </select>
+                    {teamStates.length === 0 && (
+                      <p className="text-xs text-amber-600 mt-1">
+                        Contact your admin to configure states for your team
+                      </p>
+                    )}
                   </div>
 
                   {/* Regional Manager Dropdown - Only show for State Manager */}
