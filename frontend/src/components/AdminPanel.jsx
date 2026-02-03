@@ -4140,6 +4140,84 @@ const AdminPanel = ({ user }) => {
                     </p>
                   </div>
 
+                  {/* Recruiting States Section */}
+                  <div className="border-t pt-6">
+                    <h4 className="font-medium text-slate-900 mb-3 flex items-center gap-2">
+                      <Users className="w-4 h-4" />
+                      Recruiting States
+                    </h4>
+                    <p className="text-xs text-slate-500 mb-3">
+                      Configure which states appear in the Recruiting tab dropdown for this team. 
+                      Each team should have their own state list.
+                    </p>
+                    <div className="space-y-2 mb-3">
+                      {(customizationForm.view_settings?.recruiting_states || []).map((state, index) => (
+                        <div key={index} className="flex items-center gap-2 p-2 bg-slate-50 rounded-lg">
+                          <Input
+                            placeholder="Code (e.g., MN)"
+                            value={state.code}
+                            onChange={(e) => {
+                              const newStates = [...(customizationForm.view_settings?.recruiting_states || [])];
+                              newStates[index] = { ...newStates[index], code: e.target.value.toUpperCase() };
+                              setCustomizationForm(prev => ({
+                                ...prev,
+                                view_settings: { ...prev.view_settings, recruiting_states: newStates }
+                              }));
+                            }}
+                            className="w-20 text-sm"
+                            maxLength={3}
+                          />
+                          <Input
+                            placeholder="State Name (e.g., Minnesota)"
+                            value={state.name}
+                            onChange={(e) => {
+                              const newStates = [...(customizationForm.view_settings?.recruiting_states || [])];
+                              newStates[index] = { ...newStates[index], name: e.target.value };
+                              setCustomizationForm(prev => ({
+                                ...prev,
+                                view_settings: { ...prev.view_settings, recruiting_states: newStates }
+                              }));
+                            }}
+                            className="flex-1 text-sm"
+                          />
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => {
+                              const newStates = (customizationForm.view_settings?.recruiting_states || []).filter((_, i) => i !== index);
+                              setCustomizationForm(prev => ({
+                                ...prev,
+                                view_settings: { ...prev.view_settings, recruiting_states: newStates }
+                              }));
+                            }}
+                            className="text-red-500 hover:bg-red-50"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </Button>
+                        </div>
+                      ))}
+                    </div>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        const newStates = [...(customizationForm.view_settings?.recruiting_states || []), { code: '', name: '' }];
+                        setCustomizationForm(prev => ({
+                          ...prev,
+                          view_settings: { ...prev.view_settings, recruiting_states: newStates }
+                        }));
+                      }}
+                      className="w-full"
+                    >
+                      <Plus className="w-4 h-4 mr-1" /> Add State
+                    </Button>
+                    {(customizationForm.view_settings?.recruiting_states || []).length === 0 && (
+                      <p className="text-xs text-amber-600 mt-2 italic">
+                        No states configured. Recruiting state dropdown will be empty until states are added.
+                      </p>
+                    )}
+                  </div>
+
                   {/* Sub-tabs Section */}
                   <div className="border-t pt-6">
                     <h4 className="font-medium text-slate-900 mb-3 flex items-center gap-2">
