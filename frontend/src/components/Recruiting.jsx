@@ -25,6 +25,7 @@ const Recruiting = ({ user }) => {
   const [selectedRM, setSelectedRM] = useState('all'); // For filtering by Regional Manager
   const [regionalManagers, setRegionalManagers] = useState([]);
   const [activeTab, setActiveTab] = useState('pipeline'); // 'pipeline' or 'interviews'
+  const [teamStates, setTeamStates] = useState([]); // Team-scoped states
 
   const [formData, setFormData] = useState({
     name: '',
@@ -52,7 +53,21 @@ const Recruiting = ({ user }) => {
     fetchRecruits();
     fetchRegionalManagers();
     fetchDistrictManagers();
+    fetchTeamStates();
   }, []);
+
+  const fetchTeamStates = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await axios.get(`${API}/recruiting/states`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      setTeamStates(response.data.states || []);
+    } catch (error) {
+      console.error('Failed to fetch team states');
+      setTeamStates([]);
+    }
+  };
 
   const fetchRecruits = async () => {
     try {
