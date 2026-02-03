@@ -863,9 +863,9 @@ const Recruiting = ({ user }) => {
             className="border rounded-lg px-3 h-9 text-sm"
           >
             <option value="all">All States</option>
-            <option value="MN">Minnesota</option>
-            <option value="ND">North Dakota</option>
-            <option value="SD">South Dakota</option>
+            {teamStates.map(state => (
+              <option key={state.code} value={state.code}>{state.name}</option>
+            ))}
           </select>
         </div>
 
