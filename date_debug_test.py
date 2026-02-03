@@ -22,7 +22,7 @@ import os
 from pytz import timezone as pytz_timezone
 
 # Configuration
-BACKEND_URL = "https://metricdash-10.preview.emergentagent.com/api"
+BACKEND_URL = "https://smart-recruiting.preview.emergentagent.com/api"
 
 class Colors:
     GREEN = '\033[92m'

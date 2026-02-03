@@ -1,44 +1,53 @@
-<analysis>**original_problem_statement**: The user initially focused on fixing data leaks and UI regressions. The work then shifted to building new features, primarily adding two new metrics ( and ) across the entire application stack. This involved updating backend models, aggregation endpoints, reports (JSON and Excel), and all relevant frontend components. The user also requested fixes for failing tests, bugs related to configuration display, and the implementation of KPI-based filtering for reports. The latest request is to add team-level visibility controls for metrics displayed in the Team View.
+<analysis>**original_problem_statement**: The user's initial focus was on adding new activity metrics (, ) and fixing associated bugs and tests. The scope expanded significantly to include a complete overhaul of the Suitability tab to ensure data retention and add flexible reporting periods (Weekly, Monthly, All-Time, Custom). This led to diagnosing and fixing orphaned data in production via an in-app diagnostic tool. The user also requested and received fixes for  permissions on the PMA Bonuses and PMA DocuSphere tabs. The most recent request is to make the State selection in the Recruiting tab team-scoped, so that State Managers can only select from states assigned to their specific team.
 
 **PRODUCT REQUIREMENTS:**
-1.  **P0: Add New Activity Metrics:** Introduce  and  into the Daily Activity logs and all related aggregations (stats, reports, leaderboards). A critical constraint is that  must **never** be added to the main  total.
-2.  **P0: Fix Backend Tests:** Resolve all failing tests in the test suite to ensure a 100% pass rate before deployment.
-3.  **P0: Fix Metric Configuration:** Ensure that newly added canonical metrics (like ) automatically appear as configurable options in the Admin Panel for existing teams.
-4.  **P1: KPI-Filtered Reports:** Implement functionality for reports to be filtered based on a team's enabled KPI configuration. This was implemented in two phases, with Phase 1 (JSON reports only) being completed.
-5.  **P1: Team View Metric Toggles:** Add a new configuration section in the Admin Panel to allow admins to toggle the visibility of specific metrics within the Team View / Daily Activity section on a per-team basis.
+1.  **P0: Team-Scoped Recruiting States:** The State dropdown in the Recruiting - Recruit flow must be populated based on the current user's team configuration, not a hardcoded global list. State Managers should only see and select from their own team's assigned states.
+2.  **P1: User Regression Testing:** User to perform a consolidated regression test across all application tabs and features.
+3.  **P2: KPI-Filtered Excel Reports:** Implement Phase 2 of KPI-Filtered Reports: Add dynamic headers and KPI filtering to all Excel exports.
+4.  **P2: Refactor :** Refactor the monolithic backend file into a more maintainable, route-based structure (currently paused by user).
+5.  **P2: Copy Leaderboard Settings:** Add a Copy leaderboard settings from another team feature to the Admin UI.
+6.  **P2: Cleanup Migration Endpoints:** Remove one-time data migration endpoints from .
 
 **User's preferred language**: English
 
 **what currently exists?**
-- A full-stack application with a React frontend and a monolithic FastAPI backend ().
-- The new metrics  and  are fully integrated into backend data models, aggregation logic, and reports. All relevant frontend components have been updated to display them.
-- The backend test suite () is clean with 19/19 tests passing.
-- Backend logic correctly merges new canonical metrics with existing team configurations, so new metrics appear in the Admin UI for all teams.
-- JSON-based reports ( and ) support a  parameter, which defaults to , allowing reports to respect a team's KPI settings. Excel reports still show all metrics.
-- The backend and frontend have been modified to support a new configuration for Team View / Daily Activity Metrics, but the implementation is not yet tested.
+- The application has new metrics (, ) fully integrated, with passing backend tests.
+- The Team View has a tested and verified feature for toggling metric visibility on a per-team basis.
+- The Suitability tab has been completely overhauled with flexible reporting (Weekly, Monthly, All-Time, Custom Range) and a redesigned, cleaner Excel export format. The backend logic correctly handles downline and team-scoped visibility.
+- An in-app Suitability Diagnostic tool exists in the Admin Panel to identify and fix orphaned records (forms with missing or invalid ).
+-  now has the same permissions as  for uploading and deleting documents in the PMA Bonuses and PMA DocuSphere tabs.
+- The backend and frontend have been modified to support team-scoped Recruiting States, including a new Admin UI for configuration and API endpoints. The code has been written but not fully tested end-to-end.
 
 **Last working item**:
-- **Last item agent was working**: Implementing Team View / Daily Activity Metrics configuration. This allows admins to control the visibility of metrics in the  component. The agent implemented the backend changes in  (adding a new canonical metric list, updating , and modifying the  endpoint to return the config) and frontend changes in  (UI for the toggles) and  (logic to conditionally render metrics).
+- **Last item agent was working**: Implementing team-scoped state selection for the Recruiting tab. The agent added a new configuration section () to the team settings, created backend endpoints to manage and retrieve these states, and updated the  and  components. The goal is to replace a hardcoded list of states with a dynamic, team-specific list.
 - **Status**: IN PROGRESS
 - **Agent Testing Done**: N
-- **Which testing method agent to use?**: both.
-    - **Backend**: Use  to test the  endpoint to confirm it returns the new  list.
-    - **Frontend**: Use the  tool to:
-        1.  Verify the new Team View / Daily Activity Metrics section appears in .
-        2.  Login as an agent and navigate to the Team tab to verify that only the enabled metrics are visible in the hierarchy view and stat summaries.
+- **Which testing method agent to use?**: both
+    - **Backend**: Use  to test the new  endpoint (both GET and POST) to ensure states can be saved and retrieved for a team.
+    - **Frontend**: Use the  tool to perform an end-to-end test:
+        1.  Navigate to **Admin -> Teams -> Customize -> Views** and verify the new **Recruiting States** section.
+        2.  Add a few states (e.g., CA, NV) for a specific team and save.
+        3.  Log in as a user from that team.
+        4.  Navigate to the **Recruiting** tab and verify the State dropdown in the Add Recruit form and the filter dropdown now contain CA and NV instead of the old hardcoded values.
 - **User Testing Done**: N
 
 **All Pending/In progress Issue list**:
-There are no known bugs. The only pending item is the completion of the 
-wtmp begins Fri Jan 30 06:20:09 2026.
+- **Issue 1**: Complete and test the Team-Scoped Recruiting States feature (Priority: P0)
+    - **Attempted fixes**: The agent has written the code for the backend and frontend. The backend endpoint returns an empty array for a new team, which is correct, but no states have been configured and tested through the UI yet.
+    - **Next debug checklist**:
+        1.  Verify the Admin Panel UI for adding/editing recruiting states works as expected ().
+        2.  Confirm that saving states in the Admin Panel successfully calls the  endpoint and updates the team's settings in the database.
+        3.  Verify the  component correctly fetches and displays these states in the dropdowns.
+    - **Why fix this issue and what will be achieved with the fix?**: This will resolve a critical bug where state selection was not scalable and leaked configuration between teams. It allows each team to have its own list of states for recruiting.
+    - **Status**: IN PROGRESS
+    - **Is recurring issue?**: N
+    - **Should Test frontend/backend/both after fix?**: Both.
+    - **Blocked on other issue**: None.
 
 **In progress Task List**:
-- **Task 1**: Complete and test the Team View / Daily Activity Metrics feature (Priority: P0)
-  - **Where to resume**: The code has been written but not tested. The next step is to verify the backend and frontend changes.
-    1.  Start backend and frontend services.
-    2.  Use  to call  and check for the  key in the response.
-    3.  Use the  tool to verify the new UI in the Admin Panel and the conditional rendering of metrics in the Team View.
-  - **What will be achieved with this?**: Admins will have granular control over which metrics are visible in the Team View, tailoring the experience for each team.
+- **Task 1**: Team-Scoped Recruiting States Implementation (Priority: P0)
+  - **Where to resume**: The code has been written. Resume by testing the full flow: configuring states in the Admin Panel and then verifying those states appear in the Recruiting tab's forms and filters.
+  - **What will be achieved with this?**: The state selection for recruiting will be correctly scoped to the user's team, preventing cross-team data leakage.
   - **Status**: IN PROGRESS
   - **Should Test frontend/backend/both after fix?**: Both.
   - **Blocked on something**: No.
@@ -48,80 +57,86 @@ wtmp begins Fri Jan 30 06:20:09 2026.
     - **P1**: User to perform a consolidated regression test across all application tabs and features.
 - **Future Tasks**:
     - **P2**: Implement Phase 2 of KPI-Filtered Reports: Add dynamic headers and KPI filtering to all Excel exports.
-    - **P2**: Refactor the monolithic  into a more maintainable, route-based structure (currently paused by user).
+    - **P2**: Refactor the monolithic  into a more maintainable, route-based structure.
     - **P2**: Add a Copy leaderboard settings from another team feature to the Admin UI.
-    - **P2**: Remove the one-time data migration endpoints from  ().
+    - **P2**: Remove the one-time data migration endpoints from .
 
 **Completed work in this session**
-- **New Metrics Implementation**: Fully integrated  and  across the entire application stack, including all backend aggregation endpoints (, , , reports) and frontend components (, , , , ).
-- **Test Suite Fix**: Created and fixed , resolving test collisions by using unique dates and correcting assertions, achieving a 100% pass rate.
-- **Configuration Bug Fix**: Corrected a bug where new canonical metrics wouldn't appear in the Admin Panel for existing teams by implementing a merge strategy in .
-- **Reports Overhaul**:
-    - Updated all JSON and Excel report endpoints to include  and .
-    - Implemented Option 3 for KPI-filtered reports: JSON endpoints now default to filtering by a team's KPI configuration, while Excel exports continue to show all metrics for stability.
-- **Frontend Bug Fix**: Fixed an issue in  where hardcoded table headers prevented the new metrics from being displayed.
+- **Suitability Tab Overhaul**:
+    - Implemented flexible reporting: Weekly (with date picker), Monthly, All-Time, and Custom Date Range.
+    - Ensured data retention by confirming the issue was query-based, not deletion.
+    - Updated Excel exports to use a much cleaner, more detailed Friday Report format for all report types.
+- **Suitability Data Integrity**:
+    - Created a read-only Suitability Diagnostic tool in the Admin Panel to identify orphaned forms (missing/invalid ).
+    - Implemented a Fix Orphaned Forms button in the diagnostic tool that safely reassigns orphaned forms to the submitter's current team. Successfully used this to fix production data issues.
+- **Admin Permissions Fixes**:
+    - Corrected permissions on the **PMA Bonuses** tab to allow  to upload and delete PDFs.
+    - Corrected permissions on the **PMA DocuSphere** tab to allow  to upload/delete files and create/delete folders.
+- **Production Issue Diagnosis**: Investigated a production connectivity issue, identified it as a DNS resolution failure, and provided the user with a diagnostic script and guidance to contact Emergent support.
+- **Team View Metric Toggles**: Completed and tested the feature allowing admins to control metric visibility in the Team View, including clarifying UI text to prevent confusion with other settings.
 
 **Earlier issues found/mentioned but not fixed**
-- **Issue 1**: The backend codebase in  is a large monolith with duplicated code blocks, particularly in the report-generation sections.
-  - **Debug checklist**: Plan and execute a refactor to split endpoints into a  directory structure and deduplicate helper functions.
-  - **Why to solve this issue and what will be achieved with this?**: Refactoring will significantly improve code readability, maintainability, and reduce the risk of introducing new bugs.
+- **Issue 1**: The backend codebase in  is a large monolith.
+  - **Debug checklist**: Plan and execute a refactor to split endpoints into a  directory.
+  - **Why to solve this issue and what will be achieved with this?**: Improve code readability, maintainability, and reduce the risk of bugs.
   - **Status**: NOT STARTED (explicitly paused by the user).
   - **Is recurring issue?**: Y
 
 **Known issue recurrence from previous fork**
-- **Configuration Drift**: A recurring theme is ensuring forward compatibility for existing data when new features are added. This session addressed it by implementing a merge strategy for team configurations in  so that newly added metrics appear in the Admin UI for all existing teams. This is a variant of the data scoping issues mentioned previously.
+- **Data Integrity & Orphaned Records**: The issue of historical data not appearing due to missing or incorrect foreign keys (like ) recurred. It was previously seen in configurations and this time in . This was addressed by building a permanent, reusable diagnostic and fix tool within the Admin Panel.
 
 **Code Architecture**
 
 
 **Key Technical Concepts**
-- **Configuration-Driven UI**: This pattern was extended to the Team View. The UI now dynamically renders metrics based on a per-team backend configuration ().
-- **Forward-Compatible Configuration**: The backend now merges canonical (default) metrics with existing saved team configurations. This ensures that when new metrics are added to the application, they automatically become available for configuration in the Admin Panel for all teams, preventing UI/data drift.
-- **Phased Feature Implementation**: The KPI-filtered reports feature was split into two phases based on user feedback to prioritize stability. Phase 1 (JSON filtering) was completed, while Phase 2 (Excel filtering) was deferred.
+- **In-App Diagnostics**: A pattern was established for building read-only diagnostic tools within the Admin Panel to help users safely debug production data issues without direct database access. This was used effectively for the Suitability data gap.
+- **Safe Data Migration UI**: A Fix button was added to the diagnostic tool, allowing an admin to trigger a safe, targeted data migration script on the backend to repair orphaned records.
+- **Team-Scoped Configuration**: The pattern of storing configuration within the  collection object () was extended to manage a list of recruiting states, ensuring that this data is partitioned per team.
 
 **key DB schema**
-- : The  object can now contain , an array of objects defining metric visibility and order for the Team View. Example: .
+- :  can now contain , an array of strings. e.g., .
+- : Investigated and fixed records with  or invalid . The schema itself was not changed.
 
 **All files of reference**
-- : The central backend file.
-- : The test file for the new metrics.
-- : For admin-facing configuration.
-- : The primary consumer of the new Team View metric configuration.
-- : The reports component that was fixed to display the new metrics.
-- : The form for logging daily activity.
+- 
+- 
+- 
+- 
+- 
+- 
 
 **key api endpoints**
-- : Modified to return  which drives the  UI.
-- : Modified to support  query parameter.
-- : Modified to support  query parameter.
-- : Modified to force  to ensure all columns are always exported.
-- : Returns the complete, merged configuration for a team, now including .
+- : (GET) Overhauled to support  (weekly, monthly, all-time, custom), , , , and  parameters.
+- : (GET) Re-implemented to generate a detailed, multi-section Excel file for all report types.
+- : (GET) **NEW** endpoint to provide a detailed, read-only analysis of the  collection.
+- : (POST) **NEW** endpoint to safely reassign  to orphaned suitability forms.
+- : (GET/POST) **NEW** endpoints to get and set the list of recruiting states for the user's team.
+- , : (POST, DELETE) Backend logic updated to allow  access in addition to .
 
 **Critical Info for New Agent**
-- **Team View Configuration**: The agent was in the middle of implementing the Team View / Daily Activity Metrics feature. The code is written but needs to be tested end-to-end.
-- **Report Filtering (Option 3)**: Remember the user's decision. JSON report endpoints respect team KPI configuration by default (), but Excel export endpoints have been intentionally locked to show ALL metrics () to ensure stability. Do not fix the Excel reports to filter by KPI unless the user requests Phase 2.
-- **Data Separation**:  must **NEVER** be summed with the  metric. This rule has been verified across the codebase but must be maintained.
-- **Backward Compatibility**: All aggregation logic uses  to handle old activity records that don't have the new metric fields.
+- **Production DNS Issue**: The user reported a production outage ( not resolving). The agent diagnosed it as a DNS/infrastructure issue and advised the user to contact Emergent support. This is an external blocker.
+- **Test Recruiting States End-to-End**: The immediate next step is to test the newly implemented Recruiting States feature. This involves using the Admin Panel to add states to a team and then verifying those states appear correctly in the Recruiting tab for a user on that team.
+- **Separation of Concerns**: The user has repeatedly emphasized the need for strict separation of configurations (e.g., Team View visibility vs. Daily Activity inputs). This principle should be maintained.
 
 **documents and test reports created in this job**
 - 
+- 
 -  (updated)
--  (created)
 
 **Last 10 User Messages and any pending HUMAN messages**
-10. **User**: Requested to add visibility toggles for metrics in the Team View / Daily Activity section. (Status: IN PROGRESS)
-9.  **User**: Confirmed the fix for the Daily Report JSON endpoint and verified that the frontend was the root cause of the bug. (Status: ADDRESSED)
-8.  **Agent**: Identified that the frontend  had hardcoded table headers, preventing new metrics from showing, and implemented a fix. (Status: COMPLETED)
-7.  **User**: Reported that the Daily JSON reports were not showing  and . (Status: RESOLVED)
-6.  **User**: Approved the Option 3 implementation for KPI-filtered reports and confirmed it was ready for deployment. (Status: ADDRESSED)
-5.  **Agent**: Confirmed completion of Option 3 for KPI-filtered reports, with JSON endpoints respecting KPI settings and Excel exports showing all metrics. (Status: COMPLETED)
-4.  **User**: Requested Option 3: Implement KPI filtering for JSON endpoints ONLY, keeping Excel exports with all metrics for now to ensure stability. (Status: ADDRESSED)
-3.  **Agent**: Identified duplicate code in  while trying to implement dynamic Excel headers and proposed three options to the user for how to proceed. (Status: ADDRESSED)
-2.  **User**: Confirmed that reports must be driven by the same data and aggregations as all other views and requested confirmation. (Status: ADDRESSED)
-1.  **Agent**: Confirmed that all report endpoints are driven by  and use consistent aggregation logic. Identified that Excel reports had hardcoded columns and did not respect team config. (Status: COMPLETED)
+10. **User**: Requested to fix the **Recruiting tab** so that the State selection is team-scoped and not hardcoded. (Status: IN PROGRESS)
+9. **Agent**: Confirmed the fix for the **DocuSphere** tab, enabling  to upload and manage files. (Status: COMPLETED)
+8. **User**: Reported that the **DocuSphere** tab also has the same permission issue as the Bonus tab, preventing  from uploading. (Status: ADDRESSED)
+7. **Agent**: Advised the user that the production connectivity issue is DNS-related and provided guidance to contact Emergent support. (Status: ADDRESSED)
+6. **User**: Confirmed the production connectivity issue is still happening. (Status: ADDRESSED)
+5. **Agent**: Confirmed fix for the **PMA Bonuses** tab, allowing  to upload PDFs, and addressed the backend error message. (Status: COMPLETED)
+4. **User**: Reported seeing an error message Only State Managers can upload bonus PDFs after the initial fix. (Status: ADDRESSED)
+3. **Agent**: Confirmed the upload button on the **PMA Bonuses** tab is now visible to . (Status: COMPLETED)
+2. **User**: Reported that the upload button on the **PMA Bonuses** tab is missing for . (Status: ADDRESSED)
+1. **User**: Requested to add a Custom Range option to Suitability reports to allow batching multiple weeks together. (Status: COMPLETED)
 
 **Project Health Check:**
-- **Broken**: None
+- **Broken**: None in the preview environment. A production connectivity issue (DNS) is being handled by Emergent support.
 - **Mocked**: None
 
 **3rd Party Integrations**
@@ -129,13 +144,13 @@ wtmp begins Fri Jan 30 06:20:09 2026.
 - reportlab
 
 **Testing status**
-- **Testing agent used after significant changes**: YES (for the initial new metrics feature)
+- **Testing agent used after significant changes**: YES (for Team View toggles and Suitability overhaul)
 - **Troubleshoot agent used after agent stuck in loop**: NO
-- **Test files created**: []
-- **Known regressions**: None. All identified regressions were fixed.
+- **Test files created**: None in this session.
+- **Known regressions**: None.
 
 **Credentials to test flow:**
 - **Super Admin**:  /  (For use in the preview environment only)
 
 **What agent forgot to execute**
-- The agent initially missed that the frontend component  had hardcoded table headers, causing a bug where the new metrics were not displayed despite the backend sending the correct data. This was later identified and corrected after user feedback.</analysis>
+- The agent has implemented the code for team-scoped recruiting states but has not completed the end-to-end testing loop. The next step should be to use the Admin Panel to configure states for a team and then verify that those states correctly appear in the  component for a user of that team.</analysis>
