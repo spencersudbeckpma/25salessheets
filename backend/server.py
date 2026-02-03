@@ -6782,10 +6782,20 @@ async def delete_recruit(recruit_id: str, current_user: dict = Depends(get_curre
 # ============================================
 # Recruit File Uploads (Hierarchy-Scoped)
 # ============================================
+# Uses MongoDB GridFS for persistent storage across redeploys
 
-# File upload directory
-RECRUIT_FILES_DIR = Path("/app/uploads/recruit_files")
-RECRUIT_FILES_DIR.mkdir(parents=True, exist_ok=True)
+from motor.motor_asyncio import AsyncIOMotorGridFSBucket
+import io
+
+# Initialize GridFS bucket for recruit files (lazy init)
+_gridfs_bucket = None
+
+async def get_gridfs_bucket():
+    """Get or create the GridFS bucket for recruit files."""
+    global _gridfs_bucket
+    if _gridfs_bucket is None:
+        _gridfs_bucket = AsyncIOMotorGridFSBucket(db, bucket_name="recruit_files")
+    return _gridfs_bucket
 
 # Allowed file types for recruit uploads
 ALLOWED_RECRUIT_FILE_TYPES = {
