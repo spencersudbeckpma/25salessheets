@@ -120,7 +120,8 @@ const AdminPanel = ({ user }) => {
         new_faces: true,
         sna: true,
         npa: true
-      }
+      },
+      recruiting_states: []
     }
   });
   const [customizationLoading, setCustomizationLoading] = useState(false);
