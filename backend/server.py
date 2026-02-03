@@ -6537,6 +6537,70 @@ async def delete_docusphere_document(doc_id: str, current_user: dict = Depends(g
 # Recruiting Pipeline Endpoints (State Manager and Regional Manager)
 # ============================================
 
+@api_router.get("/recruiting/states")
+async def get_recruiting_states(current_user: dict = Depends(get_current_user)):
+    """Get team-scoped recruiting states for the current user's team.
+    
+    Returns states configured for the user's team only.
+    """
+    team_id = current_user.get('team_id')
+    if not team_id:
+        raise HTTPException(status_code=403, detail="You must be assigned to a team")
+    
+    # Get team configuration
+    team = await db.teams.find_one({"id": team_id}, {"_id": 0, "team_settings": 1, "name": 1})
+    if not team:
+        raise HTTPException(status_code=404, detail="Team not found")
+    
+    # Get recruiting states from team settings
+    team_settings = team.get('team_settings', {})
+    views = team_settings.get('views', {})
+    recruiting_states = views.get('recruiting_states', [])
+    
+    # If no states configured, return empty (team needs to configure their states)
+    # Do NOT fall back to defaults - each team must configure their own
+    return {
+        "team_id": team_id,
+        "team_name": team.get('name'),
+        "states": recruiting_states
+    }
+
+@api_router.put("/admin/teams/{team_id}/recruiting-states")
+async def update_team_recruiting_states(
+    team_id: str,
+    states_data: dict,
+    current_user: dict = Depends(get_current_user)
+):
+    """Update recruiting states for a team (Admin only).
+    
+    states_data format: {"states": [{"code": "MN", "name": "Minnesota"}, ...]}
+    """
+    if current_user['role'] not in ['super_admin', 'state_manager']:
+        raise HTTPException(status_code=403, detail="Admin access required")
+    
+    # State managers can only update their own team
+    if current_user['role'] == 'state_manager' and current_user.get('team_id') != team_id:
+        raise HTTPException(status_code=403, detail="You can only update your own team's states")
+    
+    team = await db.teams.find_one({"id": team_id})
+    if not team:
+        raise HTTPException(status_code=404, detail="Team not found")
+    
+    states = states_data.get('states', [])
+    
+    # Validate states format
+    for state in states:
+        if not state.get('code') or not state.get('name'):
+            raise HTTPException(status_code=400, detail="Each state must have 'code' and 'name'")
+    
+    # Update team settings
+    await db.teams.update_one(
+        {"id": team_id},
+        {"$set": {"team_settings.views.recruiting_states": states}}
+    )
+    
+    return {"message": "Recruiting states updated", "states": states}
+
 @api_router.get("/recruiting")
 async def get_recruits(current_user: dict = Depends(get_current_user)):
     """Get recruits - STRICTLY scoped to current user's team_id.
