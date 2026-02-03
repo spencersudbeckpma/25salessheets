@@ -168,6 +168,7 @@ DEFAULT_TEAM_VIEW_SETTINGS = {
         {"id": "presentations", "label": "Presentations", "enabled": True},
         {"id": "referrals", "label": "Referrals", "enabled": True},
         {"id": "testimonials", "label": "Testimonials", "enabled": True},
+        {"id": "apps", "label": "Apps", "enabled": True},
         {"id": "sales", "label": "Sales", "enabled": True},
         {"id": "new_face_sold", "label": "New Face Sold", "enabled": True},
         {"id": "fact_finders", "label": "Fact Finders", "enabled": True},
