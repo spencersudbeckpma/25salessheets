@@ -7,7 +7,8 @@ import { Input } from './ui/input';
 import { 
   Users, Plus, Trash2, Save, X, Search, Calendar, 
   CheckCircle, Circle, ClipboardList, UserPlus, 
-  ArrowRight, Eye, Edit, BarChart3, List, Columns, Printer, Share2
+  ArrowRight, Eye, Edit, BarChart3, List, Columns, Printer, Share2,
+  Upload, FileText, Download, File, Loader2
 } from 'lucide-react';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
