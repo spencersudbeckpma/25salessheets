@@ -99,6 +99,23 @@ Team-based activity tracking and performance management application for insuranc
 
 ## Changelog
 
+### 2025-02-03 - Recruit File Uploads Feature
+- **Added**: File upload/download/delete for recruits (hierarchy-scoped access)
+- **Storage**: Files stored on disk at `/app/uploads/recruit_files/{team_id}/{recruit_id}/{file_id}.ext`
+- **Database**: Metadata stored in `recruit_files` collection (no base64 in MongoDB)
+- **Access Control**:
+  - Upload: State Manager, Regional Manager, District Manager only
+  - Download/View: SM, RM (for their recruits), DM (for their recruits)
+  - Delete: Original uploader OR State Manager/Super Admin
+  - Team isolation: No cross-team file access
+- **Endpoints Added**:
+  - `GET /api/recruits/{recruit_id}/files` - List files
+  - `POST /api/recruits/{recruit_id}/files` - Upload file
+  - `GET /api/recruits/{recruit_id}/files/{file_id}/download` - Download
+  - `DELETE /api/recruits/{recruit_id}/files/{file_id}` - Delete
+- **Frontend**: "Candidate Files" section in Interview detail modal (only visible when added_to_recruiting=true)
+- **Supported Files**: PDF, DOC, DOCX, PNG, JPG (max 15MB)
+- **Testing**: 100% backend (13/13) and frontend tests passed
 ### 2025-01-29 - Full Data Health Check Admin UI
 - **Added**: Complete team-by-team data integrity check accessible from mobile without terminal
 - **Added**: Build info banner showing Version, Build timestamp, and Check timestamp
