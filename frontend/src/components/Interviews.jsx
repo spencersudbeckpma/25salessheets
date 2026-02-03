@@ -1413,6 +1413,110 @@ const Interviews = ({ user }) => {
                   <p className="text-red-700 mt-1">{selectedInterview.red_flags_notes}</p>
                 </div>
               )}
+
+              {/* Recruit Files Section - Only show if added to recruiting */}
+              {selectedInterview.added_to_recruiting && selectedInterview.recruit_id && (
+                <div className="bg-slate-50 border border-slate-200 rounded-lg p-4 mt-4">
+                  <div className="flex items-center justify-between mb-3">
+                    <h4 className="font-semibold text-slate-900 flex items-center gap-2">
+                      <FileText size={18} className="text-blue-600" />
+                      Candidate Files
+                      {recruitFiles.length > 0 && (
+                        <span className="bg-blue-100 text-blue-700 text-xs px-2 py-0.5 rounded-full">
+                          {recruitFiles.length}
+                        </span>
+                      )}
+                    </h4>
+                    {canUploadFiles() && (
+                      <div>
+                        <input
+                          ref={fileInputRef}
+                          type="file"
+                          onChange={handleFileUpload}
+                          accept=".pdf,.doc,.docx,.png,.jpg,.jpeg"
+                          className="hidden"
+                          id="recruit-file-upload"
+                        />
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => fileInputRef.current?.click()}
+                          disabled={uploadingFile}
+                          className="text-blue-600 border-blue-200 hover:bg-blue-50"
+                        >
+                          {uploadingFile ? (
+                            <>
+                              <Loader2 size={14} className="mr-1 animate-spin" />
+                              Uploading...
+                            </>
+                          ) : (
+                            <>
+                              <Upload size={14} className="mr-1" />
+                              Upload File
+                            </>
+                          )}
+                        </Button>
+                      </div>
+                    )}
+                  </div>
+
+                  {loadingFiles ? (
+                    <div className="flex items-center justify-center py-4 text-slate-500">
+                      <Loader2 size={20} className="animate-spin mr-2" />
+                      Loading files...
+                    </div>
+                  ) : recruitFiles.length === 0 ? (
+                    <p className="text-sm text-slate-500 italic py-2">
+                      No files uploaded yet. {canUploadFiles() ? 'Upload resumes, notes, or documents above.' : ''}
+                    </p>
+                  ) : (
+                    <div className="space-y-2">
+                      {recruitFiles.map((file) => (
+                        <div 
+                          key={file.id} 
+                          className="flex items-center justify-between bg-white border border-slate-200 rounded-lg px-3 py-2 hover:bg-slate-50"
+                        >
+                          <div className="flex items-center gap-3 flex-1 min-w-0">
+                            <File size={18} className="text-slate-400 flex-shrink-0" />
+                            <div className="min-w-0">
+                              <p className="text-sm font-medium text-slate-900 truncate">{file.filename}</p>
+                              <p className="text-xs text-slate-500">
+                                {formatFileSize(file.file_size)} • Uploaded by {file.uploaded_by_name} • {new Date(file.uploaded_at).toLocaleDateString()}
+                              </p>
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-1 flex-shrink-0">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => downloadRecruitFile(file.id, file.filename)}
+                              className="text-blue-600 hover:bg-blue-50"
+                              title="Download"
+                            >
+                              <Download size={16} />
+                            </Button>
+                            {canDeleteFile(file) && (
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => deleteRecruitFile(file.id)}
+                                className="text-red-600 hover:bg-red-50"
+                                title="Delete"
+                              >
+                                <Trash2 size={16} />
+                              </Button>
+                            )}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  <p className="text-xs text-slate-400 mt-2">
+                    Allowed: PDF, DOC, DOCX, PNG, JPG (max 15MB)
+                  </p>
+                </div>
+              )}
             </div>
 
             <div className="p-6 border-t bg-gray-50 rounded-b-lg flex gap-3 justify-between">
