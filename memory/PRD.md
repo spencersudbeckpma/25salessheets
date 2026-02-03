@@ -294,6 +294,12 @@ Team-based activity tracking and performance management application for insuranc
   - State Manager sees full team (team_id scoped)
   - Agents see My Forms only; Managers see My Forms + Reports
   - Excel export for all periods
+- [x] Team-Scoped Recruiting States (COMPLETED 2025-02-03):
+  - State dropdown in Recruiting tab is now team-scoped (no more hardcoded global list)
+  - Admin can configure states per team via Admin → Teams → Customize → Views tab → "Recruiting States"
+  - States stored in `team_settings.views.recruiting_states` as array of {code, name} objects
+  - Both "Add Recruit" form and filter dropdown use team-configured states
+  - API: `GET /api/recruiting/states` returns team-specific states
 
 ### P1 - High Priority (PAUSED)
 - [ ] Refactor monolithic `server.py` into route-based structure (backend/routes/) - **PAUSED: App in active rollout**
@@ -302,6 +308,7 @@ Team-based activity tracking and performance management application for insuranc
 - [ ] Remove temporary migration/diagnostic endpoints after stability confirmed
 - [ ] Cleanup migration endpoints after production data is fully migrated
 - [ ] Add "Copy leaderboard settings from another team" feature to Admin UI
+- [ ] KPI-Filtered Excel Reports (Phase 2) - Add dynamic headers and KPI filtering to all Excel exports
 
 ### P3 - Future/Backlog
 - [ ] Granular feature flags for sub-features
