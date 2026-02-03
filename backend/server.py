@@ -6913,7 +6913,7 @@ async def upload_recruit_file(
     Upload a file for a recruit (managers only, hierarchy-scoped).
     
     Access: State Manager, Regional Manager, District Manager
-    Files stored on disk with metadata in MongoDB.
+    Files stored in MongoDB GridFS for persistence across redeploys.
     """
     await check_feature_access(current_user, "recruiting")
     
@@ -6946,27 +6946,30 @@ async def upload_recruit_file(
     if len(file_content) > MAX_RECRUIT_FILE_SIZE:
         raise HTTPException(status_code=400, detail="File size must be less than 15MB")
     
-    # Generate storage key and save to disk
+    # Generate file ID
     file_id = str(uuid.uuid4())
-    file_ext = ALLOWED_RECRUIT_FILE_TYPES.get(content_type, '.bin')
-    storage_key = f"{team_id}/{recruit_id}/{file_id}{file_ext}"
     
-    # Create directory structure
-    file_path = RECRUIT_FILES_DIR / team_id / recruit_id
-    file_path.mkdir(parents=True, exist_ok=True)
+    # Upload to GridFS for persistent storage
+    gridfs = await get_gridfs_bucket()
+    gridfs_id = await gridfs.upload_from_stream(
+        file.filename,
+        io.BytesIO(file_content),
+        metadata={
+            "file_id": file_id,
+            "recruit_id": recruit_id,
+            "team_id": team_id,
+            "mime_type": content_type,
+            "file_type": file_type
+        }
+    )
     
-    # Write file to disk
-    full_path = RECRUIT_FILES_DIR / storage_key
-    with open(full_path, 'wb') as f:
-        f.write(file_content)
-    
-    # Store metadata in MongoDB
+    # Store metadata in MongoDB (for fast querying)
     file_doc = {
         "id": file_id,
         "recruit_id": recruit_id,
         "team_id": team_id,
         "filename": file.filename,
-        "storage_key": storage_key,
+        "gridfs_id": str(gridfs_id),  # Reference to GridFS file
         "file_size": len(file_content),
         "mime_type": content_type,
         "file_type": file_type,  # resume, notes, document
@@ -6977,7 +6980,6 @@ async def upload_recruit_file(
     
     await db.recruit_files.insert_one(file_doc)
     
-    # Return without storage_key
     return {
         "message": "File uploaded successfully",
         "file": {
@@ -7026,15 +7028,16 @@ async def download_recruit_file(
     if not file_doc:
         raise HTTPException(status_code=404, detail="File not found")
     
-    # Read file from disk
-    storage_key = file_doc.get('storage_key')
-    file_path = RECRUIT_FILES_DIR / storage_key
+    # Download from GridFS
+    from bson import ObjectId
+    gridfs = await get_gridfs_bucket()
+    gridfs_id = ObjectId(file_doc.get('gridfs_id'))
     
-    if not file_path.exists():
-        raise HTTPException(status_code=404, detail="File not found on storage")
-    
-    with open(file_path, 'rb') as f:
-        file_content = f.read()
+    try:
+        grid_out = await gridfs.open_download_stream(gridfs_id)
+        file_content = await grid_out.read()
+    except Exception:
+        raise HTTPException(status_code=404, detail="File not found in storage")
     
     return Response(
         content=file_content,
@@ -7082,14 +7085,17 @@ async def delete_recruit_file(
     if not (is_uploader or is_admin):
         raise HTTPException(status_code=403, detail="Only the uploader or State Manager can delete this file")
     
-    # Delete from disk
-    storage_key = file_doc.get('storage_key')
-    if storage_key:
-        file_path = RECRUIT_FILES_DIR / storage_key
-        if file_path.exists():
-            file_path.unlink()
+    # Delete from GridFS
+    from bson import ObjectId
+    gridfs_id = file_doc.get('gridfs_id')
+    if gridfs_id:
+        try:
+            gridfs = await get_gridfs_bucket()
+            await gridfs.delete(ObjectId(gridfs_id))
+        except Exception:
+            pass  # File may already be deleted from storage
     
-    # Delete from database
+    # Delete metadata from database
     await db.recruit_files.delete_one({"id": file_id})
     
     return {"message": "File deleted successfully"}
