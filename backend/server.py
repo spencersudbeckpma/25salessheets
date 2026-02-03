@@ -6364,12 +6364,12 @@ async def create_docusphere_folder(
     folder_data: dict,
     current_user: dict = Depends(get_current_user)
 ):
-    """Create a new folder (State Manager only, within their team)"""
+    """Create a new folder (State Manager and Super Admin only, within their team)"""
     # Check feature access
     await check_feature_access(current_user, "docusphere")
     
-    if current_user['role'] != 'state_manager':
-        raise HTTPException(status_code=403, detail="Only State Managers can create folders")
+    if current_user['role'] not in ['state_manager', 'super_admin']:
+        raise HTTPException(status_code=403, detail="Only State Managers and Super Admins can create folders")
     
     team_id = current_user.get('team_id')
     if not team_id:
@@ -6389,9 +6389,9 @@ async def create_docusphere_folder(
 
 @api_router.delete("/docusphere/folders/{folder_id}")
 async def delete_docusphere_folder(folder_id: str, current_user: dict = Depends(get_current_user)):
-    """Delete a folder and all its contents (State Manager only, within their team)"""
-    if current_user['role'] != 'state_manager':
-        raise HTTPException(status_code=403, detail="Only State Managers can delete folders")
+    """Delete a folder and all its contents (State Manager and Super Admin only, within their team)"""
+    if current_user['role'] not in ['state_manager', 'super_admin']:
+        raise HTTPException(status_code=403, detail="Only State Managers and Super Admins can delete folders")
     
     team_id = current_user.get('team_id')
     if not team_id:
