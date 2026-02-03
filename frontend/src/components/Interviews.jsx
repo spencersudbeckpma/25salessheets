@@ -80,6 +80,15 @@ const Interviews = ({ user }) => {
     }
   }, []);
 
+  // Fetch recruit files when viewing an interview with recruit_id
+  useEffect(() => {
+    if (showViewModal && selectedInterview?.recruit_id) {
+      fetchRecruitFiles(selectedInterview.recruit_id);
+    } else {
+      setRecruitFiles([]);
+    }
+  }, [showViewModal, selectedInterview?.recruit_id]);
+
   const fetchInterviews = async () => {
     try {
       const token = localStorage.getItem('token');
