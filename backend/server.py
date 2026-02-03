@@ -6443,9 +6443,9 @@ async def upload_docusphere_document(
     folder_id: str = Form(None),
     current_user: dict = Depends(get_current_user)
 ):
-    """Upload a document (State Manager only, within their team)"""
-    if current_user['role'] != 'state_manager':
-        raise HTTPException(status_code=403, detail="Only State Managers can upload documents")
+    """Upload a document (State Manager and Super Admin only, within their team)"""
+    if current_user['role'] not in ['state_manager', 'super_admin']:
+        raise HTTPException(status_code=403, detail="Only State Managers and Super Admins can upload documents")
     
     team_id = current_user.get('team_id')
     if not team_id:
@@ -6508,9 +6508,9 @@ async def download_docusphere_document(doc_id: str, current_user: dict = Depends
 
 @api_router.delete("/docusphere/documents/{doc_id}")
 async def delete_docusphere_document(doc_id: str, current_user: dict = Depends(get_current_user)):
-    """Delete a document (State Manager only, within their team)"""
-    if current_user['role'] != 'state_manager':
-        raise HTTPException(status_code=403, detail="Only State Managers can delete documents")
+    """Delete a document (State Manager and Super Admin only, within their team)"""
+    if current_user['role'] not in ['state_manager', 'super_admin']:
+        raise HTTPException(status_code=403, detail="Only State Managers and Super Admins can delete documents")
     
     team_id = current_user.get('team_id')
     if not team_id:
