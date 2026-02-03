@@ -368,7 +368,7 @@ const PMADocuSphere = ({ user }) => {
           <span className={`text-xs px-1.5 py-0.5 rounded ${isSelected ? 'bg-amber-500 text-slate-900' : 'bg-slate-200 text-slate-600'}`}>
             {totalDocCount}
           </span>
-          {user.role === 'state_manager' && (
+          {(user.role === 'state_manager' || user.role === 'super_admin') && (
             <button
               onClick={(e) => {
                 e.stopPropagation();
@@ -395,11 +395,11 @@ const PMADocuSphere = ({ user }) => {
         <p className="text-sm text-slate-500 mt-1">
           Document library for your team • {documents.length} documents
         </p>
-        {/* Read-only notice for non-state_manager users */}
-        {user.role !== 'state_manager' && (
+        {/* Read-only notice for non-admin users */}
+        {user.role !== 'state_manager' && user.role !== 'super_admin' && (
           <div className="mt-2 p-2 bg-blue-50 border border-blue-200 rounded-lg">
             <p className="text-xs text-blue-700">
-              <span className="font-medium">Read-only access:</span> Only your State Manager can upload or modify documents.
+              <span className="font-medium">Read-only access:</span> Only State Managers and Super Admins can upload or modify documents.
             </p>
           </div>
         )}
