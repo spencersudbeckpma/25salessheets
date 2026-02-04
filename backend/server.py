@@ -5902,6 +5902,15 @@ async def get_week_dates(current_user: dict = Depends(get_current_user)):
 
 @api_router.get("/team/hierarchy/{period}")
 async def get_team_hierarchy(period: str, current_user: dict = Depends(get_current_user), user_date: str = None):
+    """Get team hierarchy with visibility and ordering controls.
+    
+    IMPORTANT: Hidden users (hide_from_team_view=True) are filtered OUT of the visual
+    hierarchy, BUT their production data STILL rolls up to their manager and team totals.
+    
+    - Users with hide_from_team_view=True are not shown
+    - Users are sorted by team_view_order within each level
+    - Data aggregation is UNCHANGED (hidden users' stats still count)
+    """
     from datetime import timedelta
     
     team_id = current_user.get('team_id')
@@ -5924,21 +5933,25 @@ async def get_team_hierarchy(period: str, current_user: dict = Depends(get_curre
     else:
         raise HTTPException(status_code=400, detail="Invalid period")
     
-    async def build_hierarchy(user_id: str) -> dict:
+    async def build_hierarchy(user_id: str, include_hidden_in_rollup: bool = True) -> dict:
+        """Build hierarchy tree with proper rollup logic.
+        
+        Args:
+            user_id: The user to build hierarchy for
+            include_hidden_in_rollup: Always True - hidden users' data always rolls up
+        
+        Returns:
+            Hierarchy node with stats (rolled up) and visible children
+        """
         user = await db.users.find_one({"id": user_id}, {"_id": 0, "password_hash": 0})
         if not user:
             return None
         
         # Get user's own stats for the specified period
-        # NOTE: We do NOT filter by team_id here because:
-        # 1. The user is already confirmed to be in the hierarchy (and thus the team)
-        # 2. Some legacy activities may not have team_id set
-        # 3. This matches /stats/my/{period} behavior for consistency
         act_query = {"user_id": user_id, "date": {"$gte": start_date.isoformat()}}
         activities = await db.activities.find(act_query, {"_id": 0}).to_list(1000)
         
         # CRITICAL: premium and bankers_premium are SEPARATE - never combined
-        # Using .get() with default 0 for backward compatibility with records missing new fields
         own_stats = {
             "contacts": sum(a.get('contacts', 0) or 0 for a in activities),
             "appointments": sum(a.get('appointments', 0) or 0 for a in activities),
@@ -5949,18 +5962,21 @@ async def get_team_hierarchy(period: str, current_user: dict = Depends(get_curre
             "new_face_sold": sum(a.get('new_face_sold', 0) or 0 for a in activities),
             "fact_finders": sum(a.get('fact_finders', 0) or 0 for a in activities),
             "bankers_premium": sum(float(a.get('bankers_premium', 0) or 0) for a in activities),
-            "premium": sum(float(a.get('premium', 0) or 0) for a in activities)  # Total Premium - does NOT include bankers_premium
+            "premium": sum(float(a.get('premium', 0) or 0) for a in activities)
         }
         
-        # Get subordinates and build their hierarchies (exclude archived users, scoped to team)
+        # Get ALL subordinates (including hidden) for rollup calculation
         sub_query = {"manager_id": user_id, "$or": [{"status": "active"}, {"status": {"$exists": False}}]}
         if team_id:
             sub_query["team_id"] = team_id
         subordinates = await db.users.find(sub_query, {"_id": 0}).to_list(1000)
-        children = []
+        
+        # Sort subordinates by team_view_order
+        subordinates.sort(key=lambda x: x.get('team_view_order', 0))
+        
+        visible_children = []
         
         # Initialize rolled up stats with own stats
-        # CRITICAL: premium and bankers_premium are SEPARATE - never combined
         rolled_up_stats = {
             "contacts": own_stats["contacts"],
             "appointments": own_stats["appointments"],
@@ -5978,9 +5994,7 @@ async def get_team_hierarchy(period: str, current_user: dict = Depends(get_curre
         for sub in subordinates:
             child_hierarchy = await build_hierarchy(sub['id'])
             if child_hierarchy:
-                children.append(child_hierarchy)
-                # Add child's rolled up stats to parent's rolled up stats
-                # CRITICAL: premium and bankers_premium are SEPARATE - never combined
+                # ALWAYS roll up stats (regardless of visibility)
                 rolled_up_stats["contacts"] += child_hierarchy["stats"]["contacts"]
                 rolled_up_stats["appointments"] += child_hierarchy["stats"]["appointments"]
                 rolled_up_stats["presentations"] += child_hierarchy["stats"]["presentations"]
@@ -5991,11 +6005,25 @@ async def get_team_hierarchy(period: str, current_user: dict = Depends(get_curre
                 rolled_up_stats["fact_finders"] += child_hierarchy["stats"]["fact_finders"]
                 rolled_up_stats["bankers_premium"] += child_hierarchy["stats"]["bankers_premium"]
                 rolled_up_stats["premium"] += child_hierarchy["stats"]["premium"]
+                
+                # Check if this subordinate should be visible
+                is_hidden = sub.get('hide_from_team_view', False)
+                
+                if is_hidden:
+                    # User is hidden, but their visible children should be promoted up
+                    # Add the hidden user's visible children directly to this level
+                    for grandchild in child_hierarchy.get("children", []):
+                        visible_children.append(grandchild)
+                else:
+                    # User is visible, add them normally
+                    visible_children.append(child_hierarchy)
         
         return {
             **user,
-            "stats": rolled_up_stats,  # This now includes own + all subordinates
-            "children": children
+            "stats": rolled_up_stats,
+            "children": visible_children,
+            "hide_from_team_view": user.get('hide_from_team_view', False),
+            "team_view_order": user.get('team_view_order', 0)
         }
     
     hierarchy = await build_hierarchy(current_user['id'])
