@@ -755,6 +755,7 @@ const TeamManagement = ({ user }) => {
                 <>
                   <TabsTrigger value="all-users" data-testid="all-users-tab" className="py-2 px-3 text-xs md:text-sm whitespace-nowrap flex-shrink-0">My Team</TabsTrigger>
                   <TabsTrigger value="reorganize" data-testid="reorganize-tab" className="py-2 px-3 text-xs md:text-sm whitespace-nowrap flex-shrink-0">Reorganize</TabsTrigger>
+                  <TabsTrigger value="team-view" data-testid="team-view-tab" className="py-2 px-3 text-xs md:text-sm whitespace-nowrap flex-shrink-0">Team View</TabsTrigger>
                   <TabsTrigger value="archive" data-testid="archive-tab" className="py-2 px-3 text-xs md:text-sm whitespace-nowrap flex-shrink-0">Archive</TabsTrigger>
                 </>
               )}
