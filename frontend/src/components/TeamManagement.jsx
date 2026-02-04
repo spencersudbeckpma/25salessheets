@@ -6,7 +6,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { Label } from './ui/label';
-import { UserPlus, Mail, Trash2, Edit2, Save, X, Lock, Eye, EyeOff, Shield, Settings } from 'lucide-react';
+import { UserPlus, Mail, Trash2, Edit2, Save, X, Lock, Eye, EyeOff, Shield, Settings, ArrowUp, ArrowDown, Users } from 'lucide-react';
 import PasswordManagement from './PasswordManagement';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
