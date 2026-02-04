@@ -149,6 +149,8 @@ const Login = ({ setUser, setBranding }) => {
         const response = await axios.post(`${API}/auth/login`, { 
           email: trimmedEmail, 
           password: trimmedPassword 
+        }, {
+          timeout: 15000 // 15 second timeout to catch Wi-Fi issues faster
         });
         localStorage.setItem('token', response.data.token);
         setUser(response.data.user);
