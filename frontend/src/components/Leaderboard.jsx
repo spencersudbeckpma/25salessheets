@@ -210,7 +210,7 @@ const Leaderboard = ({ user }) => {
     </div>
   );
 
-  // Render Team Leaderboard (RM or DM) - ONLY Total Premium
+  // Render Team Leaderboard (RM or DM) - Total Premium + Presentations
   const renderTeamLeaderboard = () => {
     const managers = teamLeaderboard?.managers || [];
     const viewType = teamLeaderboard?.view_type;
@@ -219,7 +219,7 @@ const Leaderboard = ({ user }) => {
     return (
       <div className="space-y-4">
         <p className="text-sm text-gray-600 mb-4">
-          {title} teams ranked by <strong>Total Premium</strong>. Each row shows the manager and their entire downline's combined premium.
+          {title} teams ranked by <strong>Total Premium</strong>. Each row shows the manager and their entire downline's combined metrics.
         </p>
         
         {managers.length === 0 ? (
@@ -255,11 +255,19 @@ const Leaderboard = ({ user }) => {
                     </div>
                   </div>
                 </div>
-                <div className="text-right">
-                  <div className="text-2xl font-bold text-green-600">
-                    ${(manager.total_premium || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                <div className="flex gap-6 text-right">
+                  <div>
+                    <div className="text-xl font-bold text-purple-600">
+                      {(manager.total_presentations || 0).toLocaleString()}
+                    </div>
+                    <div className="text-xs text-gray-500">Presentations</div>
                   </div>
-                  <div className="text-xs text-gray-500">Total Premium</div>
+                  <div>
+                    <div className="text-xl font-bold text-green-600">
+                      ${(manager.total_premium || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                    </div>
+                    <div className="text-xs text-gray-500">Total Premium</div>
+                  </div>
                 </div>
               </div>
             ))}
