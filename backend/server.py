@@ -6384,6 +6384,257 @@ async def get_leaderboard(period: str, current_user: dict = Depends(get_current_
 
 
 # ============================================
+# Regional Manager Team Leaderboard
+# ============================================
+@api_router.get("/leaderboard/rm-teams/{period}")
+async def get_rm_team_leaderboard(period: str, current_user: dict = Depends(get_current_user), user_date: str = None):
+    """
+    Regional Manager Team Leaderboard - each row = RM with summed downline metrics.
+    
+    Rollup includes: RM's personal activity + all DMs under them + all agents under those DMs.
+    100% team-scoped. super_admin treated same as state_manager.
+    """
+    await check_feature_access(current_user, "leaderboard")
+    
+    from datetime import timedelta
+    
+    team_id = current_user.get('team_id')
+    if not team_id:
+        return {"managers": [], "config": [], "period": period, "view_type": "rm_teams"}
+    
+    # Check if RM team leaderboard is enabled for this team
+    team = await db.teams.find_one({"id": team_id}, {"_id": 0})
+    view_settings = await get_team_view_settings(team)
+    leaderboard_views = view_settings.get('leaderboard_views', {})
+    
+    if not leaderboard_views.get('rm_teams', True):
+        raise HTTPException(status_code=403, detail="Regional Manager Team Leaderboard is disabled for this team")
+    
+    # Calculate date range
+    if user_date:
+        today = datetime.strptime(user_date, '%Y-%m-%d').date()
+    else:
+        central_tz = pytz_timezone('America/Chicago')
+        today = datetime.now(central_tz).date()
+    
+    if period == "weekly":
+        start_date = today - timedelta(days=today.weekday())
+    elif period == "monthly":
+        start_date = today.replace(day=1)
+    elif period == "quarterly":
+        quarter = (today.month - 1) // 3
+        start_date = today.replace(month=quarter * 3 + 1, day=1)
+    elif period == "yearly":
+        start_date = today.replace(month=1, day=1)
+    else:
+        raise HTTPException(status_code=400, detail="Invalid period. Use: weekly, monthly, quarterly, yearly")
+    
+    end_date = today
+    
+    # Get all Regional Managers in this team
+    rms = await db.users.find(
+        {"team_id": team_id, "role": "regional_manager", "$or": [{"status": "active"}, {"status": {"$exists": False}}]},
+        {"_id": 0, "id": 1, "name": 1}
+    ).to_list(100)
+    
+    if not rms:
+        return {"managers": [], "config": view_settings.get('leaderboard_metrics', []), "period": period, "view_type": "rm_teams"}
+    
+    # For each RM, get their downline (DMs + agents) and aggregate
+    rm_stats = []
+    
+    for rm in rms:
+        rm_id = rm['id']
+        
+        # Get all subordinates (DMs and their agents)
+        downline_ids = await get_all_subordinates(rm_id, team_id)
+        # Include RM themselves
+        all_member_ids = [rm_id] + list(downline_ids)
+        
+        # Get activities for all members in the downline
+        act_query = {
+            "user_id": {"$in": all_member_ids},
+            "date": {"$gte": start_date.isoformat(), "$lte": end_date.isoformat()},
+            "team_id": team_id
+        }
+        activities = await db.activities.find(act_query, {"_id": 0}).to_list(10000)
+        
+        # Aggregate metrics
+        stats = {
+            "manager_id": rm_id,
+            "manager_name": rm['name'],
+            "role": "regional_manager",
+            "team_size": len(all_member_ids),
+            "premium": 0.0,
+            "bankers_premium": 0.0,
+            "presentations": 0,
+            "fact_finders": 0,
+            "sales": 0,
+            "apps": 0,
+            "contacts": 0,
+            "appointments": 0,
+            "referrals": 0,
+            "testimonials": 0,
+            "new_face_sold": 0,
+        }
+        
+        for activity in activities:
+            stats['premium'] += float(activity.get('premium', 0) or 0)
+            stats['bankers_premium'] += float(activity.get('bankers_premium', 0) or 0)
+            stats['presentations'] += int(activity.get('presentations', 0) or 0)
+            stats['fact_finders'] += int(activity.get('fact_finders', 0) or 0)
+            stats['sales'] += int(activity.get('sales', 0) or 0)
+            stats['apps'] += int(activity.get('apps', 0) or 0)
+            stats['contacts'] += int(activity.get('contacts', 0) or 0)
+            stats['appointments'] += int(activity.get('appointments', 0) or 0)
+            stats['referrals'] += int(activity.get('referrals', 0) or 0)
+            stats['testimonials'] += int(activity.get('testimonials', 0) or 0)
+            stats['new_face_sold'] += int(activity.get('new_face_sold', 0) or 0)
+        
+        rm_stats.append(stats)
+    
+    # Sort by premium (default ranking metric) - frontend can re-sort
+    rm_stats.sort(key=lambda x: x['premium'], reverse=True)
+    
+    return {
+        "managers": rm_stats,
+        "config": view_settings.get('leaderboard_metrics', []),
+        "period": period,
+        "view_type": "rm_teams",
+        "start_date": start_date.isoformat(),
+        "end_date": end_date.isoformat()
+    }
+
+
+# ============================================
+# District Manager Team Leaderboard
+# ============================================
+@api_router.get("/leaderboard/dm-teams/{period}")
+async def get_dm_team_leaderboard(period: str, current_user: dict = Depends(get_current_user), user_date: str = None):
+    """
+    District Manager Team Leaderboard - each row = DM with summed downline metrics.
+    
+    Rollup includes: DM's personal activity + all agents under them.
+    100% team-scoped. super_admin treated same as state_manager.
+    """
+    await check_feature_access(current_user, "leaderboard")
+    
+    from datetime import timedelta
+    
+    team_id = current_user.get('team_id')
+    if not team_id:
+        return {"managers": [], "config": [], "period": period, "view_type": "dm_teams"}
+    
+    # Check if DM team leaderboard is enabled for this team
+    team = await db.teams.find_one({"id": team_id}, {"_id": 0})
+    view_settings = await get_team_view_settings(team)
+    leaderboard_views = view_settings.get('leaderboard_views', {})
+    
+    if not leaderboard_views.get('dm_teams', True):
+        raise HTTPException(status_code=403, detail="District Manager Team Leaderboard is disabled for this team")
+    
+    # Calculate date range
+    if user_date:
+        today = datetime.strptime(user_date, '%Y-%m-%d').date()
+    else:
+        central_tz = pytz_timezone('America/Chicago')
+        today = datetime.now(central_tz).date()
+    
+    if period == "weekly":
+        start_date = today - timedelta(days=today.weekday())
+    elif period == "monthly":
+        start_date = today.replace(day=1)
+    elif period == "quarterly":
+        quarter = (today.month - 1) // 3
+        start_date = today.replace(month=quarter * 3 + 1, day=1)
+    elif period == "yearly":
+        start_date = today.replace(month=1, day=1)
+    else:
+        raise HTTPException(status_code=400, detail="Invalid period. Use: weekly, monthly, quarterly, yearly")
+    
+    end_date = today
+    
+    # Get all District Managers in this team
+    dms = await db.users.find(
+        {"team_id": team_id, "role": "district_manager", "$or": [{"status": "active"}, {"status": {"$exists": False}}]},
+        {"_id": 0, "id": 1, "name": 1}
+    ).to_list(100)
+    
+    if not dms:
+        return {"managers": [], "config": view_settings.get('leaderboard_metrics', []), "period": period, "view_type": "dm_teams"}
+    
+    # For each DM, get their agents and aggregate
+    dm_stats = []
+    
+    for dm in dms:
+        dm_id = dm['id']
+        
+        # Get agents under this DM
+        agents = await db.users.find(
+            {"team_id": team_id, "reports_to": dm_id, "role": "agent", "$or": [{"status": "active"}, {"status": {"$exists": False}}]},
+            {"_id": 0, "id": 1}
+        ).to_list(100)
+        
+        agent_ids = [a['id'] for a in agents]
+        # Include DM themselves
+        all_member_ids = [dm_id] + agent_ids
+        
+        # Get activities for all members in the downline
+        act_query = {
+            "user_id": {"$in": all_member_ids},
+            "date": {"$gte": start_date.isoformat(), "$lte": end_date.isoformat()},
+            "team_id": team_id
+        }
+        activities = await db.activities.find(act_query, {"_id": 0}).to_list(10000)
+        
+        # Aggregate metrics
+        stats = {
+            "manager_id": dm_id,
+            "manager_name": dm['name'],
+            "role": "district_manager",
+            "team_size": len(all_member_ids),
+            "premium": 0.0,
+            "bankers_premium": 0.0,
+            "presentations": 0,
+            "fact_finders": 0,
+            "sales": 0,
+            "apps": 0,
+            "contacts": 0,
+            "appointments": 0,
+            "referrals": 0,
+            "testimonials": 0,
+            "new_face_sold": 0,
+        }
+        
+        for activity in activities:
+            stats['premium'] += float(activity.get('premium', 0) or 0)
+            stats['bankers_premium'] += float(activity.get('bankers_premium', 0) or 0)
+            stats['presentations'] += int(activity.get('presentations', 0) or 0)
+            stats['fact_finders'] += int(activity.get('fact_finders', 0) or 0)
+            stats['sales'] += int(activity.get('sales', 0) or 0)
+            stats['apps'] += int(activity.get('apps', 0) or 0)
+            stats['contacts'] += int(activity.get('contacts', 0) or 0)
+            stats['appointments'] += int(activity.get('appointments', 0) or 0)
+            stats['referrals'] += int(activity.get('referrals', 0) or 0)
+            stats['testimonials'] += int(activity.get('testimonials', 0) or 0)
+            stats['new_face_sold'] += int(activity.get('new_face_sold', 0) or 0)
+        
+        dm_stats.append(stats)
+    
+    # Sort by premium (default ranking metric) - frontend can re-sort
+    dm_stats.sort(key=lambda x: x['premium'], reverse=True)
+    
+    return {
+        "managers": dm_stats,
+        "config": view_settings.get('leaderboard_metrics', []),
+        "period": period,
+        "view_type": "dm_teams",
+        "start_date": start_date.isoformat(),
+        "end_date": end_date.isoformat()
+    }
+
+
+# ============================================
 # ============================================
 # PMA DocuSphere - Document Library Endpoints
 # ============================================
