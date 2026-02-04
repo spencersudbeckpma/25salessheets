@@ -193,7 +193,34 @@ const TeamView = ({ user }) => {
                   </button>
                 )}
                 <div className="min-w-0 flex-1">
-                  <div className="font-semibold text-lg truncate" data-testid={`member-name-${node.id}`}>{node.name}</div>
+                  <div className="font-semibold text-lg truncate flex items-center gap-2" data-testid={`member-name-${node.id}`}>
+                    {node.name}
+                    {/* Hide/Show Toggle - Only for managers, not for self */}
+                    {canManageVisibility && node.id !== user?.id && (
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleToggleVisibility(node.id, node.name, node.hide_from_team_view);
+                        }}
+                        disabled={hidingUser === node.id}
+                        className={`ml-2 p-1 rounded-full transition-colors ${
+                          node.hide_from_team_view 
+                            ? 'bg-gray-200 text-gray-600 hover:bg-gray-300' 
+                            : 'bg-blue-100 text-blue-600 hover:bg-blue-200'
+                        }`}
+                        title={node.hide_from_team_view ? 'Show in Team View' : 'Hide from Team View'}
+                        data-testid={`toggle-visibility-${node.id}`}
+                      >
+                        {hidingUser === node.id ? (
+                          <span className="animate-spin inline-block w-4 h-4 border-2 border-gray-400 border-t-transparent rounded-full"></span>
+                        ) : node.hide_from_team_view ? (
+                          <Eye size={16} />
+                        ) : (
+                          <EyeOff size={16} />
+                        )}
+                      </button>
+                    )}
+                  </div>
                   <div className="text-sm text-gray-600" data-testid={`member-role-${node.id}`}>
                     {node.role.replace('_', ' ').toUpperCase()}
                   </div>
