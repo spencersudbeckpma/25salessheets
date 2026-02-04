@@ -8710,6 +8710,330 @@ async def migrate_pma_bonuses_team_id(current_user: dict = Depends(get_current_u
 
 
 # ============================================
+# Manager Check-In (Weekly Accountability)
+# ============================================
+# Team-scoped weekly check-ins for managers
+# Fields: week_start_date, number_in_field, targets, monday_matters_topic
+# ============================================
+
+class ManagerCheckinCreate(BaseModel):
+    week_start_date: str  # YYYY-MM-DD (Monday of the week)
+    number_in_field: int = 0
+    household_presentation_target: int = 0
+    premium_target: float = 0.0
+    monday_matters_topic: str = ""
+    status: str = "draft"  # draft or submitted
+
+class ManagerCheckinUpdate(BaseModel):
+    number_in_field: Optional[int] = None
+    household_presentation_target: Optional[int] = None
+    premium_target: Optional[float] = None
+    monday_matters_topic: Optional[str] = None
+    status: Optional[str] = None
+
+def get_week_start(date_str: str) -> str:
+    """Get the Monday of the week for a given date"""
+    date = datetime.strptime(date_str, '%Y-%m-%d').date()
+    monday = date - timedelta(days=date.weekday())
+    return monday.isoformat()
+
+@api_router.post("/checkins")
+async def create_checkin(checkin_data: ManagerCheckinCreate, current_user: dict = Depends(get_current_user)):
+    """Create a new weekly manager check-in.
+    
+    - Only managers (DM, RM, State Manager, super_admin) can create check-ins
+    - team_id is enforced from current_user (no cross-team)
+    - week_start_date is normalized to Monday
+    """
+    await check_feature_access(current_user, "manager_checkin")
+    
+    # Only managers can create check-ins
+    if current_user['role'] not in ['super_admin', 'state_manager', 'regional_manager', 'district_manager']:
+        raise HTTPException(status_code=403, detail="Only managers can create check-ins")
+    
+    team_id = current_user.get('team_id')
+    if not team_id:
+        raise HTTPException(status_code=400, detail="You must be assigned to a team")
+    
+    # Normalize week_start_date to Monday
+    week_start = get_week_start(checkin_data.week_start_date)
+    
+    # Check if user already has a check-in for this week
+    existing = await db.manager_checkins.find_one({
+        "created_by": current_user['id'],
+        "week_start_date": week_start
+    })
+    if existing:
+        raise HTTPException(status_code=400, detail=f"You already have a check-in for week of {week_start}")
+    
+    # Validate status
+    if checkin_data.status not in ['draft', 'submitted']:
+        raise HTTPException(status_code=400, detail="Status must be 'draft' or 'submitted'")
+    
+    checkin = {
+        "id": str(uuid.uuid4()),
+        "week_start_date": week_start,
+        "number_in_field": checkin_data.number_in_field,
+        "household_presentation_target": checkin_data.household_presentation_target,
+        "premium_target": checkin_data.premium_target,
+        "monday_matters_topic": checkin_data.monday_matters_topic,
+        "status": checkin_data.status,
+        "created_by": current_user['id'],
+        "created_by_name": current_user['name'],
+        "role": current_user['role'],
+        "manager_id": current_user.get('manager_id'),
+        "team_id": team_id,
+        "created_at": datetime.now(timezone.utc).isoformat(),
+        "updated_at": datetime.now(timezone.utc).isoformat()
+    }
+    
+    await db.manager_checkins.insert_one(checkin)
+    checkin.pop('_id', None)
+    
+    return {"message": "Check-in created successfully", "checkin": checkin}
+
+@api_router.get("/checkins")
+async def get_checkins(
+    week_start: Optional[str] = None,
+    month: Optional[str] = None,  # YYYY-MM format
+    my_only: bool = False,
+    current_user: dict = Depends(get_current_user)
+):
+    """Get check-ins with filters.
+    
+    - my_only=true: Returns only current user's check-ins
+    - Otherwise: Returns check-ins based on role hierarchy
+      - state_manager: All team check-ins
+      - regional_manager: Own + downline check-ins
+      - district_manager: Own + downline check-ins
+    """
+    await check_feature_access(current_user, "manager_checkin")
+    
+    team_id = current_user.get('team_id')
+    if not team_id:
+        return []
+    
+    # Build query
+    query = {"team_id": team_id}
+    
+    if week_start:
+        query["week_start_date"] = get_week_start(week_start)
+    
+    if month:
+        # Filter by month (week_start_date starts with YYYY-MM)
+        query["week_start_date"] = {"$regex": f"^{month}"}
+    
+    if my_only:
+        query["created_by"] = current_user['id']
+    else:
+        # Filter based on role hierarchy
+        role = current_user['role']
+        if role in ['super_admin', 'state_manager']:
+            # See all team check-ins (already filtered by team_id)
+            pass
+        elif role in ['regional_manager', 'district_manager']:
+            # See own + downline check-ins
+            subordinate_ids = await get_all_subordinates(current_user['id'], team_id)
+            allowed_ids = list(set(subordinate_ids + [current_user['id']]))
+            query["created_by"] = {"$in": allowed_ids}
+        else:
+            # Agents only see their own (though they shouldn't have access)
+            query["created_by"] = current_user['id']
+    
+    checkins = await db.manager_checkins.find(query, {"_id": 0}).sort("week_start_date", -1).to_list(500)
+    
+    return checkins
+
+@api_router.get("/checkins/weeks/list")
+async def get_checkin_weeks(current_user: dict = Depends(get_current_user)):
+    """Get list of weeks that have check-ins for the team."""
+    await check_feature_access(current_user, "manager_checkin")
+    
+    team_id = current_user.get('team_id')
+    if not team_id:
+        return {"weeks": []}
+    
+    # Get distinct week_start_dates
+    pipeline = [
+        {"$match": {"team_id": team_id}},
+        {"$group": {"_id": "$week_start_date"}},
+        {"$sort": {"_id": -1}},
+        {"$limit": 52}  # Last year of weeks
+    ]
+    
+    result = await db.manager_checkins.aggregate(pipeline).to_list(52)
+    weeks = [r['_id'] for r in result if r['_id']]
+    
+    return {"weeks": weeks}
+
+@api_router.get("/checkins/{checkin_id}")
+async def get_checkin(checkin_id: str, current_user: dict = Depends(get_current_user)):
+    """Get a specific check-in by ID."""
+    await check_feature_access(current_user, "manager_checkin")
+    
+    team_id = current_user.get('team_id')
+    
+    checkin = await db.manager_checkins.find_one(
+        {"id": checkin_id, "team_id": team_id},
+        {"_id": 0}
+    )
+    
+    if not checkin:
+        raise HTTPException(status_code=404, detail="Check-in not found")
+    
+    # Verify access based on role hierarchy
+    role = current_user['role']
+    if role not in ['super_admin', 'state_manager']:
+        if checkin['created_by'] != current_user['id']:
+            subordinate_ids = await get_all_subordinates(current_user['id'], team_id)
+            if checkin['created_by'] not in subordinate_ids:
+                raise HTTPException(status_code=403, detail="Access denied")
+    
+    return checkin
+
+@api_router.put("/checkins/{checkin_id}")
+async def update_checkin(
+    checkin_id: str, 
+    update_data: ManagerCheckinUpdate, 
+    current_user: dict = Depends(get_current_user)
+):
+    """Update a check-in. Only the creator can update their own check-in."""
+    await check_feature_access(current_user, "manager_checkin")
+    
+    team_id = current_user.get('team_id')
+    
+    checkin = await db.manager_checkins.find_one(
+        {"id": checkin_id, "team_id": team_id},
+        {"_id": 0}
+    )
+    
+    if not checkin:
+        raise HTTPException(status_code=404, detail="Check-in not found")
+    
+    # Only creator can update
+    if checkin['created_by'] != current_user['id']:
+        raise HTTPException(status_code=403, detail="You can only update your own check-ins")
+    
+    # Build update
+    updates = {}
+    if update_data.number_in_field is not None:
+        updates['number_in_field'] = update_data.number_in_field
+    if update_data.household_presentation_target is not None:
+        updates['household_presentation_target'] = update_data.household_presentation_target
+    if update_data.premium_target is not None:
+        updates['premium_target'] = update_data.premium_target
+    if update_data.monday_matters_topic is not None:
+        updates['monday_matters_topic'] = update_data.monday_matters_topic
+    if update_data.status is not None:
+        if update_data.status not in ['draft', 'submitted']:
+            raise HTTPException(status_code=400, detail="Status must be 'draft' or 'submitted'")
+        updates['status'] = update_data.status
+    
+    if not updates:
+        raise HTTPException(status_code=400, detail="No changes provided")
+    
+    updates['updated_at'] = datetime.now(timezone.utc).isoformat()
+    
+    await db.manager_checkins.update_one({"id": checkin_id}, {"$set": updates})
+    
+    updated_checkin = await db.manager_checkins.find_one({"id": checkin_id}, {"_id": 0})
+    
+    return {"message": "Check-in updated successfully", "checkin": updated_checkin}
+
+@api_router.delete("/checkins/{checkin_id}")
+async def delete_checkin(checkin_id: str, current_user: dict = Depends(get_current_user)):
+    """Delete a check-in. Only creator or state_manager can delete."""
+    await check_feature_access(current_user, "manager_checkin")
+    
+    team_id = current_user.get('team_id')
+    
+    checkin = await db.manager_checkins.find_one(
+        {"id": checkin_id, "team_id": team_id},
+        {"_id": 0}
+    )
+    
+    if not checkin:
+        raise HTTPException(status_code=404, detail="Check-in not found")
+    
+    # Only creator or state_manager/super_admin can delete
+    if checkin['created_by'] != current_user['id']:
+        if current_user['role'] not in ['super_admin', 'state_manager']:
+            raise HTTPException(status_code=403, detail="Only the creator or state manager can delete check-ins")
+    
+    await db.manager_checkins.delete_one({"id": checkin_id})
+    
+    return {"message": "Check-in deleted successfully"}
+
+@api_router.get("/checkins/export/csv")
+async def export_checkins_csv(
+    week_start: str,
+    current_user: dict = Depends(get_current_user)
+):
+    """Export check-ins for a specific week as CSV (managers only, team-scoped)."""
+    await check_feature_access(current_user, "manager_checkin")
+    
+    if current_user['role'] not in ['super_admin', 'state_manager', 'regional_manager', 'district_manager']:
+        raise HTTPException(status_code=403, detail="Only managers can export check-ins")
+    
+    team_id = current_user.get('team_id')
+    if not team_id:
+        raise HTTPException(status_code=400, detail="Team not assigned")
+    
+    # Normalize week start
+    normalized_week = get_week_start(week_start)
+    
+    # Build query based on role
+    query = {"team_id": team_id, "week_start_date": normalized_week}
+    
+    role = current_user['role']
+    if role in ['regional_manager', 'district_manager']:
+        subordinate_ids = await get_all_subordinates(current_user['id'], team_id)
+        allowed_ids = list(set(subordinate_ids + [current_user['id']]))
+        query["created_by"] = {"$in": allowed_ids}
+    
+    checkins = await db.manager_checkins.find(query, {"_id": 0}).sort("created_by_name", 1).to_list(500)
+    
+    if not checkins:
+        raise HTTPException(status_code=404, detail="No check-ins found for this week")
+    
+    # Build CSV
+    import io
+    import csv
+    
+    output = io.StringIO()
+    writer = csv.writer(output)
+    
+    # Header
+    writer.writerow([
+        "Name", "Role", "Week Start", "Days in Field", 
+        "Presentation Target", "Premium Target", "Monday Matters Topic", "Status"
+    ])
+    
+    # Data rows
+    for c in checkins:
+        writer.writerow([
+            c.get('created_by_name', ''),
+            c.get('role', '').replace('_', ' ').title(),
+            c.get('week_start_date', ''),
+            c.get('number_in_field', 0),
+            c.get('household_presentation_target', 0),
+            f"${c.get('premium_target', 0):,.2f}",
+            c.get('monday_matters_topic', ''),
+            c.get('status', '').title()
+        ])
+    
+    csv_content = output.getvalue()
+    
+    return Response(
+        content=csv_content,
+        media_type="text/csv",
+        headers={
+            "Content-Disposition": f"attachment; filename=manager_checkins_{normalized_week}.csv"
+        }
+    )
+
+
+# ============================================
 # Team Reorganization & Archiving Endpoints
 # ============================================
 
