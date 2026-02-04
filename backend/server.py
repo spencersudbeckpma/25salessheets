@@ -6567,19 +6567,22 @@ async def get_dm_team_leaderboard(period: str, current_user: dict = Depends(get_
             "date": {"$gte": start_date.isoformat(), "$lte": end_date.isoformat()},
             "team_id": team_id
         }
-        activities = await db.activities.find(act_query, {"_id": 0, "premium": 1}).to_list(10000)
+        activities = await db.activities.find(act_query, {"_id": 0, "premium": 1, "presentations": 1}).to_list(10000)
         
-        # Aggregate ONLY Total Premium (NOT bankers_premium)
+        # Aggregate Total Premium and Total Presentations
         total_premium = 0.0
+        total_presentations = 0.0
         for activity in activities:
             total_premium += float(activity.get('premium', 0) or 0)
+            total_presentations += float(activity.get('presentations', 0) or 0)
         
         dm_stats.append({
             "manager_id": dm_id,
             "manager_name": dm['name'],
             "role": "district_manager",
             "team_size": len(all_member_ids),
-            "total_premium": total_premium
+            "total_premium": total_premium,
+            "total_presentations": total_presentations
         })
     
     # Sort by total_premium descending
