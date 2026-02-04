@@ -288,7 +288,7 @@ const Interviews = ({ user }) => {
       );
 
       toast.success('File uploaded successfully');
-      fetchRecruitFiles(selectedInterview.recruit_id);
+      fetchInterviewFiles(selectedInterview.id);
     } catch (error) {
       toast.error(error.response?.data?.detail || 'Failed to upload file');
     } finally {
@@ -300,13 +300,13 @@ const Interviews = ({ user }) => {
     }
   };
 
-  const downloadRecruitFile = async (fileId, filename) => {
-    if (!selectedInterview?.recruit_id) return;
+  const downloadInterviewFile = async (fileId, filename) => {
+    if (!selectedInterview?.id) return;
 
     try {
       const token = localStorage.getItem('token');
       const response = await axios.get(
-        `${API}/recruits/${selectedInterview.recruit_id}/files/${fileId}/download`,
+        `${API}/interviews/${selectedInterview.id}/files/${fileId}/download`,
         {
           headers: { Authorization: `Bearer ${token}` },
           responseType: 'blob'
@@ -327,8 +327,8 @@ const Interviews = ({ user }) => {
     }
   };
 
-  const deleteRecruitFile = async (fileId) => {
-    if (!selectedInterview?.recruit_id) return;
+  const deleteInterviewFile = async (fileId) => {
+    if (!selectedInterview?.id) return;
 
     if (!window.confirm('Are you sure you want to delete this file?')) {
       return;
@@ -337,12 +337,12 @@ const Interviews = ({ user }) => {
     try {
       const token = localStorage.getItem('token');
       await axios.delete(
-        `${API}/recruits/${selectedInterview.recruit_id}/files/${fileId}`,
+        `${API}/interviews/${selectedInterview.id}/files/${fileId}`,
         { headers: { Authorization: `Bearer ${token}` } }
       );
 
       toast.success('File deleted');
-      fetchRecruitFiles(selectedInterview.recruit_id);
+      fetchInterviewFiles(selectedInterview.id);
     } catch (error) {
       toast.error(error.response?.data?.detail || 'Failed to delete file');
     }
