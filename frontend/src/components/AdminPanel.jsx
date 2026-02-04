@@ -4148,6 +4148,86 @@ const AdminPanel = ({ user }) => {
                     </p>
                   </div>
 
+                  {/* Leaderboard Views Section */}
+                  <div className="border-t pt-6">
+                    <h4 className="font-medium text-slate-900 mb-3 flex items-center gap-2">
+                      <Trophy className="w-4 h-4" />
+                      Leaderboard Views
+                    </h4>
+                    <p className="text-xs text-slate-500 mb-3">
+                      Control which leaderboard tabs are visible for this team.
+                      Toggle OFF to hide a tab entirely (API will return 403).
+                    </p>
+                    <div className="space-y-3">
+                      <div className="flex items-center justify-between p-3 bg-white border border-slate-200 rounded-lg">
+                        <div>
+                          <span className="font-medium text-slate-900">Individual Leaderboard</span>
+                          <p className="text-xs text-slate-500">Rankings of individual agents</p>
+                        </div>
+                        <Switch
+                          checked={customizationForm.view_settings?.leaderboard_views?.individual !== false}
+                          onCheckedChange={(checked) => {
+                            setCustomizationForm(prev => ({
+                              ...prev,
+                              view_settings: {
+                                ...prev.view_settings,
+                                leaderboard_views: {
+                                  ...prev.view_settings?.leaderboard_views,
+                                  individual: checked
+                                }
+                              }
+                            }));
+                          }}
+                          data-testid="leaderboard-individual-toggle"
+                        />
+                      </div>
+                      <div className="flex items-center justify-between p-3 bg-white border border-slate-200 rounded-lg">
+                        <div>
+                          <span className="font-medium text-slate-900">RM Team Leaderboard</span>
+                          <p className="text-xs text-slate-500">Regional Manager team rollups (RM + their entire downline)</p>
+                        </div>
+                        <Switch
+                          checked={customizationForm.view_settings?.leaderboard_views?.rm_teams !== false}
+                          onCheckedChange={(checked) => {
+                            setCustomizationForm(prev => ({
+                              ...prev,
+                              view_settings: {
+                                ...prev.view_settings,
+                                leaderboard_views: {
+                                  ...prev.view_settings?.leaderboard_views,
+                                  rm_teams: checked
+                                }
+                              }
+                            }));
+                          }}
+                          data-testid="leaderboard-rm-teams-toggle"
+                        />
+                      </div>
+                      <div className="flex items-center justify-between p-3 bg-white border border-slate-200 rounded-lg">
+                        <div>
+                          <span className="font-medium text-slate-900">DM Team Leaderboard</span>
+                          <p className="text-xs text-slate-500">District Manager team rollups (DM + their agents)</p>
+                        </div>
+                        <Switch
+                          checked={customizationForm.view_settings?.leaderboard_views?.dm_teams !== false}
+                          onCheckedChange={(checked) => {
+                            setCustomizationForm(prev => ({
+                              ...prev,
+                              view_settings: {
+                                ...prev.view_settings,
+                                leaderboard_views: {
+                                  ...prev.view_settings?.leaderboard_views,
+                                  dm_teams: checked
+                                }
+                              }
+                            }));
+                          }}
+                          data-testid="leaderboard-dm-teams-toggle"
+                        />
+                      </div>
+                    </div>
+                  </div>
+
                   {/* Recruiting States Section */}
                   <div className="border-t pt-6">
                     <h4 className="font-medium text-slate-900 mb-3 flex items-center gap-2">
