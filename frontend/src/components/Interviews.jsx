@@ -1415,8 +1415,8 @@ const Interviews = ({ user }) => {
                 </div>
               )}
 
-              {/* Recruit Files Section - Show when recruit_id exists (files persist with recruit) */}
-              {selectedInterview.recruit_id && (
+              {/* Interview Files Section - Show when status is moving_forward or completed */}
+              {['moving_forward', 'completed'].includes(selectedInterview.status) && (
                 <div className="bg-slate-50 border border-slate-200 rounded-lg p-4 mt-4">
                   <div className="flex items-center justify-between mb-3">
                     <h4 className="font-semibold text-slate-900 flex items-center gap-2">
@@ -1436,7 +1436,7 @@ const Interviews = ({ user }) => {
                           onChange={handleFileUpload}
                           accept=".pdf,.doc,.docx,.png,.jpg,.jpeg"
                           className="hidden"
-                          id="recruit-file-upload"
+                          id="interview-file-upload"
                         />
                         <Button
                           variant="outline"
@@ -1490,7 +1490,7 @@ const Interviews = ({ user }) => {
                             <Button
                               variant="ghost"
                               size="sm"
-                              onClick={() => downloadRecruitFile(file.id, file.filename)}
+                              onClick={() => downloadInterviewFile(file.id, file.filename)}
                               className="text-blue-600 hover:bg-blue-50"
                               title="Download"
                             >
