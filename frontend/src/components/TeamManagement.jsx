@@ -653,6 +653,71 @@ const TeamManagement = ({ user }) => {
     }
   };
 
+  // Team View Settings Functions
+  const fetchTeamViewUsers = async () => {
+    setTeamViewLoading(true);
+    try {
+      const token = localStorage.getItem('token');
+      const response = await axios.get(`${API}/team/team-view-order`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      setTeamViewUsers(response.data.users || []);
+    } catch (error) {
+      toast.error('Failed to fetch Team View settings');
+    } finally {
+      setTeamViewLoading(false);
+    }
+  };
+
+  const handleToggleHideFromTeamView = async (userId, currentValue) => {
+    try {
+      const token = localStorage.getItem('token');
+      await axios.put(`${API}/users/${userId}/team-view-settings`, 
+        { hide_from_team_view: !currentValue },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      toast.success(`User ${!currentValue ? 'hidden from' : 'shown in'} Team View`);
+      fetchTeamViewUsers();
+    } catch (error) {
+      toast.error(error.response?.data?.detail || 'Failed to update visibility');
+    }
+  };
+
+  const handleMoveUser = async (userId, direction) => {
+    const currentIndex = teamViewUsers.findIndex(u => u.id === userId);
+    if (currentIndex === -1) return;
+    
+    const newIndex = direction === 'up' ? currentIndex - 1 : currentIndex + 1;
+    if (newIndex < 0 || newIndex >= teamViewUsers.length) return;
+    
+    // Swap order values
+    const newUsers = [...teamViewUsers];
+    const temp = newUsers[currentIndex];
+    newUsers[currentIndex] = newUsers[newIndex];
+    newUsers[newIndex] = temp;
+    
+    // Update order numbers
+    const updates = newUsers.map((u, idx) => ({
+      user_id: u.id,
+      team_view_order: idx
+    }));
+    
+    setSavingTeamView(true);
+    try {
+      const token = localStorage.getItem('token');
+      await axios.put(`${API}/team/team-view-order/batch`, updates, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      setTeamViewUsers(newUsers.map((u, idx) => ({ ...u, team_view_order: idx })));
+      toast.success('Display order updated');
+    } catch (error) {
+      toast.error('Failed to update order');
+      fetchTeamViewUsers(); // Revert on error
+    } finally {
+      setSavingTeamView(false);
+    }
+  };
+
   const handleSelectMember = async (memberId) => {
     setEditMember(memberId);
     await fetchMemberActivity(memberId, selectedDate);
