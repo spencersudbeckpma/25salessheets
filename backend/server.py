@@ -267,11 +267,20 @@ async def get_team_view_settings(team: dict) -> dict:
     # Merge subtabs
     subtabs = {**DEFAULT_TEAM_VIEW_SETTINGS['subtabs'], **views.get('subtabs', {}), **direct_view_settings.get('subtabs', {})}
     
+    # Get recruiting states
+    recruiting_states = views.get('recruiting_states') or direct_view_settings.get('recruiting_states') or []
+    
+    # Get leaderboard views (which leaderboard tabs are enabled)
+    saved_leaderboard_views = views.get('leaderboard_views') or direct_view_settings.get('leaderboard_views')
+    leaderboard_views = {**DEFAULT_TEAM_VIEW_SETTINGS['leaderboard_views'], **(saved_leaderboard_views or {})}
+    
     return {
         "kpi_cards": kpi_cards,
         "leaderboard_metrics": leaderboard_metrics,
         "team_activity_metrics": team_activity_metrics,
-        "subtabs": subtabs
+        "subtabs": subtabs,
+        "recruiting_states": recruiting_states,
+        "leaderboard_views": leaderboard_views
     }
 
 def get_enabled_report_metrics(view_settings: dict, include_all: bool = False) -> list:
