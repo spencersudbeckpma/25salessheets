@@ -1196,6 +1196,115 @@ const TeamManagement = ({ user }) => {
           </TabsContent>
           )}
 
+          {/* Team View Settings Tab - Visibility and Ordering Controls */}
+          {['super_admin', 'state_manager', 'regional_manager', 'district_manager'].includes(user.role) && (
+          <TabsContent value="team-view" className="space-y-6" data-testid="team-view-content">
+            <div className="bg-indigo-50 p-6 rounded-lg border border-indigo-200">
+              <h3 className="font-semibold text-lg mb-4 flex items-center gap-2">
+                <Users size={20} />
+                Team View Display Settings
+              </h3>
+              <p className="text-sm text-gray-600 mb-2">
+                Control how users appear in the Team View hierarchy. These settings affect <strong>display only</strong>.
+              </p>
+              <ul className="text-sm text-gray-600 mb-4 list-disc list-inside space-y-1">
+                <li><strong>Hide from Team View:</strong> User won't appear in the hierarchy, but their data still rolls up to totals, reports, and leaderboards.</li>
+                <li><strong>Display Order:</strong> Reorder users within the Team View using the arrows.</li>
+              </ul>
+              <Button onClick={fetchTeamViewUsers} disabled={teamViewLoading}>
+                {teamViewLoading ? 'Loading...' : 'Load Team Settings'}
+              </Button>
+            </div>
+
+            {teamViewUsers.length > 0 && (
+              <div className="space-y-3">
+                <div className="flex justify-between items-center">
+                  <h4 className="font-semibold text-base">Team Members ({teamViewUsers.length})</h4>
+                  <div className="text-xs text-gray-500">
+                    <span className="inline-flex items-center gap-1"><EyeOff size={12} /> = Hidden from Team View</span>
+                  </div>
+                </div>
+                
+                {teamViewUsers.map((member, index) => (
+                  <div 
+                    key={member.id} 
+                    className={`p-4 border rounded-lg flex justify-between items-center transition-colors ${
+                      member.hide_from_team_view 
+                        ? 'bg-gray-100 border-gray-300 opacity-75' 
+                        : 'bg-white border-gray-200'
+                    }`}
+                    data-testid={`team-view-user-${member.id}`}
+                  >
+                    <div className="flex items-center gap-4">
+                      {/* Order controls */}
+                      <div className="flex flex-col gap-1">
+                        <button
+                          onClick={() => handleMoveUser(member.id, 'up')}
+                          disabled={index === 0 || savingTeamView}
+                          className={`p-1 rounded hover:bg-gray-200 ${index === 0 ? 'opacity-30 cursor-not-allowed' : ''}`}
+                          title="Move up"
+                        >
+                          <ArrowUp size={16} />
+                        </button>
+                        <button
+                          onClick={() => handleMoveUser(member.id, 'down')}
+                          disabled={index === teamViewUsers.length - 1 || savingTeamView}
+                          className={`p-1 rounded hover:bg-gray-200 ${index === teamViewUsers.length - 1 ? 'opacity-30 cursor-not-allowed' : ''}`}
+                          title="Move down"
+                        >
+                          <ArrowDown size={16} />
+                        </button>
+                      </div>
+                      
+                      {/* User info */}
+                      <div>
+                        <div className="font-semibold flex items-center gap-2">
+                          {member.name}
+                          {member.hide_from_team_view && (
+                            <span className="text-xs bg-gray-500 text-white px-2 py-0.5 rounded">Hidden</span>
+                          )}
+                        </div>
+                        <div className="text-sm text-gray-600">
+                          {member.role?.replace('_', ' ').toUpperCase()}
+                          <span className="mx-2">•</span>
+                          <span className="text-gray-400">Order: {member.team_view_order}</span>
+                        </div>
+                      </div>
+                    </div>
+                    
+                    {/* Visibility toggle */}
+                    <Button
+                      variant={member.hide_from_team_view ? "outline" : "secondary"}
+                      size="sm"
+                      onClick={() => handleToggleHideFromTeamView(member.id, member.hide_from_team_view)}
+                      className="flex items-center gap-2"
+                      data-testid={`toggle-visibility-${member.id}`}
+                    >
+                      {member.hide_from_team_view ? (
+                        <>
+                          <Eye size={16} />
+                          Show
+                        </>
+                      ) : (
+                        <>
+                          <EyeOff size={16} />
+                          Hide
+                        </>
+                      )}
+                    </Button>
+                  </div>
+                ))}
+                
+                <div className="bg-blue-50 p-4 rounded-lg border border-blue-200 mt-4">
+                  <p className="text-sm text-blue-800">
+                    <strong>Note:</strong> Hidden users' production data still rolls up to their manager's totals, team totals, leaderboards, and all reports. Only the visual display in Team View is affected.
+                  </p>
+                </div>
+              </div>
+            )}
+          </TabsContent>
+          )}
+
           {/* Archive Tab - Available to managers, scoped to their team */}
           {['super_admin', 'state_manager', 'regional_manager', 'district_manager'].includes(user.role) && (
           <TabsContent value="archive" className="space-y-6" data-testid="archive-content">
