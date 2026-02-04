@@ -17,19 +17,24 @@ function App() {
   const [uiSettings, setUiSettings] = useState(null);
   const [viewSettings, setViewSettings] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState(null);
 
   useEffect(() => {
     const token = localStorage.getItem('token');
     if (token) {
+      // Add timeout to prevent infinite loading
+      const timeout = 15000; // 15 seconds
+      
       axios.get(`${API}/auth/me`, {
-        headers: { Authorization: `Bearer ${token}` }
+        headers: { Authorization: `Bearer ${token}` },
+        timeout: timeout
       })
         .then(res => {
           setUser(res.data);
           // Fetch branding and features after getting user
           return Promise.all([
-            axios.get(`${API}/auth/branding`, { headers: { Authorization: `Bearer ${token}` } }),
-            axios.get(`${API}/teams/my-features`, { headers: { Authorization: `Bearer ${token}` } })
+            axios.get(`${API}/auth/branding`, { headers: { Authorization: `Bearer ${token}` }, timeout: timeout }),
+            axios.get(`${API}/teams/my-features`, { headers: { Authorization: `Bearer ${token}` }, timeout: timeout })
           ]);
         })
         .then(([brandingRes, featuresRes]) => {
@@ -39,8 +44,18 @@ function App() {
           setViewSettings(featuresRes.data.view_settings);
           setLoading(false);
         })
-        .catch(() => {
+        .catch((error) => {
+          console.error('[APP_LOAD_ERROR]', {
+            code: error.code,
+            message: error.message,
+            online: navigator.onLine
+          });
           localStorage.removeItem('token');
+          
+          // Set error message for user
+          if (error.code === 'ECONNABORTED' || error.code === 'ERR_NETWORK') {
+            setLoadError('Connection failed. Please check your network and try again.');
+          }
           setLoading(false);
         });
     } else {
