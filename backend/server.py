@@ -5408,7 +5408,18 @@ class UserCreate(BaseModel):
 
 @api_router.post("/auth/create-user")
 async def create_user_directly(user_data: UserCreate, current_user: dict = Depends(get_current_user)):
-    """Create a new user directly with password (managers only)"""
+    """Create a new user directly with password (managers only).
+    
+    TEAM ASSIGNMENT RULES:
+    - state_manager: MUST use their own team_id (enforced server-side, ignores client input)
+    - regional_manager/district_manager: MUST use their own team_id (enforced server-side)
+    - super_admin: Can specify team_id OR defaults to their team_id
+    
+    All created users MUST have a valid team_id - no null/missing allowed.
+    """
+    import logging
+    logger = logging.getLogger(__name__)
+    
     if current_user['role'] not in ['super_admin', 'state_manager', 'regional_manager', 'district_manager']:
         raise HTTPException(status_code=403, detail="Only managers can create users")
     
@@ -5420,10 +5431,53 @@ async def create_user_directly(user_data: UserCreate, current_user: dict = Depen
     if existing_user:
         raise HTTPException(status_code=400, detail="Email already registered")
     
+    # CRITICAL: Determine team_id based on role
+    creator_team_id = current_user.get('team_id')
+    
+    if current_user['role'] == 'super_admin':
+        # super_admin can specify team_id OR use their own
+        assigned_team_id = getattr(user_data, 'team_id', None) or creator_team_id
+        if not assigned_team_id:
+            raise HTTPException(
+                status_code=400, 
+                detail="Super admin must specify team_id or be assigned to a team"
+            )
+        # Validate the team exists
+        team = await db.teams.find_one({"id": assigned_team_id})
+        if not team:
+            raise HTTPException(status_code=400, detail="Invalid team_id. Team not found.")
+    else:
+        # state_manager, regional_manager, district_manager: FORCE their own team
+        # Ignore any team_id from client - this is a security measure
+        if not creator_team_id:
+            raise HTTPException(
+                status_code=400, 
+                detail="You must be assigned to a team before creating users"
+            )
+        assigned_team_id = creator_team_id
+    
+    # Get team name for logging
+    team = await db.teams.find_one({"id": assigned_team_id}, {"_id": 0, "name": 1})
+    team_name = team.get('name', 'Unknown') if team else 'Unknown'
+    
+    # Validate manager_id if provided - must be in the same team
+    manager_id = user_data.manager_id if user_data.manager_id else None
+    if manager_id:
+        manager = await db.users.find_one({"id": manager_id, "team_id": assigned_team_id})
+        if not manager:
+            raise HTTPException(
+                status_code=400, 
+                detail="Selected manager not found or is not in the same team"
+            )
+    else:
+        # If no manager specified and creator is state_manager, default manager to the creator
+        if current_user['role'] == 'state_manager' and user_data.role in ['regional_manager', 'district_manager', 'agent']:
+            manager_id = current_user['id']
+    
     # Hash the password
     password_hash = bcrypt.hashpw(user_data.password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
     
-    # Create user
+    # Create user with REQUIRED team_id
     user_id = str(uuid.uuid4())
     new_user = {
         "id": user_id,
@@ -5431,20 +5485,31 @@ async def create_user_directly(user_data: UserCreate, current_user: dict = Depen
         "email": user_data.email,
         "password_hash": password_hash,
         "role": user_data.role,
-        "manager_id": user_data.manager_id if user_data.manager_id else None,
+        "team_id": assigned_team_id,  # CRITICAL: Always set team_id
+        "team_name": team_name,
+        "manager_id": manager_id,
         "status": "active",
-        "created_at": datetime.now(timezone.utc).isoformat()
+        "created_at": datetime.now(timezone.utc).isoformat(),
+        "created_by": current_user['id']
     }
     
     await db.users.insert_one(new_user)
     
+    # Log user creation for audit
+    logger.info(f"USER_CREATED: created_by={current_user['id']} ({current_user['name']}), "
+                f"new_user_id={user_id}, name={user_data.name}, role={user_data.role}, "
+                f"team_id={assigned_team_id} ({team_name}), manager_id={manager_id}")
+    
     return {
-        "message": "User created successfully",
+        "message": f"User created successfully in {team_name}",
         "user": {
             "id": user_id,
             "name": user_data.name,
             "email": user_data.email,
-            "role": user_data.role
+            "role": user_data.role,
+            "team_id": assigned_team_id,
+            "team_name": team_name,
+            "manager_id": manager_id
         }
     }
 
