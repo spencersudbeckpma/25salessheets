@@ -220,11 +220,11 @@ const Interviews = ({ user }) => {
   };
 
   // ============================================
-  // Recruit File Functions
+  // Interview File Functions
   // ============================================
   
-  const fetchRecruitFiles = async (recruitId) => {
-    if (!recruitId) {
+  const fetchInterviewFiles = async (interviewId) => {
+    if (!interviewId) {
       setRecruitFiles([]);
       return;
     }
@@ -232,12 +232,12 @@ const Interviews = ({ user }) => {
     setLoadingFiles(true);
     try {
       const token = localStorage.getItem('token');
-      const response = await axios.get(`${API}/recruits/${recruitId}/files`, {
+      const response = await axios.get(`${API}/interviews/${interviewId}/files`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       setRecruitFiles(response.data.files || []);
     } catch (error) {
-      console.error('Failed to fetch recruit files:', error);
+      console.error('Failed to fetch interview files:', error);
       setRecruitFiles([]);
     } finally {
       setLoadingFiles(false);
@@ -248,8 +248,8 @@ const Interviews = ({ user }) => {
     const file = event.target.files?.[0];
     if (!file) return;
     
-    if (!selectedInterview?.recruit_id) {
-      toast.error('This candidate must be added to recruiting first');
+    if (!selectedInterview?.id) {
+      toast.error('No interview selected');
       return;
     }
 
@@ -277,7 +277,7 @@ const Interviews = ({ user }) => {
       formData.append('file_type', 'document');
 
       await axios.post(
-        `${API}/recruits/${selectedInterview.recruit_id}/files`,
+        `${API}/interviews/${selectedInterview.id}/files`,
         formData,
         {
           headers: {
