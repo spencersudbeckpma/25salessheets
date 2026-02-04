@@ -89,7 +89,8 @@ DEFAULT_TEAM_FEATURES = {
     "fact_finder": True,
     "sna": True,  # SNA tracker sub-tab
     "npa": True,  # NPA tracker sub-tab
-    "new_faces": True  # New Faces sub-tab
+    "new_faces": True,  # New Faces sub-tab
+    "manager_checkin": True  # Manager Check-In weekly accountability
 }
 
 # Default role-based tab overrides (empty = no restrictions)
