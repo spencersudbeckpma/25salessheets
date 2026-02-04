@@ -470,6 +470,10 @@ const TeamManagement = ({ user }) => {
   const [activeUsers, setActiveUsers] = useState([]);
   const [archivedUsers, setArchivedUsers] = useState([]);
   const [availableManagers, setAvailableManagers] = useState([]);
+  // Team View Settings state
+  const [teamViewUsers, setTeamViewUsers] = useState([]);
+  const [teamViewLoading, setTeamViewLoading] = useState(false);
+  const [savingTeamView, setSavingTeamView] = useState(false);
 
   useEffect(() => {
     fetchInvites();
