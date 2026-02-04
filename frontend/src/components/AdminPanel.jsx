@@ -2175,6 +2175,146 @@ const AdminPanel = ({ user }) => {
             )}
           </Card>
 
+          {/* ==================== PMA BONUSES DIAGNOSTIC ==================== */}
+          <Card className="bg-gradient-to-r from-blue-50 to-indigo-50 border-blue-300 shadow-lg">
+            <CardHeader className="pb-3">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                <div>
+                  <CardTitle className="flex items-center gap-2 text-blue-800 text-xl">
+                    <FileText className="w-6 h-6" />
+                    PMA Bonuses Team Isolation
+                  </CardTitle>
+                  <CardDescription className="text-blue-700">
+                    Check for bonus documents missing team_id (data isolation issue) and fix them.
+                  </CardDescription>
+                </div>
+                <Button
+                  onClick={runPmaBonusesDiagnostic}
+                  disabled={pmaBonusesDiagnosticLoading}
+                  className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 text-base"
+                  data-testid="run-pma-bonuses-diagnostic-btn"
+                >
+                  {pmaBonusesDiagnosticLoading ? <RefreshCw className="w-5 h-5 mr-2 animate-spin" /> : <Search className="w-5 h-5 mr-2" />}
+                  Run Diagnostic
+                </Button>
+              </div>
+            </CardHeader>
+            
+            {pmaBonusesDiagnostic && (
+              <CardContent className="pt-0 space-y-4">
+                {/* Status Banner */}
+                <div className={`p-4 rounded-lg ${
+                  pmaBonusesDiagnostic.isolation_status === 'HEALTHY' 
+                    ? 'bg-green-100 border border-green-300' 
+                    : 'bg-amber-100 border border-amber-300'
+                }`}>
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      {pmaBonusesDiagnostic.isolation_status === 'HEALTHY' ? (
+                        <CheckCircle2 className="w-8 h-8 text-green-600" />
+                      ) : (
+                        <AlertTriangle className="w-8 h-8 text-amber-600" />
+                      )}
+                      <div>
+                        <div className={`text-xl font-bold ${
+                          pmaBonusesDiagnostic.isolation_status === 'HEALTHY' ? 'text-green-800' : 'text-amber-800'
+                        }`}>
+                          {pmaBonusesDiagnostic.isolation_status}
+                        </div>
+                        <div className="text-sm text-slate-600">
+                          {pmaBonusesDiagnostic.total_documents} total bonus documents
+                        </div>
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <div className="text-sm text-slate-600">Orphaned (no team_id):</div>
+                      <div className={`text-2xl font-bold ${
+                        pmaBonusesDiagnostic.orphaned_null_team_id?.count > 0 ? 'text-red-700' : 'text-green-700'
+                      }`}>
+                        {pmaBonusesDiagnostic.orphaned_null_team_id?.count || 0}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Migration Button */}
+                {pmaBonusesDiagnostic.orphaned_null_team_id?.count > 0 && (
+                  <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
+                    <h4 className="font-semibold text-amber-800 mb-2 flex items-center gap-2">
+                      <Wrench className="w-5 h-5" />
+                      Fix Orphaned Documents
+                    </h4>
+                    <p className="text-sm text-amber-700 mb-3">
+                      Click to assign team_id based on each document's uploader. This ensures proper team isolation.
+                    </p>
+                    <Button
+                      onClick={runPmaBonusesMigration}
+                      disabled={pmaBonusesMigrationLoading}
+                      className="bg-amber-600 hover:bg-amber-700 text-white"
+                      data-testid="fix-pma-bonuses-btn"
+                    >
+                      {pmaBonusesMigrationLoading ? (
+                        <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
+                      ) : (
+                        <Wrench className="w-4 h-4 mr-2" />
+                      )}
+                      Fix {pmaBonusesDiagnostic.orphaned_null_team_id.count} Orphaned Documents
+                    </Button>
+                  </div>
+                )}
+
+                {/* Documents by Team */}
+                {Object.keys(pmaBonusesDiagnostic.healthy_by_team || {}).length > 0 && (
+                  <div>
+                    <h4 className="font-semibold text-slate-800 mb-2">Documents by Team</h4>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                      {Object.entries(pmaBonusesDiagnostic.healthy_by_team).map(([teamName, data]) => (
+                        <div key={teamName} className="bg-white border rounded-lg p-3">
+                          <div className="flex justify-between items-center">
+                            <span className="font-medium text-slate-800">{teamName}</span>
+                            <span className="text-green-600 font-bold">{data.count} docs</span>
+                          </div>
+                          {data.files?.length > 0 && (
+                            <div className="mt-2 text-xs text-slate-500">
+                              {data.files.slice(0, 3).map((f, i) => (
+                                <div key={i} className="truncate">• {f}</div>
+                              ))}
+                              {data.files.length > 3 && <div className="text-slate-400">...and {data.files.length - 3} more</div>}
+                            </div>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Orphaned Documents Details */}
+                {pmaBonusesDiagnostic.orphaned_null_team_id?.documents?.length > 0 && (
+                  <div>
+                    <h4 className="font-semibold text-red-800 mb-2">Orphaned Documents (Missing team_id)</h4>
+                    <div className="bg-red-50 border border-red-200 rounded-lg p-3 space-y-2">
+                      {pmaBonusesDiagnostic.orphaned_null_team_id.documents.map((doc, idx) => (
+                        <div key={idx} className="flex justify-between items-center text-sm">
+                          <span className="font-medium text-slate-800 truncate max-w-[200px]">{doc.filename}</span>
+                          <span className="text-slate-500">by {doc.uploaded_by_name}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* All Healthy Message */}
+                {pmaBonusesDiagnostic.isolation_status === 'HEALTHY' && (
+                  <div className="bg-green-50 p-4 rounded-lg text-center border border-green-200">
+                    <CheckCircle2 className="w-8 h-8 text-green-600 mx-auto mb-2" />
+                    <div className="text-green-800 font-medium">All PMA Bonus Documents are Team-Scoped!</div>
+                    <div className="text-green-600 text-sm">No data isolation issues detected.</div>
+                  </div>
+                )}
+              </CardContent>
+            )}
+          </Card>
+
           {/* Separator */}
           <div className="relative">
             <div className="absolute inset-0 flex items-center">
