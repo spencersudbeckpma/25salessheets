@@ -186,7 +186,13 @@ DEFAULT_TEAM_VIEW_SETTINGS = {
         "npa": True
     },
     # Recruiting states - team-scoped state options
-    "recruiting_states": []  # Default empty - each team sets their own states
+    "recruiting_states": [],  # Default empty - each team sets their own states
+    # Leaderboard views - control which leaderboard tabs are visible
+    "leaderboard_views": {
+        "individual": True,      # Individual agent rankings (existing)
+        "rm_teams": True,        # Regional Manager team rollups
+        "dm_teams": True         # District Manager team rollups
+    }
 }
 
 # Default recruiting states for new teams (can be customized per team)
