@@ -289,6 +289,17 @@ const Dashboard = ({ user, setUser, branding: initialBranding, features: initial
                   👥 My Recruiting
                 </TabsTrigger>
               )}
+              {/* Manager Check-In - Managers only */}
+              {hasFeature('manager_checkin') && ['super_admin', 'state_manager', 'regional_manager', 'district_manager'].includes(user.role) && (
+                <TabsTrigger 
+                  value="checkin" 
+                  data-testid="checkin-tab" 
+                  className="py-2.5 px-3 text-xs md:text-sm whitespace-nowrap flex-shrink-0 rounded-lg text-slate-600 data-[state=active]:text-white data-[state=active]:shadow-md"
+                  style={activeTab === 'checkin' ? { backgroundColor: branding?.primary_color || '#1e40af' } : {}}
+                >
+                  📋 Check-In
+                </TabsTrigger>
+              )}
               {/* Admin Panel - super_admin ONLY */}
               {user.role === 'super_admin' && (
                 <TabsTrigger 
