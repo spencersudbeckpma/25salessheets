@@ -3,13 +3,12 @@ import axios from 'axios';
 import { toast } from 'sonner';
 import { Card, CardHeader, CardTitle, CardContent } from './ui/card';
 import { Button } from './ui/button';
-import { Trophy } from 'lucide-react';
+import { Trophy, Users, UserCheck } from 'lucide-react';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
 
 // Static mapping of metric IDs to display properties
-// This ensures consistent icons/colors even if backend config changes
 const METRIC_DISPLAY = {
   premium: { icon: '💵', color: 'border-green-500', format: 'currency' },
   bankers_premium: { icon: '🏦', color: 'border-amber-500', format: 'currency' },
@@ -25,31 +24,97 @@ const METRIC_DISPLAY = {
 };
 
 const Leaderboard = ({ user }) => {
+  const [activeView, setActiveView] = useState('individual');
   const [period, setPeriod] = useState('weekly');
   const [leaderboard, setLeaderboard] = useState(null);
+  const [teamLeaderboard, setTeamLeaderboard] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [leaderboardViews, setLeaderboardViews] = useState({
+    individual: true,
+    rm_teams: true,
+    dm_teams: true
+  });
 
-  const fetchLeaderboard = async (selectedPeriod) => {
+  // Fetch leaderboard view settings
+  useEffect(() => {
+    const fetchViewSettings = async () => {
+      try {
+        const token = localStorage.getItem('token');
+        const response = await axios.get(`${API}/team/view-settings`, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        const views = response.data.leaderboard_views || {};
+        setLeaderboardViews({
+          individual: views.individual !== false,
+          rm_teams: views.rm_teams !== false,
+          dm_teams: views.dm_teams !== false
+        });
+        
+        // If current view is disabled, switch to first enabled view
+        if (!views[activeView]) {
+          if (views.individual !== false) setActiveView('individual');
+          else if (views.rm_teams !== false) setActiveView('rm_teams');
+          else if (views.dm_teams !== false) setActiveView('dm_teams');
+        }
+      } catch (error) {
+        console.error('Failed to fetch view settings:', error);
+      }
+    };
+    fetchViewSettings();
+  }, []);
+
+  // Fetch individual leaderboard
+  const fetchIndividualLeaderboard = async (selectedPeriod) => {
     setLoading(true);
     try {
       const token = localStorage.getItem('token');
-      console.log(`[Leaderboard] Fetching ${selectedPeriod} data...`);
       const response = await axios.get(`${API}/leaderboard/${selectedPeriod}`, {
         headers: { Authorization: `Bearer ${token}` }
       });
-      console.log(`[Leaderboard] Received ${selectedPeriod} data:`, response.data?.presentations?.[0]);
       setLeaderboard(response.data);
+      setTeamLeaderboard(null);
     } catch (error) {
-      console.error(`[Leaderboard] Error fetching ${selectedPeriod}:`, error);
-      toast.error('Failed to fetch leaderboard');
+      if (error.response?.status === 403) {
+        toast.error('Individual leaderboard is disabled for your team');
+      } else {
+        toast.error('Failed to fetch leaderboard');
+      }
     } finally {
       setLoading(false);
     }
   };
 
+  // Fetch team leaderboard (RM or DM)
+  const fetchTeamLeaderboard = async (viewType, selectedPeriod) => {
+    setLoading(true);
+    try {
+      const token = localStorage.getItem('token');
+      const endpoint = viewType === 'rm_teams' ? 'rm-teams' : 'dm-teams';
+      const response = await axios.get(`${API}/leaderboard/${endpoint}/${selectedPeriod}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      setTeamLeaderboard(response.data);
+      setLeaderboard(null);
+    } catch (error) {
+      if (error.response?.status === 403) {
+        const type = viewType === 'rm_teams' ? 'RM Team' : 'DM Team';
+        toast.error(`${type} leaderboard is disabled for your team`);
+      } else {
+        toast.error('Failed to fetch team leaderboard');
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Fetch data when view or period changes
   useEffect(() => {
-    fetchLeaderboard(period);
-  }, [period]);
+    if (activeView === 'individual') {
+      fetchIndividualLeaderboard(period);
+    } else {
+      fetchTeamLeaderboard(activeView, period);
+    }
+  }, [activeView, period]);
 
   const getRankBadge = (rank) => {
     if (rank === 0) return <span className="text-2xl">🥇</span>;
@@ -58,10 +123,9 @@ const Leaderboard = ({ user }) => {
     return <span className="text-gray-600 font-bold text-lg">#{rank + 1}</span>;
   };
 
-  // Get enabled metrics in configured order from backend response
   const getEnabledMetrics = () => {
-    if (!leaderboard?.config) {
-      // Fallback to original 5 metrics if no config present (backward compatibility)
+    const config = leaderboard?.config || teamLeaderboard?.config;
+    if (!config) {
       return [
         { id: 'presentations', label: 'Presentations' },
         { id: 'referrals', label: 'Referrals' },
@@ -71,8 +135,7 @@ const Leaderboard = ({ user }) => {
       ];
     }
     
-    // Filter to enabled metrics and preserve configured order
-    return leaderboard.config
+    return config
       .filter(m => m.enabled)
       .map(m => ({
         id: m.id,
@@ -89,7 +152,134 @@ const Leaderboard = ({ user }) => {
     return value || 0;
   };
 
-  const enabledMetrics = leaderboard ? getEnabledMetrics() : [];
+  const enabledMetrics = getEnabledMetrics();
+
+  // Get available tabs based on admin settings
+  const availableTabs = [
+    { id: 'individual', label: 'Individual', icon: Trophy, enabled: leaderboardViews.individual },
+    { id: 'rm_teams', label: 'RM Teams', icon: Users, enabled: leaderboardViews.rm_teams },
+    { id: 'dm_teams', label: 'DM Teams', icon: UserCheck, enabled: leaderboardViews.dm_teams }
+  ].filter(tab => tab.enabled);
+
+  // Render Individual Leaderboard
+  const renderIndividualLeaderboard = () => (
+    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+      {enabledMetrics.map(metric => (
+        <div key={metric.id} className={`bg-gradient-to-br from-white to-gray-50 rounded-lg border-l-4 ${metric.color || 'border-slate-500'} p-5 shadow-sm`}>
+          <h3 className="font-semibold text-lg mb-4 flex items-center gap-2" data-testid={`category-${metric.id}-title`}>
+            <span className="text-2xl">{metric.icon || '📈'}</span>
+            {metric.label}
+          </h3>
+          <div className="space-y-3">
+            {leaderboard[metric.id] && leaderboard[metric.id].slice(0, 5).map((entry, index) => (
+              <div
+                key={entry.user_id}
+                data-testid={`leaderboard-${metric.id}-rank-${index + 1}`}
+                className={`flex items-center justify-between p-3 rounded-lg transition-all ${ 
+                  entry.user_id === user.id ? 'bg-blue-100 border-2 border-blue-400 shadow-md' : 'bg-white shadow-sm'
+                }`}
+              >
+                <div className="flex items-center gap-3 flex-1 min-w-0">
+                  <div className="w-10 flex justify-center shrink-0">
+                    {getRankBadge(index)}
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <div className="font-semibold truncate">
+                      {entry.name}
+                      {entry.user_id === user.id && (
+                        <span className="ml-2 text-xs bg-blue-600 text-white px-2 py-0.5 rounded">
+                          (You)
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                </div>
+                <div className="font-bold text-lg shrink-0 ml-2">
+                  {formatValue(entry[metric.id], metric.id)}
+                </div>
+              </div>
+            ))}
+            {(!leaderboard[metric.id] || leaderboard[metric.id].length === 0) && (
+              <div className="text-center text-gray-500 py-6 bg-gray-50 rounded-lg">
+                No data yet
+              </div>
+            )}
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+
+  // Render Team Leaderboard (RM or DM)
+  const renderTeamLeaderboard = () => {
+    const managers = teamLeaderboard?.managers || [];
+    const viewType = teamLeaderboard?.view_type;
+    const title = viewType === 'rm_teams' ? 'Regional Manager' : 'District Manager';
+
+    return (
+      <div className="space-y-4">
+        <p className="text-sm text-gray-600 mb-4">
+          {title} teams ranked by total team performance. Each row shows aggregated metrics from the manager and their entire downline.
+        </p>
+        
+        {managers.length === 0 ? (
+          <div className="text-center text-gray-500 py-12 bg-gray-50 rounded-lg">
+            No {title.toLowerCase()}s found in your team
+          </div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full border-collapse">
+              <thead>
+                <tr className="bg-slate-100">
+                  <th className="text-left p-3 font-semibold text-slate-700 sticky left-0 bg-slate-100">Rank</th>
+                  <th className="text-left p-3 font-semibold text-slate-700">{title}</th>
+                  <th className="text-center p-3 font-semibold text-slate-700">Team Size</th>
+                  {enabledMetrics.map(metric => (
+                    <th key={metric.id} className="text-right p-3 font-semibold text-slate-700 whitespace-nowrap">
+                      <span className="mr-1">{metric.icon}</span>
+                      {metric.label}
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {managers.map((manager, index) => (
+                  <tr 
+                    key={manager.manager_id} 
+                    className={`border-b border-slate-200 hover:bg-slate-50 ${
+                      manager.manager_id === user.id ? 'bg-blue-50' : ''
+                    }`}
+                  >
+                    <td className="p-3 sticky left-0 bg-white">
+                      <div className="w-10 flex justify-center">
+                        {getRankBadge(index)}
+                      </div>
+                    </td>
+                    <td className="p-3 font-medium">
+                      {manager.manager_name}
+                      {manager.manager_id === user.id && (
+                        <span className="ml-2 text-xs bg-blue-600 text-white px-2 py-0.5 rounded">
+                          (You)
+                        </span>
+                      )}
+                    </td>
+                    <td className="p-3 text-center text-slate-600">
+                      {manager.team_size}
+                    </td>
+                    {enabledMetrics.map(metric => (
+                      <td key={metric.id} className="p-3 text-right font-semibold">
+                        {formatValue(manager[metric.id], metric.id)}
+                      </td>
+                    ))}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
+    );
+  };
 
   return (
     <Card className="shadow-lg bg-white" data-testid="leaderboard-card">
@@ -100,9 +290,35 @@ const Leaderboard = ({ user }) => {
         </CardTitle>
       </CardHeader>
       <CardContent className="pt-2 space-y-4">
+        {/* View Tabs */}
+        {availableTabs.length > 1 && (
+          <div className="flex gap-2 border-b pb-4">
+            {availableTabs.map(tab => {
+              const Icon = tab.icon;
+              return (
+                <Button
+                  key={tab.id}
+                  variant={activeView === tab.id ? 'default' : 'outline'}
+                  onClick={() => setActiveView(tab.id)}
+                  size="sm"
+                  className="flex items-center gap-2"
+                  data-testid={`view-${tab.id}-btn`}
+                >
+                  <Icon size={16} />
+                  {tab.label}
+                </Button>
+              );
+            })}
+          </div>
+        )}
+
+        {/* Period Selection and Info */}
         <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-4">
           <p className="text-sm text-gray-600" data-testid="leaderboard-subtitle">
-            Top 5 performers for {period} period
+            {activeView === 'individual' 
+              ? `Top 5 performers for ${period} period`
+              : `${activeView === 'rm_teams' ? 'RM' : 'DM'} team rankings for ${period} period`
+            }
           </p>
           <div className="flex flex-wrap gap-2">
             {['weekly', 'monthly', 'quarterly', 'yearly'].map(p => (
@@ -120,54 +336,15 @@ const Leaderboard = ({ user }) => {
           </div>
         </div>
 
+        {/* Content */}
         {loading ? (
           <div className="text-center py-12 text-gray-500">Loading leaderboard...</div>
-        ) : leaderboard && (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {enabledMetrics.map(metric => (
-              <div key={metric.id} className={`bg-gradient-to-br from-white to-gray-50 rounded-lg border-l-4 ${metric.color || 'border-slate-500'} p-5 shadow-sm`}>
-                <h3 className="font-semibold text-lg mb-4 flex items-center gap-2" data-testid={`category-${metric.id}-title`}>
-                  <span className="text-2xl">{metric.icon || '📈'}</span>
-                  {metric.label}
-                </h3>
-                <div className="space-y-3">
-                  {leaderboard[metric.id] && leaderboard[metric.id].slice(0, 5).map((entry, index) => (
-                    <div
-                      key={entry.user_id}
-                      data-testid={`leaderboard-${metric.id}-rank-${index + 1}`}
-                      className={`flex items-center justify-between p-3 rounded-lg transition-all ${ 
-                        entry.user_id === user.id ? 'bg-blue-100 border-2 border-blue-400 shadow-md' : 'bg-white shadow-sm'
-                      }`}
-                    >
-                      <div className="flex items-center gap-3 flex-1 min-w-0">
-                        <div className="w-10 flex justify-center shrink-0" data-testid={`rank-badge-${metric.id}-${index + 1}`}>
-                          {getRankBadge(index)}
-                        </div>
-                        <div className="min-w-0 flex-1">
-                          <div className="font-semibold truncate" data-testid={`name-${metric.id}-${index + 1}`}>
-                            {entry.name}
-                            {entry.user_id === user.id && (
-                              <span className="ml-2 text-xs bg-blue-600 text-white px-2 py-0.5 rounded" data-testid={`you-badge-${metric.id}`}>
-                                (You)
-                              </span>
-                            )}
-                          </div>
-                        </div>
-                      </div>
-                      <div className="font-bold text-lg shrink-0 ml-2" data-testid={`value-${metric.id}-${index + 1}`}>
-                        {formatValue(entry[metric.id], metric.id)}
-                      </div>
-                    </div>
-                  ))}
-                  {(!leaderboard[metric.id] || leaderboard[metric.id].length === 0) && (
-                    <div className="text-center text-gray-500 py-6 bg-gray-50 rounded-lg" data-testid={`no-data-${metric.id}`}>
-                      No data yet
-                    </div>
-                  )}
-                </div>
-              </div>
-            ))}
-          </div>
+        ) : activeView === 'individual' && leaderboard ? (
+          renderIndividualLeaderboard()
+        ) : teamLeaderboard ? (
+          renderTeamLeaderboard()
+        ) : (
+          <div className="text-center py-12 text-gray-500">No data available</div>
         )}
       </CardContent>
     </Card>
