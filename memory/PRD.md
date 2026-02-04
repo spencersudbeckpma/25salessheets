@@ -99,14 +99,18 @@ Team-based activity tracking and performance management application for insuranc
 
 ## Changelog
 
-### 2025-02-04 - RM/DM Team Leaderboards
+### 2025-02-04 - RM/DM Team Leaderboards (Updated)
 - **Added**: Two new leaderboard views with team rollups
   - **RM Team Leaderboard**: Each row = Regional Manager with summed downline metrics (RM + all DMs + all agents)
   - **DM Team Leaderboard**: Each row = District Manager with summed downline metrics (DM + all agents)
+- **Metrics Displayed**:
+  - **Total Premium** (ranked by this) - Green color
+  - **Total Presentations** - Purple color
 - **Endpoints Added**:
   - `GET /api/leaderboard/rm-teams/{period}` - RM team rankings
   - `GET /api/leaderboard/dm-teams/{period}` - DM team rankings
   - Periods: weekly, monthly, quarterly, yearly
+- **Response Format**: `{ managers: [{ manager_id, manager_name, role, team_size, total_premium, total_presentations }], period, view_type, start_date, end_date }`
 - **Admin Controls** (Admin → Teams → Customize → Views → Leaderboard Views):
   - Enable Individual Leaderboard (existing)
   - Enable RM Team Leaderboard (new)
