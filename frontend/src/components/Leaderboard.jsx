@@ -210,7 +210,7 @@ const Leaderboard = ({ user }) => {
     </div>
   );
 
-  // Render Team Leaderboard (RM or DM)
+  // Render Team Leaderboard (RM or DM) - ONLY Total Premium
   const renderTeamLeaderboard = () => {
     const managers = teamLeaderboard?.managers || [];
     const viewType = teamLeaderboard?.view_type;
@@ -219,7 +219,7 @@ const Leaderboard = ({ user }) => {
     return (
       <div className="space-y-4">
         <p className="text-sm text-gray-600 mb-4">
-          {title} teams ranked by total team performance. Each row shows aggregated metrics from the manager and their entire downline.
+          {title} teams ranked by <strong>Total Premium</strong>. Each row shows the manager and their entire downline's combined premium.
         </p>
         
         {managers.length === 0 ? (
@@ -227,54 +227,42 @@ const Leaderboard = ({ user }) => {
             No {title.toLowerCase()}s found in your team
           </div>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full border-collapse">
-              <thead>
-                <tr className="bg-slate-100">
-                  <th className="text-left p-3 font-semibold text-slate-700 sticky left-0 bg-slate-100">Rank</th>
-                  <th className="text-left p-3 font-semibold text-slate-700">{title}</th>
-                  <th className="text-center p-3 font-semibold text-slate-700">Team Size</th>
-                  {enabledMetrics.map(metric => (
-                    <th key={metric.id} className="text-right p-3 font-semibold text-slate-700 whitespace-nowrap">
-                      <span className="mr-1">{metric.icon}</span>
-                      {metric.label}
-                    </th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {managers.map((manager, index) => (
-                  <tr 
-                    key={manager.manager_id} 
-                    className={`border-b border-slate-200 hover:bg-slate-50 ${
-                      manager.manager_id === user.id ? 'bg-blue-50' : ''
-                    }`}
-                  >
-                    <td className="p-3 sticky left-0 bg-white">
-                      <div className="w-10 flex justify-center">
-                        {getRankBadge(index)}
-                      </div>
-                    </td>
-                    <td className="p-3 font-medium">
+          <div className="space-y-3">
+            {managers.map((manager, index) => (
+              <div
+                key={manager.manager_id}
+                className={`flex items-center justify-between p-4 rounded-lg border-l-4 border-green-500 ${
+                  manager.manager_id === user.id 
+                    ? 'bg-blue-50 border-2 border-blue-400 shadow-md' 
+                    : 'bg-gradient-to-r from-white to-gray-50 shadow-sm'
+                }`}
+              >
+                <div className="flex items-center gap-4">
+                  <div className="w-12 flex justify-center">
+                    {getRankBadge(index)}
+                  </div>
+                  <div>
+                    <div className="font-semibold text-lg">
                       {manager.manager_name}
                       {manager.manager_id === user.id && (
                         <span className="ml-2 text-xs bg-blue-600 text-white px-2 py-0.5 rounded">
                           (You)
                         </span>
                       )}
-                    </td>
-                    <td className="p-3 text-center text-slate-600">
-                      {manager.team_size}
-                    </td>
-                    {enabledMetrics.map(metric => (
-                      <td key={metric.id} className="p-3 text-right font-semibold">
-                        {formatValue(manager[metric.id], metric.id)}
-                      </td>
-                    ))}
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+                    </div>
+                    <div className="text-sm text-gray-500">
+                      Team Size: {manager.team_size} members
+                    </div>
+                  </div>
+                </div>
+                <div className="text-right">
+                  <div className="text-2xl font-bold text-green-600">
+                    ${(manager.total_premium || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                  </div>
+                  <div className="text-xs text-gray-500">Total Premium</div>
+                </div>
+              </div>
+            ))}
           </div>
         )}
       </div>
