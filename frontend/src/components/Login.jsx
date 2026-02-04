@@ -20,6 +20,8 @@ const Login = ({ setUser, setBranding }) => {
   const [loading, setLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
   const [storageBlocked, setStorageBlocked] = useState(false);
+  const [connectionTest, setConnectionTest] = useState(null); // null, 'testing', 'success', 'failed'
+  const [connectionError, setConnectionError] = useState('');
 
   // Check if localStorage is available (blocked in Safari Private Browsing)
   useEffect(() => {
