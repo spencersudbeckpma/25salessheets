@@ -6477,7 +6477,6 @@ async def get_rm_team_leaderboard(period: str, current_user: dict = Depends(get_
     
     return {
         "managers": rm_stats,
-        "config": view_settings.get('leaderboard_metrics', []),
         "period": period,
         "view_type": "rm_teams",
         "start_date": start_date.isoformat(),
@@ -6491,10 +6490,11 @@ async def get_rm_team_leaderboard(period: str, current_user: dict = Depends(get_
 @api_router.get("/leaderboard/dm-teams/{period}")
 async def get_dm_team_leaderboard(period: str, current_user: dict = Depends(get_current_user), user_date: str = None):
     """
-    District Manager Team Leaderboard - each row = DM with summed downline metrics.
+    District Manager Team Leaderboard - each row = DM with summed Total Premium ONLY.
     
     Rollup includes: DM's personal activity + all agents under them.
     100% team-scoped. super_admin treated same as state_manager.
+    Only ranks by Total Premium (activity.premium), NOT bankers_premium.
     """
     await check_feature_access(current_user, "leaderboard")
     
@@ -6502,7 +6502,7 @@ async def get_dm_team_leaderboard(period: str, current_user: dict = Depends(get_
     
     team_id = current_user.get('team_id')
     if not team_id:
-        return {"managers": [], "config": [], "period": period, "view_type": "dm_teams"}
+        return {"managers": [], "period": period, "view_type": "dm_teams"}
     
     # Check if DM team leaderboard is enabled for this team
     team = await db.teams.find_one({"id": team_id}, {"_id": 0})
