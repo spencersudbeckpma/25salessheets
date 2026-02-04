@@ -80,14 +80,15 @@ const Interviews = ({ user }) => {
     }
   }, []);
 
-  // Fetch recruit files when viewing an interview with recruit_id
+  // Fetch interview files when viewing an interview with moving_forward or completed status
   useEffect(() => {
-    if (showViewModal && selectedInterview?.recruit_id) {
-      fetchRecruitFiles(selectedInterview.recruit_id);
+    if (showViewModal && selectedInterview?.id && 
+        ['moving_forward', 'completed'].includes(selectedInterview?.status)) {
+      fetchInterviewFiles(selectedInterview.id);
     } else {
       setRecruitFiles([]);
     }
-  }, [showViewModal, selectedInterview?.recruit_id]);
+  }, [showViewModal, selectedInterview?.id, selectedInterview?.status]);
 
   const fetchInterviews = async () => {
     try {
