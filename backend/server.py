@@ -6802,25 +6802,26 @@ async def delete_recruit(recruit_id: str, current_user: dict = Depends(get_curre
 
 
 # ============================================
-# Recruit File Uploads (Hierarchy-Scoped)
+# Interview File Uploads (Hierarchy-Scoped)
 # ============================================
+# Files are tied to interviews, available when status is "moving_forward" or "completed"
 # Uses MongoDB GridFS for persistent storage across redeploys
 
 from motor.motor_asyncio import AsyncIOMotorGridFSBucket
 import io
 
-# Initialize GridFS bucket for recruit files (lazy init)
+# Initialize GridFS bucket for interview files (lazy init)
 _gridfs_bucket = None
 
 async def get_gridfs_bucket():
-    """Get or create the GridFS bucket for recruit files."""
+    """Get or create the GridFS bucket for interview files."""
     global _gridfs_bucket
     if _gridfs_bucket is None:
-        _gridfs_bucket = AsyncIOMotorGridFSBucket(db, bucket_name="recruit_files")
+        _gridfs_bucket = AsyncIOMotorGridFSBucket(db, bucket_name="interview_files")
     return _gridfs_bucket
 
-# Allowed file types for recruit uploads
-ALLOWED_RECRUIT_FILE_TYPES = {
+# Allowed file types for interview uploads
+ALLOWED_INTERVIEW_FILE_TYPES = {
     'application/pdf': '.pdf',
     'application/msword': '.doc',
     'application/vnd.openxmlformats-officedocument.wordprocessingml.document': '.docx',
@@ -6828,22 +6829,22 @@ ALLOWED_RECRUIT_FILE_TYPES = {
     'image/jpeg': '.jpg',
     'image/jpg': '.jpg'
 }
-MAX_RECRUIT_FILE_SIZE = 15 * 1024 * 1024  # 15MB
+MAX_INTERVIEW_FILE_SIZE = 15 * 1024 * 1024  # 15MB
 
 
-async def check_recruit_file_access(current_user: dict, recruit: dict, require_write: bool = False) -> bool:
+async def check_interview_file_access(current_user: dict, interview: dict, require_write: bool = False) -> bool:
     """
-    Check if user has access to recruit files based on hierarchy.
+    Check if user has access to interview files based on team membership.
     
     Access rules:
-    - State Manager / Super Admin: Full access to all recruits in their team
-    - Regional Manager: Access to recruits where they are the RM or their DMs are assigned
-    - District Manager: Access to recruits where they are the DM
-    - Agent: Read-only access if they are the assigned agent (future: when agent field exists)
+    - State Manager / Super Admin: Full access to all interviews in their team
+    - Regional Manager: Full access to interviews in their team
+    - District Manager: Full access to interviews in their team
+    - Agent: Read-only access to their own interviews only
     
     Args:
         current_user: The current authenticated user
-        recruit: The recruit document
+        interview: The interview document
         require_write: If True, checks for upload/delete permission (excludes agents)
     
     Returns:
@@ -6852,22 +6853,25 @@ async def check_recruit_file_access(current_user: dict, recruit: dict, require_w
     user_role = current_user.get('role')
     user_id = current_user.get('id')
     user_team_id = current_user.get('team_id')
-    recruit_team_id = recruit.get('team_id')
+    interview_team_id = interview.get('team_id')
     
     # CRITICAL: Team isolation - must be same team
-    if user_team_id != recruit_team_id:
+    if user_team_id != interview_team_id:
         return False
     
     # State Manager and Super Admin: Full access within team
     if user_role in ['state_manager', 'super_admin']:
         return True
     
-    # Regional Manager: Access if they are RM or their DM subordinates are assigned
-    if user_role == 'regional_manager':
-        if recruit.get('rm_id') == user_id:
-            return True
-        # Check if any of their DM subordinates are assigned
-        subordinates = await get_all_subordinates(user_id, user_team_id)
+    # Regional Manager and District Manager: Full access within team
+    if user_role in ['regional_manager', 'district_manager']:
+        return True
+    
+    # Agent: Read-only access to their own interviews
+    if user_role == 'agent':
+        if require_write:
+            return False
+        return interview.get('interviewer_id') == user_id
         if recruit.get('dm_id') in subordinates:
             return True
         return False
