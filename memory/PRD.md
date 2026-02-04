@@ -99,6 +99,36 @@ Team-based activity tracking and performance management application for insuranc
 
 ## Changelog
 
+### 2025-02-04 - NEW: Manager Check-In (Weekly Accountability)
+- **NEW FEATURE**: Weekly check-in tab for manager accountability
+- **Tab**: "Check-In" - visible only to managers (DM, RM, State Manager, super_admin)
+- **Fields per check-in**:
+  - `week_start_date` (normalized to Monday)
+  - `number_in_field` (days in field)
+  - `household_presentation_target`
+  - `premium_target`
+  - `monday_matters_topic` (free text)
+  - `status` (draft/submitted)
+- **Views**:
+  - "My Check-Ins" - user's own entries grouped by month
+  - "Team Check-Ins" - see downline check-ins (role-based hierarchy)
+- **Permissions**:
+  - Any manager can create/edit their own check-ins
+  - State managers see all team check-ins
+  - RM/DM see only their downline
+  - Only creator or state_manager can delete
+- **Export**: CSV export for selected week (team-scoped)
+- **Feature Flag**: `manager_checkin` (toggle per team in Admin)
+- **API Endpoints**:
+  - `POST /api/checkins` - Create check-in
+  - `GET /api/checkins` - List with filters (week_start, month, my_only)
+  - `GET /api/checkins/{id}` - Get single check-in
+  - `PUT /api/checkins/{id}` - Update (creator only)
+  - `DELETE /api/checkins/{id}` - Delete
+  - `GET /api/checkins/weeks/list` - Available weeks
+  - `GET /api/checkins/export/csv?week_start=YYYY-MM-DD` - CSV export
+- **Guardrails**: 100% team-scoped, team_id required on all records
+
 ### 2025-02-04 - P0 BUG FIX: State Manager Create User Team Assignment
 - **FIXED**: Users created by state_manager were missing team_id (data isolation breach)
 - **Root Cause**: `/api/auth/create-user` endpoint did not assign team_id at all
