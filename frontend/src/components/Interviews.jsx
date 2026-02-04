@@ -1500,7 +1500,7 @@ const Interviews = ({ user }) => {
                               <Button
                                 variant="ghost"
                                 size="sm"
-                                onClick={() => deleteRecruitFile(file.id)}
+                                onClick={() => deleteInterviewFile(file.id)}
                                 className="text-red-600 hover:bg-red-50"
                                 title="Delete"
                               >
