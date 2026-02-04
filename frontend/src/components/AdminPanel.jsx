@@ -124,7 +124,12 @@ const AdminPanel = ({ user }) => {
         sna: true,
         npa: true
       },
-      recruiting_states: []
+      recruiting_states: [],
+      leaderboard_views: {
+        individual: true,
+        rm_teams: true,
+        dm_teams: true
+      }
     }
   });
   const [customizationLoading, setCustomizationLoading] = useState(false);
