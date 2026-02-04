@@ -306,6 +306,16 @@ const Login = ({ setUser, setBranding }) => {
             {errorMessage && (
               <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm" data-testid="login-error">
                 <span className="font-medium">⚠️ </span>{errorMessage}
+                {/* Show diagnostic info on network errors */}
+                {(errorMessage.includes('Network') || errorMessage.includes('timeout') || errorMessage.includes('blocked')) && (
+                  <details className="mt-2 text-xs text-red-600">
+                    <summary className="cursor-pointer font-medium">Diagnostic Info (tap to expand)</summary>
+                    <pre className="mt-1 p-2 bg-red-100 rounded overflow-x-auto whitespace-pre-wrap">
+{JSON.stringify(getNetworkDiagnostics(), null, 2)}
+                    </pre>
+                    <p className="mt-2">Screenshot this and send to support.</p>
+                  </details>
+                )}
               </div>
             )}
 
