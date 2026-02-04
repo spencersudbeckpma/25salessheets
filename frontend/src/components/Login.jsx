@@ -392,6 +392,53 @@ const Login = ({ setUser, setBranding }) => {
               {isLogin ? "Don't have an account? Register" : 'Already have an account? Login'}
             </button>
           </div>
+
+          {/* Connection Test Button */}
+          <div className="mt-4 pt-4 border-t border-slate-200">
+            <button
+              type="button"
+              data-testid="test-connection-btn"
+              className={`w-full py-2 px-4 rounded-md text-sm font-medium transition-colors ${
+                connectionTest === 'success' 
+                  ? 'bg-green-100 text-green-700 border border-green-300'
+                  : connectionTest === 'failed'
+                  ? 'bg-red-100 text-red-700 border border-red-300'
+                  : 'bg-slate-100 text-slate-600 hover:bg-slate-200 border border-slate-300'
+              }`}
+              onClick={testConnection}
+              disabled={connectionTest === 'testing'}
+            >
+              {connectionTest === 'testing' ? '🔄 Testing Connection...' 
+                : connectionTest === 'success' ? '✅ Connection OK'
+                : connectionTest === 'failed' ? '❌ Connection Failed - Tap to Retry'
+                : '🔍 Test Connection (Having trouble?)'}
+            </button>
+            
+            {connectionError && (
+              <div className={`mt-2 p-3 rounded-lg text-sm ${
+                connectionTest === 'success' 
+                  ? 'bg-green-50 text-green-700 border border-green-200' 
+                  : 'bg-red-50 text-red-700 border border-red-200'
+              }`}>
+                <p>{connectionError}</p>
+                {connectionTest === 'failed' && (
+                  <details className="mt-2 text-xs">
+                    <summary className="cursor-pointer font-medium">📋 Diagnostic Info (tap to expand & screenshot)</summary>
+                    <pre className="mt-1 p-2 bg-white rounded overflow-x-auto whitespace-pre-wrap border">
+{JSON.stringify(getNetworkDiagnostics(), null, 2)}
+                    </pre>
+                    <div className="mt-2 space-y-1">
+                      <p className="font-medium">Try these fixes:</p>
+                      <p>1. Switch to mobile data (turn off Wi-Fi)</p>
+                      <p>2. Try a different Wi-Fi network</p>
+                      <p>3. Disable VPN if using one</p>
+                      <p>4. Screenshot this & send to support</p>
+                    </div>
+                  </details>
+                )}
+              </div>
+            )}
+          </div>
         </CardContent>
       </Card>
     </div>
