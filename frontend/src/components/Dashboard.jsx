@@ -71,6 +71,7 @@ const Dashboard = ({ user, setUser, branding: initialBranding, features: initial
       'reports': 'reports',
       'manage': 'team_mgmt',
       'recruiting': 'recruiting',
+      'checkin': 'manager_checkin',
       'admin': null // admin is always available for super_admin
     };
     
