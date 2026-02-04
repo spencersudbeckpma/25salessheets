@@ -6872,104 +6872,95 @@ async def check_interview_file_access(current_user: dict, interview: dict, requi
         if require_write:
             return False
         return interview.get('interviewer_id') == user_id
-        if recruit.get('dm_id') in subordinates:
-            return True
-        return False
-    
-    # District Manager: Access only to their own recruits
-    if user_role == 'district_manager':
-        return recruit.get('dm_id') == user_id
-    
-    # Agent: Read-only access if assigned (no write)
-    if user_role == 'agent':
-        if require_write:
-            return False
-        # For now, agents don't have direct assignment field on recruits
-        # Future: check recruit.assigned_agent_id == user_id
-        return False
     
     return False
 
 
-@api_router.get("/recruits/{recruit_id}/files")
-async def get_recruit_files(recruit_id: str, current_user: dict = Depends(get_current_user)):
+@api_router.get("/interviews/{interview_id}/files")
+async def get_interview_files(interview_id: str, current_user: dict = Depends(get_current_user)):
     """
-    Get all files for a recruit (hierarchy-scoped).
+    Get all files for an interview.
+    Files available when interview status is 'moving_forward' or 'completed'.
     
-    Access: SM, RM (for their recruits), DM (for their recruits)
+    Access: Managers in same team, or interviewer (read-only)
     """
-    await check_feature_access(current_user, "recruiting")
+    await check_feature_access(current_user, "interviews")
     
     team_id = current_user.get('team_id')
     if not team_id:
         raise HTTPException(status_code=403, detail="You must be assigned to a team")
     
-    # Get recruit and verify it exists in user's team
-    recruit = await db.recruits.find_one({"id": recruit_id, "team_id": team_id}, {"_id": 0})
-    if not recruit:
-        raise HTTPException(status_code=404, detail="Recruit not found or access denied")
+    # Get interview and verify it exists in user's team
+    interview = await db.interviews.find_one({"id": interview_id, "team_id": team_id}, {"_id": 0})
+    if not interview:
+        raise HTTPException(status_code=404, detail="Interview not found or access denied")
     
-    # Check hierarchy access
-    has_access = await check_recruit_file_access(current_user, recruit, require_write=False)
+    # Check access
+    has_access = await check_interview_file_access(current_user, interview, require_write=False)
     if not has_access:
-        raise HTTPException(status_code=403, detail="You don't have access to this recruit's files")
+        raise HTTPException(status_code=403, detail="You don't have access to this interview's files")
     
-    # Get files for this recruit (metadata only, hide internal fields)
-    files = await db.recruit_files.find(
-        {"recruit_id": recruit_id, "team_id": team_id},
-        {"_id": 0, "gridfs_id": 0}  # Don't expose storage internals
+    # Get files for this interview (metadata only, hide internal fields)
+    files = await db.interview_files.find(
+        {"interview_id": interview_id, "team_id": team_id},
+        {"_id": 0, "gridfs_id": 0}
     ).sort("uploaded_at", -1).to_list(100)
     
     return {
-        "recruit_id": recruit_id,
-        "recruit_name": recruit.get('name', ''),
+        "interview_id": interview_id,
+        "candidate_name": interview.get('candidate_name', ''),
         "files": files,
         "total": len(files)
     }
 
 
-@api_router.post("/recruits/{recruit_id}/files")
-async def upload_recruit_file(
-    recruit_id: str,
+@api_router.post("/interviews/{interview_id}/files")
+async def upload_interview_file(
+    interview_id: str,
     file: UploadFile = File(...),
     file_type: str = Form("document"),  # resume, notes, document
     current_user: dict = Depends(get_current_user)
 ):
     """
-    Upload a file for a recruit (managers only, hierarchy-scoped).
+    Upload a file for an interview (managers only).
+    Only allowed when interview status is 'moving_forward' or 'completed'.
     
     Access: State Manager, Regional Manager, District Manager
     Files stored in MongoDB GridFS for persistence across redeploys.
     """
-    await check_feature_access(current_user, "recruiting")
+    await check_feature_access(current_user, "interviews")
     
     # Only managers can upload
     if current_user['role'] not in ['super_admin', 'state_manager', 'regional_manager', 'district_manager']:
-        raise HTTPException(status_code=403, detail="Only managers can upload recruit files")
+        raise HTTPException(status_code=403, detail="Only managers can upload interview files")
     
     team_id = current_user.get('team_id')
     if not team_id:
         raise HTTPException(status_code=403, detail="You must be assigned to a team")
     
-    # Get recruit and verify access
-    recruit = await db.recruits.find_one({"id": recruit_id, "team_id": team_id}, {"_id": 0})
-    if not recruit:
-        raise HTTPException(status_code=404, detail="Recruit not found or access denied")
+    # Get interview and verify access
+    interview = await db.interviews.find_one({"id": interview_id, "team_id": team_id}, {"_id": 0})
+    if not interview:
+        raise HTTPException(status_code=404, detail="Interview not found or access denied")
     
-    # Check hierarchy access for upload
-    has_access = await check_recruit_file_access(current_user, recruit, require_write=True)
+    # Only allow uploads for moving_forward or completed interviews
+    if interview.get('status') not in ['moving_forward', 'completed']:
+        raise HTTPException(status_code=400, detail="Files can only be uploaded for interviews marked as 'Moving Forward' or 'Completed'")
+    
+    # Check access for upload
+    has_access = await check_interview_file_access(current_user, interview, require_write=True)
     if not has_access:
-        raise HTTPException(status_code=403, detail="You don't have permission to upload files for this recruit")
+        raise HTTPException(status_code=403, detail="You don't have permission to upload files for this interview")
     
     # Validate file type
     content_type = file.content_type
-    if content_type not in ALLOWED_RECRUIT_FILE_TYPES:
-        allowed = ', '.join(ALLOWED_RECRUIT_FILE_TYPES.values())
+    if content_type not in ALLOWED_INTERVIEW_FILE_TYPES:
+        allowed = ', '.join(ALLOWED_INTERVIEW_FILE_TYPES.values())
         raise HTTPException(status_code=400, detail=f"File type not allowed. Allowed types: {allowed}")
     
     # Read and validate file size
     file_content = await file.read()
-    if len(file_content) > MAX_RECRUIT_FILE_SIZE:
+    if len(file_content) > MAX_INTERVIEW_FILE_SIZE:
         raise HTTPException(status_code=400, detail="File size must be less than 15MB")
     
     # Generate file ID
@@ -6982,7 +6973,7 @@ async def upload_recruit_file(
         io.BytesIO(file_content),
         metadata={
             "file_id": file_id,
-            "recruit_id": recruit_id,
+            "interview_id": interview_id,
             "team_id": team_id,
             "mime_type": content_type,
             "file_type": file_type
@@ -6992,19 +6983,20 @@ async def upload_recruit_file(
     # Store metadata in MongoDB (for fast querying)
     file_doc = {
         "id": file_id,
-        "recruit_id": recruit_id,
+        "interview_id": interview_id,
         "team_id": team_id,
+        "candidate_name": interview.get('candidate_name', ''),
         "filename": file.filename,
-        "gridfs_id": str(gridfs_id),  # Reference to GridFS file
+        "gridfs_id": str(gridfs_id),
         "file_size": len(file_content),
         "mime_type": content_type,
-        "file_type": file_type,  # resume, notes, document
+        "file_type": file_type,
         "uploaded_by": current_user['id'],
         "uploaded_by_name": current_user['name'],
         "uploaded_at": datetime.now(timezone.utc).isoformat()
     }
     
-    await db.recruit_files.insert_one(file_doc)
+    await db.interview_files.insert_one(file_doc)
     
     return {
         "message": "File uploaded successfully",
@@ -7019,36 +7011,36 @@ async def upload_recruit_file(
     }
 
 
-@api_router.get("/recruits/{recruit_id}/files/{file_id}/download")
-async def download_recruit_file(
-    recruit_id: str,
+@api_router.get("/interviews/{interview_id}/files/{file_id}/download")
+async def download_interview_file(
+    interview_id: str,
     file_id: str,
     current_user: dict = Depends(get_current_user)
 ):
     """
-    Download a recruit file (hierarchy-scoped access).
+    Download an interview file.
     
-    Access: SM, RM (for their recruits), DM (for their recruits)
+    Access: Managers in same team, or interviewer
     """
-    await check_feature_access(current_user, "recruiting")
+    await check_feature_access(current_user, "interviews")
     
     team_id = current_user.get('team_id')
     if not team_id:
         raise HTTPException(status_code=403, detail="You must be assigned to a team")
     
-    # Get recruit and verify access
-    recruit = await db.recruits.find_one({"id": recruit_id, "team_id": team_id}, {"_id": 0})
-    if not recruit:
-        raise HTTPException(status_code=404, detail="Recruit not found or access denied")
+    # Get interview and verify access
+    interview = await db.interviews.find_one({"id": interview_id, "team_id": team_id}, {"_id": 0})
+    if not interview:
+        raise HTTPException(status_code=404, detail="Interview not found or access denied")
     
-    # Check hierarchy access
-    has_access = await check_recruit_file_access(current_user, recruit, require_write=False)
+    # Check access
+    has_access = await check_interview_file_access(current_user, interview, require_write=False)
     if not has_access:
-        raise HTTPException(status_code=403, detail="You don't have access to this recruit's files")
+        raise HTTPException(status_code=403, detail="You don't have access to this interview's files")
     
     # Get file metadata
-    file_doc = await db.recruit_files.find_one(
-        {"id": file_id, "recruit_id": recruit_id, "team_id": team_id},
+    file_doc = await db.interview_files.find_one(
+        {"id": file_id, "interview_id": interview_id, "team_id": team_id},
         {"_id": 0}
     )
     if not file_doc:
@@ -7074,31 +7066,31 @@ async def download_recruit_file(
     )
 
 
-@api_router.delete("/recruits/{recruit_id}/files/{file_id}")
-async def delete_recruit_file(
-    recruit_id: str,
+@api_router.delete("/interviews/{interview_id}/files/{file_id}")
+async def delete_interview_file(
+    interview_id: str,
     file_id: str,
     current_user: dict = Depends(get_current_user)
 ):
     """
-    Delete a recruit file (uploader or State Manager only).
+    Delete an interview file (uploader or State Manager only).
     
     Access: Original uploader OR State Manager/Super Admin
     """
-    await check_feature_access(current_user, "recruiting")
+    await check_feature_access(current_user, "interviews")
     
     team_id = current_user.get('team_id')
     if not team_id:
         raise HTTPException(status_code=403, detail="You must be assigned to a team")
     
-    # Get recruit and verify it exists in user's team
-    recruit = await db.recruits.find_one({"id": recruit_id, "team_id": team_id}, {"_id": 0})
-    if not recruit:
-        raise HTTPException(status_code=404, detail="Recruit not found or access denied")
+    # Get interview and verify it exists in user's team
+    interview = await db.interviews.find_one({"id": interview_id, "team_id": team_id}, {"_id": 0})
+    if not interview:
+        raise HTTPException(status_code=404, detail="Interview not found or access denied")
     
     # Get file metadata
-    file_doc = await db.recruit_files.find_one(
-        {"id": file_id, "recruit_id": recruit_id, "team_id": team_id},
+    file_doc = await db.interview_files.find_one(
+        {"id": file_id, "interview_id": interview_id, "team_id": team_id},
         {"_id": 0}
     )
     if not file_doc:
@@ -7122,7 +7114,7 @@ async def delete_recruit_file(
             pass  # File may already be deleted from storage
     
     # Delete metadata from database
-    await db.recruit_files.delete_one({"id": file_id})
+    await db.interview_files.delete_one({"id": file_id})
     
     return {"message": "File deleted successfully"}
 
