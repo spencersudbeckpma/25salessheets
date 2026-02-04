@@ -8792,6 +8792,205 @@ async def get_active_users_for_reassignment(current_user: dict = Depends(get_cur
     return users
 
 
+# ============================================
+# Team View Visibility & Ordering Endpoints
+# ============================================
+# These controls affect ONLY the visual display in Team View.
+# Data rollups, reports, and leaderboards remain UNCHANGED.
+# ============================================
+
+class TeamViewSettingsUpdate(BaseModel):
+    hide_from_team_view: Optional[bool] = None
+    team_view_order: Optional[int] = None
+
+@api_router.get("/users/{user_id}/team-view-settings")
+async def get_user_team_view_settings(user_id: str, current_user: dict = Depends(get_current_user)):
+    """Get a user's Team View visibility settings.
+    
+    Returns:
+    - hide_from_team_view: boolean (if true, user is hidden in Team View but data still rolls up)
+    - team_view_order: number (display priority, lower = higher)
+    """
+    team_id = current_user.get('team_id')
+    role = current_user.get('role')
+    
+    # Permission check
+    if role not in ['super_admin', 'state_manager', 'regional_manager', 'district_manager']:
+        raise HTTPException(status_code=403, detail="Only managers can view Team View settings")
+    
+    # Get target user
+    user = await db.users.find_one({"id": user_id}, {"_id": 0, "password_hash": 0})
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    # Team scoping (except super_admin who can view any)
+    if role != 'super_admin' and user.get('team_id') != team_id:
+        raise HTTPException(status_code=403, detail="Cannot access users from different teams")
+    
+    # For non-state_manager, verify user is in their hierarchy
+    if role not in ['super_admin', 'state_manager']:
+        subordinate_ids = await get_all_subordinates(current_user['id'], team_id)
+        if user_id not in subordinate_ids and user_id != current_user['id']:
+            raise HTTPException(status_code=403, detail="User is not in your hierarchy")
+    
+    return {
+        "user_id": user_id,
+        "name": user.get('name'),
+        "hide_from_team_view": user.get('hide_from_team_view', False),
+        "team_view_order": user.get('team_view_order', 0)
+    }
+
+@api_router.put("/users/{user_id}/team-view-settings")
+async def update_user_team_view_settings(
+    user_id: str, 
+    settings: TeamViewSettingsUpdate, 
+    current_user: dict = Depends(get_current_user)
+):
+    """Update a user's Team View visibility settings.
+    
+    - hide_from_team_view: If true, user won't appear in Team View hierarchy but their
+      data STILL rolls up to manager totals, team totals, leaderboard, and reports.
+    - team_view_order: Display priority (lower number = higher in list)
+    
+    Permissions:
+    - super_admin: Can update any user
+    - state_manager: Can update users within their team
+    - regional_manager/district_manager: Can update users in their hierarchy only
+    
+    IMPORTANT: This is VISIBILITY ONLY. No data logic changes.
+    """
+    team_id = current_user.get('team_id')
+    role = current_user.get('role')
+    
+    # Permission check
+    if role not in ['super_admin', 'state_manager', 'regional_manager', 'district_manager']:
+        raise HTTPException(status_code=403, detail="Only managers can update Team View settings")
+    
+    # Get target user
+    user = await db.users.find_one({"id": user_id}, {"_id": 0})
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    # Team scoping (except super_admin)
+    if role != 'super_admin' and user.get('team_id') != team_id:
+        raise HTTPException(status_code=403, detail="Cannot modify users from different teams")
+    
+    # For non-state_manager, verify user is in their hierarchy
+    if role not in ['super_admin', 'state_manager']:
+        subordinate_ids = await get_all_subordinates(current_user['id'], team_id)
+        if user_id not in subordinate_ids and user_id != current_user['id']:
+            raise HTTPException(status_code=403, detail="User is not in your hierarchy")
+    
+    # Build update
+    update_data = {}
+    if settings.hide_from_team_view is not None:
+        update_data['hide_from_team_view'] = settings.hide_from_team_view
+    if settings.team_view_order is not None:
+        update_data['team_view_order'] = settings.team_view_order
+    
+    if not update_data:
+        raise HTTPException(status_code=400, detail="No changes provided")
+    
+    await db.users.update_one({"id": user_id}, {"$set": update_data})
+    
+    return {
+        "message": "Team View settings updated",
+        "user_id": user_id,
+        "updates": update_data
+    }
+
+@api_router.get("/team/team-view-order")
+async def get_team_view_order(current_user: dict = Depends(get_current_user)):
+    """Get the Team View display order for all users in the team/hierarchy.
+    
+    Returns users sorted by team_view_order, excluding hidden users.
+    """
+    team_id = current_user.get('team_id')
+    role = current_user.get('role')
+    
+    if not team_id:
+        return {"users": []}
+    
+    # Get users based on role
+    if role in ['super_admin', 'state_manager']:
+        # See all team users
+        users = await db.users.find(
+            {"team_id": team_id, "$or": [{"status": "active"}, {"status": {"$exists": False}}]},
+            {"_id": 0, "id": 1, "name": 1, "role": 1, "team_view_order": 1, "hide_from_team_view": 1, "manager_id": 1}
+        ).sort("team_view_order", 1).to_list(1000)
+    else:
+        # Only see hierarchy
+        subordinate_ids = await get_all_subordinates(current_user['id'], team_id)
+        all_ids = list(set(subordinate_ids + [current_user['id']]))
+        users = await db.users.find(
+            {"id": {"$in": all_ids}, "$or": [{"status": "active"}, {"status": {"$exists": False}}]},
+            {"_id": 0, "id": 1, "name": 1, "role": 1, "team_view_order": 1, "hide_from_team_view": 1, "manager_id": 1}
+        ).sort("team_view_order", 1).to_list(1000)
+    
+    # Add default values
+    for user in users:
+        user['team_view_order'] = user.get('team_view_order', 0)
+        user['hide_from_team_view'] = user.get('hide_from_team_view', False)
+    
+    return {"users": users}
+
+@api_router.put("/team/team-view-order/batch")
+async def update_team_view_order_batch(
+    order_updates: List[Dict[str, Any]],
+    current_user: dict = Depends(get_current_user)
+):
+    """Batch update Team View display order for multiple users.
+    
+    Input: [{"user_id": "...", "team_view_order": 1}, {"user_id": "...", "team_view_order": 2}, ...]
+    
+    Permissions:
+    - super_admin/state_manager: Can reorder any users in their team
+    - regional_manager/district_manager: Can reorder users in their hierarchy only
+    """
+    team_id = current_user.get('team_id')
+    role = current_user.get('role')
+    
+    if role not in ['super_admin', 'state_manager', 'regional_manager', 'district_manager']:
+        raise HTTPException(status_code=403, detail="Only managers can update display order")
+    
+    if not team_id:
+        raise HTTPException(status_code=400, detail="Team not assigned")
+    
+    # Get allowed user IDs
+    if role in ['super_admin', 'state_manager']:
+        allowed_users = await db.users.find(
+            {"team_id": team_id, "$or": [{"status": "active"}, {"status": {"$exists": False}}]},
+            {"_id": 0, "id": 1}
+        ).to_list(10000)
+        allowed_ids = {u['id'] for u in allowed_users}
+    else:
+        subordinate_ids = await get_all_subordinates(current_user['id'], team_id)
+        allowed_ids = set(subordinate_ids + [current_user['id']])
+    
+    updated_count = 0
+    errors = []
+    
+    for update in order_updates:
+        user_id = update.get('user_id')
+        order = update.get('team_view_order')
+        
+        if not user_id or order is None:
+            errors.append({"user_id": user_id, "error": "Missing user_id or team_view_order"})
+            continue
+        
+        if user_id not in allowed_ids:
+            errors.append({"user_id": user_id, "error": "User not in your hierarchy or team"})
+            continue
+        
+        await db.users.update_one({"id": user_id}, {"$set": {"team_view_order": order}})
+        updated_count += 1
+    
+    return {
+        "message": f"Updated {updated_count} users",
+        "updated_count": updated_count,
+        "errors": errors if errors else None
+    }
+
 
 # ============================================
 # Weekly Averages & Analytics Endpoints
