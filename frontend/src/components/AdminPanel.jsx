@@ -56,7 +56,8 @@ const AdminPanel = ({ user }) => {
     fact_finder: true,
     sna: true,
     npa: true,
-    new_faces: true
+    new_faces: true,
+    manager_checkin: true
   });
   
   // Team Customization modal (Phase 1)
