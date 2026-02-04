@@ -1019,6 +1019,35 @@ const AdminPanel = ({ user }) => {
     }
   };
 
+  // PMA Bonuses Diagnostic functions
+  const runPmaBonusesDiagnostic = async () => {
+    setPmaBonusesDiagnosticLoading(true);
+    try {
+      const res = await axios.get(`${API}/api/admin/pma-bonuses/diagnostic`, { headers });
+      setPmaBonusesDiagnostic(res.data);
+    } catch (error) {
+      toast.error(error.response?.data?.detail || 'Failed to run PMA Bonuses diagnostic');
+    } finally {
+      setPmaBonusesDiagnosticLoading(false);
+    }
+  };
+
+  const runPmaBonusesMigration = async () => {
+    if (!window.confirm('This will assign team_id to orphaned bonus documents based on the uploader\'s team. Continue?')) return;
+    
+    setPmaBonusesMigrationLoading(true);
+    try {
+      const res = await axios.post(`${API}/api/admin/pma-bonuses/migrate-team-id`, {}, { headers });
+      toast.success(`Migration complete: ${res.data.migration_report.total_updated} documents fixed`);
+      // Refresh diagnostic
+      await runPmaBonusesDiagnostic();
+    } catch (error) {
+      toast.error(error.response?.data?.detail || 'Failed to run migration');
+    } finally {
+      setPmaBonusesMigrationLoading(false);
+    }
+  };
+
   const handleCreateTeam = async () => {
     if (!newTeamName.trim()) {
       toast.error('Please enter a team name');
