@@ -36,6 +36,51 @@ const Login = ({ setUser, setBranding }) => {
     }
   }, []);
 
+  // Test connection to server
+  const testConnection = async () => {
+    setConnectionTest('testing');
+    setConnectionError('');
+    const startTime = Date.now();
+    
+    try {
+      const response = await axios.get(`${API}/health`, { timeout: 10000 });
+      const latency = Date.now() - startTime;
+      
+      if (response.status === 200) {
+        setConnectionTest('success');
+        setConnectionError(`Connected! Latency: ${latency}ms`);
+        console.log('[CONNECTION_TEST_SUCCESS]', {
+          latency,
+          networkInfo: getNetworkDiagnostics()
+        });
+      }
+    } catch (error) {
+      const latency = Date.now() - startTime;
+      setConnectionTest('failed');
+      
+      const diagnostics = getNetworkDiagnostics();
+      let errorMsg = '';
+      
+      if (error.code === 'ERR_NETWORK') {
+        errorMsg = `Cannot reach server. Your Wi-Fi may be blocking this site.`;
+      } else if (error.code === 'ECONNABORTED') {
+        errorMsg = `Connection timed out after ${latency}ms. Server unreachable.`;
+      } else if (!navigator.onLine) {
+        errorMsg = `You appear to be offline. Check your Wi-Fi connection.`;
+      } else {
+        errorMsg = `Connection failed: ${error.message}`;
+      }
+      
+      setConnectionError(errorMsg);
+      console.error('[CONNECTION_TEST_FAILED]', {
+        error: error.message,
+        code: error.code,
+        latency,
+        networkInfo: diagnostics
+      });
+    }
+  };
+
   // Network diagnostic info for debugging Wi-Fi issues
   const getNetworkDiagnostics = () => {
     const nav = navigator;
