@@ -6578,15 +6578,12 @@ async def get_dm_team_leaderboard(period: str, current_user: dict = Depends(get_
             "team_size": len(all_member_ids),
             "total_premium": total_premium
         })
-        
-        dm_stats.append(stats)
     
-    # Sort by premium (default ranking metric) - frontend can re-sort
-    dm_stats.sort(key=lambda x: x['premium'], reverse=True)
+    # Sort by total_premium descending
+    dm_stats.sort(key=lambda x: x['total_premium'], reverse=True)
     
     return {
         "managers": dm_stats,
-        "config": view_settings.get('leaderboard_metrics', []),
         "period": period,
         "view_type": "dm_teams",
         "start_date": start_date.isoformat(),
