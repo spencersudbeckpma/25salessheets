@@ -204,6 +204,11 @@ const AdminPanel = ({ user }) => {
   const [suitabilityDiagnostic, setSuitabilityDiagnostic] = useState(null);
   const [suitabilityDiagnosticLoading, setSuitabilityDiagnosticLoading] = useState(false);
 
+  // PMA Bonuses Diagnostic states
+  const [pmaBonusesDiagnostic, setPmaBonusesDiagnostic] = useState(null);
+  const [pmaBonusesDiagnosticLoading, setPmaBonusesDiagnosticLoading] = useState(false);
+  const [pmaBonusesMigrationLoading, setPmaBonusesMigrationLoading] = useState(false);
+
   const token = localStorage.getItem('token');
   const headers = { Authorization: `Bearer ${token}` };
 
