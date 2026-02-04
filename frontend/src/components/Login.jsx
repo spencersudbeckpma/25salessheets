@@ -34,8 +34,36 @@ const Login = ({ setUser, setBranding }) => {
     }
   }, []);
 
+  // Network diagnostic info for debugging Wi-Fi issues
+  const getNetworkDiagnostics = () => {
+    const nav = navigator;
+    return {
+      online: nav.onLine,
+      connectionType: nav.connection?.effectiveType || 'unknown',
+      downlink: nav.connection?.downlink || 'unknown',
+      rtt: nav.connection?.rtt || 'unknown',
+      saveData: nav.connection?.saveData || false,
+      userAgent: nav.userAgent?.substring(0, 100),
+      apiUrl: API
+    };
+  };
+
   // Helper to extract error message from API response
   const getErrorMessage = (error) => {
+    const diagnostics = getNetworkDiagnostics();
+    
+    // Log detailed diagnostics for debugging
+    console.error('[LOGIN_DIAGNOSTIC]', {
+      timestamp: new Date().toISOString(),
+      errorCode: error.code,
+      errorMessage: error.message,
+      responseStatus: error.response?.status,
+      responseData: error.response?.data,
+      networkInfo: diagnostics,
+      requestUrl: error.config?.url,
+      requestTimeout: error.config?.timeout
+    });
+
     if (error.response?.data?.detail) {
       const detail = error.response.data.detail;
       // Handle structured error response
@@ -47,15 +75,26 @@ const Login = ({ setUser, setBranding }) => {
         return detail;
       }
     }
-    // Network errors
+    
+    // Network errors with detailed messages
     if (error.code === 'ERR_NETWORK') {
-      return 'Unable to connect to server. Please check your internet connection.';
+      return `Network error - Unable to reach server. Connection: ${diagnostics.connectionType}, Online: ${diagnostics.online}. Try switching networks or disabling VPN.`;
     }
     if (error.code === 'ECONNABORTED') {
-      return 'Request timed out. Please try again.';
+      return `Request timed out (RTT: ${diagnostics.rtt}ms). Try again or switch to mobile data.`;
     }
+    if (error.message?.includes('Network Error')) {
+      return `Connection blocked. Your Wi-Fi may be blocking this site. Try mobile data or a different network.`;
+    }
+    if (error.message?.includes('timeout')) {
+      return `Server took too long to respond. Network: ${diagnostics.connectionType}. Try mobile data.`;
+    }
+    if (error.message?.includes('certificate') || error.message?.includes('SSL')) {
+      return `Security certificate error. Your network may be intercepting traffic. Try mobile data.`;
+    }
+    
     // Fallback with more info for debugging
-    return `Login failed: ${error.message || 'Unknown error'}`;
+    return `Login failed: ${error.message || 'Unknown error'} (${diagnostics.connectionType})`;
   };
 
   const handleVerifyInvite = async () => {
