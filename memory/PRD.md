@@ -99,6 +99,25 @@ Team-based activity tracking and performance management application for insuranc
 
 ## Changelog
 
+### 2025-02-04 - P0 BUG FIX: State Manager Create User Team Assignment
+- **FIXED**: Users created by state_manager were missing team_id (data isolation breach)
+- **Root Cause**: `/api/auth/create-user` endpoint did not assign team_id at all
+- **Fix Applied**:
+  - state_manager/regional_manager/district_manager: ALWAYS uses their own team_id (server-side enforced, ignores client input)
+  - super_admin: Uses their team_id as default, can optionally specify different team
+  - All created users MUST have valid team_id (400 error if missing)
+  - Added `created_by` field for audit trail
+  - Added `team_name` to user record
+  - Added logging for user creation events
+- **Guardrails**:
+  - state_manager cannot assign users to different team (forced to their own)
+  - Manager validation ensures manager_id is in same team
+  - If no manager specified, state_manager becomes default manager
+- **Acceptance Tests**:
+  - ✅ super_admin creates user → team_id assigned correctly
+  - ✅ User record contains team_id, team_name, created_by
+  - ✅ Response includes team information
+
 ### 2025-02-04 - Team View Visibility & Ordering Controls
 - **NEW FEATURE**: Per-user visibility and ordering controls for Team View display
 - **Hide from Team View**:
