@@ -99,6 +99,30 @@ Team-based activity tracking and performance management application for insuranc
 
 ## Changelog
 
+### 2025-02-04 - Team View Visibility & Ordering Controls
+- **NEW FEATURE**: Per-user visibility and ordering controls for Team View display
+- **Hide from Team View**:
+  - Per-user `hide_from_team_view` boolean flag
+  - Hidden users don't appear in Team View hierarchy
+  - BUT their data STILL rolls up to manager totals, team totals, leaderboards, reports
+  - Hidden user's children are promoted up (appear under the hidden user's parent)
+- **Display Order**:
+  - Per-user `team_view_order` number field
+  - Lower number = higher display priority
+  - Up/down arrow controls in UI
+  - Affects ONLY visual display, not data
+- **Permissions**:
+  - super_admin: Can toggle/reorder any user
+  - state_manager: Can toggle/reorder users in their team
+  - regional_manager/district_manager: Can toggle/reorder users in their hierarchy only
+- **API Endpoints**:
+  - `GET /api/users/{user_id}/team-view-settings` - Get user's visibility settings
+  - `PUT /api/users/{user_id}/team-view-settings` - Update visibility/order
+  - `GET /api/team/team-view-order` - Get all team users with settings
+  - `PUT /api/team/team-view-order/batch` - Batch update display order
+- **UI Location**: Team Management → Team View tab
+- **Guardrails**: Visibility only - no data logic changes, aggregation identical, reports/leaderboards unchanged
+
 ### 2025-02-04 - CRITICAL: PMA Bonuses Team Isolation Fix
 - **FIXED**: Critical data isolation breach where bonus documents were visible across teams
 - **Root Cause**: No `team_id` filtering on any PMA Bonus endpoints
