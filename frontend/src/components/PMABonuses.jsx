@@ -3,7 +3,7 @@ import axios from 'axios';
 import { toast } from 'sonner';
 import { Card, CardHeader, CardTitle, CardContent } from './ui/card';
 import { Button } from './ui/button';
-import { FileText, Upload, Trash2, Download, Eye } from 'lucide-react';
+import { FileText, Upload, Trash2, Download, Eye, Building2 } from 'lucide-react';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
@@ -12,10 +12,28 @@ const PMABonuses = ({ user }) => {
   const [bonuses, setBonuses] = useState([]);
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
+  const [teams, setTeams] = useState([]);
+  const [selectedTeamId, setSelectedTeamId] = useState('');
 
   useEffect(() => {
     fetchBonuses();
-  }, []);
+    // Fetch teams for super_admin
+    if (user.role === 'super_admin') {
+      fetchTeams();
+    }
+  }, [user.role]);
+
+  const fetchTeams = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await axios.get(`${API}/admin/teams`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      setTeams(response.data);
+    } catch (error) {
+      console.error('Failed to fetch teams');
+    }
+  };
 
   const fetchBonuses = async () => {
     setLoading(true);
@@ -46,19 +64,31 @@ const PMABonuses = ({ user }) => {
       return;
     }
 
+    // super_admin must select a team
+    if (user.role === 'super_admin' && !selectedTeamId) {
+      toast.error('Please select a team first');
+      event.target.value = '';
+      return;
+    }
+
     setUploading(true);
     const formData = new FormData();
     formData.append('file', file);
+    
+    // Add team_id for super_admin
+    if (user.role === 'super_admin' && selectedTeamId) {
+      formData.append('team_id', selectedTeamId);
+    }
 
     try {
       const token = localStorage.getItem('token');
-      await axios.post(`${API}/pma-bonuses`, formData, {
+      const response = await axios.post(`${API}/pma-bonuses`, formData, {
         headers: {
           Authorization: `Bearer ${token}`,
           'Content-Type': 'multipart/form-data'
         }
       });
-      toast.success('PDF uploaded successfully!');
+      toast.success(response.data.message || 'PDF uploaded successfully!');
       fetchBonuses();
     } catch (error) {
       toast.error(error.response?.data?.detail || 'Failed to upload PDF');
@@ -143,7 +173,7 @@ const PMABonuses = ({ user }) => {
           PMA Bonuses
         </CardTitle>
         <p className="text-sm text-gray-600 mt-1">
-          Current bonus documents and resources
+          Current bonus documents and resources for your team
         </p>
       </CardHeader>
       <CardContent className="pt-2 space-y-6">
@@ -156,18 +186,55 @@ const PMABonuses = ({ user }) => {
             </h3>
             <p className="text-sm text-gray-600 mb-4">
               Upload PDF files for current PMA bonuses. Maximum file size: 10MB.
+              {user.role === 'state_manager' && (
+                <span className="block mt-1 text-blue-600">Documents will be visible only to your team.</span>
+              )}
             </p>
+            
+            {/* Team Selection for Super Admin */}
+            {user.role === 'super_admin' && (
+              <div className="mb-4">
+                <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
+                  <Building2 size={16} />
+                  Select Target Team <span className="text-red-500">*</span>
+                </label>
+                <select
+                  value={selectedTeamId}
+                  onChange={(e) => setSelectedTeamId(e.target.value)}
+                  className="w-full max-w-md p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  data-testid="team-select-upload"
+                >
+                  <option value="">-- Select a team --</option>
+                  {teams.map(team => (
+                    <option key={team.id} value={team.id}>{team.name}</option>
+                  ))}
+                </select>
+                <p className="text-xs text-gray-500 mt-1">
+                  Document will be visible ONLY to users in the selected team.
+                </p>
+              </div>
+            )}
+            
             <label className="block">
               <input
                 type="file"
                 accept=".pdf"
                 onChange={handleFileUpload}
-                disabled={uploading}
+                disabled={uploading || (user.role === 'super_admin' && !selectedTeamId)}
                 className="hidden"
+                data-testid="file-upload-input"
               />
-              <div className="flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 text-white py-3 px-6 rounded-lg cursor-pointer transition-colors max-w-md">
+              <div 
+                className={`flex items-center justify-center gap-2 py-3 px-6 rounded-lg cursor-pointer transition-colors max-w-md ${
+                  (user.role === 'super_admin' && !selectedTeamId) 
+                    ? 'bg-gray-300 text-gray-500 cursor-not-allowed' 
+                    : 'bg-blue-600 hover:bg-blue-700 text-white'
+                }`}
+              >
                 <Upload size={18} />
-                {uploading ? 'Uploading...' : 'Choose PDF to Upload'}
+                {uploading ? 'Uploading...' : 
+                 (user.role === 'super_admin' && !selectedTeamId) ? 'Select a team first' :
+                 'Choose PDF to Upload'}
               </div>
             </label>
           </div>
@@ -185,7 +252,7 @@ const PMABonuses = ({ user }) => {
           ) : bonuses.length === 0 ? (
             <div className="text-center py-12 bg-gray-50 rounded-lg text-gray-500">
               <FileText size={48} className="mx-auto mb-3 opacity-50" />
-              <p>No bonus PDFs uploaded yet</p>
+              <p>No bonus PDFs available for your team</p>
             </div>
           ) : (
             <div className="space-y-3">
@@ -193,6 +260,7 @@ const PMABonuses = ({ user }) => {
                 <div
                   key={bonus.id}
                   className="flex flex-col sm:flex-row sm:items-center justify-between p-4 bg-white border rounded-lg shadow-sm hover:shadow-md transition-shadow gap-4"
+                  data-testid={`bonus-item-${bonus.id}`}
                 >
                   <div className="flex items-center gap-4 flex-1 min-w-0">
                     <div className="p-3 bg-red-100 rounded-lg flex-shrink-0">
@@ -205,6 +273,7 @@ const PMABonuses = ({ user }) => {
                       </div>
                       <div className="text-xs text-gray-400">
                         By: {bonus.uploaded_by_name}
+                        {bonus.team_name && <span className="ml-2">• Team: {bonus.team_name}</span>}
                       </div>
                     </div>
                   </div>
@@ -215,6 +284,7 @@ const PMABonuses = ({ user }) => {
                       onClick={() => handleView(bonus.id)}
                       title="View PDF"
                       className="flex items-center gap-1"
+                      data-testid={`view-btn-${bonus.id}`}
                     >
                       <Eye size={16} />
                       <span className="hidden sm:inline">View</span>
@@ -225,6 +295,7 @@ const PMABonuses = ({ user }) => {
                       onClick={() => handleDownload(bonus.id, bonus.filename)}
                       title="Download PDF"
                       className="flex items-center gap-1"
+                      data-testid={`download-btn-${bonus.id}`}
                     >
                       <Download size={16} />
                       <span className="hidden sm:inline">Download</span>
@@ -236,6 +307,7 @@ const PMABonuses = ({ user }) => {
                         onClick={() => handleDelete(bonus.id, bonus.filename)}
                         title="Delete PDF"
                         className="flex items-center gap-1"
+                        data-testid={`delete-btn-${bonus.id}`}
                       >
                         <Trash2 size={16} />
                         <span className="hidden sm:inline">Delete</span>
