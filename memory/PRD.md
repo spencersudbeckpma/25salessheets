@@ -99,24 +99,40 @@ Team-based activity tracking and performance management application for insuranc
 
 ## Changelog
 
-### 2025-02-03 - Recruit File Uploads Feature
-- **Added**: File upload/download/delete for recruits (hierarchy-scoped access)
-- **Storage**: MongoDB GridFS (persistent across redeploys/restarts)
-  - Files stored in `recruit_files` GridFS bucket
-  - Metadata stored in `recruit_files` collection with `gridfs_id` reference
-- **Access Control**:
-  - Upload: State Manager, Regional Manager, District Manager only
-  - Download/View: SM, RM (for their recruits), DM (for their recruits)
-  - Delete: Original uploader OR State Manager/Super Admin
-  - Team isolation: No cross-team file access
+### 2025-02-04 - RM/DM Team Leaderboards
+- **Added**: Two new leaderboard views with team rollups
+  - **RM Team Leaderboard**: Each row = Regional Manager with summed downline metrics (RM + all DMs + all agents)
+  - **DM Team Leaderboard**: Each row = District Manager with summed downline metrics (DM + all agents)
 - **Endpoints Added**:
-  - `GET /api/recruits/{recruit_id}/files` - List files
-  - `POST /api/recruits/{recruit_id}/files` - Upload file (multipart/form-data)
-  - `GET /api/recruits/{recruit_id}/files/{file_id}/download` - Download
-  - `DELETE /api/recruits/{recruit_id}/files/{file_id}` - Delete
-- **Frontend**: "Candidate Files" section in Interview detail modal (shows when recruit_id exists)
-- **Supported Files**: PDF, DOC, DOCX, PNG, JPG (max 15MB)
-- **Testing**: 100% backend and frontend tests passed
+  - `GET /api/leaderboard/rm-teams/{period}` - RM team rankings
+  - `GET /api/leaderboard/dm-teams/{period}` - DM team rankings
+  - Periods: weekly, monthly, quarterly, yearly
+- **Admin Controls** (Admin → Teams → Customize → Views → Leaderboard Views):
+  - Enable Individual Leaderboard (existing)
+  - Enable RM Team Leaderboard (new)
+  - Enable DM Team Leaderboard (new)
+- **Toggle Behavior**: OFF = tab hidden in UI AND API returns 403
+- **Data Rules**: 100% team-scoped, super_admin treated same as state_manager on product pages
+- **Frontend**: Tabs shown/hidden based on admin toggles, period selection preserved
+
+### 2025-02-04 - Interview File Uploads (Updated)
+- **Changed**: Files now tied to **interview_id** (not recruit_id)
+- **Visibility**: "Candidate Files" section appears when interview status is "Moving Forward" or "Completed"
+- **Storage**: MongoDB GridFS (persistent across redeploys)
+- **Endpoints Updated**:
+  - `GET /api/interviews/{interview_id}/files` - List files
+  - `POST /api/interviews/{interview_id}/files` - Upload file
+  - `GET /api/interviews/{interview_id}/files/{file_id}/download` - Download
+  - `DELETE /api/interviews/{interview_id}/files/{file_id}` - Delete
+- **Access Control**: SM/RM/DM can upload, delete by uploader or SM only
+
+### 2025-02-03 - KPI Toggle Fix for Daily Activity Input
+- **Fixed**: KPI toggles in Admin Panel now hide fields in Daily Activity Input form
+- **Added**: `GET /api/team/view-settings` endpoint for frontend to fetch team's KPI visibility
+- **Updated**: ActivityInput.jsx filters input fields based on enabled KPI cards
+- **Added**: Missing "Apps" field to default KPI cards list
+
+### 2025-02-03 - Team-Scoped Recruiting States
 ### 2025-01-29 - Full Data Health Check Admin UI
 - **Added**: Complete team-by-team data integrity check accessible from mobile without terminal
 - **Added**: Build info banner showing Version, Build timestamp, and Check timestamp
