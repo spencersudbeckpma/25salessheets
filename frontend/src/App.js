@@ -79,8 +79,44 @@ function App() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
-        <div className="text-xl font-semibold text-gray-700">Loading...</div>
+      <div className="flex flex-col items-center justify-center min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 p-4">
+        <div className="text-xl font-semibold text-gray-700 mb-4">Loading...</div>
+        <div className="text-sm text-gray-500">Connecting to server...</div>
+      </div>
+    );
+  }
+
+  // Show error screen if connection failed
+  if (loadError && !user) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 p-4">
+        <div className="bg-white rounded-lg shadow-lg p-6 max-w-md w-full text-center">
+          <div className="text-4xl mb-4">⚠️</div>
+          <div className="text-xl font-semibold text-gray-800 mb-2">Connection Problem</div>
+          <div className="text-gray-600 mb-4">{loadError}</div>
+          <div className="space-y-3">
+            <button
+              onClick={() => window.location.reload()}
+              className="w-full py-2 px-4 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+            >
+              🔄 Try Again
+            </button>
+            <button
+              onClick={() => {
+                localStorage.removeItem('token');
+                setLoadError(null);
+              }}
+              className="w-full py-2 px-4 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors"
+            >
+              Go to Login
+            </button>
+          </div>
+          <div className="mt-4 text-xs text-gray-500">
+            <p>If this keeps happening:</p>
+            <p>• Try switching from Wi-Fi to mobile data</p>
+            <p>• Check if your network blocks certain sites</p>
+          </div>
+        </div>
       </div>
     );
   }
