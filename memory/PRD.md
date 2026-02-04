@@ -99,6 +99,30 @@ Team-based activity tracking and performance management application for insuranc
 
 ## Changelog
 
+### 2025-02-04 - CRITICAL: PMA Bonuses Team Isolation Fix
+- **FIXED**: Critical data isolation breach where bonus documents were visible across teams
+- **Root Cause**: No `team_id` filtering on any PMA Bonus endpoints
+- **Guardrails Implemented**:
+  1. **STRICT Team Scoping**: Every bonus document MUST have a valid `team_id`
+  2. **GET /api/pma-bonuses**: Returns ONLY documents matching user's `team_id` (NULL excluded)
+  3. **POST /api/pma-bonuses**: 
+     - state_manager → uploads to their own team (automatic)
+     - super_admin → MUST explicitly select team (required parameter)
+  4. **Download/Delete**: Enforces `team_id` match, no cross-team access
+  5. **Legacy Safety**: Documents with NULL/missing `team_id` are hidden from all users
+- **Admin Diagnostics Added**:
+  - `GET /api/admin/pma-bonuses/diagnostic` - Shows team distribution, orphaned records
+  - `POST /api/admin/pma-bonuses/migrate-team-id` - Backfills `team_id` based on uploader's team
+- **Frontend Updates**:
+  - super_admin sees team selection dropdown (required before upload)
+  - Upload button disabled until team selected
+  - "Document visible ONLY to selected team" messaging
+- **Acceptance Tests**:
+  - ✅ super_admin upload without team_id → 400 error
+  - ✅ super_admin upload with team_id → Success, document scoped
+  - ✅ GET returns only team's documents
+  - ✅ Diagnostic shows healthy isolation status
+
 ### 2025-02-04 - RM/DM Team Leaderboards (Updated)
 - **Added**: Two new leaderboard views with team rollups
   - **RM Team Leaderboard**: Each row = Regional Manager with summed downline metrics (RM + all DMs + all agents)
