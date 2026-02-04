@@ -1,53 +1,47 @@
-<analysis>**original_problem_statement**: The user's initial focus was on adding new activity metrics (, ) and fixing associated bugs and tests. The scope expanded significantly to include a complete overhaul of the Suitability tab to ensure data retention and add flexible reporting periods (Weekly, Monthly, All-Time, Custom). This led to diagnosing and fixing orphaned data in production via an in-app diagnostic tool. The user also requested and received fixes for  permissions on the PMA Bonuses and PMA DocuSphere tabs. The most recent request is to make the State selection in the Recruiting tab team-scoped, so that State Managers can only select from states assigned to their specific team.
+<analysis>**original_problem_statement**: The user's initial focus was on adding new activity metrics and fixing bugs. The scope expanded to overhaul the Suitability tab, implement team-scoped Recruiting States, and fix various admin permissions. The most recent work involved adding a persistent file upload feature for interviews and creating new team-based leaderboards. A recurring theme is the user's confusion between different admin settings and the separation of preview/production environments.
 
 **PRODUCT REQUIREMENTS:**
-1.  **P0: Team-Scoped Recruiting States:** The State dropdown in the Recruiting - Recruit flow must be populated based on the current user's team configuration, not a hardcoded global list. State Managers should only see and select from their own team's assigned states.
+1.  **P0: RM/DM Team Leaderboards:** Implement and test new leaderboards for Regional and District Managers, ranked by team-wide Total Premium.
 2.  **P1: User Regression Testing:** User to perform a consolidated regression test across all application tabs and features.
-3.  **P2: KPI-Filtered Excel Reports:** Implement Phase 2 of KPI-Filtered Reports: Add dynamic headers and KPI filtering to all Excel exports.
-4.  **P2: Refactor :** Refactor the monolithic backend file into a more maintainable, route-based structure (currently paused by user).
-5.  **P2: Copy Leaderboard Settings:** Add a Copy leaderboard settings from another team feature to the Admin UI.
-6.  **P2: Cleanup Migration Endpoints:** Remove one-time data migration endpoints from .
+3.  **P2: KPI-Filtered Excel Reports:** Add dynamic headers and KPI filtering to all Excel exports.
+4.  **P2: Refactor :** Refactor the monolithic backend file into a route-based structure (currently paused by user).
+5.  **P2: Copy Leaderboard Settings:** Add a Copy leaderboard settings from another team feature.
+6.  **P2: Cleanup Migration Endpoints:** Remove one-time data migration endpoints.
 
 **User's preferred language**: English
 
 **what currently exists?**
-- The application has new metrics (, ) fully integrated, with passing backend tests.
-- The Team View has a tested and verified feature for toggling metric visibility on a per-team basis.
-- The Suitability tab has been completely overhauled with flexible reporting (Weekly, Monthly, All-Time, Custom Range) and a redesigned, cleaner Excel export format. The backend logic correctly handles downline and team-scoped visibility.
-- An in-app Suitability Diagnostic tool exists in the Admin Panel to identify and fix orphaned records (forms with missing or invalid ).
--  now has the same permissions as  for uploading and deleting documents in the PMA Bonuses and PMA DocuSphere tabs.
-- The backend and frontend have been modified to support team-scoped Recruiting States, including a new Admin UI for configuration and API endpoints. The code has been written but not fully tested end-to-end.
+- The Team-Scoped Recruiting States feature is complete and tested. Admins can configure states for each team in the Admin Panel, which correctly populates the dropdowns in the Recruiting tab.
+- The file upload feature for interviews is complete and production-ready. It uses MongoDB GridFS for persistent storage and correctly shows the upload UI for interviews with a Moving Forward or Completed status.
+- The issue where KPI toggles didn't affect the Daily Activity input form has been resolved. The agent clarified for the user that there are separate admin toggles for activity inputs vs. dashboard cards.
+- The initial implementation of the new Regional Manager (RM) and District Manager (DM) Team Leaderboards is done. This includes backend endpoints, frontend tabs, and admin toggles for visibility. The agent was in the process of refining these leaderboards to meet a new requirement.
 
 **Last working item**:
-- **Last item agent was working**: Implementing team-scoped state selection for the Recruiting tab. The agent added a new configuration section () to the team settings, created backend endpoints to manage and retrieve these states, and updated the  and  components. The goal is to replace a hardcoded list of states with a dynamic, team-specific list.
+- **Last item agent was working**: Modifying the new RM and DM Team Leaderboards to display **only Total Premium**. The user clarified that these new views should not show all metrics, just the summed premium for the manager's downline. The agent has already modified the backend aggregation logic and updated the frontend component.
 - **Status**: IN PROGRESS
 - **Agent Testing Done**: N
 - **Which testing method agent to use?**: both
-    - **Backend**: Use  to test the new  endpoint (both GET and POST) to ensure states can be saved and retrieved for a team.
-    - **Frontend**: Use the  tool to perform an end-to-end test:
-        1.  Navigate to **Admin -> Teams -> Customize -> Views** and verify the new **Recruiting States** section.
-        2.  Add a few states (e.g., CA, NV) for a specific team and save.
-        3.  Log in as a user from that team.
-        4.  Navigate to the **Recruiting** tab and verify the State dropdown in the Add Recruit form and the filter dropdown now contain CA and NV instead of the old hardcoded values.
+    - **Backend**: Use  to test the  and  endpoints. The JSON response for each manager should now contain only a  field, not other metrics.
+    - **Frontend**: Use the  tool to verify the RM Teams and DM Teams tabs in the Leaderboard section. The tables should now only have columns for Rank, Manager Name, and Total Premium.
 - **User Testing Done**: N
 
 **All Pending/In progress Issue list**:
-- **Issue 1**: Complete and test the Team-Scoped Recruiting States feature (Priority: P0)
-    - **Attempted fixes**: The agent has written the code for the backend and frontend. The backend endpoint returns an empty array for a new team, which is correct, but no states have been configured and tested through the UI yet.
+- **Issue 1**: Complete and test the RM/DM Team Leaderboards to show Total Premium only (Priority: P0)
+    - **Attempted fixes**: The agent edited  to change the aggregation logic in the  and  endpoints to sum only the  field.  was also updated to render only the 'premium' column for these views.
     - **Next debug checklist**:
-        1.  Verify the Admin Panel UI for adding/editing recruiting states works as expected ().
-        2.  Confirm that saving states in the Admin Panel successfully calls the  endpoint and updates the team's settings in the database.
-        3.  Verify the  component correctly fetches and displays these states in the dropdowns.
-    - **Why fix this issue and what will be achieved with the fix?**: This will resolve a critical bug where state selection was not scalable and leaked configuration between teams. It allows each team to have its own list of states for recruiting.
+        1. Restart the backend and frontend services.
+        2. Test the backend endpoints via  to confirm the JSON response for  and  only contains the  metric.
+        3. Test the frontend via  to confirm the RM Teams and DM Teams leaderboard tables only show a Total Premium column.
+    - **Why fix this issue and what will be achieved with the fix?**: This will fulfill the user's explicit requirement for simplified, premium-only team leaderboards.
     - **Status**: IN PROGRESS
     - **Is recurring issue?**: N
     - **Should Test frontend/backend/both after fix?**: Both.
     - **Blocked on other issue**: None.
 
 **In progress Task List**:
-- **Task 1**: Team-Scoped Recruiting States Implementation (Priority: P0)
-  - **Where to resume**: The code has been written. Resume by testing the full flow: configuring states in the Admin Panel and then verifying those states appear in the Recruiting tab's forms and filters.
-  - **What will be achieved with this?**: The state selection for recruiting will be correctly scoped to the user's team, preventing cross-team data leakage.
+- **Task 1**: Finalize and test the Total Premium simplification for RM/DM Leaderboards (Priority: P0)
+  - **Where to resume**: The code has been written. Resume by restarting services, then conducting backend and frontend testing to confirm the change.
+  - **What will be achieved with this?**: The new leaderboards will be complete and match the user's final specification.
   - **Status**: IN PROGRESS
   - **Should Test frontend/backend/both after fix?**: Both.
   - **Blocked on something**: No.
@@ -62,18 +56,15 @@
     - **P2**: Remove the one-time data migration endpoints from .
 
 **Completed work in this session**
-- **Suitability Tab Overhaul**:
-    - Implemented flexible reporting: Weekly (with date picker), Monthly, All-Time, and Custom Date Range.
-    - Ensured data retention by confirming the issue was query-based, not deletion.
-    - Updated Excel exports to use a much cleaner, more detailed Friday Report format for all report types.
-- **Suitability Data Integrity**:
-    - Created a read-only Suitability Diagnostic tool in the Admin Panel to identify orphaned forms (missing/invalid ).
-    - Implemented a Fix Orphaned Forms button in the diagnostic tool that safely reassigns orphaned forms to the submitter's current team. Successfully used this to fix production data issues.
-- **Admin Permissions Fixes**:
-    - Corrected permissions on the **PMA Bonuses** tab to allow  to upload and delete PDFs.
-    - Corrected permissions on the **PMA DocuSphere** tab to allow  to upload/delete files and create/delete folders.
-- **Production Issue Diagnosis**: Investigated a production connectivity issue, identified it as a DNS resolution failure, and provided the user with a diagnostic script and guidance to contact Emergent support.
-- **Team View Metric Toggles**: Completed and tested the feature allowing admins to control metric visibility in the Team View, including clarifying UI text to prevent confusion with other settings.
+- **RM/DM Team Leaderboards (Initial Build)**: Created backend endpoints, frontend tabs, and admin visibility toggles for the new leaderboards.
+- **Interview File Uploads (Production Ready)**:
+    - Implemented file uploads in the Interview modal.
+    - **Fixed Storage**: Migrated file storage from non-persistent local disk to persistent MongoDB GridFS, preventing data loss on redeploys.
+    - **Fixed UI Logic**: Corrected the feature to appear for interviews with Moving Forward or Completed status, rather than requiring the candidate to be in the recruiting pipeline.
+- **KPI Toggle Fix**:
+    - Resolved user confusion by diagnosing that Admin Panel KPI toggles were not affecting the Daily Activity input form.
+    - Implemented a new API endpoint () and updated  to fetch and respect team-specific visibility settings, making the toggles functional for the input form.
+- **Team-Scoped Recruiting States**: Completed and tested the feature allowing admins to configure a unique list of recruiting states for each team.
 
 **Earlier issues found/mentioned but not fixed**
 - **Issue 1**: The backend codebase in  is a large monolith.
@@ -83,19 +74,21 @@
   - **Is recurring issue?**: Y
 
 **Known issue recurrence from previous fork**
-- **Data Integrity & Orphaned Records**: The issue of historical data not appearing due to missing or incorrect foreign keys (like ) recurred. It was previously seen in configurations and this time in . This was addressed by building a permanent, reusable diagnostic and fix tool within the Admin Panel.
+- None.
 
 **Code Architecture**
 
 
 **Key Technical Concepts**
-- **In-App Diagnostics**: A pattern was established for building read-only diagnostic tools within the Admin Panel to help users safely debug production data issues without direct database access. This was used effectively for the Suitability data gap.
-- **Safe Data Migration UI**: A Fix button was added to the diagnostic tool, allowing an admin to trigger a safe, targeted data migration script on the backend to repair orphaned records.
-- **Team-Scoped Configuration**: The pattern of storing configuration within the  collection object () was extended to manage a list of recruiting states, ensuring that this data is partitioned per team.
+- **MongoDB GridFS**: Adopted for persistent file storage to solve the critical issue of data loss in ephemeral container environments. File metadata is stored in a dedicated collection, and file data is stored in chunks within MongoDB itself.
+- **Dynamic UI Configuration**: The frontend was enhanced to fetch configuration from the backend (e.g., ) and dynamically render UI elements like form inputs and navigation tabs based on per-team admin settings.
+- **Hierarchical Data Aggregation**: The new leaderboard endpoints perform complex rollups of activity data, summing metrics based on the manager hierarchy (, ) while strictly enforcing  for data scoping.
 
 **key DB schema**
-- :  can now contain , an array of strings. e.g., .
-- : Investigated and fixed records with  or invalid . The schema itself was not changed.
+- :  now contains , an object with boolean flags (, , ).
+- : A **new collection** storing metadata for files uploaded to interviews, with a  linking to the file data in GridFS.
+-  / : Standard GridFS collections automatically created to store file data.
+- : This collection is now **deprecated** as the file feature was refactored to be interview-based.
 
 **All files of reference**
 - 
@@ -103,54 +96,54 @@
 - 
 - 
 - 
-- 
 
 **key api endpoints**
-- : (GET) Overhauled to support  (weekly, monthly, all-time, custom), , , , and  parameters.
-- : (GET) Re-implemented to generate a detailed, multi-section Excel file for all report types.
-- : (GET) **NEW** endpoint to provide a detailed, read-only analysis of the  collection.
-- : (POST) **NEW** endpoint to safely reassign  to orphaned suitability forms.
-- : (GET/POST) **NEW** endpoints to get and set the list of recruiting states for the user's team.
-- , : (POST, DELETE) Backend logic updated to allow  access in addition to .
+-  (NEW): Returns a ranked list of RMs with their downline's total premium.
+-  (NEW): Returns a ranked list of DMs with their downline's total premium.
+-  (NEW): Lists files for a specific interview.
+-  (NEW): Uploads a file for an interview using GridFS.
+-  (NEW): Downloads a specific interview file from GridFS.
+-  (NEW): Deletes a specific interview file from GridFS.
+-  (NEW): Returns a team's UI visibility settings, used by the frontend to dynamically render components.
 
 **Critical Info for New Agent**
-- **Production DNS Issue**: The user reported a production outage ( not resolving). The agent diagnosed it as a DNS/infrastructure issue and advised the user to contact Emergent support. This is an external blocker.
-- **Test Recruiting States End-to-End**: The immediate next step is to test the newly implemented Recruiting States feature. This involves using the Admin Panel to add states to a team and then verifying those states appear correctly in the Recruiting tab for a user on that team.
-- **Separation of Concerns**: The user has repeatedly emphasized the need for strict separation of configurations (e.g., Team View visibility vs. Daily Activity inputs). This principle should be maintained.
+- **Environment Separation**: The user frequently gets confused between the preview and production environments. Remember that database settings (like admin toggles) configured in preview will **not** be in production after a deployment; they must be re-configured on the live site.
+- **Configuration Complexity**: The admin panel now has multiple, distinct sections for toggling visibility (KPIs for inputs, Team Activity for dashboard, Leaderboards for tabs). Be prepared to clarify their separate functions for the user.
+- **File Storage**: All new file-handling features must use a persistent storage solution like MongoDB GridFS. The initial implementation using local disk was critically flawed and has been corrected.
 
 **documents and test reports created in this job**
-- 
 - 
 -  (updated)
 
 **Last 10 User Messages and any pending HUMAN messages**
-10. **User**: Requested to fix the **Recruiting tab** so that the State selection is team-scoped and not hardcoded. (Status: IN PROGRESS)
-9. **Agent**: Confirmed the fix for the **DocuSphere** tab, enabling  to upload and manage files. (Status: COMPLETED)
-8. **User**: Reported that the **DocuSphere** tab also has the same permission issue as the Bonus tab, preventing  from uploading. (Status: ADDRESSED)
-7. **Agent**: Advised the user that the production connectivity issue is DNS-related and provided guidance to contact Emergent support. (Status: ADDRESSED)
-6. **User**: Confirmed the production connectivity issue is still happening. (Status: ADDRESSED)
-5. **Agent**: Confirmed fix for the **PMA Bonuses** tab, allowing  to upload PDFs, and addressed the backend error message. (Status: COMPLETED)
-4. **User**: Reported seeing an error message Only State Managers can upload bonus PDFs after the initial fix. (Status: ADDRESSED)
-3. **Agent**: Confirmed the upload button on the **PMA Bonuses** tab is now visible to . (Status: COMPLETED)
-2. **User**: Reported that the upload button on the **PMA Bonuses** tab is missing for . (Status: ADDRESSED)
-1. **User**: Requested to add a Custom Range option to Suitability reports to allow batching multiple weeks together. (Status: COMPLETED)
+10. **User**: Clarified that the new RM/DM leaderboards should **only** rank by Total Premium. (Status: IN PROGRESS)
+9.  **User**: Approved the implementation plan for the new RM/DM leaderboards. (Status: ADDRESSED)
+8.  **User**: Requested to add new RM and DM team leaderboards with admin toggles and team scoping. (Status: ADDRESSED)
+7.  **User**: Stated that the interview file upload button should appear for candidates moving forward, not after they are in the recruiting pipeline. (Status: COMPLETED, feature was refactored)
+6.  **User**: Asked where admins configure the team-specific states for recruiting. (Status: COMPLETED)
+5.  **User**: Reported that the KPI toggles were still not working after deployment. (Status: RESOLVED, user needed to configure settings in the production environment).
+4.  **User**: Confirmed they figured out the KPI toggle issue and were looking at the wrong setting in the admin panel. (Status: COMPLETED)
+3.  **User**: Asked if the agent had deployed the interview/recruiting tab cleanup. (Status: ADDRESSED)
+2.  **User**: Agreed to deploy and test the changes. (Status: ADDRESSED)
+1.  **User**: Confirmed that all necessary changes (GridFS, UI visibility) were included before they deployed. (Status: ADDRESSED)
 
 **Project Health Check:**
-- **Broken**: None in the preview environment. A production connectivity issue (DNS) is being handled by Emergent support.
-- **Mocked**: None
+- **Broken**: None.
+- **Mocked**: None.
 
 **3rd Party Integrations**
 - openpyxl
 - reportlab
+- motor (for async MongoDB, including GridFS)
 
 **Testing status**
-- **Testing agent used after significant changes**: YES (for Team View toggles and Suitability overhaul)
+- **Testing agent used after significant changes**: YES, for the initial version of the recruit file upload feature.
 - **Troubleshoot agent used after agent stuck in loop**: NO
-- **Test files created**: None in this session.
+- **Test files created**: None.
 - **Known regressions**: None.
 
 **Credentials to test flow:**
-- **Super Admin**:  /  (For use in the preview environment only)
+- **Super Admin**:  / 
 
 **What agent forgot to execute**
-- The agent has implemented the code for team-scoped recruiting states but has not completed the end-to-end testing loop. The next step should be to use the Admin Panel to configure states for a team and then verify that those states correctly appear in the  component for a user of that team.</analysis>
+- The agent has correctly followed user requests, including major refactors like the switch to GridFS storage. The immediate next step is to complete the testing for the final change request on the leaderboards.</analysis>

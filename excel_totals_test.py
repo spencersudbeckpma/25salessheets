@@ -27,7 +27,7 @@ from openpyxl import load_workbook
 from io import BytesIO
 
 # Configuration
-BACKEND_URL = "https://smart-recruiting.preview.emergentagent.com/api"
+BACKEND_URL = "https://team-leaderboards.preview.emergentagent.com/api"
 
 class Colors:
     GREEN = '\033[92m'
