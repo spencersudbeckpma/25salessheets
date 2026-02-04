@@ -8296,23 +8296,81 @@ async def delete_npa_agent(agent_id: str, current_user: dict = Depends(get_curre
 # ============================================
 # PMA Bonus PDF Management Endpoints
 # ============================================
+# CRITICAL: All bonus documents MUST be team-scoped
+# - Every document has a team_id
+# - All queries filter by team_id
+# - super_admin must explicitly select team when uploading
+# - No cross-team visibility in product views
+# ============================================
 
 @api_router.get("/pma-bonuses")
 async def get_pma_bonuses(current_user: dict = Depends(get_current_user)):
-    """Get all PMA bonus PDFs"""
+    """Get PMA bonus PDFs for current user's team ONLY.
+    
+    STRICT TEAM ISOLATION:
+    - Returns ONLY documents where team_id matches current_user.team_id
+    - Documents with NULL/missing team_id are NEVER returned
+    - No cross-team visibility under any circumstance
+    """
     await check_feature_access(current_user, "pma_bonuses")
-    bonuses = await db.pma_bonuses.find({}, {"_id": 0, "file_data": 0}).sort("uploaded_at", -1).to_list(100)
+    
+    team_id = current_user.get('team_id')
+    if not team_id:
+        # No team = no documents (strict isolation)
+        return []
+    
+    # STRICT: Only exact team_id match, exclude NULL/missing
+    bonuses = await db.pma_bonuses.find(
+        {"team_id": team_id},  # MUST match exact team_id
+        {"_id": 0, "file_data": 0}
+    ).sort("uploaded_at", -1).to_list(100)
+    
     return bonuses
 
 @api_router.post("/pma-bonuses")
 async def upload_pma_bonus(
     file: UploadFile = File(...),
+    team_id: Optional[str] = Form(None),
     current_user: dict = Depends(get_current_user)
 ):
-    """Upload a PMA bonus PDF (State Manager and Super Admin only)"""
+    """Upload a PMA bonus PDF with STRICT team assignment.
+    
+    UPLOAD RULES:
+    - state_manager: Can upload for their own team ONLY (team_id ignored, uses their team)
+    - super_admin: MUST provide explicit team_id (required parameter)
+    
+    All uploads MUST have a valid team_id - no global/shared documents allowed.
+    """
     await check_feature_access(current_user, "pma_bonuses")
-    if current_user['role'] not in ['state_manager', 'super_admin']:
+    
+    role = current_user.get('role')
+    
+    if role not in ['state_manager', 'super_admin']:
         raise HTTPException(status_code=403, detail="Only State Managers and Super Admins can upload bonus PDFs")
+    
+    # Determine target team_id based on role
+    if role == 'super_admin':
+        # super_admin MUST explicitly select a team
+        if not team_id:
+            raise HTTPException(
+                status_code=400, 
+                detail="Super Admin must select a team for the bonus document. No global uploads allowed."
+            )
+        # Validate the team exists
+        target_team = await db.teams.find_one({"id": team_id}, {"_id": 0, "id": 1, "name": 1})
+        if not target_team:
+            raise HTTPException(status_code=400, detail="Invalid team_id. Team not found.")
+        target_team_id = team_id
+        target_team_name = target_team.get('name', 'Unknown')
+    else:
+        # state_manager uploads to their OWN team only
+        target_team_id = current_user.get('team_id')
+        if not target_team_id:
+            raise HTTPException(
+                status_code=400, 
+                detail="Your account is not assigned to a team. Cannot upload bonus documents."
+            )
+        target_team_name = current_user.get('team_name', 'Unknown')
     
     # Validate file type
     if not file.filename.lower().endswith('.pdf'):
@@ -8333,6 +8391,8 @@ async def upload_pma_bonus(
         "filename": file.filename,
         "file_data": file_base64,
         "file_size": len(file_content),
+        "team_id": target_team_id,  # CRITICAL: Always set team_id
+        "team_name": target_team_name,  # For display/audit purposes
         "uploaded_by": current_user['id'],
         "uploaded_by_name": current_user['name'],
         "uploaded_at": datetime.now(timezone.utc).isoformat()
@@ -8341,18 +8401,34 @@ async def upload_pma_bonus(
     await db.pma_bonuses.insert_one(bonus_doc)
     
     return {
-        "message": "PDF uploaded successfully",
+        "message": f"PDF uploaded successfully for {target_team_name}",
         "id": bonus_doc['id'],
-        "filename": bonus_doc['filename']
+        "filename": bonus_doc['filename'],
+        "team_id": target_team_id,
+        "team_name": target_team_name
     }
 
 @api_router.get("/pma-bonuses/{bonus_id}/download")
 async def download_pma_bonus(bonus_id: str, current_user: dict = Depends(get_current_user)):
-    """Download a PMA bonus PDF"""
+    """Download a PMA bonus PDF with STRICT team validation.
+    
+    User can ONLY download documents from their own team.
+    Documents with NULL/missing team_id are NOT accessible.
+    """
     await check_feature_access(current_user, "pma_bonuses")
-    bonus = await db.pma_bonuses.find_one({"id": bonus_id}, {"_id": 0})
+    
+    team_id = current_user.get('team_id')
+    if not team_id:
+        raise HTTPException(status_code=403, detail="Access denied. You are not assigned to a team.")
+    
+    # STRICT: Must match both bonus_id AND team_id
+    bonus = await db.pma_bonuses.find_one(
+        {"id": bonus_id, "team_id": team_id},  # Both conditions required
+        {"_id": 0}
+    )
+    
     if not bonus:
-        raise HTTPException(status_code=404, detail="Bonus PDF not found")
+        raise HTTPException(status_code=404, detail="Bonus PDF not found or access denied")
     
     # Decode base64 to bytes
     file_content = base64.b64decode(bonus['file_data'])
@@ -8367,16 +8443,176 @@ async def download_pma_bonus(bonus_id: str, current_user: dict = Depends(get_cur
 
 @api_router.delete("/pma-bonuses/{bonus_id}")
 async def delete_pma_bonus(bonus_id: str, current_user: dict = Depends(get_current_user)):
-    """Delete a PMA bonus PDF (State Manager and Super Admin only)"""
+    """Delete a PMA bonus PDF with STRICT team validation.
+    
+    - state_manager: Can delete from their own team ONLY
+    - super_admin: Can delete from any team (but must be done via admin tools)
+    """
     await check_feature_access(current_user, "pma_bonuses")
-    if current_user['role'] not in ['state_manager', 'super_admin']:
+    
+    role = current_user.get('role')
+    if role not in ['state_manager', 'super_admin']:
         raise HTTPException(status_code=403, detail="Only State Managers and Super Admins can delete bonus PDFs")
     
-    result = await db.pma_bonuses.delete_one({"id": bonus_id})
+    team_id = current_user.get('team_id')
+    
+    if role == 'super_admin':
+        # super_admin can delete any document (for admin cleanup)
+        result = await db.pma_bonuses.delete_one({"id": bonus_id})
+    else:
+        # state_manager can only delete from their own team
+        if not team_id:
+            raise HTTPException(status_code=403, detail="You are not assigned to a team")
+        result = await db.pma_bonuses.delete_one({"id": bonus_id, "team_id": team_id})
+    
     if result.deleted_count == 0:
-        raise HTTPException(status_code=404, detail="Bonus PDF not found")
+        raise HTTPException(status_code=404, detail="Bonus PDF not found or access denied")
     
     return {"message": "PDF deleted successfully"}
+
+
+# ============================================
+# PMA Bonus Admin Diagnostics & Migration
+# ============================================
+
+@api_router.get("/admin/pma-bonuses/diagnostic")
+async def pma_bonuses_diagnostic(current_user: dict = Depends(get_current_user)):
+    """Diagnostic for PMA bonus documents - shows team distribution and orphaned records.
+    
+    (super_admin only)
+    """
+    require_super_admin(current_user)
+    
+    # Get all teams for reference
+    teams = await db.teams.find({}, {"_id": 0, "id": 1, "name": 1}).to_list(100)
+    team_names = {t["id"]: t["name"] for t in teams}
+    valid_team_ids = set(team_names.keys())
+    
+    # Get all bonus documents
+    all_bonuses = await db.pma_bonuses.find({}, {"_id": 0, "file_data": 0}).to_list(1000)
+    
+    # Categorize
+    by_team = {}
+    orphaned_null = []  # team_id is NULL/missing
+    orphaned_invalid = []  # team_id doesn't match any existing team
+    
+    for bonus in all_bonuses:
+        bonus_team_id = bonus.get("team_id")
+        
+        if not bonus_team_id:
+            orphaned_null.append({
+                "id": bonus["id"],
+                "filename": bonus["filename"],
+                "uploaded_by_name": bonus.get("uploaded_by_name"),
+                "uploaded_at": bonus.get("uploaded_at")
+            })
+        elif bonus_team_id not in valid_team_ids:
+            orphaned_invalid.append({
+                "id": bonus["id"],
+                "filename": bonus["filename"],
+                "team_id": bonus_team_id,
+                "uploaded_by_name": bonus.get("uploaded_by_name")
+            })
+        else:
+            team_name = team_names[bonus_team_id]
+            if team_name not in by_team:
+                by_team[team_name] = {"team_id": bonus_team_id, "count": 0, "files": []}
+            by_team[team_name]["count"] += 1
+            by_team[team_name]["files"].append(bonus["filename"])
+    
+    return {
+        "total_documents": len(all_bonuses),
+        "healthy_by_team": by_team,
+        "orphaned_null_team_id": {
+            "count": len(orphaned_null),
+            "documents": orphaned_null,
+            "action": "Run POST /api/admin/pma-bonuses/migrate-team-id to fix"
+        },
+        "orphaned_invalid_team_id": {
+            "count": len(orphaned_invalid),
+            "documents": orphaned_invalid,
+            "action": "Manual review required - team_id references deleted team"
+        },
+        "isolation_status": "HEALTHY" if len(orphaned_null) == 0 and len(orphaned_invalid) == 0 else "NEEDS_ATTENTION"
+    }
+
+@api_router.post("/admin/pma-bonuses/migrate-team-id")
+async def migrate_pma_bonuses_team_id(current_user: dict = Depends(get_current_user)):
+    """Backfill missing team_id on PMA bonus documents based on uploader's team.
+    
+    GUARDRAILS:
+    - Only updates documents where team_id is NULL or missing
+    - Sets team_id based on uploaded_by user's current team_id
+    - If uploader has no team, document is left unchanged (logged)
+    
+    (super_admin only)
+    """
+    require_super_admin(current_user)
+    
+    # Build user_id -> team_id mapping
+    users = await db.users.find({}, {"_id": 0, "id": 1, "team_id": 1, "name": 1}).to_list(10000)
+    user_team_map = {u["id"]: u.get("team_id") for u in users}
+    
+    # Get team names for reporting
+    teams = await db.teams.find({}, {"_id": 0, "id": 1, "name": 1}).to_list(100)
+    team_names = {t["id"]: t["name"] for t in teams}
+    
+    # Find orphaned bonus documents
+    orphaned = await db.pma_bonuses.find(
+        {"$or": [{"team_id": None}, {"team_id": {"$exists": False}}]},
+        {"_id": 0, "id": 1, "uploaded_by": 1, "filename": 1}
+    ).to_list(1000)
+    
+    total_scanned = len(orphaned)
+    total_updated = 0
+    total_skipped_no_user = 0
+    total_skipped_user_no_team = 0
+    details = []
+    
+    for bonus in orphaned:
+        uploaded_by = bonus.get("uploaded_by")
+        
+        if not uploaded_by or uploaded_by not in user_team_map:
+            total_skipped_no_user += 1
+            details.append({
+                "filename": bonus["filename"],
+                "status": "SKIPPED",
+                "reason": "Uploader not found"
+            })
+            continue
+        
+        user_team_id = user_team_map[uploaded_by]
+        
+        if not user_team_id:
+            total_skipped_user_no_team += 1
+            details.append({
+                "filename": bonus["filename"],
+                "status": "SKIPPED",
+                "reason": "Uploader has no team assigned"
+            })
+            continue
+        
+        await db.pma_bonuses.update_one(
+            {"id": bonus["id"]},
+            {"$set": {"team_id": user_team_id, "team_name": team_names.get(user_team_id, "Unknown")}}
+        )
+        total_updated += 1
+        details.append({
+            "filename": bonus["filename"],
+            "status": "FIXED",
+            "assigned_team": team_names.get(user_team_id, user_team_id)
+        })
+    
+    return {
+        "migration_report": {
+            "total_in_db": await db.pma_bonuses.count_documents({}),
+            "total_scanned_missing_team_id": total_scanned,
+            "total_updated": total_updated,
+            "total_skipped_user_not_found": total_skipped_no_user,
+            "total_skipped_user_has_no_team": total_skipped_user_no_team
+        },
+        "details": details
+    }
 
 
 # ============================================
