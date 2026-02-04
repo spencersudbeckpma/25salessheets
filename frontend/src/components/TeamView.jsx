@@ -137,6 +137,25 @@ const TeamView = ({ user }) => {
     setExpandedNodes(prev => ({ ...prev, [nodeId]: !prev[nodeId] }));
   };
 
+  // Toggle hide/show user from Team View
+  const handleToggleVisibility = async (memberId, memberName, currentlyHidden) => {
+    setHidingUser(memberId);
+    try {
+      const token = localStorage.getItem('token');
+      await axios.put(`${API}/users/${memberId}/team-view-settings`, 
+        { hide_from_team_view: !currentlyHidden },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      toast.success(`${memberName} ${!currentlyHidden ? 'hidden from' : 'shown in'} Team View`);
+      // Refresh hierarchy to reflect change
+      await fetchHierarchy();
+    } catch (error) {
+      toast.error(error.response?.data?.detail || 'Failed to update visibility');
+    } finally {
+      setHidingUser(null);
+    }
+  };
+
   const viewMemberDetails = (member) => {
     if (selectedMember?.id === member.id) {
       setSelectedMember(null);
