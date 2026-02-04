@@ -6540,9 +6540,9 @@ async def get_dm_team_leaderboard(period: str, current_user: dict = Depends(get_
     ).to_list(100)
     
     if not dms:
-        return {"managers": [], "config": view_settings.get('leaderboard_metrics', []), "period": period, "view_type": "dm_teams"}
+        return {"managers": [], "period": period, "view_type": "dm_teams"}
     
-    # For each DM, get their agents and aggregate
+    # For each DM, get their agents and aggregate ONLY Total Premium
     dm_stats = []
     
     for dm in dms:
@@ -6564,39 +6564,20 @@ async def get_dm_team_leaderboard(period: str, current_user: dict = Depends(get_
             "date": {"$gte": start_date.isoformat(), "$lte": end_date.isoformat()},
             "team_id": team_id
         }
-        activities = await db.activities.find(act_query, {"_id": 0}).to_list(10000)
+        activities = await db.activities.find(act_query, {"_id": 0, "premium": 1}).to_list(10000)
         
-        # Aggregate metrics
-        stats = {
+        # Aggregate ONLY Total Premium (NOT bankers_premium)
+        total_premium = 0.0
+        for activity in activities:
+            total_premium += float(activity.get('premium', 0) or 0)
+        
+        dm_stats.append({
             "manager_id": dm_id,
             "manager_name": dm['name'],
             "role": "district_manager",
             "team_size": len(all_member_ids),
-            "premium": 0.0,
-            "bankers_premium": 0.0,
-            "presentations": 0,
-            "fact_finders": 0,
-            "sales": 0,
-            "apps": 0,
-            "contacts": 0,
-            "appointments": 0,
-            "referrals": 0,
-            "testimonials": 0,
-            "new_face_sold": 0,
-        }
-        
-        for activity in activities:
-            stats['premium'] += float(activity.get('premium', 0) or 0)
-            stats['bankers_premium'] += float(activity.get('bankers_premium', 0) or 0)
-            stats['presentations'] += int(activity.get('presentations', 0) or 0)
-            stats['fact_finders'] += int(activity.get('fact_finders', 0) or 0)
-            stats['sales'] += int(activity.get('sales', 0) or 0)
-            stats['apps'] += int(activity.get('apps', 0) or 0)
-            stats['contacts'] += int(activity.get('contacts', 0) or 0)
-            stats['appointments'] += int(activity.get('appointments', 0) or 0)
-            stats['referrals'] += int(activity.get('referrals', 0) or 0)
-            stats['testimonials'] += int(activity.get('testimonials', 0) or 0)
-            stats['new_face_sold'] += int(activity.get('new_face_sold', 0) or 0)
+            "total_premium": total_premium
+        })
         
         dm_stats.append(stats)
     
