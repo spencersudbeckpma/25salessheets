@@ -364,7 +364,7 @@ const Interviews = ({ user }) => {
     return file.uploaded_by === user.id || ['state_manager', 'super_admin'].includes(user.role);
   };
 
-  const handleSubmit = async (moveForward = true) => {
+  const handleSubmit = async (statusOption = true) => {
     if (!formData.candidate_name.trim()) {
       toast.error('Candidate name is required');
       return;
@@ -372,16 +372,34 @@ const Interviews = ({ user }) => {
 
     try {
       const token = localStorage.getItem('token');
+      
+      // Determine status based on parameter
+      let status;
+      let toastMessage;
+      if (statusOption === true) {
+        status = 'moving_forward';
+        toastMessage = 'Interview submitted - Moving Forward!';
+      } else if (statusOption === false) {
+        status = 'not_moving_forward';
+        toastMessage = 'Interview submitted - Not Moving Forward';
+      } else if (statusOption === 'in_progress') {
+        status = 'in_progress';
+        toastMessage = 'Interview saved - In Progress';
+      } else {
+        status = statusOption; // Allow direct status string
+        toastMessage = `Interview saved - ${status}`;
+      }
+      
       const submitData = {
         ...formData,
-        status: moveForward ? 'moving_forward' : 'not_moving_forward'
+        status: status
       };
 
       await axios.post(`${API}/interviews`, submitData, {
         headers: { Authorization: `Bearer ${token}` }
       });
       
-      toast.success(moveForward ? 'Interview submitted - Moving Forward!' : 'Interview submitted - Not Moving Forward');
+      toast.success(toastMessage);
       resetForm();
       fetchInterviews();
       fetchStats();
