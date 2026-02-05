@@ -1201,14 +1201,25 @@ const Interviews = ({ user }) => {
                 </div>
               </div>
 
-              {/* Red Flags */}
+              {/* Red Flags - Separate Field */}
               <div>
-                <label className="block text-sm font-medium mb-1">Red Flags or Extra Notes</label>
+                <label className="block text-sm font-medium mb-1 text-red-700">🚩 Red Flags</label>
                 <textarea
-                  value={formData.red_flags_notes}
-                  onChange={(e) => setFormData({...formData, red_flags_notes: e.target.value})}
-                  className="w-full border rounded-lg p-3 min-h-20"
-                  placeholder="Any concerns or additional notes..."
+                  value={formData.red_flags || ''}
+                  onChange={(e) => setFormData({...formData, red_flags: e.target.value})}
+                  className="w-full border border-red-200 rounded-lg p-3 min-h-20 bg-red-50"
+                  placeholder="Any concerns or red flags about this candidate..."
+                />
+              </div>
+
+              {/* Extra Notes - Separate Field */}
+              <div>
+                <label className="block text-sm font-medium mb-1 text-blue-700">📝 Extra Notes</label>
+                <textarea
+                  value={formData.extra_notes || ''}
+                  onChange={(e) => setFormData({...formData, extra_notes: e.target.value})}
+                  className="w-full border border-blue-200 rounded-lg p-3 min-h-20 bg-blue-50"
+                  placeholder="Additional notes or observations..."
                 />
               </div>
             </div>
@@ -1218,15 +1229,21 @@ const Interviews = ({ user }) => {
               <div className="flex flex-col sm:flex-row gap-3">
                 <Button 
                   onClick={() => handleSubmit(false)}
-                  className="w-full sm:flex-1 bg-red-600 hover:bg-red-700 text-white py-3 text-base font-semibold order-2 sm:order-1"
+                  className="w-full sm:flex-1 bg-red-600 hover:bg-red-700 text-white py-3 text-base font-semibold order-3 sm:order-1"
                 >
                   ❌ Not Moving Forward
                 </Button>
                 <Button 
-                  onClick={() => handleSubmit(true)}
-                  className="w-full sm:flex-1 bg-green-600 hover:bg-green-700 text-white py-3 text-base font-semibold order-1 sm:order-2"
+                  onClick={() => handleSubmit('in_progress')}
+                  className="w-full sm:flex-1 bg-blue-600 hover:bg-blue-700 text-white py-3 text-base font-semibold order-2 sm:order-2"
                 >
-                  ✅ Moving Forward - Submit
+                  🔄 In Progress
+                </Button>
+                <Button 
+                  onClick={() => handleSubmit(true)}
+                  className="w-full sm:flex-1 bg-green-600 hover:bg-green-700 text-white py-3 text-base font-semibold order-1 sm:order-3"
+                >
+                  ✅ Moving Forward
                 </Button>
               </div>
               <Button 
