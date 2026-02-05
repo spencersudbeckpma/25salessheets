@@ -7926,7 +7926,8 @@ async def create_interview(interview_data: dict, current_user: dict = Depends(ge
         "work_ethic_example": interview_data.get('work_ethic_example', ''),
         "career_packet_sent": interview_data.get('career_packet_sent', False),
         "candidate_strength": interview_data.get('candidate_strength', 3),
-        "red_flags_notes": interview_data.get('red_flags_notes', ''),
+        "red_flags": interview_data.get('red_flags', ''),
+        "extra_notes": interview_data.get('extra_notes', ''),
         
         # Status and tracking - FULLY EDITABLE
         "status": initial_status,
