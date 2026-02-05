@@ -646,32 +646,106 @@ const Recruiting = ({ user }) => {
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
               <div>
                 <h3 className="text-lg font-semibold">
-                  {user.role === 'state_manager' ? 'Recruiting Pipeline' : 'My Recruiting Pipeline'}
+                  {archiveFilter === 'archived' 
+                    ? 'Archived Recruits' 
+                    : (user.role === 'state_manager' ? 'Recruiting Pipeline' : 'My Recruiting Pipeline')}
                 </h3>
                 <p className="text-sm text-slate-500">
-                  {recruits.length} recruits
+                  {archiveFilter === 'archived' ? archivedRecruits.length : recruits.length} recruits
                 </p>
               </div>
-              <div className="flex gap-2">
-                <Button
-                  onClick={exportToCSV}
-                  variant="outline"
-                  size="sm"
-                  className="text-xs"
+              <div className="flex gap-2 items-center">
+                {/* Archive Filter - Only for SM and super_admin */}
+                {canViewArchived && (
+                  <select
+                    value={archiveFilter}
+                    onChange={(e) => setArchiveFilter(e.target.value)}
+                    className="border rounded-lg px-3 py-2 text-sm bg-white"
+                    data-testid="archive-filter"
+                  >
+                    <option value="active">Active</option>
+                    <option value="archived">Archived</option>
+                  </select>
+                )}
+                {archiveFilter === 'active' && (
+                  <>
+                    <Button
+                      onClick={exportToCSV}
+                      variant="outline"
+                      size="sm"
+                      className="text-xs"
+                    >
+                      <Download size={14} className="mr-1" />
+                      Export CSV
+                    </Button>
+                    <Button
+                      onClick={() => setShowAddForm(true)}
+                      className="bg-slate-800 hover:bg-slate-700 text-amber-400"
+                      size="sm"
+                    >
+                      <Plus size={16} className="mr-1" />
+                      Add Recruit
+                    </Button>
+                  </>
+                )}
+              </div>
+            </div>
+
+        {/* Delete Confirmation Modal */}
+        {showDeleteModal && deleteTarget && (
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+            <div className="bg-white rounded-xl p-6 w-full max-w-md">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center">
+                  <AlertTriangle className="w-6 h-6 text-red-600" />
+                </div>
+                <div>
+                  <h3 className="text-lg font-semibold text-gray-900">Archive Recruit</h3>
+                  <p className="text-sm text-gray-500">{deleteTarget.name}</p>
+                </div>
+              </div>
+              
+              <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 mb-4">
+                <p className="text-sm text-amber-800">
+                  <strong>Warning:</strong> This will remove the recruit from the pipeline and reporting. 
+                  {canViewArchived && ' You can restore it later from the "Archived" filter.'}
+                </p>
+              </div>
+
+              <div className="mb-4">
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Type <span className="font-mono bg-gray-100 px-1 rounded">DELETE</span> to confirm
+                </label>
+                <Input
+                  value={deleteConfirmText}
+                  onChange={(e) => setDeleteConfirmText(e.target.value.toUpperCase())}
+                  placeholder="DELETE"
+                  className="font-mono"
+                  data-testid="delete-confirm-input"
+                />
+              </div>
+
+              <div className="flex justify-end gap-2">
+                <Button 
+                  variant="outline" 
+                  onClick={closeDeleteModal}
+                  disabled={isDeleting}
                 >
-                  <Download size={14} className="mr-1" />
-                  Export CSV
+                  Cancel
                 </Button>
-                <Button
-                  onClick={() => setShowAddForm(true)}
-                  className="bg-slate-800 hover:bg-slate-700 text-amber-400"
-                  size="sm"
+                <Button 
+                  onClick={handleDelete}
+                  disabled={deleteConfirmText !== 'DELETE' || isDeleting}
+                  className="bg-red-600 hover:bg-red-700 text-white"
+                  data-testid="confirm-delete-btn"
                 >
-                  <Plus size={16} className="mr-1" />
-                  Add Recruit
+                  {isDeleting ? 'Archiving...' : 'Archive Recruit'}
                 </Button>
               </div>
             </div>
+          </div>
+        )}
+
         {/* Add/Edit Form Modal */}
         {showAddForm && (
           <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
