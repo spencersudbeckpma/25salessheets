@@ -1364,7 +1364,8 @@ const Interviews = ({ user }) => {
                             ${selectedInterview.competitiveness_example ? `<div class="section"><div class="section-title">Competitiveness Example:</div><p>${selectedInterview.competitiveness_example}</p></div>` : ''}
                             ${selectedInterview.work_ethic_example ? `<div class="section"><div class="section-title">Work Ethic Example:</div><p>${selectedInterview.work_ethic_example}</p></div>` : ''}
                             ${selectedInterview.second_interview_answers ? `<div class="section" style="background: #dcfce7; border: 1px solid #86efac;"><div class="section-title">2nd Interview Answers:</div><p style="white-space: pre-wrap;">${selectedInterview.second_interview_answers}</p></div>` : ''}
-                            ${selectedInterview.red_flags_notes ? `<div class="red-flag"><div class="section-title">Red Flags / Notes:</div><p>${selectedInterview.red_flags_notes}</p></div>` : ''}
+                            ${(selectedInterview.red_flags || selectedInterview.red_flags_notes) ? `<div class="red-flag"><div class="section-title">🚩 Red Flags:</div><p>${selectedInterview.red_flags || selectedInterview.red_flags_notes}</p></div>` : ''}
+                            ${selectedInterview.extra_notes ? `<div class="section" style="background: #eff6ff; border: 1px solid #93c5fd;"><div class="section-title">📝 Extra Notes:</div><p>${selectedInterview.extra_notes}</p></div>` : ''}
                             
                             <div class="meta">
                               <p>Created: ${new Date(selectedInterview.created_at).toLocaleString()}</p>
