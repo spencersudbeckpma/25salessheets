@@ -7256,27 +7256,97 @@ async def update_recruit(recruit_id: str, recruit_data: dict, current_user: dict
 
 @api_router.delete("/recruiting/{recruit_id}")
 async def delete_recruit(recruit_id: str, current_user: dict = Depends(get_current_user)):
-    """Delete a recruit (State Manager, Regional Manager or District Manager for their own recruits)"""
-    # Check feature access
+    """Soft delete (archive) a recruit. STRICTLY team-scoped.
+    
+    Access: SM/RM/DM within their team. RM/DM can only archive their own recruits.
+    Archived recruits are hidden from normal views but can be restored.
+    """
     await check_feature_access(current_user, "recruiting")
     
     if current_user['role'] not in ['super_admin', 'state_manager', 'regional_manager', 'district_manager']:
         raise HTTPException(status_code=403, detail="Only managers can manage recruiting")
     
-    existing = await db.recruits.find_one({"id": recruit_id})
+    team_id = current_user.get('team_id')
+    if not team_id:
+        raise HTTPException(status_code=403, detail="You must be assigned to a team")
+    
+    # CRITICAL: Team-scoped lookup - prevents cross-team access
+    existing = await db.recruits.find_one({"id": recruit_id, "team_id": team_id})
     if not existing:
-        raise HTTPException(status_code=404, detail="Recruit not found")
+        raise HTTPException(status_code=404, detail="Recruit not found or access denied")
     
-    # Regional Managers can only delete their own recruits
+    # Regional Managers can only archive their own recruits
     if current_user['role'] == 'regional_manager' and existing.get('rm_id') != current_user['id']:
-        raise HTTPException(status_code=403, detail="You can only delete your own recruits")
+        raise HTTPException(status_code=403, detail="You can only archive your own recruits")
     
-    # District Managers can only delete their own recruits
+    # District Managers can only archive their own recruits
     if current_user['role'] == 'district_manager' and existing.get('dm_id') != current_user['id']:
-        raise HTTPException(status_code=403, detail="You can only delete your own recruits")
+        raise HTTPException(status_code=403, detail="You can only archive your own recruits")
     
-    await db.recruits.delete_one({"id": recruit_id})
-    return {"message": "Recruit deleted"}
+    from datetime import datetime, timezone
+    
+    # SOFT DELETE - archive instead of permanent delete
+    await db.recruits.update_one(
+        {"id": recruit_id, "team_id": team_id},
+        {"$set": {
+            "is_archived": True,
+            "archived_at": datetime.now(timezone.utc).isoformat(),
+            "archived_by": current_user['id'],
+            "archived_by_name": current_user['name']
+        }}
+    )
+    return {"message": "Recruit archived successfully"}
+
+
+@api_router.post("/recruiting/{recruit_id}/restore")
+async def restore_recruit(recruit_id: str, current_user: dict = Depends(get_current_user)):
+    """Restore an archived recruit. STRICTLY team-scoped.
+    
+    Access: State Manager or super_admin only.
+    """
+    await check_feature_access(current_user, "recruiting")
+    
+    if current_user['role'] not in ['super_admin', 'state_manager']:
+        raise HTTPException(status_code=403, detail="Only State Managers can restore recruits")
+    
+    team_id = current_user.get('team_id')
+    if not team_id:
+        raise HTTPException(status_code=403, detail="You must be assigned to a team")
+    
+    # CRITICAL: Team-scoped lookup
+    existing = await db.recruits.find_one({"id": recruit_id, "team_id": team_id, "is_archived": True})
+    if not existing:
+        raise HTTPException(status_code=404, detail="Archived recruit not found or access denied")
+    
+    # Restore by removing archive fields
+    await db.recruits.update_one(
+        {"id": recruit_id, "team_id": team_id},
+        {"$set": {"is_archived": False},
+         "$unset": {"archived_at": "", "archived_by": "", "archived_by_name": ""}}
+    )
+    return {"message": "Recruit restored successfully"}
+
+
+@api_router.get("/recruiting/archived")
+async def get_archived_recruits(current_user: dict = Depends(get_current_user)):
+    """Get archived recruits. STRICTLY team-scoped.
+    
+    Access: State Manager or super_admin only.
+    """
+    await check_feature_access(current_user, "recruiting")
+    
+    if current_user['role'] not in ['super_admin', 'state_manager']:
+        raise HTTPException(status_code=403, detail="Only State Managers can view archived recruits")
+    
+    team_id = current_user.get('team_id')
+    if not team_id:
+        return []
+    
+    # STRICT team-scoped query for archived items only
+    query = {"team_id": team_id, "is_archived": True}
+    recruits = await db.recruits.find(query, {"_id": 0}).sort("archived_at", -1).to_list(1000)
+    
+    return recruits
 
 
 # ============================================
