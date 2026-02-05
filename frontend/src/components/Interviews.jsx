@@ -814,9 +814,20 @@ const Interviews = ({ user }) => {
                   {getFilteredInterviews().map((interview, idx) => (
                     <tr key={interview.id} className={idx % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
                       <td className="px-4 py-3">
-                        <span className={`px-2 py-1 rounded-full text-xs font-medium border ${getStatusColor(interview.status)}`}>
-                          {getStatusLabel(interview.status)}
-                        </span>
+                        {/* Status dropdown - fully editable */}
+                        <select
+                          value={interview.status === 'new' ? 'in_progress' : interview.status}
+                          onChange={(e) => updateStatus(interview, e.target.value)}
+                          className={`px-2 py-1 rounded text-xs font-medium border cursor-pointer ${getStatusColor(interview.status)}`}
+                          title={interview.status_updated_by ? 
+                            `Last updated by ${interview.status_updated_by.name} on ${formatAuditDate(interview.status_updated_at)}` : 
+                            'Click to change status'
+                          }
+                        >
+                          <option value="in_progress">In Progress</option>
+                          <option value="moving_forward">Moving Forward</option>
+                          <option value="not_moving_forward">Not Moving Forward</option>
+                        </select>
                         {interview.is_shared && (
                           <span className="ml-2 px-2 py-0.5 bg-blue-100 text-blue-700 text-xs rounded-full">
                             Shared
@@ -827,6 +838,12 @@ const Interviews = ({ user }) => {
                             <Share2 size={10} />
                             {interview.shared_with.length}
                           </span>
+                        )}
+                        {/* Audit trail tooltip */}
+                        {interview.status_updated_by && (
+                          <div className="text-xs text-gray-400 mt-1">
+                            by {interview.status_updated_by.name}
+                          </div>
                         )}
                       </td>
                       <td className="px-4 py-3">
