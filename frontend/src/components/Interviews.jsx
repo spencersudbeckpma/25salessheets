@@ -512,27 +512,42 @@ const Interviews = ({ user }) => {
 
   const getStatusColor = (status) => {
     switch (status) {
-      case 'new': return 'bg-blue-100 text-blue-800 border-blue-300';
+      case 'in_progress': return 'bg-blue-100 text-blue-800 border-blue-300';
       case 'moving_forward': return 'bg-green-100 text-green-800 border-green-300';
       case 'not_moving_forward': return 'bg-red-100 text-red-800 border-red-300';
       case 'second_interview_scheduled': return 'bg-purple-100 text-purple-800 border-purple-300';
       case 'completed': return 'bg-emerald-100 text-emerald-800 border-emerald-300';
+      case 'new': return 'bg-blue-100 text-blue-800 border-blue-300'; // Legacy support
       default: return 'bg-gray-100 text-gray-800 border-gray-300';
     }
   };
 
   const getStatusLabel = (status) => {
     switch (status) {
-      case 'new': return 'New';
+      case 'in_progress': return 'In Progress';
       case 'moving_forward': return 'Moving Forward';
       case 'not_moving_forward': return 'Not Moving Forward';
       case 'second_interview_scheduled': return '2nd Interview Scheduled';
       case 'completed': return 'Completed';
+      case 'new': return 'In Progress'; // Legacy - treat 'new' as 'in_progress'
       default: return status;
     }
   };
 
-  const statuses = ['new', 'moving_forward', 'second_interview_scheduled', 'completed', 'not_moving_forward'];
+  // Main interview statuses - fully editable, no lock-in
+  const interviewStatuses = ['in_progress', 'moving_forward', 'not_moving_forward'];
+  
+  // All statuses for filtering
+  const statuses = ['in_progress', 'moving_forward', 'not_moving_forward', 'second_interview_scheduled', 'completed'];
+
+  // Format audit trail date
+  const formatAuditDate = (isoString) => {
+    if (!isoString) return '';
+    return new Date(isoString).toLocaleString('en-US', {
+      month: 'short', day: 'numeric', year: 'numeric',
+      hour: 'numeric', minute: '2-digit', hour12: true
+    });
+  };
 
   if (loading) {
     return (
