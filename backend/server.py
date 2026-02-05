@@ -6952,15 +6952,23 @@ async def upload_docusphere_document(
     folder_id: str = Form(None),
     current_user: dict = Depends(get_current_user)
 ):
-    """Upload a document (State Manager and Super Admin only, within their team)"""
-    if current_user['role'] not in ['state_manager', 'super_admin']:
-        raise HTTPException(status_code=403, detail="Only State Managers and Super Admins can upload documents")
+    """Upload a document to DocuSphere.
+    
+    Access: State Manager, Regional Manager, District Manager (within their team only)
+    - All managers can upload to their own team's DocuSphere
+    - Super admin can upload only when assigned to a team
+    - Agents remain read-only (403)
+    - All documents are team-scoped by team_id
+    """
+    # Expanded permission: SM, RM, DM can upload
+    if current_user['role'] not in ['state_manager', 'super_admin', 'regional_manager', 'district_manager']:
+        raise HTTPException(status_code=403, detail="Only managers can upload documents")
     
     team_id = current_user.get('team_id')
     if not team_id:
-        raise HTTPException(status_code=403, detail="You must be assigned to a team")
+        raise HTTPException(status_code=403, detail="You must be assigned to a team to upload documents")
     
-    # If folder specified, verify it belongs to user's team
+    # If folder specified, verify it belongs to user's team (no cross-team uploads)
     if folder_id:
         folder = await db.docusphere_folders.find_one({"id": folder_id, "team_id": team_id})
         if not folder:
@@ -6982,7 +6990,7 @@ async def upload_docusphere_document(
         "file_data": file_base64,
         "file_size": len(file_content),
         "folder_id": folder_id,
-        "team_id": team_id,
+        "team_id": team_id,  # CRITICAL: Always team-scoped
         "uploaded_by": current_user['id'],
         "uploaded_by_name": current_user['name'],
         "uploaded_at": datetime.now(timezone.utc).isoformat()
