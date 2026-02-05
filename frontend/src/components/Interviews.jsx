@@ -1479,10 +1479,18 @@ const Interviews = ({ user }) => {
               {selectedInterview.work_ethic_example && (
                 <div><strong>Work Ethic Example:</strong><p className="text-gray-700 mt-1">{selectedInterview.work_ethic_example}</p></div>
               )}
-              {selectedInterview.red_flags_notes && (
+              {/* Red Flags */}
+              {(selectedInterview.red_flags || selectedInterview.red_flags_notes) && (
                 <div className="bg-red-50 border border-red-200 rounded-lg p-3">
-                  <strong className="text-red-900">Red Flags/Notes:</strong>
-                  <p className="text-red-700 mt-1">{selectedInterview.red_flags_notes}</p>
+                  <strong className="text-red-900">🚩 Red Flags:</strong>
+                  <p className="text-red-700 mt-1">{selectedInterview.red_flags || selectedInterview.red_flags_notes}</p>
+                </div>
+              )}
+              {/* Extra Notes */}
+              {selectedInterview.extra_notes && (
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+                  <strong className="text-blue-900">📝 Extra Notes:</strong>
+                  <p className="text-blue-700 mt-1">{selectedInterview.extra_notes}</p>
                 </div>
               )}
 
