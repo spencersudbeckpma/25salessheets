@@ -1193,6 +1193,8 @@ const Interviews = ({ user }) => {
       )}
         </>
       )}
+        </>
+      )}
 
       {/* New Interview Form Modal */}
       {showForm && (
