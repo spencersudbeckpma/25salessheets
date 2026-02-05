@@ -7870,7 +7870,15 @@ async def get_interview_regional_breakdown(current_user: dict = Depends(get_curr
 
 @api_router.post("/interviews")
 async def create_interview(interview_data: dict, current_user: dict = Depends(get_current_user)):
-    """Create a new interview (1st interview submission)"""
+    """Create a new interview (1st interview submission).
+    
+    INTERVIEW STATUS OPTIONS:
+    - 'in_progress' (default)
+    - 'moving_forward'
+    - 'not_moving_forward'
+    
+    All statuses are fully editable after creation.
+    """
     # Check feature access
     await check_feature_access(current_user, "interviews")
     
@@ -7879,6 +7887,14 @@ async def create_interview(interview_data: dict, current_user: dict = Depends(ge
     
     from uuid import uuid4
     from datetime import datetime, timezone
+    
+    # Validate status if provided
+    initial_status = interview_data.get('status', 'in_progress')
+    valid_statuses = ['in_progress', 'moving_forward', 'not_moving_forward']
+    if initial_status not in valid_statuses:
+        initial_status = 'in_progress'
+    
+    now = datetime.now(timezone.utc).isoformat()
     
     interview = {
         "id": str(uuid4()),
@@ -7912,15 +7928,21 @@ async def create_interview(interview_data: dict, current_user: dict = Depends(ge
         "candidate_strength": interview_data.get('candidate_strength', 3),
         "red_flags_notes": interview_data.get('red_flags_notes', ''),
         
-        # Status and tracking
-        "status": interview_data.get('status', 'new'),  # new, moving_forward, not_moving_forward, second_interview_scheduled, completed
+        # Status and tracking - FULLY EDITABLE
+        "status": initial_status,
+        "status_updated_at": now,  # Audit trail
+        "status_updated_by": {     # Audit trail
+            "user_id": current_user['id'],
+            "name": current_user['name'],
+            "role": current_user['role']
+        },
         "second_interview_date": None,
         "second_interview_notes": '',
         "added_to_recruiting": False,
         "recruit_id": None,
         
-        "created_at": datetime.now(timezone.utc).isoformat(),
-        "updated_at": datetime.now(timezone.utc).isoformat()
+        "created_at": now,
+        "updated_at": now
     }
     
     await db.interviews.insert_one(interview)
