@@ -856,6 +856,19 @@ const Interviews = ({ user }) => {
             </div>
 
             <div className="flex items-center gap-3">
+              {/* Archive Filter - Only for SM and super_admin */}
+              {canViewArchived && (
+                <select
+                  value={archiveFilter}
+                  onChange={(e) => setArchiveFilter(e.target.value)}
+                  className="px-3 py-2 border rounded-lg bg-white"
+                  data-testid="interview-archive-filter"
+                >
+                  <option value="active">Active</option>
+                  <option value="archived">Archived</option>
+                </select>
+              )}
+
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={18} />
                 <Input
@@ -881,6 +894,116 @@ const Interviews = ({ user }) => {
         </div>
       </div>
 
+      {/* Delete Confirmation Modal */}
+      {showDeleteModal && deleteTarget && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl p-6 w-full max-w-md">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center">
+                <AlertTriangle className="w-6 h-6 text-red-600" />
+              </div>
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900">Archive Interview</h3>
+                <p className="text-sm text-gray-500">{deleteTarget.candidate_name}</p>
+              </div>
+            </div>
+            
+            <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 mb-4">
+              <p className="text-sm text-amber-800">
+                <strong>Warning:</strong> This will remove the interview from stats and reporting. 
+                {canViewArchived && ' You can restore it later from the "Archived" filter.'}
+              </p>
+            </div>
+
+            <div className="mb-4">
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Type <span className="font-mono bg-gray-100 px-1 rounded">DELETE</span> to confirm
+              </label>
+              <Input
+                value={deleteConfirmText}
+                onChange={(e) => setDeleteConfirmText(e.target.value.toUpperCase())}
+                placeholder="DELETE"
+                className="font-mono"
+                data-testid="interview-delete-confirm-input"
+              />
+            </div>
+
+            <div className="flex justify-end gap-2">
+              <Button 
+                variant="outline" 
+                onClick={closeDeleteModal}
+                disabled={isDeleting}
+              >
+                Cancel
+              </Button>
+              <Button 
+                onClick={deleteInterview}
+                disabled={deleteConfirmText !== 'DELETE' || isDeleting}
+                className="bg-red-600 hover:bg-red-700 text-white"
+                data-testid="interview-confirm-delete-btn"
+              >
+                {isDeleting ? 'Archiving...' : 'Archive Interview'}
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Archived View - Show for SM and super_admin when in archived mode */}
+      {archiveFilter === 'archived' && canViewArchived ? (
+        <Card>
+          <CardContent className="p-4">
+            {archivedInterviews.length === 0 ? (
+              <div className="text-center py-12 bg-gray-50 rounded-lg">
+                <Archive className="w-12 h-12 text-gray-400 mx-auto mb-3" />
+                <p className="text-gray-500">No archived interviews</p>
+              </div>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full">
+                  <thead className="bg-gray-50 border-b">
+                    <tr>
+                      <th className="px-4 py-3 text-left text-sm font-semibold">Candidate</th>
+                      <th className="px-4 py-3 text-left text-sm font-semibold">Interviewer</th>
+                      <th className="px-4 py-3 text-left text-sm font-semibold">Archived By</th>
+                      <th className="px-4 py-3 text-left text-sm font-semibold">Archived At</th>
+                      <th className="px-4 py-3 text-center text-sm font-semibold">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {archivedInterviews.map((interview) => (
+                      <tr key={interview.id} className="border-b hover:bg-gray-50">
+                        <td className="px-4 py-3">
+                          <div className="font-medium">{interview.candidate_name}</div>
+                          <div className="text-xs text-gray-500">{interview.candidate_location}</div>
+                        </td>
+                        <td className="px-4 py-3 text-sm">{interview.interviewer_name}</td>
+                        <td className="px-4 py-3 text-sm">{interview.archived_by_name || '-'}</td>
+                        <td className="px-4 py-3 text-sm">
+                          {interview.archived_at ? new Date(interview.archived_at).toLocaleDateString() : '-'}
+                        </td>
+                        <td className="px-4 py-3 text-center">
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => handleRestoreInterview(interview.id)}
+                            className="text-green-600 border-green-300 hover:bg-green-50"
+                            data-testid={`restore-interview-${interview.id}`}
+                          >
+                            <RotateCcw size={14} className="mr-1" />
+                            Restore
+                          </Button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      ) : (
+      <>
       {/* Table View */}
       {viewMode === 'table' && (
         <Card>
