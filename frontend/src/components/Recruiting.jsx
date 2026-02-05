@@ -58,11 +58,17 @@ const Recruiting = ({ user }) => {
   });
   const [districtManagers, setDistrictManagers] = useState([]);
 
+  // Check if user can view archived
+  const canViewArchived = ['state_manager', 'super_admin'].includes(user.role);
+
   useEffect(() => {
     fetchRecruits();
     fetchRegionalManagers();
     fetchDistrictManagers();
     fetchTeamStates();
+    if (canViewArchived) {
+      fetchArchivedRecruits();
+    }
   }, []);
 
   const fetchTeamStates = async () => {
@@ -89,6 +95,18 @@ const Recruiting = ({ user }) => {
       toast.error('Failed to fetch recruits');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchArchivedRecruits = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await axios.get(`${API}/recruiting/archived`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      setArchivedRecruits(response.data);
+    } catch (error) {
+      console.error('Failed to fetch archived recruits');
     }
   };
 
