@@ -219,23 +219,6 @@ const Interviews = ({ user }) => {
     }
   };
 
-  // Quick status update function with audit trail
-  const updateStatus = async (interview, newStatus) => {
-    if (interview.status === newStatus) return;
-    
-    try {
-      const token = localStorage.getItem('token');
-      await axios.put(`${API}/interviews/${interview.id}`, 
-        { status: newStatus },
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
-      toast.success(`Status updated to ${getStatusLabel(newStatus)}`);
-      fetchInterviews(); // Refresh to get updated audit trail
-    } catch (error) {
-      toast.error(error.response?.data?.detail || 'Failed to update status');
-    }
-  };
-
   // ============================================
   // Interview File Functions
   // ============================================
