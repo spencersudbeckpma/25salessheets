@@ -505,7 +505,9 @@ const Interviews = ({ user }) => {
         i.candidate_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
         i.interviewer_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
         i.candidate_location?.toLowerCase().includes(searchTerm.toLowerCase());
-      const matchesStatus = filterStatus === 'all' || i.status === filterStatus;
+      // Handle legacy 'new' status as 'in_progress' for filtering
+      const normalizedStatus = i.status === 'new' ? 'in_progress' : i.status;
+      const matchesStatus = filterStatus === 'all' || normalizedStatus === filterStatus;
       return matchesSearch && matchesStatus;
     });
   };
