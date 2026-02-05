@@ -8300,9 +8300,18 @@ SNA_TRACKING_DAYS = 90
 
 @api_router.get("/sna-tracker")
 async def get_sna_agents(current_user: dict = Depends(get_current_user)):
-    """Get all SNA (new agents) being tracked - automatically based on first production"""
-    if current_user['role'] not in ['super_admin', 'state_manager', 'regional_manager']:
-        raise HTTPException(status_code=403, detail="Only State and Regional Managers can access SNA tracker")
+    """Get all SNA (new agents) being tracked - automatically based on first production.
+    
+    Access hierarchy (STRICT team-scoped, no cross-team visibility):
+    - State Manager / Super Admin: Full team visibility
+    - Regional Manager: See their full downline (DMs + Agents under those DMs)
+    - District Manager: See their direct agent downline only
+    - Agent: No access (403)
+    
+    Managers cannot see peers or managers above them.
+    """
+    if current_user['role'] not in ['super_admin', 'state_manager', 'regional_manager', 'district_manager']:
+        raise HTTPException(status_code=403, detail="Only managers can access SNA tracker")
     
     # Check if SNA sub-tab is enabled for this team (Phase 2 enforcement)
     await check_subtab_access(current_user, 'sna')
@@ -8311,16 +8320,24 @@ async def get_sna_agents(current_user: dict = Depends(get_current_user)):
     if not team_id:
         return {"active": [], "graduated": [], "goal": SNA_GOAL, "tracking_days": SNA_TRACKING_DAYS}
     
-    # Get all agents/DMs (potential SNAs) - only real accounts with @pmagent.net, scoped to team
+    # Get potential SNAs based on role hierarchy
     # ALL users (including super_admin) are scoped to their assigned team
     if current_user['role'] in ['super_admin', 'state_manager']:
+        # Full team visibility - see all agents and DMs
         query = {"role": {"$in": ["agent", "district_manager"]}, "team_id": team_id}
         potential_snas = await db.users.find(query, {"_id": 0, "password_hash": 0}).to_list(1000)
-    else:
-        # Regional managers see only their subordinates (scoped to team)
+    elif current_user['role'] == 'regional_manager':
+        # Regional managers see their full downline (DMs + Agents under those DMs)
         subordinate_ids = await get_all_subordinates(current_user['id'], team_id)
         potential_snas = await db.users.find(
             {"role": {"$in": ["agent", "district_manager"]}, "id": {"$in": subordinate_ids}, "team_id": team_id},
+            {"_id": 0, "password_hash": 0}
+        ).to_list(1000)
+    else:
+        # District Manager: see ONLY their direct agent downline (not other DMs or peers)
+        # Use manager_id to find agents directly reporting to this DM
+        potential_snas = await db.users.find(
+            {"role": "agent", "manager_id": current_user['id'], "team_id": team_id},
             {"_id": 0, "password_hash": 0}
         ).to_list(1000)
     
