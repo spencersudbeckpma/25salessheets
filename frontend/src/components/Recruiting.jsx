@@ -1158,6 +1158,8 @@ const Recruiting = ({ user }) => {
             })}
           </div>
         )}
+          </>
+        )}
           </TabsContent>
         </Tabs>
       </CardContent>
