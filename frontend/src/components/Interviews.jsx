@@ -8,7 +8,7 @@ import {
   Users, Plus, Trash2, Save, X, Search, Calendar, 
   CheckCircle, Circle, ClipboardList, UserPlus, 
   ArrowRight, Eye, Edit, BarChart3, List, Columns, Printer, Share2,
-  Upload, FileText, Download, File, Loader2
+  Upload, FileText, Download, File, Loader2, Archive, RotateCcw, AlertTriangle
 } from 'lucide-react';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
@@ -16,6 +16,7 @@ const API = `${BACKEND_URL}/api`;
 
 const Interviews = ({ user }) => {
   const [interviews, setInterviews] = useState([]);
+  const [archivedInterviews, setArchivedInterviews] = useState([]);
   const [stats, setStats] = useState({
     total: 0, this_week: 0, this_month: 0, this_year: 0,
     moving_forward: 0, not_moving_forward: 0, second_interview_scheduled: 0, completed: 0
@@ -28,6 +29,7 @@ const Interviews = ({ user }) => {
   const [expandedRegion, setExpandedRegion] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState('all');
+  const [archiveFilter, setArchiveFilter] = useState('active'); // 'active' or 'archived'
   const [selectedInterview, setSelectedInterview] = useState(null);
   const [showViewModal, setShowViewModal] = useState(false);
   const [showSecondInterviewModal, setShowSecondInterviewModal] = useState(false);
@@ -37,11 +39,20 @@ const Interviews = ({ user }) => {
   const [secondInterviewAnswers, setSecondInterviewAnswers] = useState('');
   const [isSavingAnswers, setIsSavingAnswers] = useState(false);
 
+  // Delete confirmation state
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState(null);
+  const [deleteConfirmText, setDeleteConfirmText] = useState('');
+  const [isDeleting, setIsDeleting] = useState(false);
+
   // Recruit Files State
   const [recruitFiles, setRecruitFiles] = useState([]);
   const [loadingFiles, setLoadingFiles] = useState(false);
   const [uploadingFile, setUploadingFile] = useState(false);
   const fileInputRef = useRef(null);
+
+  // Check if user can view archived
+  const canViewArchived = ['state_manager', 'super_admin'].includes(user.role);
 
   const [formData, setFormData] = useState({
     candidate_name: '',
