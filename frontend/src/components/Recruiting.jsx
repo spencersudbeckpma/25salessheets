@@ -862,12 +862,12 @@ const Recruiting = ({ user }) => {
                       variant="outline" 
                       className="text-red-600 border-red-300 hover:bg-red-50"
                       onClick={() => {
-                        handleDelete(editingId);
-                        resetForm();
+                        const recruit = recruits.find(r => r.id === editingId);
+                        if (recruit) openDeleteModal(recruit);
                       }}
                     >
-                      <Trash2 size={16} className="mr-1" />
-                      Delete
+                      <Archive size={16} className="mr-1" />
+                      Archive
                     </Button>
                   )}
                   <Button type="submit" className="bg-slate-800 hover:bg-slate-700 text-amber-400">
