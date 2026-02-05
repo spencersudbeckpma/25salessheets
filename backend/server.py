@@ -7106,6 +7106,7 @@ async def get_recruits(current_user: dict = Depends(get_current_user)):
     """Get recruits - STRICTLY scoped to current user's team_id.
     
     NO cross-team visibility allowed under any circumstance.
+    Excludes archived recruits by default.
     """
     # Check feature access
     await check_feature_access(current_user, "recruiting")
@@ -7122,6 +7123,9 @@ async def get_recruits(current_user: dict = Depends(get_current_user)):
     # STRICT team filter - only exact match, no NULL/missing allowed
     strict_team_filter = {"team_id": team_id}
     
+    # Exclude archived recruits from normal views
+    not_archived_filter = {"$or": [{"is_archived": {"$exists": False}}, {"is_archived": False}]}
+    
     if current_user['role'] == 'regional_manager':
         # Regional Manager sees their own recruits + their District Managers' recruits
         # ALL scoped to their team_id
@@ -7131,20 +7135,22 @@ async def get_recruits(current_user: dict = Depends(get_current_user)):
         
         query = {"$and": [
             {"$or": [{"rm_id": current_user['id']}, {"dm_id": {"$in": subordinate_ids}}]},
-            strict_team_filter
+            strict_team_filter,
+            not_archived_filter
         ]}
         recruits = await db.recruits.find(query, {"_id": 0}).sort("created_at", -1).to_list(1000)
     elif current_user['role'] == 'district_manager':
         # District Manager only sees their own recruits, scoped to team
         query = {"$and": [
             {"dm_id": current_user['id']},
-            strict_team_filter
+            strict_team_filter,
+            not_archived_filter
         ]}
         recruits = await db.recruits.find(query, {"_id": 0}).sort("created_at", -1).to_list(1000)
     else:
         # super_admin or State Manager sees ALL recruits in THEIR team only
         # STRICT: No cross-team visibility, no NULL/missing team_id included
-        query = strict_team_filter
+        query = {"$and": [strict_team_filter, not_archived_filter]}
         recruits = await db.recruits.find(query, {"_id": 0}).sort("created_at", -1).to_list(1000)
     
     return recruits
