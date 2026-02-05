@@ -7741,7 +7741,10 @@ async def get_interviews(current_user: dict = Depends(get_current_user)):
 
 @api_router.get("/interviews/stats")
 async def get_interview_stats(current_user: dict = Depends(get_current_user)):
-    """Get interview statistics - STRICTLY scoped to current user's team_id."""
+    """Get interview statistics - STRICTLY scoped to current user's team_id.
+    
+    Excludes archived interviews from all stats.
+    """
     if current_user['role'] not in ['super_admin', 'state_manager', 'regional_manager', 'district_manager']:
         raise HTTPException(status_code=403, detail="Only managers can access interviews")
     
@@ -7764,17 +7767,20 @@ async def get_interview_stats(current_user: dict = Depends(get_current_user)):
     # STRICT team filter - only exact match
     strict_team_filter = {"team_id": team_id}
     
+    # EXCLUDE archived interviews from stats
+    archived_filter = {"$or": [{"archived": {"$exists": False}}, {"archived": False}]}
+    
     if current_user['role'] in ['super_admin', 'state_manager']:
-        base_query = strict_team_filter
+        base_query = {"$and": [strict_team_filter, archived_filter]}
     elif current_user['role'] == 'regional_manager':
         subordinate_ids = await get_all_subordinates(current_user['id'], team_id)
         all_ids = list(set(subordinate_ids))
         all_ids.append(current_user['id'])
-        base_query = {"$and": [{"interviewer_id": {"$in": all_ids}}, strict_team_filter]}
+        base_query = {"$and": [{"interviewer_id": {"$in": all_ids}}, strict_team_filter, archived_filter]}
     else:
-        base_query = {"$and": [{"interviewer_id": current_user['id']}, strict_team_filter]}
+        base_query = {"$and": [{"interviewer_id": current_user['id']}, strict_team_filter, archived_filter]}
     
-    # Get all interviews for stats
+    # Get all interviews for stats (excluding archived)
     all_interviews = await db.interviews.find(base_query, {"_id": 0}).to_list(10000)
     
     # Calculate stats
