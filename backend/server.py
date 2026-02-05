@@ -4517,17 +4517,23 @@ async def download_daily_report_excel(report_type: str, date: str, current_user:
             ws.cell(row=row_num, column=1).value = metric
             ws.cell(row=row_num, column=2).value = value
     
-    # Auto-adjust column widths
+    # Auto-adjust column widths (skip merged cells)
+    from openpyxl.cell.cell import MergedCell
     for col in ws.columns:
         max_length = 0
-        column = col[0].column_letter
+        column = None
         for cell in col:
+            if isinstance(cell, MergedCell):
+                continue
+            if column is None:
+                column = cell.column_letter
             try:
-                if len(str(cell.value)) > max_length:
+                if cell.value and len(str(cell.value)) > max_length:
                     max_length = len(str(cell.value))
             except:
                 pass
-        ws.column_dimensions[column].width = min(max_length + 2, 50)
+        if column:
+            ws.column_dimensions[column].width = min(max_length + 2, 50)
     
     # Save to bytes buffer
     output = BytesIO()
