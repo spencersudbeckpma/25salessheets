@@ -99,6 +99,16 @@ Team-based activity tracking and performance management application for insuranc
 
 ## Changelog
 
+### 2025-02-05 - P0 BUG FIX: Interview Form Save Issue
+- **FIXED**: Interview form failed to save after UI modification that split "Red Flags/Notes" into separate fields
+- **Root Cause**: Frontend was updated to send `red_flags` and `extra_notes` fields, but the backend POST `/api/interviews` endpoint was still expecting the old `red_flags_notes` field
+- **Fix Applied**: Updated `backend/server.py` line 7929 to handle new fields:
+  - Changed from: `"red_flags_notes": interview_data.get('red_flags_notes', '')`
+  - Changed to: `"red_flags": interview_data.get('red_flags', '')` and `"extra_notes": interview_data.get('extra_notes', '')`
+- **Testing**: Verified via curl (POST/PUT) and frontend screenshot - form saves correctly
+- **DB Schema Change**: `interviews` collection now uses `red_flags` and `extra_notes` instead of `red_flags_notes`
+- **Backward Compatibility**: Frontend handles both old and new field names for viewing existing interviews
+
 ### 2025-02-04 - NEW: Manager Check-In (Weekly Accountability)
 - **NEW FEATURE**: Weekly check-in tab for manager accountability
 - **Tab**: "Check-In" - visible only to managers (DM, RM, State Manager, super_admin)
