@@ -99,6 +99,30 @@ Team-based activity tracking and performance management application for insuranc
 
 ## Changelog
 
+### 2025-02-05 - Access Control Changes: DocuSphere & SNA Report
+**1) DocuSphere Upload Permissions (Expanded)**
+- **Before**: Only State Manager could upload
+- **After**: State Manager, Regional Manager, District Manager can upload
+- **Guardrails**:
+  - Agents remain read-only (403 on upload attempt)
+  - All uploads MUST be team-scoped by `team_id`
+  - No cross-team uploads or visibility
+  - Super admin uploads only when assigned to a team
+
+**2) SNA Report Manager Downline Access (Expanded)**
+- **Before**: State Manager only
+- **After**: State Manager, Regional Manager, District Manager
+- **Hierarchy Rules**:
+  - State Manager: Full team visibility
+  - Regional Manager: See their full downline (DMs + Agents under those DMs)
+  - District Manager: See their direct agent downline only (uses `manager_id`)
+  - Agent: No access (403)
+- **Guardrails**:
+  - STRICT `team_id` enforcement (no cross-team visibility)
+  - Managers cannot see peers or managers above them
+
+**Testing**: 16 backend tests - 100% pass rate
+
 ### 2025-02-05 - NEW: Deletion + Undo Guardrails (Soft Delete)
 - **NEW FEATURE**: Safe deletion system for Recruits and Interviews
 - **Soft Delete (Archive)**: Items are marked as archived, not permanently deleted
