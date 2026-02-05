@@ -494,7 +494,8 @@ const Interviews = ({ user }) => {
       work_ethic_example: '',
       career_packet_sent: false,
       candidate_strength: 3,
-      red_flags_notes: '',
+      red_flags: '',
+      extra_notes: '',
       status: 'in_progress'
     });
     setShowForm(false);
