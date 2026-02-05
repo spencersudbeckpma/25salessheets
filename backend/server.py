@@ -7929,7 +7929,20 @@ async def create_interview(interview_data: dict, current_user: dict = Depends(ge
 
 @api_router.put("/interviews/{interview_id}")
 async def update_interview(interview_id: str, interview_data: dict, current_user: dict = Depends(get_current_user)):
-    """Update an interview"""
+    """Update an interview.
+    
+    INTERVIEW STATUS BEHAVIOR:
+    - Status is FULLY EDITABLE at all times
+    - No lock-in, no one-way transitions
+    - Valid statuses: 'in_progress', 'moving_forward', 'not_moving_forward'
+    - All transitions allowed:
+      - in_progress → moving_forward / not_moving_forward
+      - moving_forward → in_progress / not_moving_forward
+      - not_moving_forward → in_progress / moving_forward
+    
+    AUDIT TRAIL:
+    - Every status change records: timestamp, user_id, user_name, user_role
+    """
     if current_user['role'] not in ['super_admin', 'state_manager', 'regional_manager', 'district_manager']:
         raise HTTPException(status_code=403, detail="Only managers can update interviews")
     
@@ -7938,15 +7951,37 @@ async def update_interview(interview_id: str, interview_data: dict, current_user
         raise HTTPException(status_code=404, detail="Interview not found")
     
     # Non-state managers can only update their own interviews (except for 2nd interview scheduling)
-    if current_user['role'] != 'state_manager':
+    if current_user['role'] not in ['super_admin', 'state_manager']:
         if existing.get('interviewer_id') != current_user['id']:
-            # Allow if only updating second_interview_date
+            # Allow if only updating second_interview_date or status
             allowed_fields = ['second_interview_date', 'second_interview_notes', 'status']
             update_keys = set(interview_data.keys())
             if not update_keys.issubset(set(allowed_fields)):
                 raise HTTPException(status_code=403, detail="You can only update your own interviews")
     
     from datetime import datetime, timezone
+    
+    # Check if status is being changed - add audit trail
+    new_status = interview_data.get('status')
+    old_status = existing.get('status')
+    
+    if new_status and new_status != old_status:
+        # Validate status value
+        valid_statuses = ['in_progress', 'moving_forward', 'not_moving_forward']
+        if new_status not in valid_statuses:
+            raise HTTPException(
+                status_code=400, 
+                detail=f"Invalid status. Must be one of: {', '.join(valid_statuses)}"
+            )
+        
+        # Add audit trail for status change
+        interview_data['status_updated_at'] = datetime.now(timezone.utc).isoformat()
+        interview_data['status_updated_by'] = {
+            "user_id": current_user['id'],
+            "name": current_user['name'],
+            "role": current_user['role']
+        }
+    
     interview_data['updated_at'] = datetime.now(timezone.utc).isoformat()
     
     await db.interviews.update_one(
