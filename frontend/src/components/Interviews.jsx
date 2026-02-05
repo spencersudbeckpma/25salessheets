@@ -785,11 +785,11 @@ const Interviews = ({ user }) => {
             className="px-3 py-2 border rounded-lg"
           >
             <option value="all">All Status</option>
-            <option value="new">New</option>
+            <option value="in_progress">In Progress</option>
             <option value="moving_forward">Moving Forward</option>
+            <option value="not_moving_forward">Not Moving Forward</option>
             <option value="second_interview_scheduled">2nd Scheduled</option>
             <option value="completed">Completed</option>
-            <option value="not_moving_forward">Not Moving Forward</option>
           </select>
         </div>
       </div>
