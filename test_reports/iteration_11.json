@@ -1,0 +1,80 @@
+{
+  "summary": "Completed backend testing of DocuSphere upload and SNA tracker access control changes. All 16 tests PASSED. DocuSphere upload now correctly allows SM, RM, DM (agents get 403). SNA tracker now correctly allows SM, RM, DM with appropriate downline filtering (agents get 403).",
+  "backend_issues": {
+    "critical": [],
+    "minor": []
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_access_control_docusphere_sna.py",
+    "/app/test_reports/pytest/pytest_access_control.xml"
+  ],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "DocuSphere POST /api/docusphere/documents (line 6964): Correctly checks role in ['state_manager', 'super_admin', 'regional_manager', 'district_manager']",
+    "DocuSphere upload enforces team_id scoping - all uploads tagged with uploader's team_id",
+    "SNA GET /api/sna-tracker (line 8313): Correctly checks role in ['super_admin', 'state_manager', 'regional_manager', 'district_manager']",
+    "SNA tracker DM branch (line 8336-8342): Correctly queries users with role='agent' AND manager_id=current_user['id'] AND team_id=team_id",
+    "SNA tracker RM branch (line 8329-8335): Correctly uses get_all_subordinates() for full downline visibility",
+    "SNA tracker SM/Super Admin branch (line 8325-8328): Correctly queries all agents and DMs in team",
+    "All queries include team_id filter for strict team scoping - no cross-team visibility"
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_access_control_docusphere_sna.py"
+  ],
+  "success_rate": {
+    "backend": "100%",
+    "frontend": "N/A - backend only testing requested"
+  },
+  "test_credentials": {
+    "super_admin": {"email": "admin@pmagent.net", "password": "Bizlink25"},
+    "agent": {"email": "sam.agent@pmagent.net", "password": "Bizlink25"},
+    "state_manager": {"email": "spencer.sudbeck@pmagent.net", "password": "Bizlink25"},
+    "regional_manager": {"email": "john.regional@pmagent.net", "password": "Bizlink25"},
+    "district_manager": {"email": "jane.district@pmagent.net", "password": "Bizlink25"}
+  },
+  "seed_data_creation": "Reset passwords for SM, RM, DM test users to 'Bizlink25' for testing",
+  "retest_needed": false,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "Access control changes for DocuSphere and SNA tracker fully tested. Test users: spencer.sudbeck@pmagent.net (SM), john.regional@pmagent.net (RM), jane.district@pmagent.net (DM), sam.agent@pmagent.net (Agent) - all with password 'Bizlink25'. Note: RM and DM are in Team Quick (7f0086f4-1c14-4e87-81c5-3dee1d0ff603), SM and Agent are in Team Sudbeck (32ae64ab-2518-481d-9d12-f65ca7aa91f4).",
+  "features_tested": {
+    "docusphere_upload": {
+      "POST /api/docusphere/documents": {
+        "state_manager_can_upload": "PASS",
+        "regional_manager_can_upload": "PASS (NEW)",
+        "district_manager_can_upload": "PASS (NEW)",
+        "agent_cannot_upload": "PASS (403 returned)",
+        "super_admin_can_upload": "PASS",
+        "upload_is_team_scoped": "PASS"
+      }
+    },
+    "sna_tracker": {
+      "GET /api/sna-tracker": {
+        "state_manager_full_team_visibility": "PASS",
+        "regional_manager_full_downline": "PASS (NEW)",
+        "district_manager_direct_agents_only": "PASS (NEW)",
+        "agent_cannot_access": "PASS (403 returned)",
+        "super_admin_full_visibility": "PASS",
+        "team_scoped_no_cross_team": "PASS"
+      }
+    },
+    "docusphere_read_access": {
+      "agent_can_read_documents": "PASS (read-only)",
+      "agent_can_read_folders": "PASS (read-only)"
+    },
+    "sna_exclude_include": {
+      "state_manager_can_exclude": "PASS",
+      "agent_cannot_exclude": "PASS (403 returned)"
+    }
+  },
+  "code_verification": {
+    "docusphere_upload_role_check": "Line 6964: if current_user['role'] not in ['state_manager', 'super_admin', 'regional_manager', 'district_manager']",
+    "sna_tracker_role_check": "Line 8313: if current_user['role'] not in ['super_admin', 'state_manager', 'regional_manager', 'district_manager']",
+    "sna_dm_filter": "Line 8339-8340: {\"role\": \"agent\", \"manager_id\": current_user['id'], \"team_id\": team_id}",
+    "sna_rm_filter": "Line 8331: subordinate_ids = await get_all_subordinates(current_user['id'], team_id)"
+  }
+}
