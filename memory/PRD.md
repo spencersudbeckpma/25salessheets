@@ -99,6 +99,32 @@ Team-based activity tracking and performance management application for insuranc
 
 ## Changelog
 
+### 2025-02-05 - NEW: Deletion + Undo Guardrails (Soft Delete)
+- **NEW FEATURE**: Safe deletion system for Recruits and Interviews
+- **Soft Delete (Archive)**: Items are marked as archived, not permanently deleted
+  - Recruits: `is_archived`, `archived_at`, `archived_by`, `archived_by_name`
+  - Interviews: `archived`, `archived_at`, `archived_by`, `archived_by_name`
+- **Permissions**:
+  - Recruits: SM/RM/DM can archive within their team (RM/DM limited to own recruits)
+  - Interviews: Creator OR State Manager OR super_admin can archive
+  - Restore: State Manager and super_admin only
+- **UI Guardrails**:
+  - Type-to-confirm modal: User must type "DELETE" to confirm
+  - Archive filter dropdown (Active/Archived) visible to SM/super_admin only
+  - Archived view shows: name, archived by, archived date, Restore button
+- **Data Safety**:
+  - Archived items excluded from all normal lists, stats, reports, leaderboards
+  - Server-side `team_id` enforcement on all delete/restore endpoints (403 on cross-team)
+  - Indefinite retention (no auto-purge)
+- **New API Endpoints**:
+  - `DELETE /api/recruiting/{id}` - Soft delete (archive) recruit
+  - `POST /api/recruiting/{id}/restore` - Restore archived recruit
+  - `GET /api/recruiting/archived` - List archived recruits
+  - `DELETE /api/interviews/{id}` - Soft delete (archive) interview
+  - `POST /api/interviews/{id}/restore` - Restore archived interview
+  - `GET /api/interviews/archived` - List archived interviews
+- **Testing**: 100% backend/frontend pass rate (17 pytest tests + UI verification)
+
 ### 2025-02-05 - P0 BUG FIX: Interview Form Save Issue
 - **FIXED**: Interview form failed to save after UI modification that split "Red Flags/Notes" into separate fields
 - **Root Cause**: Frontend was updated to send `red_flags` and `extra_notes` fields, but the backend POST `/api/interviews` endpoint was still expecting the old `red_flags_notes` field
