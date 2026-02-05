@@ -3,7 +3,7 @@ import axios from 'axios';
 import { toast } from 'sonner';
 import { Card, CardHeader, CardTitle, CardContent } from './ui/card';
 import { Button } from './ui/button';
-import { ChevronRight, ChevronDown, Users, Eye, EyeOff } from 'lucide-react';
+import { ChevronRight, ChevronDown, Users } from 'lucide-react';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
@@ -16,10 +16,6 @@ const TeamView = ({ user }) => {
   const [selectedMember, setSelectedMember] = useState(null);
   const [memberStats, setMemberStats] = useState(null);
   const [enabledMetrics, setEnabledMetrics] = useState(null);  // Track enabled metrics from config
-  const [hidingUser, setHidingUser] = useState(null); // Track which user is being hidden/shown
-
-  // Check if current user can manage team view visibility
-  const canManageVisibility = ['super_admin', 'state_manager', 'regional_manager', 'district_manager'].includes(user?.role);
 
   useEffect(() => {
     setSelectedMember(null);
