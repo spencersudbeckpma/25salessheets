@@ -68,7 +68,7 @@ const Interviews = ({ user }) => {
     career_packet_sent: false,
     candidate_strength: 3,
     red_flags_notes: '',
-    status: 'new'
+    status: 'in_progress'
   });
 
   useEffect(() => {
