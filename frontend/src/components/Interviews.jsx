@@ -998,13 +998,15 @@ const Interviews = ({ user }) => {
                             </button>
                           )}
                           
-                          {user.role === 'state_manager' && (
+                          {/* Delete button - creator OR state_manager OR super_admin */}
+                          {(interview.interviewer_id === user.id || ['state_manager', 'super_admin'].includes(user.role)) && (
                             <button
-                              onClick={() => deleteInterview(interview.id)}
+                              onClick={() => openDeleteModal(interview)}
                               className="p-1 text-red-600 hover:bg-red-50 rounded"
-                              title="Delete"
+                              title="Archive"
+                              data-testid={`archive-interview-${interview.id}`}
                             >
-                              <Trash2 size={18} />
+                              <Archive size={18} />
                             </button>
                           )}
                         </div>
