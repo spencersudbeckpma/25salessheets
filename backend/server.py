@@ -8093,25 +8093,96 @@ async def update_interview(interview_id: str, interview_data: dict, current_user
 
 @api_router.delete("/interviews/{interview_id}")
 async def delete_interview(interview_id: str, current_user: dict = Depends(get_current_user)):
-    """Archive an interview (soft delete) - State Manager only. Stats are preserved."""
-    if current_user['role'] != 'state_manager':
-        raise HTTPException(status_code=403, detail="Only State Managers can delete interviews")
+    """Soft delete (archive) an interview. STRICTLY team-scoped.
     
-    existing = await db.interviews.find_one({"id": interview_id})
+    Access: Creator of the interview OR State Manager OR super_admin.
+    Archived interviews are excluded from stats, reports, and normal views.
+    """
+    await check_feature_access(current_user, "interviews")
+    
+    if current_user['role'] not in ['super_admin', 'state_manager', 'regional_manager', 'district_manager']:
+        raise HTTPException(status_code=403, detail="Only managers can delete interviews")
+    
+    team_id = current_user.get('team_id')
+    if not team_id:
+        raise HTTPException(status_code=403, detail="You must be assigned to a team")
+    
+    # CRITICAL: Team-scoped lookup - prevents cross-team access
+    existing = await db.interviews.find_one({"id": interview_id, "team_id": team_id})
     if not existing:
-        raise HTTPException(status_code=404, detail="Interview not found")
+        raise HTTPException(status_code=404, detail="Interview not found or access denied")
     
-    # Soft delete - mark as archived instead of deleting
+    # Permission check: creator OR State Manager OR super_admin
+    is_creator = existing.get('interviewer_id') == current_user['id']
+    is_admin = current_user['role'] in ['state_manager', 'super_admin']
+    
+    if not (is_creator or is_admin):
+        raise HTTPException(status_code=403, detail="Only the interview creator or State Manager can delete this interview")
+    
     from datetime import datetime, timezone
+    
+    # SOFT DELETE - archive instead of permanent delete
     await db.interviews.update_one(
-        {"id": interview_id},
+        {"id": interview_id, "team_id": team_id},
         {"$set": {
             "archived": True,
             "archived_at": datetime.now(timezone.utc).isoformat(),
-            "archived_by": current_user['id']
+            "archived_by": current_user['id'],
+            "archived_by_name": current_user['name']
         }}
     )
-    return {"message": "Interview archived"}
+    return {"message": "Interview archived successfully"}
+
+
+@api_router.post("/interviews/{interview_id}/restore")
+async def restore_interview(interview_id: str, current_user: dict = Depends(get_current_user)):
+    """Restore an archived interview. STRICTLY team-scoped.
+    
+    Access: State Manager or super_admin only.
+    """
+    await check_feature_access(current_user, "interviews")
+    
+    if current_user['role'] not in ['super_admin', 'state_manager']:
+        raise HTTPException(status_code=403, detail="Only State Managers can restore interviews")
+    
+    team_id = current_user.get('team_id')
+    if not team_id:
+        raise HTTPException(status_code=403, detail="You must be assigned to a team")
+    
+    # CRITICAL: Team-scoped lookup
+    existing = await db.interviews.find_one({"id": interview_id, "team_id": team_id, "archived": True})
+    if not existing:
+        raise HTTPException(status_code=404, detail="Archived interview not found or access denied")
+    
+    # Restore by removing archive flag
+    await db.interviews.update_one(
+        {"id": interview_id, "team_id": team_id},
+        {"$set": {"archived": False},
+         "$unset": {"archived_at": "", "archived_by": "", "archived_by_name": ""}}
+    )
+    return {"message": "Interview restored successfully"}
+
+
+@api_router.get("/interviews/archived")
+async def get_archived_interviews(current_user: dict = Depends(get_current_user)):
+    """Get archived interviews. STRICTLY team-scoped.
+    
+    Access: State Manager or super_admin only.
+    """
+    await check_feature_access(current_user, "interviews")
+    
+    if current_user['role'] not in ['super_admin', 'state_manager']:
+        raise HTTPException(status_code=403, detail="Only State Managers can view archived interviews")
+    
+    team_id = current_user.get('team_id')
+    if not team_id:
+        return []
+    
+    # STRICT team-scoped query for archived items only
+    query = {"team_id": team_id, "archived": True}
+    interviews = await db.interviews.find(query, {"_id": 0}).sort("archived_at", -1).to_list(1000)
+    
+    return interviews
 
 @api_router.post("/interviews/{interview_id}/add-to-recruiting")
 async def add_interview_to_recruiting(interview_id: str, current_user: dict = Depends(get_current_user)):
