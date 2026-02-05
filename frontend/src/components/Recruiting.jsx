@@ -7,7 +7,8 @@ import { Input } from './ui/input';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs';
 import { 
   Users, Plus, Trash2, Save, X, Search, 
-  CheckCircle, Circle, Download, UserCheck, UserX, Clock, ChevronDown, ClipboardList
+  CheckCircle, Circle, Download, UserCheck, UserX, Clock, ChevronDown, ClipboardList,
+  Archive, RotateCcw, AlertTriangle
 } from 'lucide-react';
 import Interviews from './Interviews';
 
@@ -16,16 +17,24 @@ const API = `${BACKEND_URL}/api`;
 
 const Recruiting = ({ user }) => {
   const [recruits, setRecruits] = useState([]);
+  const [archivedRecruits, setArchivedRecruits] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showAddForm, setShowAddForm] = useState(false);
   const [editingId, setEditingId] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterState, setFilterState] = useState('all');
   const [activeSection, setActiveSection] = useState('active');
-  const [selectedRM, setSelectedRM] = useState('all'); // For filtering by Regional Manager
+  const [selectedRM, setSelectedRM] = useState('all');
   const [regionalManagers, setRegionalManagers] = useState([]);
-  const [activeTab, setActiveTab] = useState('pipeline'); // 'pipeline' or 'interviews'
-  const [teamStates, setTeamStates] = useState([]); // Team-scoped states
+  const [activeTab, setActiveTab] = useState('pipeline');
+  const [teamStates, setTeamStates] = useState([]);
+  const [archiveFilter, setArchiveFilter] = useState('active'); // 'active' or 'archived'
+  
+  // Delete confirmation state
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState(null);
+  const [deleteConfirmText, setDeleteConfirmText] = useState('');
+  const [isDeleting, setIsDeleting] = useState(false);
 
   const [formData, setFormData] = useState({
     name: '',
