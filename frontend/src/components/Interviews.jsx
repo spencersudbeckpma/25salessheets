@@ -498,18 +498,57 @@ const Interviews = ({ user }) => {
     }
   };
 
-  const deleteInterview = async (id) => {
-    if (!window.confirm('Delete this interview?')) return;
+  // Open delete confirmation modal
+  const openDeleteModal = (interview) => {
+    setDeleteTarget(interview);
+    setDeleteConfirmText('');
+    setShowDeleteModal(true);
+  };
+
+  // Close delete modal
+  const closeDeleteModal = () => {
+    setShowDeleteModal(false);
+    setDeleteTarget(null);
+    setDeleteConfirmText('');
+    setIsDeleting(false);
+  };
+
+  // Confirm and execute delete (archive)
+  const deleteInterview = async () => {
+    if (deleteConfirmText !== 'DELETE' || !deleteTarget) return;
+    
+    setIsDeleting(true);
     try {
       const token = localStorage.getItem('token');
-      await axios.delete(`${API}/interviews/${id}`, {
+      await axios.delete(`${API}/interviews/${deleteTarget.id}`, {
         headers: { Authorization: `Bearer ${token}` }
       });
-      toast.success('Interview deleted');
+      toast.success('Interview archived successfully');
       fetchInterviews();
       fetchStats();
+      if (canViewArchived) {
+        fetchArchivedInterviews();
+      }
+      closeDeleteModal();
     } catch (error) {
-      toast.error('Failed to delete interview');
+      toast.error(error.response?.data?.detail || 'Failed to archive interview');
+      setIsDeleting(false);
+    }
+  };
+
+  // Restore an archived interview
+  const handleRestoreInterview = async (interviewId) => {
+    try {
+      const token = localStorage.getItem('token');
+      await axios.post(`${API}/interviews/${interviewId}/restore`, {}, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      toast.success('Interview restored successfully');
+      fetchInterviews();
+      fetchStats();
+      fetchArchivedInterviews();
+    } catch (error) {
+      toast.error(error.response?.data?.detail || 'Failed to restore interview');
     }
   };
 
