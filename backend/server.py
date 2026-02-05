@@ -4393,6 +4393,155 @@ async def get_daily_report(report_type: str, date: str, current_user: dict = Dep
     else:
         raise HTTPException(status_code=400, detail="Invalid report type. Use 'individual', 'team', or 'organization'")
 
+@api_router.get("/reports/daily/excel/{report_type}")
+async def download_daily_report_excel(report_type: str, date: str, current_user: dict = Depends(get_current_user), user_id: str = None):
+    """
+    Download daily report as Excel file.
+    report_type: 'individual', 'team', or 'organization'
+    date: ISO format date string (YYYY-MM-DD)
+    user_id: Optional - specific user ID for individual reports
+    
+    NOTE: Excel exports always include ALL metrics (filter_by_kpi=False) for complete data export.
+    """
+    from openpyxl import Workbook
+    from openpyxl.styles import Font, PatternFill, Alignment
+    from io import BytesIO
+    from fastapi.responses import StreamingResponse
+    
+    if current_user['role'] not in ['super_admin', 'state_manager', 'regional_manager', 'district_manager']:
+        raise HTTPException(status_code=403, detail="Only Managers (State, Regional, District) can download daily reports")
+    
+    # Get the report data - ALWAYS with filter_by_kpi=False for exports (show ALL metrics)
+    report_json = await get_daily_report(report_type, date, current_user, user_id, filter_by_kpi=False)
+    
+    # Get enabled metrics for dynamic column generation
+    enabled_metrics = report_json.get('enabled_metrics', [])
+    
+    # Create Excel workbook
+    wb = Workbook()
+    ws = wb.active
+    ws.title = f"Daily {report_type.capitalize()}"
+    
+    # Calculate total columns dynamically
+    if report_type in ["individual", "team"]:
+        identity_cols = ["Name", "Email", "Role"] if report_type == "individual" else ["Team Name", "Manager", "Role"]
+        metric_headers = [get_metric_label(m) for m in enabled_metrics]
+        headers = identity_cols + metric_headers
+        total_cols = len(headers)
+    else:
+        total_cols = 2  # Organization report is Metric | Value format
+    
+    # Add title with dynamic column span
+    end_col_letter = chr(ord('A') + total_cols - 1) if total_cols <= 26 else 'Z'
+    ws.merge_cells(f'A1:{end_col_letter}1')
+    title_cell = ws['A1']
+    title_cell.value = f"Daily {report_type.capitalize()} Report - {date}"
+    title_cell.font = Font(size=16, bold=True, color="FFFFFF")
+    title_cell.alignment = Alignment(horizontal='center')
+    title_cell.fill = PatternFill(start_color="4472C4", end_color="4472C4", fill_type="solid")
+    
+    if report_type == "individual":
+        # Add headers dynamically based on enabled metrics
+        for col_num, header in enumerate(headers, 1):
+            cell = ws.cell(row=2, column=col_num)
+            cell.value = header
+            cell.font = Font(bold=True)
+            cell.fill = PatternFill(start_color="D9E1F2", end_color="D9E1F2", fill_type="solid")
+            cell.alignment = Alignment(horizontal='center')
+        
+        # Add data - only enabled metrics
+        for row_num, data in enumerate(report_json['data'], 3):
+            ws.cell(row=row_num, column=1).value = data.get('name', '')
+            ws.cell(row=row_num, column=2).value = data.get('email', '')
+            ws.cell(row=row_num, column=3).value = data.get('role', '')
+            for col_offset, metric_id in enumerate(enabled_metrics):
+                ws.cell(row=row_num, column=4 + col_offset).value = data.get(metric_id, 0)
+        
+        # Add totals row
+        if report_json['data']:
+            totals_row = len(report_json['data']) + 4
+            ws.cell(row=totals_row, column=1).value = "TOTALS"
+            ws.cell(row=totals_row, column=1).font = Font(bold=True)
+            ws.cell(row=totals_row, column=1).fill = PatternFill(start_color="FFE6E6", end_color="FFE6E6", fill_type="solid")
+            
+            for col_offset, metric_id in enumerate(enabled_metrics):
+                total_val = sum(d.get(metric_id, 0) or 0 for d in report_json['data'])
+                ws.cell(row=totals_row, column=4 + col_offset).value = total_val
+                ws.cell(row=totals_row, column=4 + col_offset).font = Font(bold=True)
+    
+    elif report_type == "team":
+        # Add headers dynamically based on enabled metrics
+        for col_num, header in enumerate(headers, 1):
+            cell = ws.cell(row=2, column=col_num)
+            cell.value = header
+            cell.font = Font(bold=True)
+            cell.fill = PatternFill(start_color="D9E1F2", end_color="D9E1F2", fill_type="solid")
+            cell.alignment = Alignment(horizontal='center')
+        
+        # Add data - only enabled metrics
+        for row_num, data in enumerate(report_json['data'], 3):
+            ws.cell(row=row_num, column=1).value = data.get('team_name', '')
+            ws.cell(row=row_num, column=2).value = data.get('manager', '')
+            ws.cell(row=row_num, column=3).value = data.get('role', '')
+            for col_offset, metric_id in enumerate(enabled_metrics):
+                ws.cell(row=row_num, column=4 + col_offset).value = data.get(metric_id, 0)
+        
+        # Add totals row
+        if report_json['data']:
+            totals_row = len(report_json['data']) + 4
+            ws.cell(row=totals_row, column=1).value = "TOTALS"
+            ws.cell(row=totals_row, column=1).font = Font(bold=True)
+            ws.cell(row=totals_row, column=1).fill = PatternFill(start_color="FFE6E6", end_color="FFE6E6", fill_type="solid")
+            
+            for col_offset, metric_id in enumerate(enabled_metrics):
+                total_val = sum(d.get(metric_id, 0) or 0 for d in report_json['data'])
+                ws.cell(row=totals_row, column=4 + col_offset).value = total_val
+                ws.cell(row=totals_row, column=4 + col_offset).font = Font(bold=True)
+    
+    elif report_type == "organization":
+        # Add headers
+        org_headers = ["Metric", "Total"]
+        for col_num, header in enumerate(org_headers, 1):
+            cell = ws.cell(row=2, column=col_num)
+            cell.value = header
+            cell.font = Font(bold=True)
+            cell.fill = PatternFill(start_color="D9E1F2", end_color="D9E1F2", fill_type="solid")
+            cell.alignment = Alignment(horizontal='center')
+        
+        # Add data - only enabled metrics from org totals
+        metrics = [("Total Members", report_json['total_members'])]
+        for metric_id in enabled_metrics:
+            metrics.append((get_metric_label(metric_id), report_json['data'].get(metric_id, 0)))
+        
+        for row_num, (metric, value) in enumerate(metrics, 3):
+            ws.cell(row=row_num, column=1).value = metric
+            ws.cell(row=row_num, column=2).value = value
+    
+    # Auto-adjust column widths
+    for col in ws.columns:
+        max_length = 0
+        column = col[0].column_letter
+        for cell in col:
+            try:
+                if len(str(cell.value)) > max_length:
+                    max_length = len(str(cell.value))
+            except:
+                pass
+        ws.column_dimensions[column].width = min(max_length + 2, 50)
+    
+    # Save to bytes buffer
+    output = BytesIO()
+    wb.save(output)
+    output.seek(0)
+    
+    filename = f"daily_{report_type}_report_{date}.xlsx"
+    
+    return StreamingResponse(
+        output,
+        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        headers={"Content-Disposition": f"attachment; filename={filename}"}
+    )
+
 @api_router.get("/reports/period/{report_type}")
 async def get_period_report(report_type: str, period: str, current_user: dict = Depends(get_current_user), user_id: str = None, month: str = None, quarter: str = None, year: str = None, week_start: str = None, week_end: str = None, filter_by_kpi: bool = True):
     """
