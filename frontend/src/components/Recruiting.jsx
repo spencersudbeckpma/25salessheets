@@ -954,6 +954,59 @@ const Recruiting = ({ user }) => {
           </div>
         )}
 
+        {/* Archived View - Show for SM and super_admin when in archived mode */}
+        {archiveFilter === 'archived' && canViewArchived ? (
+          <div className="space-y-4">
+            {archivedRecruits.length === 0 ? (
+              <div className="text-center py-12 bg-gray-50 rounded-lg">
+                <Archive className="w-12 h-12 text-gray-400 mx-auto mb-3" />
+                <p className="text-gray-500">No archived recruits</p>
+              </div>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full border-collapse">
+                  <thead>
+                    <tr className="bg-slate-50 border-b">
+                      <th className="px-4 py-3 text-left text-xs font-medium text-slate-600">Name</th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-slate-600">Phone</th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-slate-600">Archived By</th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-slate-600">Archived At</th>
+                      <th className="px-4 py-3 text-center text-xs font-medium text-slate-600">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {archivedRecruits.map((recruit) => (
+                      <tr key={recruit.id} className="border-b hover:bg-slate-50">
+                        <td className="px-4 py-3">
+                          <div className="font-medium text-slate-900">{recruit.name}</div>
+                          {recruit.email && <div className="text-xs text-slate-500">{recruit.email}</div>}
+                        </td>
+                        <td className="px-4 py-3 text-sm text-slate-600">{recruit.phone || '-'}</td>
+                        <td className="px-4 py-3 text-sm text-slate-600">{recruit.archived_by_name || '-'}</td>
+                        <td className="px-4 py-3 text-sm text-slate-600">
+                          {recruit.archived_at ? new Date(recruit.archived_at).toLocaleDateString() : '-'}
+                        </td>
+                        <td className="px-4 py-3 text-center">
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => handleRestore(recruit.id)}
+                            className="text-green-600 border-green-300 hover:bg-green-50"
+                            data-testid={`restore-recruit-${recruit.id}`}
+                          >
+                            <RotateCcw size={14} className="mr-1" />
+                            Restore
+                          </Button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+        ) : (
+          <>
         {/* Regional Manager Sub-Tabs - Show for State Manager and Super Admin */}
         {(user.role === 'state_manager' || user.role === 'super_admin') && getRMsWithRecruits().length > 0 && (
           <div className="mb-4">
