@@ -90,6 +90,9 @@ const Interviews = ({ user }) => {
     if (user.role === 'state_manager') {
       fetchRegionalData();
     }
+    if (canViewArchived) {
+      fetchArchivedInterviews();
+    }
   }, []);
 
   // Fetch interview files when viewing an interview with moving_forward or completed status
@@ -113,6 +116,18 @@ const Interviews = ({ user }) => {
       toast.error('Failed to fetch interviews');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchArchivedInterviews = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await axios.get(`${API}/interviews/archived`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      setArchivedInterviews(response.data);
+    } catch (error) {
+      console.error('Failed to fetch archived interviews');
     }
   };
 
