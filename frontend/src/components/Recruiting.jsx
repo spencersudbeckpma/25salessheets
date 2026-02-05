@@ -231,17 +231,56 @@ const Recruiting = ({ user }) => {
     return [];
   };
 
-  const handleDelete = async (id) => {
-    if (!window.confirm('Delete this recruit?')) return;
+  // Open delete confirmation modal
+  const openDeleteModal = (recruit) => {
+    setDeleteTarget(recruit);
+    setDeleteConfirmText('');
+    setShowDeleteModal(true);
+  };
+
+  // Close delete modal
+  const closeDeleteModal = () => {
+    setShowDeleteModal(false);
+    setDeleteTarget(null);
+    setDeleteConfirmText('');
+    setIsDeleting(false);
+  };
+
+  // Confirm and execute delete (archive)
+  const handleDelete = async () => {
+    if (deleteConfirmText !== 'DELETE' || !deleteTarget) return;
+    
+    setIsDeleting(true);
     try {
       const token = localStorage.getItem('token');
-      await axios.delete(`${API}/recruiting/${id}`, {
+      await axios.delete(`${API}/recruiting/${deleteTarget.id}`, {
         headers: { Authorization: `Bearer ${token}` }
       });
-      toast.success('Recruit deleted');
+      toast.success('Recruit archived successfully');
       fetchRecruits();
+      if (canViewArchived) {
+        fetchArchivedRecruits();
+      }
+      closeDeleteModal();
+      resetForm();
     } catch (error) {
-      toast.error('Failed to delete recruit');
+      toast.error(error.response?.data?.detail || 'Failed to archive recruit');
+      setIsDeleting(false);
+    }
+  };
+
+  // Restore an archived recruit
+  const handleRestore = async (recruitId) => {
+    try {
+      const token = localStorage.getItem('token');
+      await axios.post(`${API}/recruiting/${recruitId}/restore`, {}, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      toast.success('Recruit restored successfully');
+      fetchRecruits();
+      fetchArchivedRecruits();
+    } catch (error) {
+      toast.error(error.response?.data?.detail || 'Failed to restore recruit');
     }
   };
 
