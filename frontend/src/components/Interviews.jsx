@@ -1171,6 +1171,18 @@ const Interviews = ({ user }) => {
                             <Eye size={18} />
                           </button>
                           
+                          {/* Edit button - creator OR state_manager OR super_admin */}
+                          {canEditInterview(interview) && (
+                            <button
+                              onClick={() => startEditInterview(interview)}
+                              className="p-1 text-amber-600 hover:bg-amber-50 rounded"
+                              title="Edit Interview"
+                              data-testid={`edit-interview-${interview.id}`}
+                            >
+                              <Edit size={18} />
+                            </button>
+                          )}
+                          
                           {interview.status === 'moving_forward' && user.role === 'state_manager' && (
                             <button
                               onClick={() => { 
