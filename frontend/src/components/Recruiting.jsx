@@ -841,8 +841,8 @@ const Recruiting = ({ user }) => {
                     )}
                   </div>
 
-                  {/* Regional Manager Dropdown - Only show for State Manager */}
-                  {user.role === 'state_manager' && (
+                  {/* Regional Manager Dropdown - Show for State Manager and Super Admin */}
+                  {(user.role === 'state_manager' || user.role === 'super_admin') && (
                     <div>
                       <label className="block text-sm font-medium mb-1">Regional Manager (RM) *</label>
                       <select
