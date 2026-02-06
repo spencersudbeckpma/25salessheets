@@ -955,9 +955,11 @@ const TeamManagement = ({ user }) => {
                   <select
                     id="invite-role"
                     data-testid="invite-role-select"
-                    className="w-full p-2 border rounded-md mt-1"
+                    className="w-full p-3 border rounded-md mt-1 bg-white text-base appearance-none"
+                    style={{ fontSize: '16px' }}
                     value={newInvite.role}
                     onChange={(e) => setNewInvite({ ...newInvite, role: e.target.value })}
+                    required
                   >
                     <option value="">Select Role</option>
                     {getRoleOptions().map(role => (
