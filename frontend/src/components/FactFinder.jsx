@@ -656,68 +656,1253 @@ const FactFinder = ({ user }) => {
         </div>
       </div>
 
+      {/* Page Navigation */}
+      <div className="flex justify-center gap-2 mb-4">
+        {[1, 2, 3].map((page) => (
+          <button
+            key={page}
+            onClick={() => setCurrentPage(page)}
+            className={`px-4 py-2 rounded-lg font-medium transition-all ${
+              currentPage === page
+                ? 'bg-amber-600 text-white shadow-md'
+                : 'bg-white border border-amber-300 text-amber-700 hover:bg-amber-50'
+            }`}
+          >
+            Page {page}
+          </button>
+        ))}
+      </div>
+
       {/* Title */}
       <div className="text-center py-4 bg-gradient-to-r from-amber-100 to-amber-50 rounded-lg border border-amber-200">
-        <h1 className="text-xl font-bold text-amber-800">PMA USA</h1>
-        <p className="text-amber-700 italic">You may have spent a lifetime accumulating assets</p>
+        <h1 className="text-xl font-bold text-amber-800">PMA USA FACT FINDER</h1>
+        <p className="text-amber-700 italic text-sm">
+          {currentPage === 1 && "You may have spent a lifetime accumulating assets"}
+          {currentPage === 2 && "Medical Expenses & Extended Care Coverage"}
+          {currentPage === 3 && "Final Expenses/Survivors' Income & Assets"}
+        </p>
       </div>
 
-      {/* Rating Sections - 2 columns on larger screens */}
-      <div className="grid md:grid-cols-2 gap-4">
-        <RatingSection
-          title="Health Expenses:"
-          items={HEALTH_EXPENSES}
-          section="health_expenses"
-          data={formData.health_expenses}
-        />
-        <RatingSection
-          title="Retirement Income:"
-          items={RETIREMENT_INCOME}
-          section="retirement_income"
-          data={formData.retirement_income}
-        />
-        <RatingSection
-          title="Final Expenses:"
-          items={FINAL_EXPENSES}
-          section="final_expenses"
-          data={formData.final_expenses}
-        />
-        <RatingSection
-          title="Extended Care:"
-          items={EXTENDED_CARE}
-          section="extended_care"
-          data={formData.extended_care}
-        />
-      </div>
+      {/* ===== PAGE 1: Ratings, Producer & Client Info ===== */}
+      {currentPage === 1 && (
+        <div className="space-y-4">
+          {/* Rating Sections - 2 columns on larger screens */}
+          <div className="grid md:grid-cols-2 gap-4">
+            <RatingSection
+              title="Health Expenses:"
+              items={HEALTH_EXPENSES}
+              section="health_expenses"
+              data={formData.health_expenses}
+            />
+            <RatingSection
+              title="Retirement Income:"
+              items={RETIREMENT_INCOME}
+              section="retirement_income"
+              data={formData.retirement_income}
+            />
+            <RatingSection
+              title="Final Expenses:"
+              items={FINAL_EXPENSES}
+              section="final_expenses"
+              data={formData.final_expenses}
+            />
+            <RatingSection
+              title="Extended Care:"
+              items={EXTENDED_CARE}
+              section="extended_care"
+              data={formData.extended_care}
+            />
+          </div>
 
-      {/* Producer Information */}
-      <Card>
-        <CardHeader className="pb-2">
-          <CardTitle className="text-sm font-semibold">Producer Information</CardTitle>
-        </CardHeader>
-        <CardContent className="grid md:grid-cols-2 gap-4">
-          <div className="space-y-2">
-            <Label>Producer's name</Label>
-            <Input
-              value={formData.producer_name_1}
-              onChange={(e) => setFormData(prev => ({ ...prev, producer_name_1: e.target.value }))}
-              placeholder="Producer name"
-            />
-          </div>
-          <div className="space-y-2">
-            <Label>Bankers Life Agent Number</Label>
-            <Input
-              value={formData.agent_number_1}
-              onChange={(e) => setFormData(prev => ({ ...prev, agent_number_1: e.target.value }))}
-              placeholder="Agent number"
-            />
-          </div>
-          <div className="space-y-2">
-            <Label>Producer's name (2)</Label>
-            <Input
-              value={formData.producer_name_2}
-              onChange={(e) => setFormData(prev => ({ ...prev, producer_name_2: e.target.value }))}
-              placeholder="Second producer (optional)"
+          {/* Producer Information */}
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-semibold">Producer Information</CardTitle>
+            </CardHeader>
+            <CardContent className="grid md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label>Producer's name</Label>
+                <Input
+                  value={formData.producer_name_1}
+                  onChange={(e) => setFormData(prev => ({ ...prev, producer_name_1: e.target.value }))}
+                  placeholder="Producer name"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>Bankers Life Agent Number</Label>
+                <Input
+                  value={formData.agent_number_1}
+                  onChange={(e) => setFormData(prev => ({ ...prev, agent_number_1: e.target.value }))}
+                  placeholder="Agent number"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>Producer's name (2)</Label>
+                <Input
+                  value={formData.producer_name_2}
+                  onChange={(e) => setFormData(prev => ({ ...prev, producer_name_2: e.target.value }))}
+                  placeholder="Second producer (optional)"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>Bankers Life Agent Number (2)</Label>
+                <Input
+                  value={formData.agent_number_2}
+                  onChange={(e) => setFormData(prev => ({ ...prev, agent_number_2: e.target.value }))}
+                  placeholder="Agent number (optional)"
+                />
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Client Information */}
+          <Card className="bg-amber-50 border-amber-200">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-semibold text-amber-800">Client Information</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {/* Row 1: Name and DOB */}
+              <div className="grid grid-cols-2 md:grid-cols-6 gap-3">
+                <div className="col-span-2 space-y-1">
+                  <Label className="text-xs">First Name</Label>
+                  <Input
+                    value={formData.client_info.first_name}
+                    onChange={(e) => updateClientInfo('first_name', e.target.value)}
+                    className="bg-white"
+                  />
+                </div>
+                <div className="col-span-2 space-y-1">
+                  <Label className="text-xs">Last Name</Label>
+                  <Input
+                    value={formData.client_info.last_name}
+                    onChange={(e) => updateClientInfo('last_name', e.target.value)}
+                    className="bg-white"
+                  />
+                </div>
+                <div className="col-span-2 space-y-1">
+                  <Label className="text-xs">Birth Date</Label>
+                  <Input
+                    type="date"
+                    value={formData.client_info.birth_date}
+                    onChange={(e) => updateClientInfo('birth_date', e.target.value)}
+                    className="bg-white"
+                  />
+                </div>
+              </div>
+
+              {/* Row 2: Spouse */}
+              <div className="grid grid-cols-2 md:grid-cols-6 gap-3">
+                <div className="col-span-2 space-y-1">
+                  <Label className="text-xs">Spouse First</Label>
+                  <Input
+                    value={formData.client_info.spouse_first}
+                    onChange={(e) => updateClientInfo('spouse_first', e.target.value)}
+                    className="bg-white"
+                  />
+                </div>
+                <div className="col-span-2 space-y-1">
+                  <Label className="text-xs">Spouse Last</Label>
+                  <Input
+                    value={formData.client_info.spouse_last}
+                    onChange={(e) => updateClientInfo('spouse_last', e.target.value)}
+                    className="bg-white"
+                  />
+                </div>
+                <div className="col-span-2 space-y-1">
+                  <Label className="text-xs">Spouse Birth Date</Label>
+                  <Input
+                    type="date"
+                    value={formData.client_info.spouse_birth_date}
+                    onChange={(e) => updateClientInfo('spouse_birth_date', e.target.value)}
+                    className="bg-white"
+                  />
+                </div>
+              </div>
+
+              {/* Row 3: Address */}
+              <div className="grid grid-cols-2 md:grid-cols-12 gap-3">
+                <div className="col-span-2 md:col-span-5 space-y-1">
+                  <Label className="text-xs">Address</Label>
+                  <Input
+                    value={formData.client_info.address}
+                    onChange={(e) => updateClientInfo('address', e.target.value)}
+                    className="bg-white"
+                  />
+                </div>
+                <div className="col-span-1 md:col-span-3 space-y-1">
+                  <Label className="text-xs">City</Label>
+                  <Input
+                    value={formData.client_info.city}
+                    onChange={(e) => updateClientInfo('city', e.target.value)}
+                    className="bg-white"
+                  />
+                </div>
+                <div className="col-span-1 md:col-span-2 space-y-1">
+                  <Label className="text-xs">State</Label>
+                  <Input
+                    value={formData.client_info.state}
+                    onChange={(e) => updateClientInfo('state', e.target.value)}
+                    className="bg-white"
+                  />
+                </div>
+                <div className="col-span-2 md:col-span-2 space-y-1">
+                  <Label className="text-xs">Zip Code</Label>
+                  <Input
+                    value={formData.client_info.zip_code}
+                    onChange={(e) => updateClientInfo('zip_code', e.target.value)}
+                    className="bg-white"
+                  />
+                </div>
+              </div>
+
+              {/* Row 4: Employment */}
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                <div className="space-y-1">
+                  <Label className="text-xs">Employer</Label>
+                  <Input
+                    value={formData.client_info.employer}
+                    onChange={(e) => updateClientInfo('employer', e.target.value)}
+                    className="bg-white"
+                  />
+                </div>
+                <div className="flex items-center gap-2 pt-5">
+                  <input
+                    type="checkbox"
+                    checked={formData.client_info.employer_retired}
+                    onChange={(e) => updateClientInfo('employer_retired', e.target.checked)}
+                    className="w-4 h-4"
+                  />
+                  <Label className="text-xs">Retired</Label>
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-xs">Spouse Employer</Label>
+                  <Input
+                    value={formData.client_info.spouse_employer}
+                    onChange={(e) => updateClientInfo('spouse_employer', e.target.value)}
+                    className="bg-white"
+                  />
+                </div>
+                <div className="flex items-center gap-2 pt-5">
+                  <input
+                    type="checkbox"
+                    checked={formData.client_info.spouse_employer_retired}
+                    onChange={(e) => updateClientInfo('spouse_employer_retired', e.target.checked)}
+                    className="w-4 h-4"
+                  />
+                  <Label className="text-xs">Retired</Label>
+                </div>
+              </div>
+
+              {/* Row 5: Contact */}
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1">
+                  <Label className="text-xs">Email</Label>
+                  <Input
+                    type="email"
+                    value={formData.client_info.email}
+                    onChange={(e) => updateClientInfo('email', e.target.value)}
+                    className="bg-white"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-xs">Phone</Label>
+                  <Input
+                    type="tel"
+                    value={formData.client_info.phone}
+                    onChange={(e) => updateClientInfo('phone', e.target.value)}
+                    className="bg-white"
+                  />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Notes */}
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-semibold">Notes</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <textarea
+                value={formData.notes}
+                onChange={(e) => setFormData(prev => ({ ...prev, notes: e.target.value }))}
+                className="w-full p-3 border rounded-lg min-h-[100px] resize-y"
+                placeholder="Additional notes..."
+              />
+            </CardContent>
+          </Card>
+        </div>
+      )}
+
+      {/* ===== PAGE 2: Medical Expenses & Extended Care Coverage ===== */}
+      {currentPage === 2 && (
+        <div className="space-y-4">
+          {/* Medical Expenses Section */}
+          <Card className="bg-blue-50 border-blue-200">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-semibold text-blue-800">MEDICAL EXPENSES</CardTitle>
+              <p className="text-xs text-blue-600">Check all that apply for each spouse</p>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              {/* Spouse 1 Insurance */}
+              <div className="border-b border-blue-200 pb-4">
+                <h4 className="font-medium text-blue-800 mb-3">Spouse 1 - {formData.client_info.first_name || 'Client'}</h4>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-2 mb-3">
+                  {[
+                    { value: 'none', label: 'None' },
+                    { value: 'medicare_only', label: 'Medicare Only' },
+                    { value: 'medicaid', label: 'Medicaid' },
+                    { value: 'group', label: 'Group' },
+                    { value: 'med_supp', label: 'Med Supp' },
+                    { value: 'ma', label: 'MA' },
+                    { value: 'mapd', label: 'MAPD' },
+                    { value: 'major_medical', label: 'Major Medical' }
+                  ].map(opt => (
+                    <label key={opt.value} className="flex items-center gap-2 text-sm">
+                      <input
+                        type="radio"
+                        name="spouse1_insurance"
+                        value={opt.value}
+                        checked={formData.medical_expenses?.spouse1_insurance_type === opt.value}
+                        onChange={(e) => setFormData(prev => ({
+                          ...prev,
+                          medical_expenses: { ...prev.medical_expenses, spouse1_insurance_type: e.target.value }
+                        }))}
+                        className="w-4 h-4"
+                      />
+                      {opt.label}
+                    </label>
+                  ))}
+                </div>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                  <div className="space-y-1">
+                    <Label className="text-xs">Company</Label>
+                    <Input
+                      value={formData.medical_expenses?.spouse1_company || ''}
+                      onChange={(e) => setFormData(prev => ({
+                        ...prev,
+                        medical_expenses: { ...prev.medical_expenses, spouse1_company: e.target.value }
+                      }))}
+                      className="bg-white"
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <Label className="text-xs">Plan</Label>
+                    <Input
+                      value={formData.medical_expenses?.spouse1_plan || ''}
+                      onChange={(e) => setFormData(prev => ({
+                        ...prev,
+                        medical_expenses: { ...prev.medical_expenses, spouse1_plan: e.target.value }
+                      }))}
+                      className="bg-white"
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <Label className="text-xs">Premium</Label>
+                    <Input
+                      value={formData.medical_expenses?.spouse1_premium || ''}
+                      onChange={(e) => setFormData(prev => ({
+                        ...prev,
+                        medical_expenses: { ...prev.medical_expenses, spouse1_premium: e.target.value }
+                      }))}
+                      className="bg-white"
+                      placeholder="$"
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <Label className="text-xs">Drug Coverage?</Label>
+                    <select
+                      value={formData.medical_expenses?.spouse1_drug_coverage || ''}
+                      onChange={(e) => setFormData(prev => ({
+                        ...prev,
+                        medical_expenses: { ...prev.medical_expenses, spouse1_drug_coverage: e.target.value }
+                      }))}
+                      className="w-full p-2 border rounded-md bg-white text-sm"
+                    >
+                      <option value="">Select</option>
+                      <option value="yes">Yes</option>
+                      <option value="no">No</option>
+                    </select>
+                  </div>
+                </div>
+              </div>
+
+              {/* Spouse 2 Insurance */}
+              <div className="border-b border-blue-200 pb-4">
+                <h4 className="font-medium text-blue-800 mb-3">Spouse 2 - {formData.client_info.spouse_first || 'Spouse'}</h4>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-2 mb-3">
+                  {[
+                    { value: 'none', label: 'None' },
+                    { value: 'medicare_only', label: 'Medicare Only' },
+                    { value: 'medicaid', label: 'Medicaid' },
+                    { value: 'group', label: 'Group' },
+                    { value: 'med_supp', label: 'Med Supp' },
+                    { value: 'ma', label: 'MA' },
+                    { value: 'mapd', label: 'MAPD' },
+                    { value: 'major_medical', label: 'Major Medical' }
+                  ].map(opt => (
+                    <label key={opt.value} className="flex items-center gap-2 text-sm">
+                      <input
+                        type="radio"
+                        name="spouse2_insurance"
+                        value={opt.value}
+                        checked={formData.medical_expenses?.spouse2_insurance_type === opt.value}
+                        onChange={(e) => setFormData(prev => ({
+                          ...prev,
+                          medical_expenses: { ...prev.medical_expenses, spouse2_insurance_type: e.target.value }
+                        }))}
+                        className="w-4 h-4"
+                      />
+                      {opt.label}
+                    </label>
+                  ))}
+                </div>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                  <div className="space-y-1">
+                    <Label className="text-xs">Company</Label>
+                    <Input
+                      value={formData.medical_expenses?.spouse2_company || ''}
+                      onChange={(e) => setFormData(prev => ({
+                        ...prev,
+                        medical_expenses: { ...prev.medical_expenses, spouse2_company: e.target.value }
+                      }))}
+                      className="bg-white"
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <Label className="text-xs">Plan</Label>
+                    <Input
+                      value={formData.medical_expenses?.spouse2_plan || ''}
+                      onChange={(e) => setFormData(prev => ({
+                        ...prev,
+                        medical_expenses: { ...prev.medical_expenses, spouse2_plan: e.target.value }
+                      }))}
+                      className="bg-white"
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <Label className="text-xs">Premium</Label>
+                    <Input
+                      value={formData.medical_expenses?.spouse2_premium || ''}
+                      onChange={(e) => setFormData(prev => ({
+                        ...prev,
+                        medical_expenses: { ...prev.medical_expenses, spouse2_premium: e.target.value }
+                      }))}
+                      className="bg-white"
+                      placeholder="$"
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <Label className="text-xs">Drug Coverage?</Label>
+                    <select
+                      value={formData.medical_expenses?.spouse2_drug_coverage || ''}
+                      onChange={(e) => setFormData(prev => ({
+                        ...prev,
+                        medical_expenses: { ...prev.medical_expenses, spouse2_drug_coverage: e.target.value }
+                      }))}
+                      className="w-full p-2 border rounded-md bg-white text-sm"
+                    >
+                      <option value="">Select</option>
+                      <option value="yes">Yes</option>
+                      <option value="no">No</option>
+                    </select>
+                  </div>
+                </div>
+              </div>
+
+              {/* Health History & Change Coverage */}
+              <div className="grid md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium">Describe any health history that might affect coverage:</Label>
+                  <textarea
+                    value={formData.medical_expenses?.health_history || ''}
+                    onChange={(e) => setFormData(prev => ({
+                      ...prev,
+                      medical_expenses: { ...prev.medical_expenses, health_history: e.target.value }
+                    }))}
+                    className="w-full p-2 border rounded-md min-h-[80px] resize-y bg-white"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium">If you could change your coverage in any way, what would you change?</Label>
+                  <textarea
+                    value={formData.medical_expenses?.change_coverage || ''}
+                    onChange={(e) => setFormData(prev => ({
+                      ...prev,
+                      medical_expenses: { ...prev.medical_expenses, change_coverage: e.target.value }
+                    }))}
+                    className="w-full p-2 border rounded-md min-h-[80px] resize-y bg-white"
+                  />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Extended Care Coverage Section */}
+          <Card className="bg-purple-50 border-purple-200">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-semibold text-purple-800">EXTENDED CARE COVERAGE</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>Do you currently have an extended care plan?</Label>
+                  <div className="flex gap-4">
+                    <label className="flex items-center gap-2">
+                      <input
+                        type="radio"
+                        name="has_extended_care"
+                        value="yes"
+                        checked={formData.extended_care_coverage?.has_extended_care_plan === 'yes'}
+                        onChange={(e) => setFormData(prev => ({
+                          ...prev,
+                          extended_care_coverage: { ...prev.extended_care_coverage, has_extended_care_plan: e.target.value }
+                        }))}
+                      />
+                      Yes
+                    </label>
+                    <label className="flex items-center gap-2">
+                      <input
+                        type="radio"
+                        name="has_extended_care"
+                        value="no"
+                        checked={formData.extended_care_coverage?.has_extended_care_plan === 'no'}
+                        onChange={(e) => setFormData(prev => ({
+                          ...prev,
+                          extended_care_coverage: { ...prev.extended_care_coverage, has_extended_care_plan: e.target.value }
+                        }))}
+                      />
+                      No
+                    </label>
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <Label>When was your plan last reviewed?</Label>
+                  <Input
+                    type="date"
+                    value={formData.extended_care_coverage?.last_review_date || ''}
+                    onChange={(e) => setFormData(prev => ({
+                      ...prev,
+                      extended_care_coverage: { ...prev.extended_care_coverage, last_review_date: e.target.value }
+                    }))}
+                    className="bg-white"
+                  />
+                </div>
+              </div>
+
+              {/* Policy Table */}
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm border-collapse">
+                  <thead>
+                    <tr className="bg-purple-100">
+                      <th className="border p-2 text-left">Insured</th>
+                      <th className="border p-2 text-left">Company</th>
+                      <th className="border p-2 text-left">Premium</th>
+                      <th className="border p-2 text-left">Daily Benefit</th>
+                      <th className="border p-2 text-left">Benefit Period</th>
+                      <th className="border p-2 text-left">Elimination</th>
+                      <th className="border p-2 text-left">HHC</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {(formData.extended_care_coverage?.policies || [{ insured: '', company: '', premium: '', daily_benefit: '', benefit_period: '', elimination_period: '', hhc: '' }]).map((policy, idx) => (
+                      <tr key={idx}>
+                        <td className="border p-1">
+                          <Input
+                            value={policy.insured || ''}
+                            onChange={(e) => {
+                              const policies = [...(formData.extended_care_coverage?.policies || [])];
+                              policies[idx] = { ...policies[idx], insured: e.target.value };
+                              setFormData(prev => ({
+                                ...prev,
+                                extended_care_coverage: { ...prev.extended_care_coverage, policies }
+                              }));
+                            }}
+                            className="bg-white h-8"
+                          />
+                        </td>
+                        <td className="border p-1">
+                          <Input
+                            value={policy.company || ''}
+                            onChange={(e) => {
+                              const policies = [...(formData.extended_care_coverage?.policies || [])];
+                              policies[idx] = { ...policies[idx], company: e.target.value };
+                              setFormData(prev => ({
+                                ...prev,
+                                extended_care_coverage: { ...prev.extended_care_coverage, policies }
+                              }));
+                            }}
+                            className="bg-white h-8"
+                          />
+                        </td>
+                        <td className="border p-1">
+                          <Input
+                            value={policy.premium || ''}
+                            onChange={(e) => {
+                              const policies = [...(formData.extended_care_coverage?.policies || [])];
+                              policies[idx] = { ...policies[idx], premium: e.target.value };
+                              setFormData(prev => ({
+                                ...prev,
+                                extended_care_coverage: { ...prev.extended_care_coverage, policies }
+                              }));
+                            }}
+                            className="bg-white h-8"
+                            placeholder="$"
+                          />
+                        </td>
+                        <td className="border p-1">
+                          <Input
+                            value={policy.daily_benefit || ''}
+                            onChange={(e) => {
+                              const policies = [...(formData.extended_care_coverage?.policies || [])];
+                              policies[idx] = { ...policies[idx], daily_benefit: e.target.value };
+                              setFormData(prev => ({
+                                ...prev,
+                                extended_care_coverage: { ...prev.extended_care_coverage, policies }
+                              }));
+                            }}
+                            className="bg-white h-8"
+                            placeholder="$"
+                          />
+                        </td>
+                        <td className="border p-1">
+                          <Input
+                            value={policy.benefit_period || ''}
+                            onChange={(e) => {
+                              const policies = [...(formData.extended_care_coverage?.policies || [])];
+                              policies[idx] = { ...policies[idx], benefit_period: e.target.value };
+                              setFormData(prev => ({
+                                ...prev,
+                                extended_care_coverage: { ...prev.extended_care_coverage, policies }
+                              }));
+                            }}
+                            className="bg-white h-8"
+                          />
+                        </td>
+                        <td className="border p-1">
+                          <Input
+                            value={policy.elimination_period || ''}
+                            onChange={(e) => {
+                              const policies = [...(formData.extended_care_coverage?.policies || [])];
+                              policies[idx] = { ...policies[idx], elimination_period: e.target.value };
+                              setFormData(prev => ({
+                                ...prev,
+                                extended_care_coverage: { ...prev.extended_care_coverage, policies }
+                              }));
+                            }}
+                            className="bg-white h-8"
+                          />
+                        </td>
+                        <td className="border p-1">
+                          <Input
+                            value={policy.hhc || ''}
+                            onChange={(e) => {
+                              const policies = [...(formData.extended_care_coverage?.policies || [])];
+                              policies[idx] = { ...policies[idx], hhc: e.target.value };
+                              setFormData(prev => ({
+                                ...prev,
+                                extended_care_coverage: { ...prev.extended_care_coverage, policies }
+                              }));
+                            }}
+                            className="bg-white h-8"
+                          />
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  className="mt-2"
+                  onClick={() => {
+                    const policies = [...(formData.extended_care_coverage?.policies || [])];
+                    policies.push({ insured: '', company: '', premium: '', daily_benefit: '', benefit_period: '', elimination_period: '', hhc: '' });
+                    setFormData(prev => ({
+                      ...prev,
+                      extended_care_coverage: { ...prev.extended_care_coverage, policies }
+                    }));
+                  }}
+                >
+                  + Add Row
+                </Button>
+              </div>
+
+              <div className="grid md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>Have you ever looked into extended care insurance?</Label>
+                  <div className="flex gap-4">
+                    <label className="flex items-center gap-2">
+                      <input
+                        type="radio"
+                        name="ever_looked_into"
+                        value="yes"
+                        checked={formData.extended_care_coverage?.ever_looked_into === 'yes'}
+                        onChange={(e) => setFormData(prev => ({
+                          ...prev,
+                          extended_care_coverage: { ...prev.extended_care_coverage, ever_looked_into: e.target.value }
+                        }))}
+                      />
+                      Yes
+                    </label>
+                    <label className="flex items-center gap-2">
+                      <input
+                        type="radio"
+                        name="ever_looked_into"
+                        value="no"
+                        checked={formData.extended_care_coverage?.ever_looked_into === 'no'}
+                        onChange={(e) => setFormData(prev => ({
+                          ...prev,
+                          extended_care_coverage: { ...prev.extended_care_coverage, ever_looked_into: e.target.value }
+                        }))}
+                      />
+                      No
+                    </label>
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <Label>What alternate plans are in place if extended care is needed?</Label>
+                  <textarea
+                    value={formData.extended_care_coverage?.alternative_plans || ''}
+                    onChange={(e) => setFormData(prev => ({
+                      ...prev,
+                      extended_care_coverage: { ...prev.extended_care_coverage, alternative_plans: e.target.value }
+                    }))}
+                    className="w-full p-2 border rounded-md min-h-[60px] resize-y bg-white"
+                  />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      )}
+
+      {/* ===== PAGE 3: Life Insurance, Income & Assets ===== */}
+      {currentPage === 3 && (
+        <div className="space-y-4">
+          {/* Life Insurance Section */}
+          <Card className="bg-green-50 border-green-200">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-semibold text-green-800">FINAL EXPENSES / SURVIVORS' INCOME</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>Do you presently own life insurance?</Label>
+                  <div className="flex gap-4">
+                    <label className="flex items-center gap-2">
+                      <input
+                        type="radio"
+                        name="owns_life_insurance"
+                        value="yes"
+                        checked={formData.life_insurance?.owns_life_insurance === 'yes'}
+                        onChange={(e) => setFormData(prev => ({
+                          ...prev,
+                          life_insurance: { ...prev.life_insurance, owns_life_insurance: e.target.value }
+                        }))}
+                      />
+                      Yes
+                    </label>
+                    <label className="flex items-center gap-2">
+                      <input
+                        type="radio"
+                        name="owns_life_insurance"
+                        value="no"
+                        checked={formData.life_insurance?.owns_life_insurance === 'no'}
+                        onChange={(e) => setFormData(prev => ({
+                          ...prev,
+                          life_insurance: { ...prev.life_insurance, owns_life_insurance: e.target.value }
+                        }))}
+                      />
+                      No
+                    </label>
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <Label>When was life insurance last purchased?</Label>
+                  <Input
+                    type="date"
+                    value={formData.life_insurance?.purchase_date || ''}
+                    onChange={(e) => setFormData(prev => ({
+                      ...prev,
+                      life_insurance: { ...prev.life_insurance, purchase_date: e.target.value }
+                    }))}
+                    className="bg-white"
+                  />
+                </div>
+              </div>
+
+              {/* Applicant Policies Table */}
+              <div>
+                <h4 className="font-medium text-green-800 mb-2">Applicant Policies</h4>
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm border-collapse">
+                    <thead>
+                      <tr className="bg-green-100">
+                        <th className="border p-2 text-left">Face Amount</th>
+                        <th className="border p-2 text-left">Company</th>
+                        <th className="border p-2 text-left">Premium</th>
+                        <th className="border p-2 text-left">Type</th>
+                        <th className="border p-2 text-left">Beneficiary</th>
+                        <th className="border p-2 text-left">Cash Value</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {(formData.life_insurance?.applicant_policies || []).map((policy, idx) => (
+                        <tr key={idx}>
+                          <td className="border p-1">
+                            <Input
+                              value={policy.face_amount || ''}
+                              onChange={(e) => {
+                                const policies = [...(formData.life_insurance?.applicant_policies || [])];
+                                policies[idx] = { ...policies[idx], face_amount: e.target.value };
+                                setFormData(prev => ({
+                                  ...prev,
+                                  life_insurance: { ...prev.life_insurance, applicant_policies: policies }
+                                }));
+                              }}
+                              className="bg-white h-8"
+                              placeholder="$"
+                            />
+                          </td>
+                          <td className="border p-1">
+                            <Input
+                              value={policy.company || ''}
+                              onChange={(e) => {
+                                const policies = [...(formData.life_insurance?.applicant_policies || [])];
+                                policies[idx] = { ...policies[idx], company: e.target.value };
+                                setFormData(prev => ({
+                                  ...prev,
+                                  life_insurance: { ...prev.life_insurance, applicant_policies: policies }
+                                }));
+                              }}
+                              className="bg-white h-8"
+                            />
+                          </td>
+                          <td className="border p-1">
+                            <Input
+                              value={policy.premium || ''}
+                              onChange={(e) => {
+                                const policies = [...(formData.life_insurance?.applicant_policies || [])];
+                                policies[idx] = { ...policies[idx], premium: e.target.value };
+                                setFormData(prev => ({
+                                  ...prev,
+                                  life_insurance: { ...prev.life_insurance, applicant_policies: policies }
+                                }));
+                              }}
+                              className="bg-white h-8"
+                              placeholder="$"
+                            />
+                          </td>
+                          <td className="border p-1">
+                            <select
+                              value={policy.type || ''}
+                              onChange={(e) => {
+                                const policies = [...(formData.life_insurance?.applicant_policies || [])];
+                                policies[idx] = { ...policies[idx], type: e.target.value };
+                                setFormData(prev => ({
+                                  ...prev,
+                                  life_insurance: { ...prev.life_insurance, applicant_policies: policies }
+                                }));
+                              }}
+                              className="w-full p-1 border rounded bg-white h-8 text-sm"
+                            >
+                              <option value="">Select</option>
+                              <option value="term">Term</option>
+                              <option value="whole">Whole</option>
+                              <option value="universal">Universal</option>
+                              <option value="group">Group</option>
+                            </select>
+                          </td>
+                          <td className="border p-1">
+                            <Input
+                              value={policy.beneficiary || ''}
+                              onChange={(e) => {
+                                const policies = [...(formData.life_insurance?.applicant_policies || [])];
+                                policies[idx] = { ...policies[idx], beneficiary: e.target.value };
+                                setFormData(prev => ({
+                                  ...prev,
+                                  life_insurance: { ...prev.life_insurance, applicant_policies: policies }
+                                }));
+                              }}
+                              className="bg-white h-8"
+                            />
+                          </td>
+                          <td className="border p-1">
+                            <Input
+                              value={policy.cash_value || ''}
+                              onChange={(e) => {
+                                const policies = [...(formData.life_insurance?.applicant_policies || [])];
+                                policies[idx] = { ...policies[idx], cash_value: e.target.value };
+                                setFormData(prev => ({
+                                  ...prev,
+                                  life_insurance: { ...prev.life_insurance, applicant_policies: policies }
+                                }));
+                              }}
+                              className="bg-white h-8"
+                              placeholder="$"
+                            />
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+
+              {/* Spouse Policies Table */}
+              <div>
+                <h4 className="font-medium text-green-800 mb-2">Spouse Policies</h4>
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm border-collapse">
+                    <thead>
+                      <tr className="bg-green-100">
+                        <th className="border p-2 text-left">Face Amount</th>
+                        <th className="border p-2 text-left">Company</th>
+                        <th className="border p-2 text-left">Premium</th>
+                        <th className="border p-2 text-left">Type</th>
+                        <th className="border p-2 text-left">Beneficiary</th>
+                        <th className="border p-2 text-left">Cash Value</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {(formData.life_insurance?.spouse_policies || []).map((policy, idx) => (
+                        <tr key={idx}>
+                          <td className="border p-1">
+                            <Input
+                              value={policy.face_amount || ''}
+                              onChange={(e) => {
+                                const policies = [...(formData.life_insurance?.spouse_policies || [])];
+                                policies[idx] = { ...policies[idx], face_amount: e.target.value };
+                                setFormData(prev => ({
+                                  ...prev,
+                                  life_insurance: { ...prev.life_insurance, spouse_policies: policies }
+                                }));
+                              }}
+                              className="bg-white h-8"
+                              placeholder="$"
+                            />
+                          </td>
+                          <td className="border p-1">
+                            <Input
+                              value={policy.company || ''}
+                              onChange={(e) => {
+                                const policies = [...(formData.life_insurance?.spouse_policies || [])];
+                                policies[idx] = { ...policies[idx], company: e.target.value };
+                                setFormData(prev => ({
+                                  ...prev,
+                                  life_insurance: { ...prev.life_insurance, spouse_policies: policies }
+                                }));
+                              }}
+                              className="bg-white h-8"
+                            />
+                          </td>
+                          <td className="border p-1">
+                            <Input
+                              value={policy.premium || ''}
+                              onChange={(e) => {
+                                const policies = [...(formData.life_insurance?.spouse_policies || [])];
+                                policies[idx] = { ...policies[idx], premium: e.target.value };
+                                setFormData(prev => ({
+                                  ...prev,
+                                  life_insurance: { ...prev.life_insurance, spouse_policies: policies }
+                                }));
+                              }}
+                              className="bg-white h-8"
+                              placeholder="$"
+                            />
+                          </td>
+                          <td className="border p-1">
+                            <select
+                              value={policy.type || ''}
+                              onChange={(e) => {
+                                const policies = [...(formData.life_insurance?.spouse_policies || [])];
+                                policies[idx] = { ...policies[idx], type: e.target.value };
+                                setFormData(prev => ({
+                                  ...prev,
+                                  life_insurance: { ...prev.life_insurance, spouse_policies: policies }
+                                }));
+                              }}
+                              className="w-full p-1 border rounded bg-white h-8 text-sm"
+                            >
+                              <option value="">Select</option>
+                              <option value="term">Term</option>
+                              <option value="whole">Whole</option>
+                              <option value="universal">Universal</option>
+                              <option value="group">Group</option>
+                            </select>
+                          </td>
+                          <td className="border p-1">
+                            <Input
+                              value={policy.beneficiary || ''}
+                              onChange={(e) => {
+                                const policies = [...(formData.life_insurance?.spouse_policies || [])];
+                                policies[idx] = { ...policies[idx], beneficiary: e.target.value };
+                                setFormData(prev => ({
+                                  ...prev,
+                                  life_insurance: { ...prev.life_insurance, spouse_policies: policies }
+                                }));
+                              }}
+                              className="bg-white h-8"
+                            />
+                          </td>
+                          <td className="border p-1">
+                            <Input
+                              value={policy.cash_value || ''}
+                              onChange={(e) => {
+                                const policies = [...(formData.life_insurance?.spouse_policies || [])];
+                                policies[idx] = { ...policies[idx], cash_value: e.target.value };
+                                setFormData(prev => ({
+                                  ...prev,
+                                  life_insurance: { ...prev.life_insurance, spouse_policies: policies }
+                                }));
+                              }}
+                              className="bg-white h-8"
+                              placeholder="$"
+                            />
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+
+              <div className="grid md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>What plans do you have for life insurance coverage?</Label>
+                  <textarea
+                    value={formData.life_insurance?.plans_for_insurance || ''}
+                    onChange={(e) => setFormData(prev => ({
+                      ...prev,
+                      life_insurance: { ...prev.life_insurance, plans_for_insurance: e.target.value }
+                    }))}
+                    className="w-full p-2 border rounded-md min-h-[60px] resize-y bg-white"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>How did you determine this amount?</Label>
+                  <textarea
+                    value={formData.life_insurance?.how_determined_amount || ''}
+                    onChange={(e) => setFormData(prev => ({
+                      ...prev,
+                      life_insurance: { ...prev.life_insurance, how_determined_amount: e.target.value }
+                    }))}
+                    className="w-full p-2 border rounded-md min-h-[60px] resize-y bg-white"
+                  />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Retirement Income Section */}
+          <Card className="bg-orange-50 border-orange-200">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-semibold text-orange-800">RETIREMENT INCOME</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid md:grid-cols-2 gap-6">
+                <div className="space-y-3">
+                  <h4 className="font-medium text-orange-700">Monthly Income</h4>
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-2">
+                      <Label className="w-32 text-sm">Employment:</Label>
+                      <Input
+                        value={formData.monthly_income?.employment || ''}
+                        onChange={(e) => setFormData(prev => ({
+                          ...prev,
+                          monthly_income: { ...prev.monthly_income, employment: e.target.value }
+                        }))}
+                        className="bg-white"
+                        placeholder="$"
+                      />
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Label className="w-32 text-sm">Social Security:</Label>
+                      <Input
+                        value={formData.monthly_income?.social_security || ''}
+                        onChange={(e) => setFormData(prev => ({
+                          ...prev,
+                          monthly_income: { ...prev.monthly_income, social_security: e.target.value }
+                        }))}
+                        className="bg-white"
+                        placeholder="$"
+                      />
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Label className="w-32 text-sm">Other:</Label>
+                      <Input
+                        value={formData.monthly_income?.other || ''}
+                        onChange={(e) => setFormData(prev => ({
+                          ...prev,
+                          monthly_income: { ...prev.monthly_income, other: e.target.value }
+                        }))}
+                        className="bg-white"
+                        placeholder="$"
+                      />
+                    </div>
+                  </div>
+                </div>
+                <div className="space-y-3">
+                  <h4 className="font-medium text-orange-700">Monthly Expenses</h4>
+                  <div className="flex items-center gap-2">
+                    <Label className="w-32 text-sm">Total Expenses:</Label>
+                    <Input
+                      value={formData.monthly_income?.total_expenses || ''}
+                      onChange={(e) => setFormData(prev => ({
+                        ...prev,
+                        monthly_income: { ...prev.monthly_income, total_expenses: e.target.value }
+                      }))}
+                      className="bg-white"
+                      placeholder="$"
+                    />
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Assets Section */}
+          <Card className="bg-teal-50 border-teal-200">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-semibold text-teal-800">ASSETS</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2">
+                    <Label className="w-40 text-sm">Primary Residence:</Label>
+                    <Input
+                      value={formData.assets?.primary_residence || ''}
+                      onChange={(e) => setFormData(prev => ({
+                        ...prev,
+                        assets: { ...prev.assets, primary_residence: e.target.value }
+                      }))}
+                      className="bg-white"
+                      placeholder="$"
+                    />
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Label className="w-40 text-sm">Other Real Estate:</Label>
+                    <Input
+                      value={formData.assets?.other_real_estate || ''}
+                      onChange={(e) => setFormData(prev => ({
+                        ...prev,
+                        assets: { ...prev.assets, other_real_estate: e.target.value }
+                      }))}
+                      className="bg-white"
+                      placeholder="$"
+                    />
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2">
+                    <Label className="w-40 text-sm">Checking/Savings:</Label>
+                    <Input
+                      value={formData.assets?.checking_savings || ''}
+                      onChange={(e) => setFormData(prev => ({
+                        ...prev,
+                        assets: { ...prev.assets, checking_savings: e.target.value }
+                      }))}
+                      className="bg-white"
+                      placeholder="$"
+                    />
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Label className="w-40 text-sm">Investments:</Label>
+                    <Input
+                      value={formData.assets?.investments || ''}
+                      onChange={(e) => setFormData(prev => ({
+                        ...prev,
+                        assets: { ...prev.assets, investments: e.target.value }
+                      }))}
+                      className="bg-white"
+                      placeholder="$"
+                    />
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Financial Questions */}
+          <Card className="bg-indigo-50 border-indigo-200">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-semibold text-indigo-800">FINANCIAL QUESTIONS</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="space-y-2">
+                <Label>Are you able to put aside money each month to save for the future?</Label>
+                <textarea
+                  value={formData.financial_questions?.can_save_monthly || ''}
+                  onChange={(e) => setFormData(prev => ({
+                    ...prev,
+                    financial_questions: { ...prev.financial_questions, can_save_monthly: e.target.value }
+                  }))}
+                  className="w-full p-2 border rounded-md min-h-[60px] resize-y bg-white"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>If you were to invest money, what would be your goal?</Label>
+                <div className="flex flex-wrap gap-4">
+                  {[
+                    { value: 'growth_return', label: 'Growth / Return' },
+                    { value: 'income', label: 'Income' },
+                    { value: 'safety_preservation', label: 'Safety / Preservation' }
+                  ].map(opt => (
+                    <label key={opt.value} className="flex items-center gap-2">
+                      <input
+                        type="radio"
+                        name="investment_goals"
+                        value={opt.value}
+                        checked={formData.financial_questions?.investment_goals === opt.value}
+                        onChange={(e) => setFormData(prev => ({
+                          ...prev,
+                          financial_questions: { ...prev.financial_questions, investment_goals: e.target.value }
+                        }))}
+                      />
+                      {opt.label}
+                    </label>
+                  ))}
+                </div>
+              </div>
+              <div className="space-y-2">
+                <Label>Do you have an investment advisor? If so, who?</Label>
+                <Input
+                  value={formData.financial_questions?.investment_advisor || ''}
+                  onChange={(e) => setFormData(prev => ({
+                    ...prev,
+                    financial_questions: { ...prev.financial_questions, investment_advisor: e.target.value }
+                  }))}
+                  className="bg-white"
+                />
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      )}
+
+      {/* Page Navigation Footer */}
+      <div className="flex justify-between items-center pt-4 border-t">
+        <Button
+          variant="outline"
+          onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+          disabled={currentPage === 1}
+        >
+          ← Previous Page
+        </Button>
+        <span className="text-sm text-gray-500">Page {currentPage} of 3</span>
+        <Button
+          variant="outline"
+          onClick={() => setCurrentPage(prev => Math.min(3, prev + 1))}
+          disabled={currentPage === 3}
+        >
+          Next Page →
+        </Button>
+      </div>
+    </div>
+  );
             />
           </div>
           <div className="space-y-2">
