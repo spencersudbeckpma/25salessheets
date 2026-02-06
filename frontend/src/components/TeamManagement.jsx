@@ -912,11 +912,15 @@ const TeamManagement = ({ user }) => {
 
               <Button 
                 onClick={handleCreateUser}
-                className="mt-4 bg-green-600 hover:bg-green-700"
+                className="mt-4 bg-green-600 hover:bg-green-700 w-full sm:w-auto"
+                disabled={!newUser.name || !newUser.email || !newUser.password || !newUser.role}
               >
                 <UserPlus size={16} className="mr-2" />
                 Create User
               </Button>
+              {!newUser.role && newUser.name && (
+                <p className="text-sm text-red-500 mt-2">⚠️ Please select a role to continue</p>
+              )}
             </div>
           </TabsContent>
 
