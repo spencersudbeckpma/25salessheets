@@ -7111,7 +7111,13 @@ async def update_team_recruiting_states(
 
 @api_router.get("/recruiting")
 async def get_recruits(current_user: dict = Depends(get_current_user)):
-    """Get recruits - STRICTLY scoped to current user's team_id.
+    """Get recruits with proper pipeline hierarchy visibility.
+    
+    Visibility Rules:
+    - State Manager: Sees ALL recruits across ALL regional pipelines in their team
+    - Regional Manager: Sees ONLY their own regional pipeline (rm_id = their ID)
+    - District Manager: Sees ONLY recruits assigned to them (dm_id = their ID)
+    - Agent: No access (403)
     
     NO cross-team visibility allowed under any circumstance.
     Excludes archived recruits by default.
@@ -7135,20 +7141,16 @@ async def get_recruits(current_user: dict = Depends(get_current_user)):
     not_archived_filter = {"$or": [{"is_archived": {"$exists": False}}, {"is_archived": False}]}
     
     if current_user['role'] == 'regional_manager':
-        # Regional Manager sees their own recruits + their District Managers' recruits
-        # ALL scoped to their team_id
-        subordinates = await get_all_subordinates(current_user['id'], team_id)
-        subordinate_ids = subordinates
-        subordinate_ids.append(current_user['id'])
-        
+        # Regional Manager sees ONLY their own pipeline (where rm_id matches their ID)
+        # This is the key change - strict pipeline ownership
         query = {"$and": [
-            {"$or": [{"rm_id": current_user['id']}, {"dm_id": {"$in": subordinate_ids}}]},
+            {"rm_id": current_user['id']},
             strict_team_filter,
             not_archived_filter
         ]}
         recruits = await db.recruits.find(query, {"_id": 0}).sort("created_at", -1).to_list(1000)
     elif current_user['role'] == 'district_manager':
-        # District Manager only sees their own recruits, scoped to team
+        # District Manager only sees recruits assigned to them
         query = {"$and": [
             {"dm_id": current_user['id']},
             strict_team_filter,
@@ -7156,7 +7158,7 @@ async def get_recruits(current_user: dict = Depends(get_current_user)):
         ]}
         recruits = await db.recruits.find(query, {"_id": 0}).sort("created_at", -1).to_list(1000)
     else:
-        # super_admin or State Manager sees ALL recruits in THEIR team only
+        # super_admin or State Manager sees ALL recruits in THEIR team (roll-up of all regionals)
         # STRICT: No cross-team visibility, no NULL/missing team_id included
         query = {"$and": [strict_team_filter, not_archived_filter]}
         recruits = await db.recruits.find(query, {"_id": 0}).sort("created_at", -1).to_list(1000)
