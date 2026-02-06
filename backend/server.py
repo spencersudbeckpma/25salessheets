@@ -7165,19 +7165,51 @@ async def get_recruits(current_user: dict = Depends(get_current_user)):
 
 @api_router.post("/recruiting")
 async def create_recruit(recruit_data: dict, current_user: dict = Depends(get_current_user)):
-    """Create a new recruit (State Manager, Regional Manager, or District Manager)"""
+    """Create a new recruit with proper pipeline ownership.
+    
+    Pipeline Ownership Model:
+    - Every recruit MUST belong to a team_id and regional_manager_id (pipeline owner)
+    - State Manager: Must select an RM when creating (can add to any RM's pipeline)
+    - Regional Manager: Auto-assigns to their own pipeline
+    - District Manager: Auto-assigns to their RM's pipeline
+    """
     # Check feature access
     await check_feature_access(current_user, "recruiting")
     
     if current_user['role'] not in ['super_admin', 'state_manager', 'regional_manager', 'district_manager']:
         raise HTTPException(status_code=403, detail="Only managers can manage recruiting")
     
-    # Handle RM assignment
+    team_id = current_user.get('team_id')
+    if not team_id:
+        raise HTTPException(status_code=403, detail="You must be assigned to a team")
+    
+    # Handle RM assignment based on role
     rm_id = recruit_data.get('rm_id', '')
     rm_name = recruit_data.get('rm', '')
+    
     if current_user['role'] == 'regional_manager':
+        # RM creates recruit in their own pipeline
         rm_id = current_user['id']
         rm_name = current_user['name']
+    elif current_user['role'] == 'district_manager':
+        # DM creates recruit - assign to their RM's pipeline
+        dm_user = await db.users.find_one({"id": current_user['id']}, {"_id": 0})
+        if dm_user and dm_user.get('manager_id'):
+            rm_user = await db.users.find_one({"id": dm_user['manager_id'], "team_id": team_id}, {"_id": 0})
+            if rm_user:
+                rm_id = rm_user['id']
+                rm_name = rm_user['name']
+        if not rm_id:
+            raise HTTPException(status_code=400, detail="Cannot determine Regional Manager for your pipeline")
+    elif current_user['role'] in ['state_manager', 'super_admin']:
+        # State Manager / Super Admin MUST select an RM
+        if not rm_id:
+            raise HTTPException(status_code=400, detail="Regional Manager selection is required")
+        # Validate the RM exists and is in the same team
+        rm_user = await db.users.find_one({"id": rm_id, "role": "regional_manager", "team_id": team_id}, {"_id": 0})
+        if not rm_user:
+            raise HTTPException(status_code=400, detail="Invalid Regional Manager selected")
+        rm_name = rm_user['name']
     
     # Handle DM assignment
     dm_id = recruit_data.get('dm_id', '')
@@ -7185,24 +7217,25 @@ async def create_recruit(recruit_data: dict, current_user: dict = Depends(get_cu
     if current_user['role'] == 'district_manager':
         dm_id = current_user['id']
         dm_name = current_user['name']
-        # Also get the DM's manager (Regional Manager) and assign them
-        dm_user = await db.users.find_one({"id": current_user['id']}, {"_id": 0})
-        if dm_user and dm_user.get('manager_id'):
-            rm_user = await db.users.find_one({"id": dm_user['manager_id']}, {"_id": 0})
-            if rm_user:
-                rm_id = rm_user['id']
-                rm_name = rm_user['name']
+    elif dm_id:
+        # Validate DM if provided
+        dm_user = await db.users.find_one({"id": dm_id, "role": "district_manager", "team_id": team_id}, {"_id": 0})
+        if dm_user:
+            dm_name = dm_user['name']
+        else:
+            dm_id = ''
+            dm_name = ''
     
     recruit = {
         "id": str(uuid.uuid4()),
-        "team_id": current_user.get('team_id'),  # Multi-tenancy
+        "team_id": team_id,  # Multi-tenancy
         "name": recruit_data.get('name', ''),
         "phone": recruit_data.get('phone', ''),
         "email": recruit_data.get('email', ''),
         "source": recruit_data.get('source', ''),
         "state": recruit_data.get('state', ''),
         "rm": rm_name,
-        "rm_id": rm_id,
+        "rm_id": rm_id,  # Pipeline owner
         "dm": dm_name,
         "dm_id": dm_id,
         "text_email": recruit_data.get('text_email', False),
