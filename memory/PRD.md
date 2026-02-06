@@ -99,6 +99,33 @@ Team-based activity tracking and performance management application for insuranc
 
 ## Changelog
 
+### 2025-02-06 - Recruiting Pipeline Hierarchy Scoping (Fixed)
+**Pipeline Ownership Model**
+- Every recruit MUST have: `team_id` + `regional_manager_id` (pipeline owner)
+- Optional: `district_manager_id` (if assigned later)
+
+**Visibility Rules**
+- **State Manager / Super Admin**: Sees TOTAL active pipeline across ALL regional managers
+  - Can add candidates to ANY regional pipeline (dropdown required)
+  - Sees "Filter by Regional Manager" tabs for filtering
+- **Regional Manager**: Sees ONLY their own regional pipeline
+  - Auto-assigns new candidates to their own pipeline (no dropdown)
+  - Cannot see other RMs' pipelines
+- **District Manager**: Sees candidates assigned to them (dm_id filter)
+- **Agent**: No access (403)
+
+**UI Changes**
+- State Manager/Super Admin: Required "Regional Manager (RM)" dropdown when creating recruit
+- Regional Manager: No RM dropdown (auto-assigned)
+- Filter tabs: "All RMs" | individual RM names (for SM/super_admin only)
+
+**Backend Guardrails**
+- `POST /api/recruiting`: Validates rm_id required for SM/super_admin
+- `GET /api/recruiting`: Filters by rm_id for RM role
+- All queries remain strictly team-scoped
+
+**Testing**: 12 backend tests - 100% pass
+
 ### 2025-02-05 - Access Control Changes: DocuSphere & SNA Report
 **1) DocuSphere Upload Permissions (Expanded)**
 - **Before**: Only State Manager could upload
