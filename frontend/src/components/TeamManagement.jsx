@@ -797,8 +797,9 @@ const TeamManagement = ({ user }) => {
   };
 
   const getRoleOptions = () => {
-    // State Manager can create any role below them
+    // State Manager and Super Admin can create any role below them
     const roleHierarchy = {
+      super_admin: ['state_manager', 'regional_manager', 'district_manager', 'agent'],
       state_manager: ['regional_manager', 'district_manager', 'agent'],
       regional_manager: ['district_manager', 'agent'],
       district_manager: ['agent'],
