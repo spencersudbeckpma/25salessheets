@@ -881,7 +881,9 @@ const TeamManagement = ({ user }) => {
                   <select
                     value={newUser.role}
                     onChange={(e) => setNewUser({...newUser, role: e.target.value})}
-                    className="w-full p-2 border rounded-md mt-1"
+                    className="w-full p-3 border rounded-md mt-1 bg-white text-base appearance-none"
+                    style={{ fontSize: '16px' }}
+                    required
                   >
                     <option value="">Select Role</option>
                     {getRoleOptions().map(role => (
@@ -894,7 +896,8 @@ const TeamManagement = ({ user }) => {
                   <select
                     value={newUser.manager_id}
                     onChange={(e) => setNewUser({...newUser, manager_id: e.target.value})}
-                    className="w-full p-2 border rounded-md mt-1"
+                    className="w-full p-3 border rounded-md mt-1 bg-white text-base appearance-none"
+                    style={{ fontSize: '16px' }}
                     onClick={() => availableManagers.length === 0 && fetchAvailableManagers()}
                   >
                     <option value="">No Manager (Top Level)</option>
