@@ -39,6 +39,9 @@ const Interviews = ({ user }) => {
   const [secondInterviewAnswers, setSecondInterviewAnswers] = useState('');
   const [isSavingAnswers, setIsSavingAnswers] = useState(false);
 
+  // Edit mode state
+  const [editingInterview, setEditingInterview] = useState(null);
+
   // Delete confirmation state
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState(null);
@@ -53,6 +56,11 @@ const Interviews = ({ user }) => {
 
   // Check if user can view archived
   const canViewArchived = ['state_manager', 'super_admin'].includes(user.role);
+
+  // Check if user can edit a specific interview (creator OR SM OR super_admin)
+  const canEditInterview = (interview) => {
+    return interview.interviewer_id === user.id || ['state_manager', 'super_admin'].includes(user.role);
+  };
 
   const [formData, setFormData] = useState({
     candidate_name: '',
