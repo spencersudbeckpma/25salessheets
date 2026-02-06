@@ -69,9 +69,11 @@ const FactFinder = ({ user }) => {
   const [editingId, setEditingId] = useState(null);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState(null);
+  const [currentPage, setCurrentPage] = useState(1); // Page 1, 2, or 3
   
-  // Form state
+  // Form state - includes all fields from 3 pages
   const [formData, setFormData] = useState({
+    // Page 1 - Client Info & Ratings
     client_info: {
       first_name: '',
       last_name: '',
@@ -99,6 +101,79 @@ const FactFinder = ({ user }) => {
     agent_number_1: '',
     agent_number_2: '',
     notes: '',
+    
+    // Page 2 - Medical Expenses & Extended Care Coverage
+    medical_expenses: {
+      // Spouse 1 Insurance
+      spouse1_insurance_type: '', // none, medicare_only, medicaid, group, med_supp, ma, mapd, major_medical
+      spouse1_other: '',
+      spouse1_company: '',
+      spouse1_plan: '',
+      spouse1_premium: '',
+      spouse1_drug_coverage: '', // yes/no
+      spouse1_provider: '',
+      // Spouse 2 Insurance
+      spouse2_insurance_type: '',
+      spouse2_other: '',
+      spouse2_company: '',
+      spouse2_plan: '',
+      spouse2_premium: '',
+      spouse2_drug_coverage: '',
+      spouse2_provider: '',
+      // Health History
+      health_history: '',
+      // Change Coverage
+      change_coverage: ''
+    },
+    extended_care_coverage: {
+      has_extended_care_plan: '', // yes/no
+      current_plan_details: '',
+      last_review_date: '',
+      // Coverage table (array of policies)
+      policies: [
+        { insured: '', company: '', premium: '', daily_benefit: '', benefit_period: '', elimination_period: '', hhc: '' }
+      ],
+      ever_looked_into: '', // yes/no
+      alternative_plans: ''
+    },
+    
+    // Page 3 - Life Insurance, Income & Assets
+    life_insurance: {
+      owns_life_insurance: '', // yes/no
+      purchase_date: '',
+      // Applicant policies
+      applicant_policies: [
+        { face_amount: '', company: '', premium: '', type: '', beneficiary: '', cash_value: '', surrender_value: '' },
+        { face_amount: '', company: '', premium: '', type: '', beneficiary: '', cash_value: '', surrender_value: '' },
+        { face_amount: '', company: '', premium: '', type: '', beneficiary: '', cash_value: '', surrender_value: '' }
+      ],
+      // Spouse policies
+      spouse_policies: [
+        { face_amount: '', company: '', premium: '', type: '', beneficiary: '', cash_value: '', surrender_value: '' },
+        { face_amount: '', company: '', premium: '', type: '', beneficiary: '', cash_value: '', surrender_value: '' },
+        { face_amount: '', company: '', premium: '', type: '', beneficiary: '', cash_value: '', surrender_value: '' }
+      ],
+      plans_for_insurance: '',
+      how_determined_amount: ''
+    },
+    monthly_income: {
+      employment: '',
+      social_security: '',
+      other: '',
+      total_expenses: ''
+    },
+    assets: {
+      primary_residence: '',
+      other_real_estate: '',
+      checking_savings: '',
+      investments: ''
+    },
+    financial_questions: {
+      can_save_monthly: '',
+      investment_goals: '', // growth_return, income, safety_preservation
+      investment_advisor: ''
+    },
+    
     status: 'draft'
   });
 
