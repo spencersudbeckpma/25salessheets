@@ -247,9 +247,73 @@ const FactFinder = ({ user }) => {
       agent_number_1: '',
       agent_number_2: '',
       notes: '',
+      // Page 2 fields
+      medical_expenses: {
+        spouse1_insurance_type: '',
+        spouse1_other: '',
+        spouse1_company: '',
+        spouse1_plan: '',
+        spouse1_premium: '',
+        spouse1_drug_coverage: '',
+        spouse1_provider: '',
+        spouse2_insurance_type: '',
+        spouse2_other: '',
+        spouse2_company: '',
+        spouse2_plan: '',
+        spouse2_premium: '',
+        spouse2_drug_coverage: '',
+        spouse2_provider: '',
+        health_history: '',
+        change_coverage: ''
+      },
+      extended_care_coverage: {
+        has_extended_care_plan: '',
+        current_plan_details: '',
+        last_review_date: '',
+        policies: [
+          { insured: '', company: '', premium: '', daily_benefit: '', benefit_period: '', elimination_period: '', hhc: '' }
+        ],
+        ever_looked_into: '',
+        alternative_plans: ''
+      },
+      // Page 3 fields
+      life_insurance: {
+        owns_life_insurance: '',
+        purchase_date: '',
+        applicant_policies: [
+          { face_amount: '', company: '', premium: '', type: '', beneficiary: '', cash_value: '', surrender_value: '' },
+          { face_amount: '', company: '', premium: '', type: '', beneficiary: '', cash_value: '', surrender_value: '' },
+          { face_amount: '', company: '', premium: '', type: '', beneficiary: '', cash_value: '', surrender_value: '' }
+        ],
+        spouse_policies: [
+          { face_amount: '', company: '', premium: '', type: '', beneficiary: '', cash_value: '', surrender_value: '' },
+          { face_amount: '', company: '', premium: '', type: '', beneficiary: '', cash_value: '', surrender_value: '' },
+          { face_amount: '', company: '', premium: '', type: '', beneficiary: '', cash_value: '', surrender_value: '' }
+        ],
+        plans_for_insurance: '',
+        how_determined_amount: ''
+      },
+      monthly_income: {
+        employment: '',
+        social_security: '',
+        other: '',
+        total_expenses: ''
+      },
+      assets: {
+        primary_residence: '',
+        other_real_estate: '',
+        checking_savings: '',
+        investments: ''
+      },
+      financial_questions: {
+        can_save_monthly: '',
+        investment_goals: '',
+        investment_advisor: ''
+      },
       status: 'draft'
     });
     setEditingId(null);
+    setCurrentPage(1);
   };
 
   const openNewForm = () => {
