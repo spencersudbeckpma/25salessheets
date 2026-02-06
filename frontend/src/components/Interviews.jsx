@@ -568,38 +568,6 @@ const Interviews = ({ user }) => {
     }
   };
 
-  const resetForm = () => {
-    setFormData({
-      candidate_name: '',
-      candidate_location: '',
-      candidate_phone: '',
-      interview_date: new Date().toISOString().split('T')[0],
-      hobbies_interests: '',
-      must_have_commission: false,
-      must_have_travel: false,
-      must_have_background: false,
-      must_have_car: false,
-      work_history: '',
-      what_would_change: '',
-      why_left_recent: '',
-      other_interviews: '',
-      top_3_looking_for: '',
-      why_important: '',
-      situation_6_12_months: '',
-      family_impact: '',
-      competitiveness_scale: 5,
-      competitiveness_example: '',
-      work_ethic_scale: 5,
-      work_ethic_example: '',
-      career_packet_sent: false,
-      candidate_strength: 3,
-      red_flags: '',
-      extra_notes: '',
-      status: 'in_progress'
-    });
-    setShowForm(false);
-  };
-
   const getFilteredInterviews = () => {
     return interviews.filter(i => {
       const matchesSearch = 
