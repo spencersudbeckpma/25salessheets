@@ -605,6 +605,74 @@ const Interviews = ({ user }) => {
     });
   };
 
+  // Start editing an interview - pre-fill form with existing data
+  const startEditInterview = (interview) => {
+    setEditingInterview(interview);
+    setFormData({
+      candidate_name: interview.candidate_name || '',
+      candidate_location: interview.candidate_location || '',
+      candidate_phone: interview.candidate_phone || '',
+      interview_date: interview.interview_date || new Date().toISOString().split('T')[0],
+      hobbies_interests: interview.hobbies_interests || '',
+      must_have_commission: interview.must_have_commission || false,
+      must_have_travel: interview.must_have_travel || false,
+      must_have_background: interview.must_have_background || false,
+      must_have_car: interview.must_have_car || false,
+      work_history: interview.work_history || '',
+      what_would_change: interview.what_would_change || '',
+      why_left_recent: interview.why_left_recent || '',
+      other_interviews: interview.other_interviews || '',
+      top_3_looking_for: interview.top_3_looking_for || '',
+      why_important: interview.why_important || '',
+      situation_6_12_months: interview.situation_6_12_months || '',
+      family_impact: interview.family_impact || '',
+      competitiveness_scale: interview.competitiveness_scale || 5,
+      competitiveness_example: interview.competitiveness_example || '',
+      work_ethic_scale: interview.work_ethic_scale || 5,
+      work_ethic_example: interview.work_ethic_example || '',
+      career_packet_sent: interview.career_packet_sent || false,
+      candidate_strength: interview.candidate_strength || 3,
+      red_flags: interview.red_flags || interview.red_flags_notes || '',
+      extra_notes: interview.extra_notes || '',
+      status: interview.status || 'in_progress'
+    });
+    setShowForm(true);
+  };
+
+  // Reset form and clear edit mode
+  const resetForm = () => {
+    setEditingInterview(null);
+    setFormData({
+      candidate_name: '',
+      candidate_location: '',
+      candidate_phone: '',
+      interview_date: new Date().toISOString().split('T')[0],
+      hobbies_interests: '',
+      must_have_commission: false,
+      must_have_travel: false,
+      must_have_background: false,
+      must_have_car: false,
+      work_history: '',
+      what_would_change: '',
+      why_left_recent: '',
+      other_interviews: '',
+      top_3_looking_for: '',
+      why_important: '',
+      situation_6_12_months: '',
+      family_impact: '',
+      competitiveness_scale: 5,
+      competitiveness_example: '',
+      work_ethic_scale: 5,
+      work_ethic_example: '',
+      career_packet_sent: false,
+      candidate_strength: 3,
+      red_flags: '',
+      extra_notes: '',
+      status: 'in_progress'
+    });
+    setShowForm(false);
+  };
+
   const getStatusColor = (status) => {
     switch (status) {
       case 'in_progress': return 'bg-blue-100 text-blue-800 border-blue-300';
