@@ -154,8 +154,8 @@ const Recruiting = ({ user }) => {
       return;
     }
 
-    // State Manager MUST select a Regional Manager for pipeline ownership
-    if (user.role === 'state_manager' && !formData.rm_id) {
+    // State Manager and Super Admin MUST select a Regional Manager for pipeline ownership
+    if ((user.role === 'state_manager' || user.role === 'super_admin') && !formData.rm_id) {
       toast.error('Please select a Regional Manager for this recruit');
       return;
     }
