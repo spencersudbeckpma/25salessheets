@@ -1292,15 +1292,15 @@ const Interviews = ({ user }) => {
         </>
       )}
 
-      {/* New Interview Form Modal */}
+      {/* New/Edit Interview Form Modal */}
       {showForm && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-start justify-center z-50 overflow-y-auto py-4 sm:py-8">
           <div className="bg-white rounded-lg shadow-xl w-full max-w-3xl mx-2 sm:mx-4 flex flex-col max-h-[95vh]">
-            <div className="p-4 sm:p-6 border-b bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-t-lg flex-shrink-0">
+            <div className={`p-4 sm:p-6 border-b ${editingInterview ? 'bg-gradient-to-r from-amber-500 to-amber-600' : 'bg-gradient-to-r from-blue-600 to-blue-700'} text-white rounded-t-lg flex-shrink-0`}>
               <div className="flex items-center justify-between">
                 <h2 className="text-lg sm:text-xl font-bold flex items-center gap-2">
-                  <ClipboardList size={24} />
-                  2026 Interview Guide
+                  {editingInterview ? <Edit size={24} /> : <ClipboardList size={24} />}
+                  {editingInterview ? `Edit Interview: ${editingInterview.candidate_name}` : '2026 Interview Guide'}
                 </h2>
                 <button onClick={resetForm} className="text-white hover:bg-white/20 p-1 rounded">
                   <X size={24} />
