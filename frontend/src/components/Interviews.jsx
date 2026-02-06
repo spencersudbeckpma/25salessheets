@@ -412,16 +412,16 @@ const Interviews = ({ user }) => {
       let toastMessage;
       if (statusOption === true) {
         status = 'moving_forward';
-        toastMessage = 'Interview submitted - Moving Forward!';
+        toastMessage = editingInterview ? 'Interview updated - Moving Forward!' : 'Interview submitted - Moving Forward!';
       } else if (statusOption === false) {
         status = 'not_moving_forward';
-        toastMessage = 'Interview submitted - Not Moving Forward';
+        toastMessage = editingInterview ? 'Interview updated - Not Moving Forward' : 'Interview submitted - Not Moving Forward';
       } else if (statusOption === 'in_progress') {
         status = 'in_progress';
-        toastMessage = 'Interview saved - In Progress';
+        toastMessage = editingInterview ? 'Interview updated - In Progress' : 'Interview saved - In Progress';
       } else {
         status = statusOption; // Allow direct status string
-        toastMessage = `Interview saved - ${status}`;
+        toastMessage = `Interview ${editingInterview ? 'updated' : 'saved'} - ${status}`;
       }
       
       const submitData = {
@@ -429,9 +429,17 @@ const Interviews = ({ user }) => {
         status: status
       };
 
-      await axios.post(`${API}/interviews`, submitData, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
+      if (editingInterview) {
+        // UPDATE existing interview
+        await axios.put(`${API}/interviews/${editingInterview.id}`, submitData, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+      } else {
+        // CREATE new interview
+        await axios.post(`${API}/interviews`, submitData, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+      }
       
       toast.success(toastMessage);
       resetForm();
